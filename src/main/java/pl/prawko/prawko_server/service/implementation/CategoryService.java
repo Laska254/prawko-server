@@ -1,5 +1,7 @@
 package pl.prawko.prawko_server.service.implementation;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import pl.prawko.prawko_server.model.Category;
@@ -15,6 +17,8 @@ import java.util.Optional;
  */
 @Service
 public class CategoryService implements ICategoryService {
+
+    private static final Logger log = LoggerFactory.getLogger(CategoryService.class);
 
     @NonNull
     private final CategoryRepository repository;
@@ -35,11 +39,13 @@ public class CategoryService implements ICategoryService {
      */
     @Override
     public Optional<Category> findByName(@NonNull final String name) {
+        log.debug("Fetching for category '{}'", name);
         return repository.findByName(name);
     }
 
     @Override
     public List<Category> findAllFromString(@NonNull final String input) {
+        log.debug("Fetching categories from '{}'", input);
         return Arrays.stream(input.split(","))
                 .map(repository::findByName)
                 .flatMap(Optional::stream)

@@ -1,6 +1,8 @@
 package pl.prawko.prawko_server.service.implementation;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.GrantedAuthority;
@@ -31,6 +33,8 @@ import java.util.Optional;
 @Service
 public class UserService implements IUserService, UserDetailsService {
 
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
     @NonNull
     private final UserRepository repository;
     @NonNull
@@ -50,6 +54,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     @Transactional
     public void register(@NonNull final RegisterDto dto) {
+        log.debug("Attempting to register new user: {}", dto.userName());
         final Map<String, String> errorDetails = new LinkedHashMap<>();
         if (repository.existsByUserName(dto.userName())) {
             errorDetails.put("userName", "User with username '" + dto.userName() + "' already exists.");
@@ -58,10 +63,12 @@ public class UserService implements IUserService, UserDetailsService {
             errorDetails.put("email", "User with email '" + dto.email() + "' already exists.");
         }
         if (!errorDetails.isEmpty()) {
+            log.warn("Registration failed: {}", errorDetails);
             throw new AlreadyExistsException("User already exists.", errorDetails);
         }
         final var user = mapper.fromDto(dto);
         repository.save(user);
+        log.info("User {} registered successfully.", user.getUserName());
     }
 
     /**
@@ -72,7 +79,10 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Override
     public boolean checkIfExist(@NonNull final String userNameOrEmail) {
-        return repository.existsByUserName(userNameOrEmail) || repository.existsByEmail(userNameOrEmail);
+        log.debug("Checking if user exists by username or email: {}", userNameOrEmail);
+        final var exists = repository.existsByUserName(userNameOrEmail) || repository.existsByEmail(userNameOrEmail);
+        log.debug("User exists: {}", exists);
+        return exists;
     }
 
     /**
@@ -83,8 +93,13 @@ public class UserService implements IUserService, UserDetailsService {
     @Nullable
     @Override
     public User getByUserNameOrEmail(@NonNull final String userNameOrEmail) {
+        log.debug("Fetching user by username or email: {}", userNameOrEmail);
         return repository.findByUserNameOrEmail(userNameOrEmail)
-                .orElseThrow(() -> new EntityNotFoundException("User with username or email '" + userNameOrEmail + "' not found."));
+                .orElseThrow(() -> {
+                    final var message = "User with username or email '" + userNameOrEmail + "' not found.";
+                    log.warn(message);
+                    return new EntityNotFoundException(message);
+                });
     }
 
     /**
@@ -98,18 +113,22 @@ public class UserService implements IUserService, UserDetailsService {
     @Nullable
     @Override
     public UserDetails loadUserByUsername(final String userNameOrEmail) throws UsernameNotFoundException {
+        log.debug("Loading user by username or email: {}", userNameOrEmail);
         if (checkIfExist(userNameOrEmail)) {
             final var user = getByUserNameOrEmail(userNameOrEmail);
+            log.debug("User {} loaded successfully.", userNameOrEmail);
             return new org.springframework.security.core.userdetails.User(
                     user.getUserName(),
                     user.getPassword(),
                     mapRolesToAuthorities(user.getRoles()));
         } else {
+            log.warn("User '{}' not found.", userNameOrEmail);
             throw new UsernameNotFoundException("Invalid login or password.");
         }
     }
 
     private Collection<? extends GrantedAuthority> mapRolesToAuthorities(@NonNull final Collection<Role> roles) {
+        log.debug("Mapping {} role(s) to authorities.", roles.size());
         return roles.stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
                 .toList();
@@ -121,8 +140,13 @@ public class UserService implements IUserService, UserDetailsService {
      * @throws EntityNotFoundException if a user with provided id have not been found
      */
     @Override
-    public Optional<User> getById(long userId) {
-        return repository.findById(userId);
+    public Optional<User> getById(final long userId) {
+        log.debug("Fetching user by id: {}", userId);
+        final Optional<User> user = repository.findById(userId);
+        if (user.isEmpty()) {
+            log.warn("User with id {} not found.", userId);
+        }
+        return user;
     }
 
 }

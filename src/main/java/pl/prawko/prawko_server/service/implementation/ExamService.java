@@ -1,6 +1,8 @@
 package pl.prawko.prawko_server.service.implementation;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,8 @@ import java.util.stream.Stream;
  */
 @Service
 public class ExamService implements IExamService {
+
+    private static final Logger log = LoggerFactory.getLogger(ExamService.class);
 
     /**
      * key - points value of questions
@@ -78,6 +82,7 @@ public class ExamService implements IExamService {
     @Override
     @Transactional
     public Optional<Exam> createExam(final long userId, @NonNull final String categoryName) {
+        log.debug("Creating exam for user '{}' and category '{}'", userId, categoryName);
         final var user = userService.getById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User with id" + userId + " not found."));
         final var category = categoryService.findByName(categoryName)
@@ -96,6 +101,7 @@ public class ExamService implements IExamService {
                 .setUserAnswers(Collections.emptyList());
         user.getExams().add(exam);
         repository.save(exam);
+        log.info("Created exam for user '{}'", user.getUserName());
         return Optional.of(exam);
     }
 
@@ -103,19 +109,28 @@ public class ExamService implements IExamService {
     @Override
     @Transactional
     public ExamDto getById(long examId) {
+        log.debug("Fetching exam by id: {}", examId);
         final var exam = repository.findById(examId)
-                .orElseThrow(() -> new EntityNotFoundException("Exam with '" + examId + "' not found."));
+                .orElseThrow(() -> {
+                    final var message = "Exam with '" + examId + "' not found.";
+                    log.warn(message);
+                    return new EntityNotFoundException(message);
+                });
         return examMapper.toDto(exam);
     }
 
     private List<Question> selectRandomQuestions(@NonNull final List<Question> questions, final int count) {
+        log.debug("Shuffling {} questions and return {} random ones", questions.size(), count);
         var copy = new ArrayList<>(questions);
         Collections.shuffle(copy);
-        return copy.subList(0, Math.min(count, copy.size()));
+        final var chosen = copy.subList(0, Math.min(count, copy.size()));
+        log.debug("Chosen {} questions", chosen.size());
+        return chosen;
     }
-    
+
     private List<Question> generateQuestions(@NonNull final Category category,
                                              @NonNull final QuestionType questionType) {
+        log.debug("Fetching questions with category '{}' and type '{}'", category, questionType);
         final var distribution = QUESTIONS_DISTRIBUTION.get(questionType);
         final Map<Integer, List<Question>> questions = questionService.getAllByTypeAndCategory(questionType, category.getName())
                 .stream()
