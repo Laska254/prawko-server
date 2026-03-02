@@ -39,13 +39,13 @@ public class CategoryService implements ICategoryService {
      */
     @Override
     public Optional<Category> findByName(@NonNull final String name) {
-        log.debug("Fetching for category '{}'", name);
+        log.info("Fetching for category '{}'", name);
         return repository.findByName(name);
     }
 
     @Override
     public List<Category> findAllFromString(@NonNull final String input) {
-        log.debug("Fetching categories from '{}'", input);
+        log.info("Fetching categories from '{}'", input);
         return Arrays.stream(input.split(","))
                 .map(repository::findByName)
                 .flatMap(Optional::stream)

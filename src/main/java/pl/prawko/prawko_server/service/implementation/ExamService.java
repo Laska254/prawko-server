@@ -82,7 +82,7 @@ public class ExamService implements IExamService {
     @Override
     @Transactional
     public Optional<Exam> createExam(final long userId, @NonNull final String categoryName) {
-        log.debug("Creating exam for user '{}' and category '{}'", userId, categoryName);
+        log.info("Creating exam for user '{}' and category '{}'", userId, categoryName);
         final var user = userService.getById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User with id" + userId + " not found."));
         final var category = categoryService.findByName(categoryName)
@@ -109,7 +109,7 @@ public class ExamService implements IExamService {
     @Override
     @Transactional
     public ExamDto getById(long examId) {
-        log.debug("Fetching exam by id: {}", examId);
+        log.info("Fetching exam by id: {}", examId);
         final var exam = repository.findById(examId)
                 .orElseThrow(() -> {
                     final var message = "Exam with '" + examId + "' not found.";

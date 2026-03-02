@@ -36,7 +36,7 @@ public class RoleService implements IRoleService {
         log.debug("Fetching role '{}'", name);
         return repository.findByName(name)
                 .orElseThrow(() -> {
-                    log.debug("Role not found. {}", name);
+                    log.warn("Role not found. {}", name);
                     return new EntityNotFoundException("Role with name '" + name + "' not found.");
                 });
     }

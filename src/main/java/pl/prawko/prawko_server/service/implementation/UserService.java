@@ -54,7 +54,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     @Transactional
     public void register(@NonNull final RegisterDto dto) {
-        log.debug("Attempting to register new user: {}", dto.userName());
+        log.info("Attempting to register new user: {}", dto.userName());
         final Map<String, String> errorDetails = new LinkedHashMap<>();
         if (repository.existsByUserName(dto.userName())) {
             errorDetails.put("userName", "User with username '" + dto.userName() + "' already exists.");
@@ -93,7 +93,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Nullable
     @Override
     public User getByUserNameOrEmail(@NonNull final String userNameOrEmail) {
-        log.debug("Fetching user by username or email: {}", userNameOrEmail);
+        log.info("Fetching user by username or email: {}", userNameOrEmail);
         return repository.findByUserNameOrEmail(userNameOrEmail)
                 .orElseThrow(() -> {
                     final var message = "User with username or email '" + userNameOrEmail + "' not found.";
@@ -113,10 +113,10 @@ public class UserService implements IUserService, UserDetailsService {
     @Nullable
     @Override
     public UserDetails loadUserByUsername(final String userNameOrEmail) throws UsernameNotFoundException {
-        log.debug("Loading user by username or email: {}", userNameOrEmail);
+        log.info("Loading user by username or email: {}", userNameOrEmail);
         if (checkIfExist(userNameOrEmail)) {
             final var user = getByUserNameOrEmail(userNameOrEmail);
-            log.debug("User {} loaded successfully.", userNameOrEmail);
+            log.info("User {} loaded successfully.", userNameOrEmail);
             return new org.springframework.security.core.userdetails.User(
                     user.getUserName(),
                     user.getPassword(),
@@ -141,7 +141,7 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Override
     public Optional<User> getById(final long userId) {
-        log.debug("Fetching user by id: {}", userId);
+        log.info("Fetching user by id: {}", userId);
         final Optional<User> user = repository.findById(userId);
         if (user.isEmpty()) {
             log.warn("User with id {} not found.", userId);
