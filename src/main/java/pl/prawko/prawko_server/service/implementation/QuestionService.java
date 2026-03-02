@@ -62,7 +62,7 @@ public class QuestionService implements IQuestionService {
     public List<Question> parseFileToQuestions(@NonNull final MultipartFile file) {
         log.debug("Attempting to parse file '{}'", file.getOriginalFilename());
         if (!"text/csv".equals(file.getContentType())) {
-            final var message = "Invalid file format";
+            final var message = "Invalid file format.";
             log.warn("{} '{}'", message, file.getContentType());
             throw new MultipartException(message);
         }
