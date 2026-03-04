@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * Spring security configuration class for role-based access using basic authentication.
@@ -82,9 +83,11 @@ public class SpringSecurity {
      * @throws Exception if an error occurs while building the filter chain
      */
     @Bean
-    public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(final HttpSecurity http,
+                                           final LoggingFilter loggingFilter) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
+                .addFilterAfter(loggingFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize ->
                         authorize
                                 .requestMatchers(HttpMethod.POST, "/auth", "/users").permitAll()

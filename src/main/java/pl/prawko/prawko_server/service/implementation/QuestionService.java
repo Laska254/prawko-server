@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartException;
@@ -31,6 +33,8 @@ import java.util.List;
 @Service
 public class QuestionService implements IQuestionService {
 
+    private static final Logger log = LoggerFactory.getLogger(QuestionService.class);
+
     @NonNull
     private final QuestionRepository repository;
     @NonNull
@@ -56,8 +60,11 @@ public class QuestionService implements IQuestionService {
      */
     @Override
     public List<Question> parseFileToQuestions(@NonNull final MultipartFile file) {
+        log.info("Attempting to parse file '{}'", file.getOriginalFilename());
         if (!"text/csv".equals(file.getContentType())) {
-            throw new MultipartException("Invalid file format.");
+            final var message = "Invalid file format.";
+            log.warn("{} '{}'", message, file.getContentType());
+            throw new MultipartException(message);
         }
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
@@ -72,15 +79,30 @@ public class QuestionService implements IQuestionService {
                     .with(schema)
                     .readValues(reader);
             final var questionCSVs = csvRows.readAll();
-            return mapQuestionCSVModelsToQuestions(questionCSVs);
+            log.info("Parsed {} rows from file '{}'", questionCSVs.size(), file.getOriginalFilename());
+            final var questions = mapQuestionCSVModelsToQuestions(questionCSVs);
+            log.info("Successfully mapped {} questions from file '{}'", questions.size(), file.getOriginalFilename());
+            return questions;
         } catch (IOException exception) {
-            throw new RuntimeException("CSV file failed to parse: " + exception.getMessage());
+            final var message = "CSV file failed to parse: ";
+            log.error("{} '{}': {}", message, file.getOriginalFilename(), exception.getMessage(), exception);
+            throw new RuntimeException(message + exception.getMessage());
         }
     }
 
     @Override
     public void saveAll(@NonNull final List<Question> questions) {
+        log.info("Saving {} question(s)", questions.size());
         repository.saveAll(questions);
+        log.info("Successfully saved {} questions", questions.size());
+    }
+
+    @Override
+    public List<Question> getAllByTypeAndCategory(@NonNull final QuestionType type, @NonNull final String category) {
+        log.info("Fetching questions by type '{}' and category '{}'", type, category);
+        final var questions = repository.findByTypeAndCategories_NameContains(type, category);
+        log.info("Found {} questions for type '{}' and category '{}'", questions.size(), type, category);
+        return questions;
     }
 
     /**
@@ -90,14 +112,10 @@ public class QuestionService implements IQuestionService {
      * @return the list of mapped {@link Question} entities
      */
     private List<Question> mapQuestionCSVModelsToQuestions(@NonNull final List<QuestionCSV> questionCSVs) {
+        log.debug("Mapping {} questions", questionCSVs.size());
         return questionCSVs.stream()
                 .map(mapper::mapQuestionCSVToQuestion)
                 .toList();
-    }
-
-    @Override
-    public List<Question> getAllByTypeAndCategory(@NonNull final QuestionType type, @NonNull final String category) {
-        return repository.findByTypeAndCategories_NameContains(type, category);
     }
 
 }
