@@ -6,6 +6,7 @@ import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.model.User;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -52,5 +53,12 @@ public interface IUserService {
      * @return an {@link UserDto}
      */
     UserDto getUserDtoById(long userId);
+
+    /**
+     * Find all users across application.
+     *
+     * @return list of all users
+     */
+    List<UserDto> getAllUsers();
 
 }

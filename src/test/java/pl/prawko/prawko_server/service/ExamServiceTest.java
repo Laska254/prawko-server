@@ -43,7 +43,7 @@ public class ExamServiceTest {
 
     @Test
     void createExam_returnExam_whenUserAndCategoryFound() {
-        final var user = testDataFactory.createTestUser();
+        final var user = testDataFactory.createTestUserPippin();
         final var category = CategoryTestData.CATEGORY_B;
         final var categoryName = category.getName();
         final var expected = testDataFactory.createExam(user);

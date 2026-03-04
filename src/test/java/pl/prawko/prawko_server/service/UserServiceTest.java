@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.User;
@@ -15,6 +16,7 @@ import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.UserService;
 import pl.prawko.prawko_server.test_data.TestDataFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -48,6 +50,7 @@ class UserServiceTest {
 
     private final TestDataFactory testDataFactory = new TestDataFactory();
     private final RegisterDto registerDto = testDataFactory.createValidRegisterDto();
+    private final User tester = testDataFactory.createTestUserPippin();
 
     @Test
     void register_success_whenUserNotExists() {
@@ -113,12 +116,11 @@ class UserServiceTest {
     @Test
     void getByUserNameOrEmail_returnUser_whenFoundByUserName() {
         final var userNameOrEmail = "pippin";
-        final var user = testDataFactory.createTestUser();
-        when(repository.findByUserNameOrEmail(userNameOrEmail)).thenReturn(Optional.of(user));
+        when(repository.findByUserNameOrEmail(userNameOrEmail)).thenReturn(Optional.of(tester));
 
         final var result = service.getByUserNameOrEmail(userNameOrEmail);
 
-        assertThat(result).isEqualTo(user);
+        assertThat(result).isEqualTo(tester);
         verifyNoInteractions(mapper);
         verifyNoMoreInteractions(repository);
     }
@@ -126,12 +128,11 @@ class UserServiceTest {
     @Test
     void getByUserNameOrEmail_returnUser_whenFoundByEmail() {
         final var userNameOrEmail = "pippin@shire.me";
-        final var user = testDataFactory.createTestUser();
-        when(repository.findByUserNameOrEmail(userNameOrEmail)).thenReturn(Optional.of(user));
+        when(repository.findByUserNameOrEmail(userNameOrEmail)).thenReturn(Optional.of(tester));
 
         final var result = service.getByUserNameOrEmail(userNameOrEmail);
 
-        assertThat(result).isEqualTo(user);
+        assertThat(result).isEqualTo(tester);
         verifyNoInteractions(mapper);
         verifyNoMoreInteractions(repository);
     }
@@ -153,12 +154,11 @@ class UserServiceTest {
     @Test
     void getById_returnUser_whenFound() {
         final var given = 44L;
-        final var expected = testDataFactory.createTestUser();
-        when(repository.findById(given)).thenReturn(Optional.of(expected));
+        when(repository.findById(given)).thenReturn(Optional.of(tester));
 
         final var result = service.getById(given);
 
-        assertThat(result).hasValue(expected);
+        assertThat(result).hasValue(tester);
         verify(repository).findById(given);
         verifyNoMoreInteractions(repository);
     }
@@ -166,16 +166,15 @@ class UserServiceTest {
     @Test
     void getUserDtoById_returnUserDto_whenFound() {
         final var given = 44L;
-        final var expectedUser = testDataFactory.createTestUser();
         final var expectedDto = testDataFactory.createUserDto();
-        when(repository.findById(given)).thenReturn(Optional.of(expectedUser));
-        when(mapper.toDto(expectedUser)).thenReturn(expectedDto);
+        when(repository.findById(given)).thenReturn(Optional.of(tester));
+        when(mapper.toDto(tester)).thenReturn(expectedDto);
 
         final var result = service.getUserDtoById(given);
 
         assertThat(result).isEqualTo(expectedDto);
         verify(repository).findById(given);
-        verify(mapper).toDto(expectedUser);
+        verify(mapper).toDto(tester);
         verifyNoMoreInteractions(repository, mapper);
     }
 
@@ -191,6 +190,26 @@ class UserServiceTest {
         verify(repository).findById(givenId);
         verifyNoMoreInteractions(repository);
         verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void getAllUsers_returnListOfUsers_whenFound() {
+        final var tester2 = testDataFactory.createTestUser("Meriadok", "Brandybuck", "Merry", "merry@shire.me");
+        final var users = List.of(tester, tester2);
+        final var pippinDto = testDataFactory.createUserDto();
+        final var merryDto = new UserDto(45L, "Meriadok", "Brandybuck", "Merry", "merry@shire.me");
+        final var expected = List.of(pippinDto, merryDto);
+        when(repository.findAll()).thenReturn(users);
+        when(mapper.toDto(tester)).thenReturn(pippinDto);
+        when(mapper.toDto(tester2)).thenReturn(merryDto);
+
+        final var result = service.getAllUsers();
+
+        assertThat(result).isEqualTo(expected);
+        verify(repository).findAll();
+        verify(mapper).toDto(tester);
+        verify(mapper).toDto(tester2);
+        verifyNoMoreInteractions(repository, mapper);
     }
 
 }

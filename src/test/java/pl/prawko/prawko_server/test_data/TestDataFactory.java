@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.test_data;
 
+import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import pl.prawko.prawko_server.dto.AnswerDto;
 import pl.prawko.prawko_server.dto.AnswerTranslationDto;
@@ -31,18 +32,25 @@ public class TestDataFactory {
 
     private final Question question = createQuestion(QuestionType.SPECIAL);
 
-    public User createTestUser() {
+    public User createTestUser(@NonNull final String firstName,
+                               @NonNull final String lastName,
+                               @NonNull final String userName,
+                               @NonNull final String email) {
         return new User()
-                .setFirstName("Peregrin")
-                .setLastName("Tuk")
-                .setUserName("pippin")
-                .setEmail("pippin@shire.me")
+                .setFirstName(firstName)
+                .setLastName(lastName)
+                .setUserName(userName)
+                .setEmail(email)
                 .setPassword(new BCryptPasswordEncoder().encode("lembasy"))
                 .setRoles(List.of(new Role().setName("USER")))
                 .setEnabled(true)
                 .setCreated(LocalDateTime.now())
                 .setUpdated(LocalDateTime.now())
                 .setExams(new ArrayList<>());
+    }
+
+    public User createTestUserPippin() {
+        return createTestUser("Peregrin", "Tuk", "pippin", "pippin@shire.me");
     }
 
     public UserDto createUserDto() {

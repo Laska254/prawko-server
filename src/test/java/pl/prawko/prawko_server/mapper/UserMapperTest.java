@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.prawko.prawko_server.model.Role;
+import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.service.implementation.RoleService;
 import pl.prawko.prawko_server.test_data.TestDataFactory;
 
@@ -28,12 +29,12 @@ class UserMapperTest {
     private static final String[] IGNORED_FIELDS = {"id", "created", "updated", "exams", "password"};
 
     private final TestDataFactory testDataFactory = new TestDataFactory();
+    private final User tester = testDataFactory.createTestUserPippin();
 
     @Test
     void fromDto_correctlyMapUser() {
         final var dto = testDataFactory.createValidRegisterDto();
         final var role = new Role().setName("USER");
-        final var expected = testDataFactory.createTestUser();
         when(roleService.getByName(role.getName())).thenReturn(role);
         when(passwordEncoder.encode(dto.password())).thenReturn("hashed");
 
@@ -43,13 +44,12 @@ class UserMapperTest {
         assertThat(result)
                 .usingRecursiveComparison()
                 .ignoringFields(IGNORED_FIELDS)
-                .isEqualTo(expected);
+                .isEqualTo(tester);
     }
 
     @Test
     void toDto_correctlyMapUser() {
-        final var user = testDataFactory.createTestUser()
-                .setId(44L);
+        final var user = tester.setId(44L);
         final var expected = testDataFactory.createUserDto();
 
         final var result = mapper.toDto(user);

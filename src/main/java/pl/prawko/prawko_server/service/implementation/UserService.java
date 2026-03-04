@@ -23,6 +23,7 @@ import pl.prawko.prawko_server.service.IUserService;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -154,6 +155,13 @@ public class UserService implements IUserService, UserDetailsService {
                     log.warn(message);
                     return new EntityNotFoundException(message);
                 });
+    }
+
+    @Override
+    public List<UserDto> getAllUsers() {
+        return repository.findAll().stream()
+                .map(mapper::toDto)
+                .toList();
     }
 
     private Collection<? extends GrantedAuthority> mapRolesToAuthorities(@NonNull final Collection<Role> roles) {

@@ -16,6 +16,8 @@ import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.service.implementation.UserService;
 
+import java.util.List;
+
 /**
  * REST controller for managing {@link User} entities using http requests.
  * <p>
@@ -49,6 +51,11 @@ public class UserController {
     @GetMapping("/{id}")
     public UserDto getUserById(@PathVariable final long id) {
         return userService.getUserDtoById(id);
+    }
+
+    @GetMapping
+    public List<UserDto> getAllUsers() {
+        return userService.getAllUsers();
     }
 
 }
