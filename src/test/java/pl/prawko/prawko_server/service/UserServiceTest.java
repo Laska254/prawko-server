@@ -163,4 +163,34 @@ class UserServiceTest {
         verifyNoMoreInteractions(repository);
     }
 
+    @Test
+    void getUserDtoById_returnUserDto_whenFound() {
+        final var given = 44L;
+        final var expectedUser = testDataFactory.createTestUser();
+        final var expectedDto = testDataFactory.createUserDto();
+        when(repository.findById(given)).thenReturn(Optional.of(expectedUser));
+        when(mapper.toDto(expectedUser)).thenReturn(expectedDto);
+
+        final var result = service.getUserDtoById(given);
+
+        assertThat(result).isEqualTo(expectedDto);
+        verify(repository).findById(given);
+        verify(mapper).toDto(expectedUser);
+        verifyNoMoreInteractions(repository, mapper);
+    }
+
+    @Test
+    void getUserDtoById_throwException_whenNotFound() {
+        final var givenId = 666L;
+        when(repository.findById(givenId)).thenReturn(Optional.empty());
+
+        final ThrowableAssert.ThrowingCallable executable = () -> service.getUserDtoById(givenId);
+        final var exception = catchThrowableOfType(EntityNotFoundException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo("User with id '" + givenId + "' not found.");
+        verify(repository).findById(givenId);
+        verifyNoMoreInteractions(repository);
+        verifyNoInteractions(mapper);
+    }
+
 }

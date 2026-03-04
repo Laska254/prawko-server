@@ -2,6 +2,8 @@ package pl.prawko.prawko_server.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import pl.prawko.prawko_server.dto.ApiResponse;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.service.implementation.UserService;
@@ -41,6 +44,11 @@ public class UserController {
     public ApiResponse registerUser(@Valid @RequestBody final RegisterDto dto) {
         userService.register(dto);
         return new ApiResponse("User registered successfully.");
+    }
+
+    @GetMapping("/{id}")
+    public UserDto getUserById(@PathVariable final long id) {
+        return userService.getUserDtoById(id);
     }
 
 }

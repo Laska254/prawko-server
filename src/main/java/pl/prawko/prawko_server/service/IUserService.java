@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.service;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.model.User;
 
 import java.util.Optional;
@@ -40,8 +41,16 @@ public interface IUserService {
      * Get {@code user} by {@code id}.
      *
      * @param userId provided id
-     * @return an {@code user}
+     * @return an {@link User}
      */
     Optional<User> getById(long userId);
+
+    /**
+     * Find {@code user} by {@code id}.
+     *
+     * @param userId provided id
+     * @return an {@link UserDto}
+     */
+    UserDto getUserDtoById(long userId);
 
 }

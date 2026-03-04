@@ -8,6 +8,7 @@ import org.springframework.web.client.RestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.dto.ApiResponse;
+import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.test_data.TestDataFactory;
 
 import java.util.Map;
@@ -87,6 +88,38 @@ public class UserControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(response.getBody().message()).isEqualTo(errorMessage);
         assertThat(response.getBody().details()).isEqualTo(errorDetails);
+    }
+
+    @Test
+    void getUserById_returnUserDto_whenFound() {
+//        final var registerDto = testDataFactory.createValidRegisterDto();
+//        restClient.post()
+//                .uri(URL)
+//                .body(registerDto)
+//                .retrieve()
+//                .toBodilessEntity();
+
+        final var response = restClient.get()
+                .uri(URL + "/{id}", 1L)
+                .headers(TestUtils::authAdmin)
+                .retrieve()
+                .toEntity(UserDto.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+    }
+
+    @Test
+    void getUserById_returnNotFound_whenUserDoesNotExist() {
+        final var nonExistentId = 666L;
+
+        final var response = restClient.get()
+                .uri(URL + "/{id}", nonExistentId)
+                .headers(TestUtils::authAdmin)
+                .exchange((req, res) -> TestUtils.getResponseEntity(res));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody().message()).isEqualTo("User with id '" + nonExistentId + "' not found.");
     }
 
 }

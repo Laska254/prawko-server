@@ -5,6 +5,7 @@ import pl.prawko.prawko_server.dto.AnswerDto;
 import pl.prawko.prawko_server.dto.AnswerTranslationDto;
 import pl.prawko.prawko_server.dto.LoginDto;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.AnswerTranslation;
 import pl.prawko.prawko_server.model.Exam;
@@ -42,6 +43,15 @@ public class TestDataFactory {
                 .setCreated(LocalDateTime.now())
                 .setUpdated(LocalDateTime.now())
                 .setExams(new ArrayList<>());
+    }
+
+    public UserDto createUserDto() {
+        return new UserDto(
+                44L,
+                "Peregrin",
+                "Tuk",
+                "pippin",
+                "pippin@shire.me");
     }
 
     public RegisterDto createValidRegisterDto() {

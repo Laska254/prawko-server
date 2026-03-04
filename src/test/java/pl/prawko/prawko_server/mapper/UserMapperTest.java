@@ -27,13 +27,13 @@ class UserMapperTest {
 
     private static final String[] IGNORED_FIELDS = {"id", "created", "updated", "exams", "password"};
 
-    private final TestDataFactory userTestDataFactory = new TestDataFactory();
+    private final TestDataFactory testDataFactory = new TestDataFactory();
 
     @Test
     void fromDto_correctlyMapUser() {
-        final var dto = userTestDataFactory.createValidRegisterDto();
+        final var dto = testDataFactory.createValidRegisterDto();
         final var role = new Role().setName("USER");
-        final var expected = userTestDataFactory.createTestUser();
+        final var expected = testDataFactory.createTestUser();
         when(roleService.getByName(role.getName())).thenReturn(role);
         when(passwordEncoder.encode(dto.password())).thenReturn("hashed");
 
@@ -44,6 +44,17 @@ class UserMapperTest {
                 .usingRecursiveComparison()
                 .ignoringFields(IGNORED_FIELDS)
                 .isEqualTo(expected);
+    }
+
+    @Test
+    void toDto_correctlyMapUser() {
+        final var user = testDataFactory.createTestUser()
+                .setId(44L);
+        final var expected = testDataFactory.createUserDto();
+
+        final var result = mapper.toDto(user);
+
+        assertThat(result).isEqualTo(expected);
     }
 
 }

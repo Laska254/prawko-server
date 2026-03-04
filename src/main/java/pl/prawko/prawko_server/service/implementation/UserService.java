@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.Role;
@@ -127,13 +128,6 @@ public class UserService implements IUserService, UserDetailsService {
         }
     }
 
-    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(@NonNull final Collection<Role> roles) {
-        log.debug("Mapping {} role(s) to authorities.", roles.size());
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
-                .toList();
-    }
-
     /**
      * {@inheritDoc}
      *
@@ -147,6 +141,26 @@ public class UserService implements IUserService, UserDetailsService {
             log.warn("User with id {} not found.", userId);
         }
         return user;
+    }
+
+    @Nullable
+    @Override
+    public UserDto getUserDtoById(final long userId) {
+        log.info("Fetching userDto by id: {}", userId);
+        return repository.findById(userId)
+                .map(mapper::toDto)
+                .orElseThrow(() -> {
+                    final var message = "User with id '" + userId + "' not found.";
+                    log.warn(message);
+                    return new EntityNotFoundException(message);
+                });
+    }
+
+    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(@NonNull final Collection<Role> roles) {
+        log.debug("Mapping {} role(s) to authorities.", roles.size());
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                .toList();
     }
 
 }
