@@ -2,6 +2,8 @@ package pl.prawko.prawko_server.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -9,7 +11,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.dto.ApiResponse;
+import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.service.implementation.QuestionService;
+
+import java.util.List;
 
 /**
  * REST controller to manage questions using HTTP requests.
@@ -38,10 +43,20 @@ public class QuestionController {
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public ApiResponse addQuestions(@RequestPart MultipartFile file) {
+    public ApiResponse<Void> addQuestions(@RequestPart MultipartFile file) {
         final var questions = questionService.parseFileToQuestions(file);
         questionService.saveAll(questions);
-        return new ApiResponse("Questions from file added successfully.");
+        return new ApiResponse<>("Questions from file added successfully.");
+    }
+
+    @GetMapping("/{id}")
+    public QuestionDto getQuestion(@PathVariable final long id) {
+        return questionService.getById(id);
+    }
+
+    @GetMapping
+    public List<QuestionDto> getAllQuestions() {
+        return questionService.getAll();
     }
 
 }

@@ -92,6 +92,8 @@ public class SpringSecurity {
                         authorize
                                 .requestMatchers(HttpMethod.POST, "/auth", "/users").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/questions").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.GET, "/questions/**").hasRole("USER")
+                                .requestMatchers(HttpMethod.GET, "/questions").hasRole("ADMIN")
                                 .requestMatchers(HttpMethod.POST, "/exams").hasRole("USER")
                                 .requestMatchers(HttpMethod.GET, "/exams/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/users/**").hasRole("ADMIN")

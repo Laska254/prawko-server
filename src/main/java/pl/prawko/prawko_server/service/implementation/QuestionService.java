@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
+import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Question;
@@ -103,6 +105,25 @@ public class QuestionService implements IQuestionService {
         final var questions = repository.findByTypeAndCategories_NameContains(type, category);
         log.info("Found {} questions for type '{}' and category '{}'", questions.size(), type, category);
         return questions;
+    }
+
+    @Override
+    public QuestionDto getById(long id) {
+        log.info("Fetching question with id '{}'", id);
+        return repository.findById(id)
+                .map(mapper::toDto)
+                .orElseThrow(() -> {
+                    final var message = "Question with id '" + id + "' not found.";
+                    log.warn(message);
+                    return new EntityNotFoundException(message);
+                });
+    }
+
+    @Override
+    public List<QuestionDto> getAll() {
+        return repository.findAll().stream()
+                .map(mapper::toDto)
+                .toList();
     }
 
     /**
