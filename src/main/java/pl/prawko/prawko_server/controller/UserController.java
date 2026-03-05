@@ -2,6 +2,7 @@ package pl.prawko.prawko_server.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,6 +66,13 @@ public class UserController {
                                            @Valid @RequestBody final UserUpdateRequest updateRequest) {
         final var updatedUser = userService.updateUser(id, updateRequest);
         return new ApiResponse<>("User updated successfully.", updatedUser);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ApiResponse<Void> deleteUser(@PathVariable final long id) {
+        userService.deleteUser(id);
+        return new ApiResponse<>("User deleted successfully.");
     }
 
 }

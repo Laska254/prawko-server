@@ -267,4 +267,32 @@ class UserServiceTest {
         verifyNoInteractions(mapper);
     }
 
+    @Test
+    void deleteUser_success_whenUserExists() {
+        final var givenId = 44L;
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+
+        service.deleteUser(givenId);
+
+        verify(repository).findById(givenId);
+        verify(repository).delete(tester);
+        verifyNoMoreInteractions(repository);
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void deleteUser_throwException_whenUserNotFound() {
+        final var givenId = 666L;
+        when(repository.findById(givenId)).thenReturn(Optional.empty());
+
+        final ThrowableAssert.ThrowingCallable executable = () -> service.deleteUser(givenId);
+        final var exception = catchThrowableOfType(EntityNotFoundException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo("User with id '" + givenId + "' not found.");
+        verify(repository).findById(givenId);
+        verify(repository, never()).delete(any());
+        verifyNoMoreInteractions(repository);
+        verifyNoInteractions(mapper);
+    }
+
 }

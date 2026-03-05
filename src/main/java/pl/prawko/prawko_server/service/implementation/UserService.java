@@ -169,6 +169,20 @@ public class UserService implements IUserService, UserDetailsService {
         return mapper.toDto(updated);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException if a user with provided id have not been found
+     */
+    @Transactional
+    @Override
+    public void deleteUser(final long userId) {
+        log.info("Deleting user with id: {}", userId);
+        final var user = getById(userId);
+        repository.delete(user);
+        log.info("Successfully deleted user '{}'", user.getUserName());
+    }
+
     private Collection<? extends GrantedAuthority> mapRolesToAuthorities(@NonNull final Collection<Role> roles) {
         log.debug("Mapping {} role(s) to authorities.", roles.size());
         return roles.stream()

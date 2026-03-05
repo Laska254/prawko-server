@@ -96,6 +96,7 @@ public class SpringSecurity {
                                 .requestMatchers(HttpMethod.GET, "/exams/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/users/**").hasRole("ADMIN")
                                 .requestMatchers(HttpMethod.PATCH, "users/**").hasRole("USER")
+                                .requestMatchers(HttpMethod.DELETE, "/users/**").hasRole("ADMIN")
                                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll())
                 .httpBasic(Customizer.withDefaults())
                 .build();

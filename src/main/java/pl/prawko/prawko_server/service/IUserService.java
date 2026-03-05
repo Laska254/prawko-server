@@ -69,4 +69,11 @@ public interface IUserService {
      */
     UserDto updateUser(long userId, @NonNull UserUpdateRequest updateRequest);
 
+    /**
+     * Deletes an {@code user}.
+     *
+     * @param userId provided id
+     */
+    void deleteUser(long userId);
+
 }

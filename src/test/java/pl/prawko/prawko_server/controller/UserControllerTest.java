@@ -27,6 +27,14 @@ public class UserControllerTest {
 
     private final TestDataFactory testDataFactory = new TestDataFactory();
 
+    private void registerUser() {
+        restClient.post()
+                .uri(URL)
+                .body(testDataFactory.createValidRegisterDto())
+                .retrieve()
+                .toBodilessEntity();
+    }
+
     @BeforeEach
     void setUp() {
         restClient = RestClient.builder()
@@ -73,7 +81,7 @@ public class UserControllerTest {
 
     @Test
     void registerUser_returnConflict_whenUserAlreadyExists() {
-        final var dto = testDataFactory.createValidRegisterDto();
+        registerUser();
         final var errorMessage = "User already exists.";
         final var errorDetails = Map.of(
                 "email", "User with email 'pippin@shire.me' already exists.",
@@ -82,7 +90,7 @@ public class UserControllerTest {
 
         final var response = restClient.post()
                 .uri(URL)
-                .body(dto)
+                .body(testDataFactory.createValidRegisterDto())
                 .exchange((req, res) -> TestUtils.getResponseEntity(res));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
@@ -92,6 +100,7 @@ public class UserControllerTest {
 
     @Test
     void getUserById_returnUserDto_whenFound() {
+        registerUser();
         final var response = restClient.get()
                 .uri(URL + "/{id}", 1L)
                 .headers(TestUtils::authAdmin)
@@ -117,6 +126,7 @@ public class UserControllerTest {
 
     @Test
     void updateUser_returnOK_whenSuccess() {
+        registerUser();
         final var updateUserRequest = testDataFactory.createValidUserUpdateRequest();
         final var expectedDetails = Map.of(
                 "id", 1,
@@ -135,6 +145,17 @@ public class UserControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().message()).isEqualTo("User updated successfully.");
         assertThat(response.getBody().details()).isEqualTo(expectedDetails);
+    }
+
+    @Test
+    void deleteUser_returnNoContent_whenSuccess() {
+        registerUser();
+        final var response = restClient.delete()
+                .uri(URL + "/{id}", 1L)
+                .headers(TestUtils::authAdmin)
+                .exchange((req, res) -> TestUtils.getResponseEntity(res));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
 }
