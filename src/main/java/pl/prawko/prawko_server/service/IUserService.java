@@ -7,7 +7,6 @@ import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.model.User;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Service interface for managing {@link User} entities.
@@ -44,7 +43,7 @@ public interface IUserService {
      * @param userId provided id
      * @return an {@link User}
      */
-    Optional<User> getById(long userId);
+    User getById(long userId);
 
     /**
      * Find {@code user} by {@code id}.

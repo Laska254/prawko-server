@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Implementation of {@link IUserService} that manage users entities.
@@ -135,26 +134,25 @@ public class UserService implements IUserService, UserDetailsService {
      * @throws EntityNotFoundException if a user with provided id have not been found
      */
     @Override
-    public Optional<User> getById(final long userId) {
+    public User getById(final long userId) {
         log.info("Fetching user by id: {}", userId);
-        final Optional<User> user = repository.findById(userId);
-        if (user.isEmpty()) {
-            log.warn("User with id {} not found.", userId);
-        }
-        return user;
-    }
-
-    @Nullable
-    @Override
-    public UserDto getUserDtoById(final long userId) {
-        log.info("Fetching userDto by id: {}", userId);
         return repository.findById(userId)
-                .map(mapper::toDto)
                 .orElseThrow(() -> {
                     final var message = "User with id '" + userId + "' not found.";
                     log.warn(message);
                     return new EntityNotFoundException(message);
                 });
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException if a user with provided id have not been found
+     */
+    @Override
+    public UserDto getUserDtoById(final long userId) {
+        log.info("Fetching userDto by id: {}", userId);
+        return mapper.toDto(getById(userId));
     }
 
     @Override

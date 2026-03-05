@@ -43,9 +43,9 @@ public class UserController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse registerUser(@Valid @RequestBody final RegisterDto dto) {
+    public ApiResponse<Void> registerUser(@Valid @RequestBody final RegisterDto dto) {
         userService.register(dto);
-        return new ApiResponse("User registered successfully.");
+        return new ApiResponse<>("User registered successfully.");
     }
 
     @GetMapping("/{id}")
