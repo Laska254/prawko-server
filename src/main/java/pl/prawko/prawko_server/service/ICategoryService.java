@@ -4,7 +4,6 @@ import org.springframework.lang.NonNull;
 import pl.prawko.prawko_server.model.Category;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Service interface for managing and retrieving {@link Category} entities.
@@ -20,7 +19,7 @@ public interface ICategoryService {
      * @param name name of the category to retrieve
      * @return found {@link Category}
      */
-    Optional<Category> findByName(@NonNull String name);
+    Category findByName(@NonNull String name);
 
     /**
      * Parses a comma-separated string of category names and retrieves all matching {@link Category} entities from the repository.
