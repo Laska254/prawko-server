@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.controller;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.prawko.prawko_server.dto.ApiResponse;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.service.implementation.UserService;
@@ -56,6 +58,13 @@ public class UserController {
     @GetMapping
     public List<UserDto> getAllUsers() {
         return userService.getAllUsers();
+    }
+
+    @PatchMapping("/{id}")
+    public ApiResponse<UserDto> updateUser(@PathVariable final long id,
+                                           @Valid @RequestBody final UserUpdateRequest updateRequest) {
+        final var updatedUser = userService.updateUser(id, updateRequest);
+        return new ApiResponse<>("User updated successfully.", updatedUser);
     }
 
 }

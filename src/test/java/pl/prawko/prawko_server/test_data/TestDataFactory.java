@@ -7,6 +7,7 @@ import pl.prawko.prawko_server.dto.AnswerTranslationDto;
 import pl.prawko.prawko_server.dto.LoginDto;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.AnswerTranslation;
 import pl.prawko.prawko_server.model.Exam;
@@ -60,6 +61,28 @@ public class TestDataFactory {
                 "Tuk",
                 "pippin",
                 "pippin@shire.me");
+    }
+
+    public UserDto createUpdatedUserDto() {
+        return new UserDto(
+                44L,
+                "UpdatedFirstName",
+                "UpdatedLastName",
+                "UpdatedUserName",
+                "UpdatedEmail@shire.me"
+        );
+    }
+
+    public UserUpdateRequest createValidUserUpdateRequest() {
+        return new UserUpdateRequest(
+                "UpdatedFirstName",
+                "UpdatedLastName",
+                "UpdatedUserName",
+                "UpdatedEmail@shire.me");
+    }
+
+    public UserUpdateRequest createInvalidUserUpdateRequest() {
+        return new UserUpdateRequest(null, null, "pippin", "pippin@shire.me");
     }
 
     public RegisterDto createValidRegisterDto() {

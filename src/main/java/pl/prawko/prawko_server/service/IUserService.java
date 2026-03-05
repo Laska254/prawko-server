@@ -4,6 +4,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.User;
 
 import java.util.List;
@@ -59,5 +60,13 @@ public interface IUserService {
      * @return list of all users
      */
     List<UserDto> getAllUsers();
+
+    /**
+     * Updates user with new details.
+     *
+     * @param userId        provided id of user to update
+     * @param updateRequest request that contain new details of user
+     */
+    UserDto updateUser(long userId, @NonNull UserUpdateRequest updateRequest);
 
 }

@@ -92,13 +92,6 @@ public class UserControllerTest {
 
     @Test
     void getUserById_returnUserDto_whenFound() {
-//        final var registerDto = testDataFactory.createValidRegisterDto();
-//        restClient.post()
-//                .uri(URL)
-//                .body(registerDto)
-//                .retrieve()
-//                .toBodilessEntity();
-
         final var response = restClient.get()
                 .uri(URL + "/{id}", 1L)
                 .headers(TestUtils::authAdmin)
@@ -120,6 +113,28 @@ public class UserControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getBody().message()).isEqualTo("User with id '" + nonExistentId + "' not found.");
+    }
+
+    @Test
+    void updateUser_returnOK_whenSuccess() {
+        final var updateUserRequest = testDataFactory.createValidUserUpdateRequest();
+        final var expectedDetails = Map.of(
+                "id", 1,
+                "firstName", "UpdatedFirstName",
+                "lastName", "UpdatedLastName",
+                "userName", "UpdatedUserName",
+                "email", "UpdatedEmail@shire.me"
+        );
+
+        final var response = restClient.patch()
+                .uri(URL + "/{id}", 1L)
+                .headers(TestUtils::authUser)
+                .body(updateUserRequest)
+                .exchange((req, res) -> TestUtils.getResponseEntity(res));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().message()).isEqualTo("User updated successfully.");
+        assertThat(response.getBody().details()).isEqualTo(expectedDetails);
     }
 
 }

@@ -212,4 +212,59 @@ class UserServiceTest {
         verifyNoMoreInteractions(repository, mapper);
     }
 
+    @Test
+    void updateUser_returnUpdatedUser_whenSuccess() {
+        final var givenId = 44L;
+        final var updateUserRequest = testDataFactory.createValidUserUpdateRequest();
+        final var updatedUserDto = testDataFactory.createUpdatedUserDto();
+        final var user = tester;
+        when(repository.findById(givenId)).thenReturn(Optional.of(user));
+        when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(false);
+        when(repository.existsByEmail(updateUserRequest.email())).thenReturn(false);
+        when(repository.save(user)).thenReturn(user);
+        when(mapper.toDto(user)).thenReturn(updatedUserDto);
+
+        final var result = service.updateUser(givenId, updateUserRequest);
+
+        assertThat(result).isEqualTo(updatedUserDto);
+        verify(repository).findById(givenId);
+        verify(repository).save(user);
+        verify(repository).existsByUserName(updateUserRequest.userName());
+        verify(repository).existsByEmail(updateUserRequest.email());
+        verify(mapper).toDto(user);
+        verifyNoMoreInteractions(repository, mapper);
+    }
+
+    @Test
+    void updateUser_throwException_whenUserNameAlreadyExists() {
+        final var givenId = 44L;
+        final var updateUserRequest = testDataFactory.createInvalidUserUpdateRequest();
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(true);
+
+        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest);
+        final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo("User already exists.");
+        verify(repository).findById(givenId);
+        verify(repository).existsByUserName(updateUserRequest.userName());
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void updateUser_throwException_whenEmailAlreadyExists() {
+        final var givenId = 44L;
+        final var updateUserRequest = testDataFactory.createInvalidUserUpdateRequest();
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(repository.existsByEmail(updateUserRequest.email())).thenReturn(true);
+
+        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest);
+        final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo("User already exists.");
+        verify(repository).findById(givenId);
+        verify(repository).existsByEmail(updateUserRequest.email());
+        verifyNoInteractions(mapper);
+    }
+
 }
