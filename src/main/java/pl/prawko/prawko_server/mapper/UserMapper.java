@@ -48,11 +48,11 @@ public class UserMapper {
     }
 
     @NonNull
-    public UserDto toDto(@NonNull final User user){
+    public UserDto toDto(@NonNull final User user) {
         return new UserDto(
-          user.getId(),
-          user.getFirstName(),
-          user.getLastName(),
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
                 user.getUserName(),
                 user.getEmail()
         );
