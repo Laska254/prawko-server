@@ -7,20 +7,24 @@ import org.springframework.lang.Nullable;
 public record UserUpdateRequest(
 
         @Nullable
+        @Size(min = 3, message = "First name is too short.")
         @Size(max = 31, message = "First name is too long.")
         String firstName,
 
         @Nullable
+        @Size(min = 3, message = "Last name is too short.")
         @Size(max = 31, message = "Last name is too long.")
         String lastName,
 
         @Nullable
-        @Size(min = 3, max = 31, message = "Username must be between 3 and 31 characters.")
+        @Size(min = 3, message = "Username is too short, must be longer than 3 characters.")
+        @Size(max = 31, message = "Username is too long, must be shorter than 31 characters.")
         String userName,
 
         @Nullable
-        @Size(max = 63, message = "Email is too long.")
-        @Email(message = "Email should be valid.")
+        @Size(min = 5, message = "Email is too short, must be longer than 5 characters.")
+        @Size(max = 63, message = "Email is too long, must be shorter than 63 characters.")
+        @Email(message = "Email format is not valid.")
         String email
 
 ) {
