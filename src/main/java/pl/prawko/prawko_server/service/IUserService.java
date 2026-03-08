@@ -3,9 +3,11 @@ package pl.prawko.prawko_server.service;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.User;
 
-import java.util.Optional;
+import java.util.List;
 
 /**
  * Service interface for managing {@link User} entities.
@@ -16,8 +18,9 @@ public interface IUserService {
      * Register new {@link User} using {@link RegisterDto}.
      *
      * @param dto DTO containing registration details
+     * @return created {@link User}
      */
-    void register(@NonNull RegisterDto dto);
+    long register(@NonNull RegisterDto dto);
 
     /**
      * Checks if there is a {@link User} with same {@code userName} or {@code email}.
@@ -40,8 +43,38 @@ public interface IUserService {
      * Get {@code user} by {@code id}.
      *
      * @param userId provided id
-     * @return an {@code user}
+     * @return an {@link User}
      */
-    Optional<User> getById(long userId);
+    User getById(long userId);
+
+    /**
+     * Find {@code user} by {@code id}.
+     *
+     * @param userId provided id
+     * @return an {@link UserDto}
+     */
+    UserDto getUserDtoById(long userId);
+
+    /**
+     * Find all users across application.
+     *
+     * @return list of all users
+     */
+    List<UserDto> getAllUsers();
+
+    /**
+     * Updates user with new details.
+     *
+     * @param userId        provided id of user to update
+     * @param updateRequest request that contain new details of user
+     */
+    UserDto updateUser(long userId, @NonNull UserUpdateRequest updateRequest);
+
+    /**
+     * Deletes an {@code user}.
+     *
+     * @param userId provided id
+     */
+    void deleteUser(long userId);
 
 }

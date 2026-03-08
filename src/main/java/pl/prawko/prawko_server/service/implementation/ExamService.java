@@ -83,10 +83,8 @@ public class ExamService implements IExamService {
     @Transactional
     public Optional<Exam> createExam(final long userId, @NonNull final String categoryName) {
         log.info("Creating exam for user '{}' and category '{}'", userId, categoryName);
-        final var user = userService.getById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User with id" + userId + " not found."));
-        final var category = categoryService.findByName(categoryName)
-                .orElseThrow(() -> new EntityNotFoundException("Category with name " + categoryName + " not found."));
+        final var user = userService.getById(userId);
+        final var category = categoryService.findByName(categoryName);
         final var questions = Stream.of(
                         generateQuestions(category, QuestionType.BASIC),
                         generateQuestions(category, QuestionType.SPECIAL))

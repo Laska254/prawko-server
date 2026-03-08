@@ -31,8 +31,8 @@ public class ExceptionController {
      */
     @ExceptionHandler(MissingServletRequestPartException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse handleMissingFile(final MissingServletRequestPartException exception) {
-        return new ApiResponse("Required part 'file' is not present.");
+    public ApiResponse<Void> handleMissingFile(final MissingServletRequestPartException exception) {
+        return new ApiResponse<>("Required part 'file' is not present.");
     }
 
     /**
@@ -43,8 +43,8 @@ public class ExceptionController {
      */
     @ExceptionHandler(MultipartException.class)
     @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-    public ApiResponse handleWrongFileType(final MultipartException exception) {
-        return new ApiResponse(exception.getMessage());
+    public ApiResponse<Void> handleWrongFileType(final MultipartException exception) {
+        return new ApiResponse<>(exception.getMessage());
     }
 
     /**
@@ -55,8 +55,8 @@ public class ExceptionController {
      */
     @ExceptionHandler(AlreadyExistsException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ApiResponse handleAlreadyExists(final AlreadyExistsException exception) {
-        return new ApiResponse(exception.getMessage(), exception.getDetails());
+    public ApiResponse<Map<String, String>> handleAlreadyExists(final AlreadyExistsException exception) {
+        return new ApiResponse<>(exception.getMessage(), exception.getDetails());
     }
 
     /**
@@ -67,8 +67,8 @@ public class ExceptionController {
      */
     @ExceptionHandler(EntityNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ApiResponse handleEntityNotFound(final EntityNotFoundException exception) {
-        return new ApiResponse(exception.getMessage());
+    public ApiResponse<Void> handleEntityNotFound(final EntityNotFoundException exception) {
+        return new ApiResponse<>(exception.getMessage());
     }
 
     /**
@@ -79,11 +79,11 @@ public class ExceptionController {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse handleInvalidDto(final MethodArgumentNotValidException exception) {
+    public ApiResponse<Map<String, String>> handleInvalidDto(final MethodArgumentNotValidException exception) {
         final Map<String, String> errors = new HashMap<>();
         exception.getBindingResult().getFieldErrors().forEach(error ->
                 errors.put(error.getField(), error.getDefaultMessage()));
-        return new ApiResponse("Validation for request failed.", errors);
+        return new ApiResponse<>("Validation for request failed.", errors);
     }
 
     /**
@@ -94,8 +94,8 @@ public class ExceptionController {
      */
     @ExceptionHandler(AuthenticationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse handleInvalidLoginRequest(final AuthenticationException exception) {
-        return new ApiResponse("Invalid login or password.");
+    public ApiResponse<Void> handleInvalidLoginRequest(final AuthenticationException exception) {
+        return new ApiResponse<>("Invalid login or password.");
     }
 
 }
