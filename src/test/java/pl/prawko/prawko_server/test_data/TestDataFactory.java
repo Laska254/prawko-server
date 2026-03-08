@@ -65,7 +65,7 @@ public class TestDataFactory {
 
     public UserDto createUpdatedUserDto() {
         return new UserDto(
-                44L,
+                1L,
                 "UpdatedFirstName",
                 "UpdatedLastName",
                 "UpdatedUserName",

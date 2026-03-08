@@ -18,8 +18,9 @@ public interface IUserService {
      * Register new {@link User} using {@link RegisterDto}.
      *
      * @param dto DTO containing registration details
+     * @return created {@link User}
      */
-    void register(@NonNull RegisterDto dto);
+    long register(@NonNull RegisterDto dto);
 
     /**
      * Checks if there is a {@link User} with same {@code userName} or {@code email}.

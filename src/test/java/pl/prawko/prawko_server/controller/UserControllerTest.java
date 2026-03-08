@@ -7,8 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
-import pl.prawko.prawko_server.dto.ApiResponse;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.model.ApiConstants;
 import pl.prawko.prawko_server.test_data.TestDataFactory;
 
 import java.util.Map;
@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @IntegrationTest
 public class UserControllerTest {
 
-    private static final String URL = "/users";
+    private static final String URL = ApiConstants.USERS_BASE_URL;
 
     @LocalServerPort
     private int port;
@@ -44,17 +44,15 @@ public class UserControllerTest {
 
     @Test
     void registerUser_success_whenDtoIsValid() {
-        final var expected = "User registered successfully.";
         final var dto = testDataFactory.createValidRegisterDto();
 
         final var response = restClient.post()
                 .uri(URL)
                 .body(dto)
                 .retrieve()
-                .toEntity(ApiResponse.class);
+                .toBodilessEntity();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody().message()).isEqualTo(expected);
     }
 
     @Test
@@ -102,7 +100,7 @@ public class UserControllerTest {
     void getUserById_returnUserDto_whenFound() {
         registerUser();
         final var response = restClient.get()
-                .uri(URL + "/{id}", 1L)
+                .uri(URL + ApiConstants.BY_ID, 1L)
                 .headers(TestUtils::authAdmin)
                 .retrieve()
                 .toEntity(UserDto.class);
@@ -116,7 +114,7 @@ public class UserControllerTest {
         final var nonExistentId = 666L;
 
         final var response = restClient.get()
-                .uri(URL + "/{id}", nonExistentId)
+                .uri(URL + ApiConstants.BY_ID, nonExistentId)
                 .headers(TestUtils::authAdmin)
                 .exchange((req, res) -> TestUtils.getResponseEntity(res));
 
@@ -128,32 +126,27 @@ public class UserControllerTest {
     void updateUser_returnOK_whenSuccess() {
         registerUser();
         final var updateUserRequest = testDataFactory.createValidUserUpdateRequest();
-        final var expectedDetails = Map.of(
-                "id", 1,
-                "firstName", "UpdatedFirstName",
-                "lastName", "UpdatedLastName",
-                "userName", "UpdatedUserName",
-                "email", "UpdatedEmail@shire.me"
-        );
+        final var expected = testDataFactory.createUpdatedUserDto();
 
         final var response = restClient.patch()
-                .uri(URL + "/{id}", 1L)
+                .uri(URL + ApiConstants.BY_ID, 1L)
                 .headers(TestUtils::authUser)
                 .body(updateUserRequest)
-                .exchange((req, res) -> TestUtils.getResponseEntity(res));
+                .retrieve()
+                .toEntity(UserDto.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().message()).isEqualTo("User updated successfully.");
-        assertThat(response.getBody().details()).isEqualTo(expectedDetails);
+        assertThat(response.getBody()).isEqualTo(expected);
     }
 
     @Test
     void deleteUser_returnNoContent_whenSuccess() {
         registerUser();
         final var response = restClient.delete()
-                .uri(URL + "/{id}", 1L)
+                .uri(URL + ApiConstants.BY_ID, 1L)
                 .headers(TestUtils::authAdmin)
-                .exchange((req, res) -> TestUtils.getResponseEntity(res));
+                .retrieve()
+                .toBodilessEntity();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }

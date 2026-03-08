@@ -56,12 +56,13 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Override
     @Transactional
-    public void register(@NonNull final RegisterDto dto) {
+    public long register(@NonNull final RegisterDto dto) {
         log.info("Attempting to register new user: {}", dto.userName());
         validateNoConflict(dto.userName(), dto.email());
         final var user = mapper.fromDto(dto);
         repository.save(user);
         log.info("User {} registered successfully.", user.getUserName());
+        return user.getId();
     }
 
     /**
