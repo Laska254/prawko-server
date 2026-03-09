@@ -29,7 +29,7 @@ public record RegisterDto(
 
         @NotBlank(message = "Password is required.")
         @Size(min = 7, message = "Password is too short, must be longer than 7 characters.")
-        @Size(max = 63, message = "Password must be shorter than 63 characters.")
+        @Size(max = 63, message = "Password is too long, must be shorter than 63 characters.")
         String password
 
 ) {

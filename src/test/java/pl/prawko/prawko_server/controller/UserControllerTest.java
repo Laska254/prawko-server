@@ -62,9 +62,9 @@ public class UserControllerTest {
         final var errorDetails = Map.of(
                 "firstName", "First name is too long.",
                 "lastName", "Last name is required.",
-                "userName", "Username must be between 3 and 31 characters.",
-                "email", "Email should be valid.",
-                "password", "Password must be between 7 and 63 characters."
+                "userName", "Username is too short, must be longer than 3 characters.",
+                "email", "Email format is not valid.",
+                "password", "Password is too short, must be longer than 7 characters."
         );
 
         final var response = restClient.post()
