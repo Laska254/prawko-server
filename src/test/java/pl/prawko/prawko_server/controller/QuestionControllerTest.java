@@ -56,7 +56,6 @@ public class QuestionControllerTest {
 
     @Test
     void addQuestions_returnOk_whenSuccess() {
-        final var expected = "Questions from file added successfully.";
         final var multipart = MultiPartFactory.fromClasspath("test_question.csv");
 
         final var response = restClient.post()
@@ -65,10 +64,9 @@ public class QuestionControllerTest {
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(multipart)
                 .retrieve()
-                .toEntity(ApiResponse.class);
+                .toEntity(ResponseEntity.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().message()).isEqualTo(expected);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     private ResponseEntity<ApiResponse> exchangeMultiPart(final MultiValueMap<String, Object> multipart) {

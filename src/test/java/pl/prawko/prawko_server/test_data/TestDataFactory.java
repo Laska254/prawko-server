@@ -97,7 +97,7 @@ public class TestDataFactory {
     public RegisterDto createInvalidRegisterDto() {
         return new RegisterDto(
                 "Supercalifragilisticexpialidocious",
-                " ",
+                null,
                 "OK",
                 "notValidMail@mail@mail",
                 "lembas");
