@@ -6,7 +6,6 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
-import pl.prawko.prawko_server.dto.ApiResponse;
 import pl.prawko.prawko_server.test_data.TestDataFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,10 +39,10 @@ public class AuthControllerTest {
                 .uri(URL)
                 .body(request)
                 .retrieve()
-                .toEntity(ApiResponse.class);
+                .toEntity(String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().message()).isEqualTo(message);
+        assertThat(response.getBody()).isEqualTo(message);
     }
 
     @Test
