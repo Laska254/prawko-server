@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -81,7 +80,7 @@ public class ExamService implements IExamService {
      */
     @Override
     @Transactional
-    public Optional<Exam> createExam(final long userId, @NonNull final String categoryName) {
+    public long createExam(final long userId, @NonNull final String categoryName) {
         log.info("Creating exam for user '{}' and category '{}'", userId, categoryName);
         final var user = userService.getById(userId);
         final var category = categoryService.findByName(categoryName);
@@ -100,7 +99,7 @@ public class ExamService implements IExamService {
         user.getExams().add(exam);
         repository.save(exam);
         log.info("Created exam for user '{}'", user.getUserName());
-        return Optional.of(exam);
+        return exam.getId();
     }
 
     @Nullable

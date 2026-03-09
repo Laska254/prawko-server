@@ -5,8 +5,6 @@ import org.springframework.lang.Nullable;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.model.Exam;
 
-import java.util.Optional;
-
 /**
  * Interface to manage {@link Exam} entities.
  */
@@ -19,7 +17,7 @@ public interface IExamService {
      * @param categoryName category used to construct an exam
      * @return a correctly generated {@code exam}
      */
-    Optional<Exam> createExam(long userId, @NonNull String categoryName);
+    long createExam(long userId, @NonNull String categoryName);
 
     /**
      * Finds a {@link Exam} entity by its id and map it to {@link ExamDto}.
