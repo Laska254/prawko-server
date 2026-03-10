@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.RestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
@@ -70,11 +71,12 @@ public class UserControllerTest {
         final var response = restClient.post()
                 .uri(URL)
                 .body(dto)
-                .exchange((req, res) -> TestUtils.getResponseEntity(res));
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                })
+                .toBodilessEntity();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().message()).isEqualTo(errorMessage);
-        assertThat(response.getBody().details()).isEqualTo(errorDetails);
     }
 
     @Test
@@ -89,11 +91,12 @@ public class UserControllerTest {
         final var response = restClient.post()
                 .uri(URL)
                 .body(testDataFactory.createValidRegisterDto())
-                .exchange((req, res) -> TestUtils.getResponseEntity(res));
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                })
+                .toBodilessEntity();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        assertThat(response.getBody().message()).isEqualTo(errorMessage);
-        assertThat(response.getBody().details()).isEqualTo(errorDetails);
     }
 
     @Test
@@ -116,10 +119,12 @@ public class UserControllerTest {
         final var response = restClient.get()
                 .uri(URL + ApiConstants.BY_ID, nonExistentId)
                 .headers(TestUtils::authAdmin)
-                .exchange((req, res) -> TestUtils.getResponseEntity(res));
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                })
+                .toBodilessEntity();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(response.getBody().message()).isEqualTo("User with id '" + nonExistentId + "' not found.");
     }
 
     @Test

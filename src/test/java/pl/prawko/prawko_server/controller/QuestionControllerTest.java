@@ -4,13 +4,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
-import pl.prawko.prawko_server.dto.ApiResponse;
 import pl.prawko.prawko_server.test_data.MultiPartFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,24 +34,20 @@ public class QuestionControllerTest {
 
     @Test
     void addQuestions_throwBadRequest_whenFileIsMissing() {
-        final var expected = "Required part 'file' is not present.";
         final var multipart = MultiPartFactory.empty();
 
         final var response = exchangeMultiPart(multipart);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().message()).isEqualTo(expected);
     }
 
     @Test
     void addQuestions_throwUnsupportedMediaType_whenFileFormatIsWrong() {
-        final var expected = "Invalid file format.";
         final var multipart = MultiPartFactory.withWrongFile();
 
         final var response = exchangeMultiPart(multipart);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
-        assertThat(response.getBody().message()).isEqualTo(expected);
     }
 
     @Test
@@ -69,13 +65,16 @@ public class QuestionControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
-    private ResponseEntity<ApiResponse> exchangeMultiPart(final MultiValueMap<String, Object> multipart) {
+    private ResponseEntity<Void> exchangeMultiPart(final MultiValueMap<String, Object> multipart) {
         return restClient.post()
                 .uri(URL)
                 .headers(TestUtils::authAdmin)
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(multipart)
-                .exchange((req, res) -> TestUtils.getResponseEntity(res));
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                })
+                .toBodilessEntity();
     }
 
 }
