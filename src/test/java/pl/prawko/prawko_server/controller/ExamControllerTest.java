@@ -11,7 +11,6 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.web.client.RestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
-import pl.prawko.prawko_server.dto.ApiResponse;
 import pl.prawko.prawko_server.dto.CreateExamDto;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
@@ -60,10 +59,9 @@ public class ExamControllerTest {
                 .headers(TestUtils::authUser)
                 .body(dto)
                 .retrieve()
-                .toEntity(ApiResponse.class);
+                .toBodilessEntity();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody().message()).isEqualTo("Exam successfully created.");
     }
 
     @Test

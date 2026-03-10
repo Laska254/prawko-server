@@ -36,7 +36,7 @@ class CategoryServiceTest {
 
         final var result = service.findByName(name);
 
-        assertThat(result).hasValue(expected);
+        assertThat(result).isEqualTo(expected);
     }
 
     @Test

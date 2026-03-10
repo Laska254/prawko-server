@@ -4,14 +4,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.RestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
-import pl.prawko.prawko_server.dto.ApiResponse;
 import pl.prawko.prawko_server.test_data.TestDataFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static pl.prawko.prawko_server.config.TestUtils.BASE_URL;
-import static pl.prawko.prawko_server.config.TestUtils.getResponseEntity;
 
 @IntegrationTest
 public class AuthControllerTest {
@@ -40,23 +39,24 @@ public class AuthControllerTest {
                 .uri(URL)
                 .body(request)
                 .retrieve()
-                .toEntity(ApiResponse.class);
+                .toEntity(String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().message()).isEqualTo(message);
+        assertThat(response.getBody()).isEqualTo(message);
     }
 
     @Test
     void login_returnsUnauthorized_whenCredentialsInvalid() {
         final var request = testDataFactory.createInvalidLoginRequest();
-        final var message = "Invalid login or password.";
         final var response = restClient.post()
                 .uri(URL)
                 .body(request)
-                .exchange((req, res) -> getResponseEntity(res));
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                })
+                .toBodilessEntity();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().message()).isEqualTo(message);
     }
 
 }

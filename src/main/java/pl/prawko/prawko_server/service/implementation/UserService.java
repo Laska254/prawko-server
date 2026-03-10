@@ -13,6 +13,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.Role;
@@ -21,7 +23,8 @@ import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IUserService;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -53,22 +56,13 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Override
     @Transactional
-    public void register(@NonNull final RegisterDto dto) {
+    public long register(@NonNull final RegisterDto dto) {
         log.info("Attempting to register new user: {}", dto.userName());
-        final Map<String, String> errorDetails = new LinkedHashMap<>();
-        if (repository.existsByUserName(dto.userName())) {
-            errorDetails.put("userName", "User with username '" + dto.userName() + "' already exists.");
-        }
-        if (repository.existsByEmail(dto.email())) {
-            errorDetails.put("email", "User with email '" + dto.email() + "' already exists.");
-        }
-        if (!errorDetails.isEmpty()) {
-            log.warn("Registration failed: {}", errorDetails);
-            throw new AlreadyExistsException("User already exists.", errorDetails);
-        }
+        validateNoConflict(dto.userName(), dto.email());
         final var user = mapper.fromDto(dto);
         repository.save(user);
         log.info("User {} registered successfully.", user.getUserName());
+        return user.getId();
     }
 
     /**
@@ -127,11 +121,20 @@ public class UserService implements IUserService, UserDetailsService {
         }
     }
 
-    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(@NonNull final Collection<Role> roles) {
-        log.debug("Mapping {} role(s) to authorities.", roles.size());
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
-                .toList();
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException if a user with provided id have not been found
+     */
+    @Override
+    public User getById(final long userId) {
+        log.info("Fetching user by id: {}", userId);
+        return repository.findById(userId)
+                .orElseThrow(() -> {
+                    final var message = "User with id '" + userId + "' not found.";
+                    log.warn(message);
+                    return new EntityNotFoundException(message);
+                });
     }
 
     /**
@@ -140,13 +143,68 @@ public class UserService implements IUserService, UserDetailsService {
      * @throws EntityNotFoundException if a user with provided id have not been found
      */
     @Override
-    public Optional<User> getById(final long userId) {
-        log.info("Fetching user by id: {}", userId);
-        final Optional<User> user = repository.findById(userId);
-        if (user.isEmpty()) {
-            log.warn("User with id {} not found.", userId);
+    public UserDto getUserDtoById(final long userId) {
+        log.info("Fetching userDto by id: {}", userId);
+        return mapper.toDto(getById(userId));
+    }
+
+    @Override
+    public List<UserDto> getAllUsers() {
+        return repository.findAll().stream()
+                .map(mapper::toDto)
+                .toList();
+    }
+
+    @Transactional
+    @Override
+    public UserDto updateUser(long userId, @NonNull final UserUpdateRequest updateRequest) {
+        log.info("Updating user with id '{}' using: {}", userId, updateRequest);
+        final var user = getById(userId);
+        validateNoConflict(updateRequest.userName(), updateRequest.email());
+        Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
+        Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
+        Optional.ofNullable(updateRequest.userName()).ifPresent(user::setUserName);
+        Optional.ofNullable(updateRequest.email()).ifPresent(user::setEmail);
+        final var updated = repository.save(user);
+        log.info("Successfully updated user '{}'", user.getUserName());
+        return mapper.toDto(updated);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException if a user with provided id have not been found
+     */
+    @Transactional
+    @Override
+    public void deleteUser(final long userId) {
+        log.info("Deleting user with id: {}", userId);
+        final var user = getById(userId);
+        repository.delete(user);
+        log.info("Successfully deleted user '{}'", user.getUserName());
+    }
+
+    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(@NonNull final Collection<Role> roles) {
+        log.debug("Mapping {} role(s) to authorities.", roles.size());
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                .toList();
+    }
+
+    private void validateNoConflict(@Nullable final String userName, @Nullable final String email) {
+        log.debug("Checking if there is no other user with username '{}' or email '{}'", userName, email);
+        Map<String, String> errorDetails = new HashMap<>();
+        if (userName != null && repository.existsByUserName(userName)) {
+            errorDetails.put("userName", "User with username '" + userName + "' already exists.");
         }
-        return user;
+        if (email != null && repository.existsByEmail(email)) {
+            errorDetails.put("email", "User with email '" + email + "' already exists.");
+        }
+        if (!errorDetails.isEmpty()) {
+            final var message = "User already exists.";
+            log.warn(message + "{}", errorDetails);
+            throw new AlreadyExistsException(message, errorDetails);
+        }
     }
 
 }

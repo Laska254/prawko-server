@@ -1,10 +1,13 @@
 package pl.prawko.prawko_server.test_data;
 
+import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import pl.prawko.prawko_server.dto.AnswerDto;
 import pl.prawko.prawko_server.dto.AnswerTranslationDto;
 import pl.prawko.prawko_server.dto.LoginDto;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.AnswerTranslation;
 import pl.prawko.prawko_server.model.Exam;
@@ -30,18 +33,56 @@ public class TestDataFactory {
 
     private final Question question = createQuestion(QuestionType.SPECIAL);
 
-    public User createTestUser() {
+    public User createTestUser(@NonNull final String firstName,
+                               @NonNull final String lastName,
+                               @NonNull final String userName,
+                               @NonNull final String email) {
         return new User()
-                .setFirstName("Peregrin")
-                .setLastName("Tuk")
-                .setUserName("pippin")
-                .setEmail("pippin@shire.me")
+                .setFirstName(firstName)
+                .setLastName(lastName)
+                .setUserName(userName)
+                .setEmail(email)
                 .setPassword(new BCryptPasswordEncoder().encode("lembasy"))
                 .setRoles(List.of(new Role().setName("USER")))
                 .setEnabled(true)
                 .setCreated(LocalDateTime.now())
                 .setUpdated(LocalDateTime.now())
                 .setExams(new ArrayList<>());
+    }
+
+    public User createTestUserPippin() {
+        return createTestUser("Peregrin", "Tuk", "pippin", "pippin@shire.me");
+    }
+
+    public UserDto createUserDto() {
+        return new UserDto(
+                44L,
+                "Peregrin",
+                "Tuk",
+                "pippin",
+                "pippin@shire.me");
+    }
+
+    public UserDto createUpdatedUserDto() {
+        return new UserDto(
+                1L,
+                "UpdatedFirstName",
+                "UpdatedLastName",
+                "UpdatedUserName",
+                "UpdatedEmail@shire.me"
+        );
+    }
+
+    public UserUpdateRequest createValidUserUpdateRequest() {
+        return new UserUpdateRequest(
+                "UpdatedFirstName",
+                "UpdatedLastName",
+                "UpdatedUserName",
+                "UpdatedEmail@shire.me");
+    }
+
+    public UserUpdateRequest createInvalidUserUpdateRequest() {
+        return new UserUpdateRequest(null, null, "pippin", "pippin@shire.me");
     }
 
     public RegisterDto createValidRegisterDto() {
@@ -56,7 +97,7 @@ public class TestDataFactory {
     public RegisterDto createInvalidRegisterDto() {
         return new RegisterDto(
                 "Supercalifragilisticexpialidocious",
-                " ",
+                null,
                 "OK",
                 "notValidMail@mail@mail",
                 "lembas");

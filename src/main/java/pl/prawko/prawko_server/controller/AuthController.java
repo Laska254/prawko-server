@@ -1,7 +1,10 @@
 package pl.prawko.prawko_server.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -9,18 +12,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import pl.prawko.prawko_server.dto.ApiResponse;
 import pl.prawko.prawko_server.dto.LoginDto;
+import pl.prawko.prawko_server.model.ApiConstants;
 
-/**
- * REST controller to authenticate users using {@link LoginDto}.
- * <p>
- * Mapped on {@code /auth}
- */
+@Tag(name = "Auth", description = "Authentication management endpoints")
 @RestController
-@RequestMapping("/auth")
+@RequestMapping(ApiConstants.AUTH_BASE_URL)
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -29,21 +27,16 @@ public class AuthController {
         this.authenticationManager = authenticationManager;
     }
 
-    /**
-     * Method to authorize user using {@link LoginDto} via POST.
-     *
-     * @param request request with login and password
-     * @return success when user is authorized
-     */
+    @Operation(summary = "Sign-in")
+    @ApiResponse(responseCode = "200", description = "User signed-in")
     @PostMapping
-    @ResponseStatus(HttpStatus.OK)
-    public ApiResponse login(@Valid @RequestBody final LoginDto request) {
+    public ResponseEntity<String> login(@Valid @RequestBody final LoginDto request) {
         final Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 request.userName(),
                 request.password()
         ));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        return new ApiResponse("User signed-in successfully.");
+        return ResponseEntity.ok("User signed-in successfully.");
     }
 
 }

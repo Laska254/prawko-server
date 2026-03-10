@@ -4,6 +4,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.service.implementation.RoleService;
 
@@ -44,6 +45,17 @@ public class UserMapper {
                 .setPassword(passwordEncoder.encode(dto.password()))
                 .setRoles(List.of(roleService.getByName("USER")))
                 .setEnabled(true);
+    }
+
+    @NonNull
+    public UserDto toDto(@NonNull final User user) {
+        return new UserDto(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getUserName(),
+                user.getEmail()
+        );
     }
 
 }
