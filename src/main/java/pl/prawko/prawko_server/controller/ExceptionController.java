@@ -63,10 +63,12 @@ public class ExceptionController {
                         ));
     }
 
-    @ApiResponse(responseCode = "400", description = "Authentication failed")
+    @ApiResponse(responseCode = "401", description = "Authentication failed")
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<String> handleInvalidLoginRequest(final AuthenticationException exception) {
-        return ResponseEntity.badRequest().body(exception.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(exception.getMessage());
     }
 
 }

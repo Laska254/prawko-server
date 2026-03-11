@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.constants.AuthConstants;
 import pl.prawko.prawko_server.dto.LoginDto;
 
 @Tag(name = "Auth", description = "Authentication management endpoints")
@@ -36,7 +37,7 @@ public class AuthController {
                 request.password()
         ));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        return ResponseEntity.ok("User signed-in successfully.");
+        return ResponseEntity.ok(AuthConstants.LOGIN_SUCCESS_MESSAGE);
     }
 
 }
