@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.LoginDto;
-import pl.prawko.prawko_server.model.ApiConstants;
 
 @Tag(name = "Auth", description = "Authentication management endpoints")
 @RestController

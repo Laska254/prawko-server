@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.RestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
+import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.test_data.TestDataFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,8 +15,6 @@ import static pl.prawko.prawko_server.config.TestUtils.BASE_URL;
 
 @IntegrationTest
 public class AuthControllerTest {
-
-    private static final String URL = "/auth";
 
     @LocalServerPort
     private int port;
@@ -36,7 +35,7 @@ public class AuthControllerTest {
         final var request = testDataFactory.createValidLoginRequest();
         final var message = "User signed-in successfully.";
         final var response = restClient.post()
-                .uri(URL)
+                .uri(ApiConstants.AUTH_BASE_URL)
                 .body(request)
                 .retrieve()
                 .toEntity(String.class);
@@ -49,7 +48,7 @@ public class AuthControllerTest {
     void login_returnsUnauthorized_whenCredentialsInvalid() {
         final var request = testDataFactory.createInvalidLoginRequest();
         final var response = restClient.post()
-                .uri(URL)
+                .uri(ApiConstants.AUTH_BASE_URL)
                 .body(request)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (req, res) -> {

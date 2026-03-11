@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.RestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
+import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.UserDto;
-import pl.prawko.prawko_server.model.ApiConstants;
 import pl.prawko.prawko_server.test_data.TestDataFactory;
 
 import java.util.Map;
