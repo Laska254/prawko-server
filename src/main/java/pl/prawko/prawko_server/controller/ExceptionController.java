@@ -44,8 +44,10 @@ public class ExceptionController {
 
     @ApiResponse(responseCode = "404", description = "Entity not found")
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<String> handleEntityNotFound() {
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<String> handleEntityNotFound(final EntityNotFoundException exception) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(exception.getMessage());
     }
 
     @ApiResponse(responseCode = "400", description = "Invalid argument")

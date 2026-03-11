@@ -239,25 +239,27 @@ public class TestDataFactory {
     }
 
     private List<Question> createBasicQuestions() {
-        final var question = new Question()
-                .setType(QuestionType.BASIC)
-                .setCategories(List.of(CategoryTestData.CATEGORY_B));
         return List.of(
-                question.setPoints(1),
-                question.setPoints(2),
-                question.setPoints(3)
+                createSimpleQuestion(1L, QuestionType.BASIC, 1),
+                createSimpleQuestion(2L, QuestionType.BASIC, 2),
+                createSimpleQuestion(3L, QuestionType.BASIC, 3)
         );
     }
 
     private List<Question> createSpecialQuestions() {
-        final var question = new Question()
-                .setType(QuestionType.SPECIAL)
-                .setCategories(List.of(CategoryTestData.CATEGORY_B));
         return List.of(
-                question.setPoints(1),
-                question.setPoints(2),
-                question.setPoints(3)
+                createSimpleQuestion(4L, QuestionType.SPECIAL, 1),
+                createSimpleQuestion(5L, QuestionType.SPECIAL, 2),
+                createSimpleQuestion(6L, QuestionType.SPECIAL, 3)
         );
+    }
+
+    private Question createSimpleQuestion(final long id, final QuestionType type, final int points) {
+        return new Question()
+                .setType(type)
+                .setCategories(List.of(CategoryTestData.CATEGORY_B))
+                .setId(id)
+                .setPoints(points);
     }
 
     public Exam createExam(final User user) {
