@@ -98,10 +98,13 @@ public class ExamControllerTest {
                 .uri(ApiConstants.EXAMS_BASE_URL + ApiConstants.BY_ID, exam.getId())
                 .headers(TestUtils::authUser)
                 .retrieve()
-                .body(ExamDto.class);
+                .toEntity(ExamDto.class);
+        final var body = response.getBody();
 
-        assertThat(response.userId()).isEqualTo(exam.getUser().getId());
-        assertThat(response.id()).isEqualTo(exam.getId());
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(body.userId()).isEqualTo(exam.getUser().getId());
+        assertThat(body.id()).isEqualTo(exam.getId());
+        //TODO add createExamDto to factory and check if object is equals
     }
 
     @Test
