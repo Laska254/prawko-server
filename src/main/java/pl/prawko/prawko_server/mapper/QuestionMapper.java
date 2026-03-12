@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.mapper;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import pl.prawko.prawko_server.dto.QuestionDto;
+import pl.prawko.prawko_server.dto.QuestionTranslationDto;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Language;
@@ -77,6 +78,9 @@ public class QuestionMapper {
         final var categories = question.getCategories().stream()
                 .map(Category::getName)
                 .toList();
+        final var translations = question.getTranslations().stream()
+                .map(t -> new QuestionTranslationDto(t.getContent(), t.getLanguage().getCode()))
+                .toList();
         return new QuestionDto(
                 question.getId(),
                 question.getName(),
@@ -85,7 +89,7 @@ public class QuestionMapper {
                 question.getType(),
                 question.getPoints(),
                 categories,
-                question.getTranslations());
+                translations);
     }
 
     /**
