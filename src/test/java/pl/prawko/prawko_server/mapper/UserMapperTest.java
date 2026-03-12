@@ -49,7 +49,7 @@ class UserMapperTest {
 
     @Test
     void toDto_correctlyMapUser() {
-        final var user = tester.setId(44L);
+        final var user = tester.setId(1L);
         final var expected = testDataFactory.createUserDto();
 
         final var result = mapper.toDto(user);

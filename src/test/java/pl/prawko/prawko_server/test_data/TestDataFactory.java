@@ -56,7 +56,7 @@ public class TestDataFactory {
 
     public UserDto createUserDto() {
         return new UserDto(
-                44L,
+                1L,
                 "Peregrin",
                 "Tuk",
                 "pippin",
@@ -82,7 +82,7 @@ public class TestDataFactory {
     }
 
     public UserUpdateRequest createInvalidUserUpdateRequest() {
-        return new UserUpdateRequest(null, null, "pippin", "pippin@shire.me");
+        return new UserUpdateRequest("", "", "gimli", "gimli.shire.me");
     }
 
     public RegisterDto createValidRegisterDto() {

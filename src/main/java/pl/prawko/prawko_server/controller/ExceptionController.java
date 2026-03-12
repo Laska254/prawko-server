@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.controller;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
@@ -39,7 +40,11 @@ public class ExceptionController {
     public ResponseEntity<Map<String, Object>> handleAlreadyExists(final AlreadyExistsException exception) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(Map.of(exception.getMessage(), exception.getDetails()));
+                .body(
+                        Map.of(
+                                "message", exception.getMessage(),
+                                "details", exception.getDetails()
+                        ));
     }
 
     @ApiResponse(responseCode = "404", description = "Entity not found")
@@ -70,6 +75,14 @@ public class ExceptionController {
     public ResponseEntity<String> handleInvalidLoginRequest(final AuthenticationException exception) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
+                .body(exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "400", description = "ID is negative or zero")
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<String> handleNotPositiveID(final ConstraintViolationException exception) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
                 .body(exception.getMessage());
     }
 
