@@ -77,8 +77,14 @@ Application has Swagger so you can test out REST API via `/swagger-ui/index.html
 
 * `/questions`
     + `POST` upload csv file with questions
+    + `GET` get all questions
+    + `GET /{id}` get question
 * `/users`
     + `POST` register new user
+    + `GET /{id}` get a user
+    + `GET` get all users
+    + `PATCH /{id}` update a user
+    + `DELETE /{id}` delete a user
 * `/exams`
     + `POST` create new exam
-    + `GET` get an exam
+    + `GET /{id}` get an exam
