@@ -4,7 +4,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import pl.prawko.prawko_server.dto.AnswerDto;
 import pl.prawko.prawko_server.dto.AnswerTranslationDto;
-import pl.prawko.prawko_server.dto.LoginDto;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
@@ -101,14 +100,6 @@ public class TestDataFactory {
                 "OK",
                 "notValidMail@mail@mail",
                 "lembas");
-    }
-
-    public LoginDto createValidLoginRequest() {
-        return new LoginDto("pippin", "lembasy");
-    }
-
-    public LoginDto createInvalidLoginRequest() {
-        return new LoginDto("wrongUser", "wrongPassword");
     }
 
     public Question createQuestion(final QuestionType type) {
