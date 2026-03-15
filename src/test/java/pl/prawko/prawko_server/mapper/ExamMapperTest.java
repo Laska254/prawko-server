@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.test_data.TestDataFactory;
+import pl.prawko.prawko_server.test_data.UserTestDataBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -23,10 +24,11 @@ class ExamMapperTest {
     private ExamMapper examMapper;
 
     private final TestDataFactory factory = new TestDataFactory();
+    private final UserTestDataBuilder testDataBuilder = new UserTestDataBuilder();
 
     @Test
     void toDto_correctlyMapsExam() {
-        final var user = factory.createTestUserPippin().setId(1L);
+        final var user = testDataBuilder.createTestUserPippin().setId(1L);
         final var exam = factory.createExam(user);
         final var expectedDto = factory.createExamDto(exam);
 

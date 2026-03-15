@@ -14,7 +14,7 @@ import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.UserService;
-import pl.prawko.prawko_server.test_data.TestDataFactory;
+import pl.prawko.prawko_server.test_data.UserTestDataBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -48,9 +48,9 @@ class UserServiceTest {
     @InjectMocks
     private UserService service;
 
-    private final TestDataFactory testDataFactory = new TestDataFactory();
-    private final RegisterDto registerDto = testDataFactory.createValidRegisterDto();
-    private final User tester = testDataFactory.createTestUserPippin();
+    private final UserTestDataBuilder testDataBuilder = new UserTestDataBuilder();
+    private final RegisterDto registerDto = testDataBuilder.createValidRegisterDto();
+    private final User tester = testDataBuilder.createTestUserPippin();
 
     @Test
     void register_success_whenUserNotExists() {
@@ -166,7 +166,7 @@ class UserServiceTest {
     @Test
     void getUserDtoById_returnUserDto_whenFound() {
         final var given = 44L;
-        final var expectedDto = testDataFactory.createUserDto();
+        final var expectedDto = testDataBuilder.createUserDto();
         when(repository.findById(given)).thenReturn(Optional.of(tester));
         when(mapper.toDto(tester)).thenReturn(expectedDto);
 
@@ -194,9 +194,9 @@ class UserServiceTest {
 
     @Test
     void getAllUsers_returnListOfUsers_whenFound() {
-        final var tester2 = testDataFactory.createTestUser("Meriadok", "Brandybuck", "Merry", "merry@shire.me");
+        final var tester2 = testDataBuilder.createTestUser("Meriadok", "Brandybuck", "Merry", "merry@shire.me");
         final var users = List.of(tester, tester2);
-        final var pippinDto = testDataFactory.createUserDto();
+        final var pippinDto = testDataBuilder.createUserDto();
         final var merryDto = new UserDto(45L, "Meriadok", "Brandybuck", "Merry", "merry@shire.me");
         final var expected = List.of(pippinDto, merryDto);
         when(repository.findAll()).thenReturn(users);
@@ -215,8 +215,8 @@ class UserServiceTest {
     @Test
     void updateUser_returnUpdatedUser_whenSuccess() {
         final var givenId = 44L;
-        final var updateUserRequest = testDataFactory.createValidUserUpdateRequest();
-        final var updatedUserDto = testDataFactory.createUpdatedUserDto();
+        final var updateUserRequest = testDataBuilder.createValidUserUpdateRequest();
+        final var updatedUserDto = testDataBuilder.createUpdatedUserDto();
         final var user = tester;
         when(repository.findById(givenId)).thenReturn(Optional.of(user));
         when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(false);
@@ -238,7 +238,7 @@ class UserServiceTest {
     @Test
     void updateUser_throwException_whenUserNameAlreadyExists() {
         final var givenId = 44L;
-        final var updateUserRequest = testDataFactory.createInvalidUserUpdateRequest();
+        final var updateUserRequest = testDataBuilder.createInvalidUserUpdateRequest();
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(true);
 
@@ -254,7 +254,7 @@ class UserServiceTest {
     @Test
     void updateUser_throwException_whenEmailAlreadyExists() {
         final var givenId = 44L;
-        final var updateUserRequest = testDataFactory.createInvalidUserUpdateRequest();
+        final var updateUserRequest = testDataBuilder.createInvalidUserUpdateRequest();
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.existsByEmail(updateUserRequest.email())).thenReturn(true);
 

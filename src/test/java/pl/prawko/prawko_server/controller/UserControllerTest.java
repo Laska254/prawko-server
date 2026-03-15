@@ -15,6 +15,7 @@ import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.TestDataFactory;
+import pl.prawko.prawko_server.test_data.UserTestDataBuilder;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +35,8 @@ public class UserControllerTest {
     private RestTestClient restClient;
 
     private final TestDataFactory testDataFactory = new TestDataFactory();
-    private final RegisterDto registerDto = testDataFactory.createValidRegisterDto();
+    private final UserTestDataBuilder testDataBuilder = new UserTestDataBuilder();
+    private final RegisterDto registerDto = testDataBuilder.createValidRegisterDto();
 
     @BeforeEach
     void setUp() {
@@ -136,7 +138,7 @@ public class UserControllerTest {
         @Test
         void returnUserDto_whenFound() {
             registerUser();
-            final var expectedUserDto = testDataFactory.createUserDto();
+            final var expectedUserDto = testDataBuilder.createUserDto();
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, 1L)
@@ -201,7 +203,7 @@ public class UserControllerTest {
         @Test
         void returnList_whenUsersExist() {
             registerUser();
-            final var expectedUserDto = testDataFactory.createUserDto();
+            final var expectedUserDto = testDataBuilder.createUserDto();
             final var expected = List.of(expectedUserDto);
 
             restClient.get()
@@ -236,8 +238,8 @@ public class UserControllerTest {
         @Test
         void success_whenDtoIsValid() {
             registerUser();
-            final var validDto = testDataFactory.createValidUserUpdateRequest();
-            final var expected = testDataFactory.createUpdatedUserDto();
+            final var validDto = testDataBuilder.createValidUserUpdateRequest();
+            final var expected = testDataBuilder.createUpdatedUserDto();
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)
@@ -250,7 +252,7 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenDtoIsInvalid() {
-            final var invalidUpdateRequest = testDataFactory.createInvalidUserUpdateRequest();
+            final var invalidUpdateRequest = testDataBuilder.createInvalidUserUpdateRequest();
             final var expected = Map.of(
                     "message", "Validation for request failed.",
                     "details", Map.of(
@@ -269,7 +271,7 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenIdIsNegative() {
-            final var validDto = testDataFactory.createValidUserUpdateRequest();
+            final var validDto = testDataBuilder.createValidUserUpdateRequest();
             final var expectedMessage = "ID must be greater than 0.";
 
             restClient.patch()
@@ -283,7 +285,7 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenIdIsZero() {
-            final var validDto = testDataFactory.createValidUserUpdateRequest();
+            final var validDto = testDataBuilder.createValidUserUpdateRequest();
             final var expectedMessage = "ID must be greater than 0.";
 
             restClient.patch()
@@ -298,7 +300,7 @@ public class UserControllerTest {
         @Test
         void returnNotFound_whenUserDoesNotExist() {
             final var nonExistentId = 666L;
-            final var validDto = testDataFactory.createValidUserUpdateRequest();
+            final var validDto = testDataBuilder.createValidUserUpdateRequest();
             final var expectedMessage = "User with id '" + nonExistentId + "' not found.";
 
             restClient.patch()
