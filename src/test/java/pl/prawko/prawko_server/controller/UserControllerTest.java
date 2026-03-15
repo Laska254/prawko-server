@@ -42,120 +42,10 @@ public class UserControllerTest {
     }
 
     @Nested
-    class WithRegisteredUser {
-
-        @BeforeEach
-        public void registerUser() {
-            restClient.post()
-                    .body(registerDto)
-                    .exchangeSuccessfully();
-        }
+    class RegisterUser {
 
         @Test
-        void registerUser_returnConflict_whenUserAlreadyExists() {
-            final var expected = Map.of(
-                    "message", "User already exists.",
-                    "details", Map.of(
-                            "email", "User with email 'pippin@shire.me' already exists.",
-                            "userName", "User with username 'pippin' already exists."));
-
-            restClient.post()
-                    .body(registerDto)
-                    .exchange()
-                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
-                    .expectBody(Map.class).isEqualTo(expected);
-        }
-
-        @Test
-        void getUserById_returnUserDto_whenFound() {
-            final var expectedUserDto = testDataFactory.createUserDto();
-
-            restClient.get()
-                    .uri(ApiConstants.BY_ID, 1L)
-                    .headers(TestUtils::authAdmin)
-                    .exchange()
-                    .expectStatus().isOk()
-                    .expectBody(UserDto.class).isEqualTo(expectedUserDto);
-        }
-
-        @Test
-        void getUserById_returnUnauthorized_whenNotAuthenticated() {
-            restClient.get()
-                    .uri(ApiConstants.BY_ID, 1L)
-                    .exchange()
-                    .expectStatus().isUnauthorized();
-        }
-
-        @Test
-        void getAllUsers_returnList_whenUsersExist() {
-            final var expectedUserDto = testDataFactory.createUserDto();
-            final var expected = List.of(expectedUserDto);
-
-            restClient.get()
-                    .headers(TestUtils::authAdmin)
-                    .exchange()
-                    .expectStatus().isOk()
-                    .expectBody(new ParameterizedTypeReference<List<UserDto>>() {
-                    }).isEqualTo(expected);
-        }
-
-        @Test
-        void updateUser_returnOK_whenSuccess() {
-            final var updateUserRequest = testDataFactory.createValidUserUpdateRequest();
-            final var expected = testDataFactory.createUpdatedUserDto();
-
-            restClient.patch()
-                    .uri(ApiConstants.BY_ID, 1L)
-                    .headers(TestUtils::authAdmin)
-                    .body(updateUserRequest)
-                    .exchange()
-                    .expectStatus().isOk()
-                    .expectBody(UserDto.class).isEqualTo(expected);
-        }
-
-        @Test
-        void updateUser_returnBadRequest_whenDtoIsInvalid() {
-            final var invalidUpdateRequest = testDataFactory.createInvalidUserUpdateRequest();
-            final var expected = Map.of(
-                    "message", "Validation for request failed.",
-                    "details", Map.of(
-                            "firstName", "First name is too short.",
-                            "lastName", "Last name is too short.",
-                            "email", "Email format is not valid."));
-
-            restClient.patch()
-                    .uri(ApiConstants.BY_ID, 1L)
-                    .headers(TestUtils::authUser)
-                    .body(invalidUpdateRequest)
-                    .exchange()
-                    .expectStatus().isBadRequest()
-                    .expectBody(Map.class).isEqualTo(expected);
-        }
-
-        @Test
-        void deleteUser_returnNoContent_whenSuccess() {
-            restClient.delete()
-                    .uri(ApiConstants.BY_ID, 1L)
-                    .headers(TestUtils::authAdmin)
-                    .exchange()
-                    .expectStatus().isNoContent();
-        }
-
-        @Test
-        void deleteUser_returnUnauthorized_whenNotAuthenticated() {
-            restClient.delete()
-                    .uri(ApiConstants.BY_ID, 1L)
-                    .exchange()
-                    .expectStatus().isUnauthorized();
-        }
-
-    }
-
-    @Nested
-    class WithoutRegisteredUser {
-
-        @Test
-        void registerUser_success_whenDtoIsValid() {
+        void success_whenDtoIsValid() {
             restClient.post()
                     .body(registerDto)
                     .exchange()
@@ -168,7 +58,7 @@ public class UserControllerTest {
         }
 
         @Test
-        void registerUser_returnBadRequest_whenDtoIsInvalid() {
+        void returnBadRequest_whenDtoIsInvalid() {
             final var invalidDto = new RegisterDto(
                     "Supercalifragilisticexpialidocious",
                     null,
@@ -192,7 +82,93 @@ public class UserControllerTest {
         }
 
         @Test
-        void getUserById_returnNotFound_whenUserDoesNotExist() {
+        void returnBadRequest_whenBodyIsMissing() {
+            final var expectedMessage = "Request body is missing.";
+
+            restClient.post()
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody(String.class).isEqualTo(expectedMessage);
+        }
+
+        @Test
+        void returnBadRequest_whenAllFieldsAreNull() {
+            registerUser();
+            final var invalidDto = new RegisterDto(null, null, null, null, null);
+            final var expected = Map.of(
+                    "message", "Validation for request failed.",
+                    "details", Map.of(
+                            "firstName", "First name is required.",
+                            "lastName", "Last name is required.",
+                            "userName", "Username is required.",
+                            "email", "Email is required.",
+                            "password", "Password is required.")
+            );
+
+            restClient.post()
+                    .body(invalidDto)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody(Map.class).isEqualTo(expected);
+        }
+
+        @Test
+        void returnConflict_whenUserAlreadyExists() {
+            registerUser();
+            final var expected = Map.of(
+                    "message", "User already exists.",
+                    "details", Map.of(
+                            "email", "User with email 'pippin@shire.me' already exists.",
+                            "userName", "User with username 'pippin' already exists."));
+
+            restClient.post()
+                    .body(registerDto)
+                    .exchange()
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody(Map.class).isEqualTo(expected);
+        }
+
+    }
+
+    @Nested
+    class GetUserById {
+
+        @Test
+        void returnUserDto_whenFound() {
+            registerUser();
+            final var expectedUserDto = testDataFactory.createUserDto();
+
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, 1L)
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserDto.class).isEqualTo(expectedUserDto);
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, 1L)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+
+        @Test
+        void returnBadRequest_whenIdIsZero() {
+            final var expectedMessage = "ID must be greater than 0.";
+
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, 0L)
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody(String.class).isEqualTo(expectedMessage);
+        }
+
+        @Test
+        void returnNotFound_whenUserDoesNotExist() {
             final var nonExistentId = 666L;
             final var expectedMessage = "User with id '" + nonExistentId + "' not found.";
 
@@ -205,7 +181,7 @@ public class UserControllerTest {
         }
 
         @Test
-        void getUserById_returnBadRequest_whenIdIsNegative() {
+        void returnBadRequest_whenIdIsNegative() {
             final var negativeId = -1L;
             final var expectedMessage = "ID must be greater than 0.";
 
@@ -217,8 +193,27 @@ public class UserControllerTest {
                     .expectBody(String.class).isEqualTo(expectedMessage);
         }
 
+    }
+
+    @Nested
+    class GetAllUsers {
+
         @Test
-        void getAllUsers_returnEmptyList_whenNoUsersExist() {
+        void returnList_whenUsersExist() {
+            registerUser();
+            final var expectedUserDto = testDataFactory.createUserDto();
+            final var expected = List.of(expectedUserDto);
+
+            restClient.get()
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(new ParameterizedTypeReference<List<UserDto>>() {
+                    }).isEqualTo(expected);
+        }
+
+        @Test
+        void returnEmptyList_whenNoUsersExist() {
             restClient.get()
                     .headers(TestUtils::authAdmin)
                     .exchange()
@@ -227,14 +222,81 @@ public class UserControllerTest {
         }
 
         @Test
-        void getAllUsers_returnUnauthorized_whenNotAuthenticated() {
+        void returnUnauthorized_whenNotAuthenticated() {
             restClient.get()
                     .exchange()
                     .expectStatus().isUnauthorized();
         }
 
+    }
+
+    @Nested
+    class UpdateUser {
+
         @Test
-        void updateUser_returnNotFound_whenUserDoesNotExist() {
+        void success_whenDtoIsValid() {
+            registerUser();
+            final var validDto = testDataFactory.createValidUserUpdateRequest();
+            final var expected = testDataFactory.createUpdatedUserDto();
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, 1L)
+                    .headers(TestUtils::authAdmin)
+                    .body(validDto)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserDto.class).isEqualTo(expected);
+        }
+
+        @Test
+        void returnBadRequest_whenDtoIsInvalid() {
+            final var invalidUpdateRequest = testDataFactory.createInvalidUserUpdateRequest();
+            final var expected = Map.of(
+                    "message", "Validation for request failed.",
+                    "details", Map.of(
+                            "firstName", "First name is too short.",
+                            "lastName", "Last name is too short.",
+                            "email", "Email format is not valid."));
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, 1L)
+                    .headers(TestUtils::authUser)
+                    .body(invalidUpdateRequest)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody(Map.class).isEqualTo(expected);
+        }
+
+        @Test
+        void returnBadRequest_whenIdIsNegative() {
+            final var validDto = testDataFactory.createValidUserUpdateRequest();
+            final var expectedMessage = "ID must be greater than 0.";
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, -1L)
+                    .headers(TestUtils::authUser)
+                    .body(validDto)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody(String.class).isEqualTo(expectedMessage);
+        }
+
+        @Test
+        void returnBadRequest_whenIdIsZero() {
+            final var validDto = testDataFactory.createValidUserUpdateRequest();
+            final var expectedMessage = "ID must be greater than 0.";
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, 0L)
+                    .headers(TestUtils::authUser)
+                    .body(validDto)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody(String.class).isEqualTo(expectedMessage);
+        }
+
+        @Test
+        void returnNotFound_whenUserDoesNotExist() {
             final var nonExistentId = 666L;
             final var validDto = testDataFactory.createValidUserUpdateRequest();
             final var expectedMessage = "User with id '" + nonExistentId + "' not found.";
@@ -249,15 +311,51 @@ public class UserControllerTest {
         }
 
         @Test
-        void updateUser_returnUnauthorized_whenNotAuthenticated() {
+        void returnBadRequest_whenBodyIsMissing() {
+            final var expectedMessage = "Request body is missing.";
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, 1L)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody(String.class).isEqualTo(expectedMessage);
+        }
+
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)
                     .exchange()
                     .expectStatus().isUnauthorized();
         }
 
+    }
+
+    @Nested
+    class DeleteUser {
+
         @Test
-        void deleteUser_returnNotFound_whenUserDoesNotExist() {
+        void returnNoContent_whenSuccess() {
+            registerUser();
+            restClient.delete()
+                    .uri(ApiConstants.BY_ID, 1L)
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isNoContent();
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.delete()
+                    .uri(ApiConstants.BY_ID, 1L)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+        @Test
+        void returnNotFound_whenUserDoesNotExist() {
             final var nonExistentId = 666L;
             final var expectedMessage = "User with id '" + nonExistentId + "' not found.";
 
@@ -269,6 +367,36 @@ public class UserControllerTest {
                     .expectBody(String.class).isEqualTo(expectedMessage);
         }
 
+        @Test
+        void returnBadRequest_whenIdIsNegative() {
+            final var expectedMessage = "ID must be greater than 0.";
+
+            restClient.delete()
+                    .uri(ApiConstants.BY_ID, -1L)
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody(String.class).isEqualTo(expectedMessage);
+        }
+
+        @Test
+        void returnBadRequest_whenIdIsZero() {
+            final var expectedMessage = "ID must be greater than 0.";
+
+            restClient.delete()
+                    .uri(ApiConstants.BY_ID, 0L)
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody(String.class).isEqualTo(expectedMessage);
+        }
+
+    }
+
+    private void registerUser() {
+        restClient.post()
+                .body(registerDto)
+                .exchangeSuccessfully();
     }
 
 }
