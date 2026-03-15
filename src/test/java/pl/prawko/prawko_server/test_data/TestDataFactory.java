@@ -11,7 +11,6 @@ import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
-import pl.prawko.prawko_server.model.QuestionTranslation;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.model.User;
 
@@ -27,11 +26,10 @@ public class TestDataFactory {
 
     private final Question question = createQuestion(QuestionType.SPECIAL);
 
-
     public Question createQuestion(final QuestionType type) {
         return switch (type) {
             case BASIC -> {
-                final var translations = createQuestionTranslations(type);
+                final var translations = QuestionTranslationsTestData.create(QuestionType.BASIC);
                 final var answers = createAnswers(type);
                 final var question = new Question()
                         .setName("W9(2)")
@@ -47,7 +45,7 @@ public class TestDataFactory {
                 yield question;
             }
             case SPECIAL -> {
-                final var translations = createQuestionTranslations(type);
+                final var translations = QuestionTranslationsTestData.create(QuestionType.SPECIAL);
                 final var answers = createAnswers(type);
                 final var question = new Question()
                         .setName("PD10(3)")
@@ -128,32 +126,6 @@ public class TestDataFactory {
         );
     }
 
-    private List<QuestionTranslation> createQuestionTranslations(final QuestionType type) {
-        return switch (type) {
-            case BASIC -> List.of(
-                    new QuestionTranslation()
-                            .setContent("Czy w przedstawionej sytuacji masz prawo - mimo podawanego sygnału - skręcić w prawo?")
-                            .setLanguage(PL),
-                    new QuestionTranslation()
-                            .setContent("Are you allowed in this situation to turn right despite the light displayed?")
-                            .setLanguage(EN),
-                    new QuestionTranslation()
-                            .setContent("Darfst du in der dargestellten Situation - trotz des gegebenen Signals - rechts abbiegen?")
-                            .setLanguage(DE)
-            );
-            case SPECIAL -> List.of(
-                    new QuestionTranslation()
-                            .setContent("Jak często należy obracać poszkodowanego nieurazowego na drugi bok po ułożeniu go w pozycji bezpiecznej?")
-                            .setLanguage(PL),
-                    new QuestionTranslation()
-                            .setContent("How often should you turn a non-traumatic victim to the other side after laying him in the recovery position?")
-                            .setLanguage(EN),
-                    new QuestionTranslation()
-                            .setContent("Wie oft soll man einen symptomlosen Betroffenen auf die andere Körperseite nach dem Legen in stabiler Seitenlage drehen?")
-                            .setLanguage(DE)
-            );
-        };
-    }
 
     private List<Question> createBasicQuestions() {
         return List.of(
