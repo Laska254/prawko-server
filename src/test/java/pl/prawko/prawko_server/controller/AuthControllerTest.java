@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
+import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.LoginDto;
 
@@ -20,7 +21,7 @@ public class AuthControllerTest {
     void setUp() {
         restClient = RestTestClient
                 .bindToServer()
-                .baseUrl("http://localhost:" + port + ApiConstants.AUTH_BASE_URL)
+                .baseUrl(TestUtils.BASE_URL + port + ApiConstants.AUTH_BASE_URL)
                 .build();
     }
 

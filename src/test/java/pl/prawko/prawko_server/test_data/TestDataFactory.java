@@ -93,15 +93,6 @@ public class TestDataFactory {
                 "lembasy");
     }
 
-    public RegisterDto createInvalidRegisterDto() {
-        return new RegisterDto(
-                "Supercalifragilisticexpialidocious",
-                null,
-                "OK",
-                "notValidMail@mail@mail",
-                "lembas");
-    }
-
     public Question createQuestion(final QuestionType type) {
         return switch (type) {
             case BASIC -> {

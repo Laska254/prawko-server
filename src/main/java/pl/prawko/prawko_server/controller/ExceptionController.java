@@ -81,10 +81,10 @@ public class ExceptionController {
 
     @ApiResponse(responseCode = "400", description = "ID is negative or zero")
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<String> handleNotPositiveID(final ConstraintViolationException exception) {
+    public ResponseEntity<String> handleNotPositiveID() {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(exception.getMessage());
+                .body("ID must be greater than 0.");
     }
 
     @ApiResponse(responseCode = "400", description = "Request body is missing")
