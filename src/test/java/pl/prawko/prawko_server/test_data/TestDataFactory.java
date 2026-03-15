@@ -4,11 +4,14 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import pl.prawko.prawko_server.dto.AnswerDto;
 import pl.prawko.prawko_server.dto.AnswerTranslationDto;
+import pl.prawko.prawko_server.dto.ExamDto;
+import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.AnswerTranslation;
+import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.Question;
@@ -257,6 +260,30 @@ public class TestDataFactory {
                 .setUserAnswers(Collections.emptyList());
         user.getExams().add(exam);
         return exam;
+    }
+
+    public ExamDto createExamDto(final Exam exam) {
+        final var questions = exam.getQuestions().stream()
+                .map(question -> new QuestionDto(
+                        question.getId(),
+                        question.getName(),
+                        Collections.emptyList(),
+                        question.getMedia(),
+                        question.getType(),
+                        question.getPoints(),
+                        question.getCategories().stream().map(Category::getName).toList(),
+                        Collections.emptyList()))
+                .toList();
+
+        return new ExamDto(
+                exam.getId(),
+                exam.getUser().getId(),
+                exam.getCreated(),
+                exam.getUpdated(),
+                questions,
+                Collections.emptyList(),
+                exam.getScore(),
+                exam.isActive());
     }
 
     public Answer createAnswer(final AnswerVariant variant) {
