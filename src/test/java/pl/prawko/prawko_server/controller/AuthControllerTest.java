@@ -19,10 +19,7 @@ public class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
-        restClient = RestTestClient
-                .bindToServer()
-                .baseUrl(TestUtils.BASE_URL + port + ApiConstants.AUTH_BASE_URL)
-                .build();
+        restClient = TestUtils.createRestTestClient(port, ApiConstants.AUTH_BASE_URL);
     }
 
     @Test

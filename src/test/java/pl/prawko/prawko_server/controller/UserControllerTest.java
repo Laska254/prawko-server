@@ -38,10 +38,7 @@ public class UserControllerTest {
 
     @BeforeEach
     void setUp() {
-        restClient = RestTestClient
-                .bindToServer()
-                .baseUrl(TestUtils.BASE_URL + port + ApiConstants.USERS_BASE_URL)
-                .build();
+        restClient = TestUtils.createRestTestClient(port, ApiConstants.USERS_BASE_URL);
     }
 
     @Nested
