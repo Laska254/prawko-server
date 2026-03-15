@@ -85,4 +85,44 @@ public class AuthControllerTest {
                 .isEqualTo(expectedMessage);
     }
 
+    @Test
+    void login_returnsBadRequest_whenBothFieldsAreNull() {
+        final var request = new LoginDto(null, null);
+
+        restClient.post()
+                .body(request)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Validation for request failed.")
+                .jsonPath("$.details.userName").isEqualTo("Username is required.")
+                .jsonPath("$.details.password").isEqualTo("Password is required.");
+    }
+
+    @Test
+    void login_returnsBadRequest_whenLoginIsNull() {
+        final var request = new LoginDto(null, "password");
+
+        restClient.post()
+                .body(request)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Validation for request failed.")
+                .jsonPath("$.details.userName").isEqualTo("Username is required.");
+    }
+
+    @Test
+    void login_returnsBadRequest_whenPasswordIsNull() {
+        final var request = new LoginDto("pippin", null);
+
+        restClient.post()
+                .body(request)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Validation for request failed.")
+                .jsonPath("$.details.password").isEqualTo("Password is required.");
+    }
+    
 }
