@@ -13,8 +13,8 @@ import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
-import pl.prawko.prawko_server.test_data.TestDataFactory;
-import pl.prawko.prawko_server.test_data.UserTestDataBuilder;
+import pl.prawko.prawko_server.test_data.ExamTestData;
+import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.util.Map;
 
@@ -34,9 +34,6 @@ public class ExamControllerTest {
 
     private RestTestClient restClient;
 
-    private final TestDataFactory testDataFactory = new TestDataFactory();
-    private final UserTestDataBuilder testDataBuilder = new UserTestDataBuilder();
-
     @BeforeEach
     void setUp() {
         restClient = TestUtils.createRestTestClient(port, ApiConstants.EXAMS_BASE_URL);
@@ -44,7 +41,7 @@ public class ExamControllerTest {
 
     @Test
     void createExam_returnsCreated_whenRequestIsValid() {
-        final var tester = userRepository.save(testDataBuilder.createTestUserPippin());
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
         final var validDto = new CreateExamDto(tester.getId(), CategoryVariant.B);
 
         restClient.post()
@@ -94,9 +91,9 @@ public class ExamControllerTest {
 
     @Test
     void getExam_returnsExam_whenExamIsFound() {
-        final var tester = userRepository.save(testDataBuilder.createTestUserPippin());
-        final var exam = examRepository.save(testDataFactory.createExam(tester));
-        final var expected = testDataFactory.createExamDto(exam);
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+        final var exam = examRepository.save(ExamTestData.createExam(tester));
+        final var expected = ExamTestData.createExamDto(exam);
 
         restClient.get()
                 .uri(ApiConstants.BY_ID, exam.getId())

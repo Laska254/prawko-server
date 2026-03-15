@@ -9,9 +9,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.implementation.LanguageService;
-import pl.prawko.prawko_server.test_data.AnswerVariant;
+import pl.prawko.prawko_server.test_data.AnswerTestData;
 import pl.prawko.prawko_server.test_data.LanguageTestData;
-import pl.prawko.prawko_server.test_data.TestDataFactory;
+import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
+import pl.prawko.prawko_server.test_data.QuestionTestData;
 
 import java.util.List;
 
@@ -27,7 +28,6 @@ class AnswerMapperTest {
     @InjectMocks
     private AnswerMapper mapper;
 
-    private final TestDataFactory testDataFactory = new TestDataFactory();
     private final List<Language> languages = LanguageTestData.ALL;
 
     @BeforeEach
@@ -37,29 +37,40 @@ class AnswerMapperTest {
 
     @Test
     void fromQuestionCSVToAnswers_correctlyMapBasicAnswers() {
-        final var given = testDataFactory.createBasicQuestionCSV();
-        final var expected = testDataFactory.createQuestion(QuestionType.BASIC);
+        final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
+        final var given = QuestionCSVTestData.createBasicQuestionCSV();
+        final var expected = List.of(
+                AnswerTestData.noAnswer(),
+                AnswerTestData.yesAnswer()
+        );
 
-        final var result = mapper.fromQuestionCSVToAnswers(given, expected);
+        final var result = mapper.fromQuestionCSVToAnswers(given, question);
 
-        assertThat(result).isEqualTo(expected.getAnswers());
+        assertThat(result).isEqualTo(expected);
     }
 
     @Test
     void fromQuestionsCSVToAnswers_correctlyMapSpecialAnswers() {
-        final var given = testDataFactory.createSpecialQuestionCSV();
-        final var expected = testDataFactory.createQuestion(QuestionType.SPECIAL);
+        final var given = QuestionCSVTestData.createSpecialQuestionCSV();
+        final var question = QuestionTestData.createQuestion(QuestionType.SPECIAL);
+        final var expected = List.of(
+                AnswerTestData.answerA(),
+                AnswerTestData.answerB(),
+                AnswerTestData.answerC()
+        );
         when(languageService.findAll()).thenReturn(languages);
 
-        final var result = mapper.fromQuestionCSVToAnswers(given, expected);
+        final var result = mapper.fromQuestionCSVToAnswers(given, question);
 
-        assertThat(result).isEqualTo(expected.getAnswers());
+        assertThat(result).isEqualTo(expected);
     }
 
     @Test
     void toDto_correctlyMapAnswer() {
-        final var given = testDataFactory.createAnswer(AnswerVariant.A);
-        final var expected = testDataFactory.createAnswerDtoA();
+        final var given = QuestionTestData.createQuestion(QuestionType.SPECIAL)
+                .getAnswers()
+                .getFirst();
+        final var expected = AnswerTestData.createAnswerDtoA();
 
         final var result = mapper.toDto(given);
 

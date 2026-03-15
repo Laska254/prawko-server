@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
-import pl.prawko.prawko_server.test_data.TestDataFactory;
+import pl.prawko.prawko_server.test_data.QuestionTestData;
 
 import java.util.List;
 
@@ -28,12 +28,10 @@ public class QuestionRepositoryTest {
     @Autowired
     private QuestionRepository repository;
 
-    private final TestDataFactory testDataFactory = new TestDataFactory();
-
     @Test
     void saveAll_correctly() {
-        final var question1 = testDataFactory.createQuestion(QuestionType.BASIC);
-        final var question2 = testDataFactory.createQuestion(QuestionType.SPECIAL);
+        final var question1 = QuestionTestData.createQuestion(QuestionType.BASIC);
+        final var question2 = QuestionTestData.createQuestion(QuestionType.SPECIAL);
         final var expected = List.of(question1, question2);
         repository.saveAll(expected);
         final var result = repository.findAll();
@@ -46,7 +44,7 @@ public class QuestionRepositoryTest {
 
     @Test
     void findByTypeAndCategoriesContaining() {
-        final var question = testDataFactory.createQuestion(QuestionType.BASIC);
+        final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
         final var category = CategoryTestData.CATEGORY_B;
         repository.save(question);
         final var expected = List.of(question);

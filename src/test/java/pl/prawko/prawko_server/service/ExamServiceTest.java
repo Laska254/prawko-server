@@ -9,7 +9,6 @@ import pl.prawko.prawko_server.service.implementation.CategoryService;
 import pl.prawko.prawko_server.service.implementation.ExamService;
 import pl.prawko.prawko_server.service.implementation.QuestionService;
 import pl.prawko.prawko_server.service.implementation.UserService;
-import pl.prawko.prawko_server.test_data.TestDataFactory;
 
 @ExtendWith(MockitoExtension.class)
 public class ExamServiceTest {
@@ -28,8 +27,6 @@ public class ExamServiceTest {
 
     @InjectMocks
     private ExamService service;
-
-    private final TestDataFactory testDataFactory = new TestDataFactory();
 
     /*@Test
     void createExam_returnExam_whenUserAndCategoryFound() {

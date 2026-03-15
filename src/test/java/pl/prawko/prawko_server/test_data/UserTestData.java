@@ -12,12 +12,15 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UserTestDataBuilder {
+public class UserTestData {
 
-    public User createTestUser(@NonNull final String firstName,
-                               @NonNull final String lastName,
-                               @NonNull final String userName,
-                               @NonNull final String email) {
+    private UserTestData() {
+    }
+
+    public static User createTestUser(@NonNull final String firstName,
+                                      @NonNull final String lastName,
+                                      @NonNull final String userName,
+                                      @NonNull final String email) {
         return new User()
                 .setFirstName(firstName)
                 .setLastName(lastName)
@@ -31,11 +34,11 @@ public class UserTestDataBuilder {
                 .setExams(new ArrayList<>());
     }
 
-    public User createTestUserPippin() {
+    public static User createTestUserPippin() {
         return createTestUser("Peregrin", "Tuk", "pippin", "pippin@shire.me");
     }
 
-    public UserDto createUserDto() {
+    public static UserDto createUserDto() {
         return new UserDto(
                 1L,
                 "Peregrin",
@@ -44,7 +47,7 @@ public class UserTestDataBuilder {
                 "pippin@shire.me");
     }
 
-    public UserDto createUpdatedUserDto() {
+    public static UserDto createUpdatedUserDto() {
         return new UserDto(
                 1L,
                 "UpdatedFirstName",
@@ -54,7 +57,7 @@ public class UserTestDataBuilder {
         );
     }
 
-    public UserUpdateRequest createValidUserUpdateRequest() {
+    public static UserUpdateRequest createValidUserUpdateRequest() {
         return new UserUpdateRequest(
                 "UpdatedFirstName",
                 "UpdatedLastName",
@@ -62,11 +65,11 @@ public class UserTestDataBuilder {
                 "UpdatedEmail@shire.me");
     }
 
-    public UserUpdateRequest createInvalidUserUpdateRequest() {
+    public static UserUpdateRequest createInvalidUserUpdateRequest() {
         return new UserUpdateRequest("", "", "gimli", "gimli.shire.me");
     }
 
-    public RegisterDto createValidRegisterDto() {
+    public static RegisterDto createValidRegisterDto() {
         return new RegisterDto(
                 "Peregrin",
                 "Tuk",
