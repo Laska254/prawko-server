@@ -1,7 +1,10 @@
 package pl.prawko.prawko_server.controller;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.web.servlet.client.RestTestClient;
@@ -39,68 +42,106 @@ public class ExamControllerTest {
         restClient = TestUtils.createRestTestClient(port, ApiConstants.EXAMS_BASE_URL);
     }
 
-    @Test
-    void createExam_returnsCreated_whenRequestIsValid() {
-        final var tester = userRepository.save(UserTestData.createTestUserPippin());
-        final var validDto = new CreateExamDto(tester.getId(), CategoryVariant.B);
+    @Nested
+    class CreateExam {
 
-        restClient.post()
-                .headers(TestUtils::authUser)
-                .body(validDto)
-                .exchange()
-                .expectStatus().isCreated()
-                .expectHeader().value("Location", location -> {
-                    final var createdExam = examRepository.findAll().getFirst();
-                    final var expectedLocation = ApiConstants.EXAMS_BASE_URL + "/" + createdExam.getId();
-                    assertThat(location).endsWith(expectedLocation);
-                })
-                .expectBody().isEmpty();
+        @Test
+        void returnCreated_whenRequestIsValid() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var validDto = new CreateExamDto(tester.getId(), CategoryVariant.B);
+
+            restClient.post()
+                    .headers(TestUtils::authUser)
+                    .body(validDto)
+                    .exchange()
+                    .expectStatus().isCreated()
+                    .expectHeader().value("Location", location -> {
+                        final var createdExam = examRepository.findAll().getFirst();
+                        final var expectedLocation = ApiConstants.EXAMS_BASE_URL + "/" + createdExam.getId();
+                        assertThat(location).endsWith(expectedLocation);
+                    })
+                    .expectBody().isEmpty();
+        }
+
+        @Test
+        void returnBadRequest_whenRequestIsInvalid() {
+            final var invalidDto = new CreateExamDto(null, null);
+            final var expected = Map.of(
+                    "message", "Validation for request failed.",
+                    "details", Map.of(
+                            "userId", "userId is required",
+                            "categoryName", "category is required"
+                    )
+            );
+
+            restClient.post()
+                    .headers(TestUtils::authUser)
+                    .body(invalidDto)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody(Map.class).isEqualTo(expected);
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.post()
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
     }
 
-    @Test
-    void createExam_returnsBadRequest_whenRequestIsInvalid() {
-        final var invalidDto = new CreateExamDto(null, null);
-        final var expected = Map.of(
-                "message", "Validation for request failed.",
-                "details", Map.of(
-                        "userId", "userId is required",
-                        "categoryName", "category is required"
-                )
-        );
+    @Nested
+    class GetExamById {
 
-        restClient.post()
-                .headers(TestUtils::authUser)
-                .body(invalidDto)
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody(Map.class).isEqualTo(expected);
-    }
+        @Test
+        void returnsExam_whenExamIsFound() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var exam = examRepository.save(ExamTestData.createExam(tester));
+            final var expected = ExamTestData.createExamDto(exam);
 
-    @Test
-    void getExam_returnsNotFound_whenExamIsNotFound() {
-        final var nonExistingId = 666L;
-        final var expected = "Exam with '" + nonExistingId + "' not found.";
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, exam.getId())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(ExamDto.class).isEqualTo(expected);
+        }
 
-        restClient.get()
-                .uri(ApiConstants.BY_ID, nonExistingId)
-                .headers(TestUtils::authUser)
-                .exchange()
-                .expectStatus().isNotFound()
-                .expectBody(String.class).isEqualTo(expected);
-    }
+        @Test
+        void returnsNotFound_whenExamIsNotFound() {
+            final var nonExistingId = 666L;
+            final var expected = "Exam with '" + nonExistingId + "' not found.";
 
-    @Test
-    void getExam_returnsExam_whenExamIsFound() {
-        final var tester = userRepository.save(UserTestData.createTestUserPippin());
-        final var exam = examRepository.save(ExamTestData.createExam(tester));
-        final var expected = ExamTestData.createExamDto(exam);
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, nonExistingId)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isNotFound()
+                    .expectBody(String.class).isEqualTo(expected);
+        }
 
-        restClient.get()
-                .uri(ApiConstants.BY_ID, exam.getId())
-                .headers(TestUtils::authUser)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(ExamDto.class).isEqualTo(expected);
+        @ParameterizedTest
+        @ValueSource(longs = {-1L, 0L})
+        void returnBadRequest_whenIdIsNotPositive(long invalidId) {
+            final var expectedMessage = "ID must be greater than 0.";
+
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, invalidId)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody(String.class).isEqualTo(expectedMessage);
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, 666L)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
     }
 
 }

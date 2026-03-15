@@ -3,6 +3,8 @@ package pl.prawko.prawko_server.controller;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
@@ -266,27 +268,14 @@ public class UserControllerTest {
                     .expectBody(Map.class).isEqualTo(expected);
         }
 
-        @Test
-        void returnBadRequest_whenIdIsNegative() {
+        @ParameterizedTest
+        @ValueSource(longs = {-1L, 0L})
+        void returnBadRequest_whenIdIsNotPositive(long invalidId) {
             final var validDto = UserTestData.createValidUserUpdateRequest();
             final var expectedMessage = "ID must be greater than 0.";
 
             restClient.patch()
-                    .uri(ApiConstants.BY_ID, -1L)
-                    .headers(TestUtils::authUser)
-                    .body(validDto)
-                    .exchange()
-                    .expectStatus().isBadRequest()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
-        }
-
-        @Test
-        void returnBadRequest_whenIdIsZero() {
-            final var validDto = UserTestData.createValidUserUpdateRequest();
-            final var expectedMessage = "ID must be greater than 0.";
-
-            restClient.patch()
-                    .uri(ApiConstants.BY_ID, 0L)
+                    .uri(ApiConstants.BY_ID, invalidId)
                     .headers(TestUtils::authUser)
                     .body(validDto)
                     .exchange()
@@ -366,24 +355,13 @@ public class UserControllerTest {
                     .expectBody(String.class).isEqualTo(expectedMessage);
         }
 
-        @Test
-        void returnBadRequest_whenIdIsNegative() {
+        @ParameterizedTest
+        @ValueSource(longs = {-1L, 0L})
+        void returnBadRequest_whenIdIsNotPositive(long invalidId) {
             final var expectedMessage = "ID must be greater than 0.";
 
             restClient.delete()
-                    .uri(ApiConstants.BY_ID, -1L)
-                    .headers(TestUtils::authAdmin)
-                    .exchange()
-                    .expectStatus().isBadRequest()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
-        }
-
-        @Test
-        void returnBadRequest_whenIdIsZero() {
-            final var expectedMessage = "ID must be greater than 0.";
-
-            restClient.delete()
-                    .uri(ApiConstants.BY_ID, 0L)
+                    .uri(ApiConstants.BY_ID, invalidId)
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isBadRequest()
