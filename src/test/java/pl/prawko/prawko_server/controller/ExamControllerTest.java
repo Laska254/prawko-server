@@ -4,9 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestClient;
+import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
@@ -20,7 +18,6 @@ import pl.prawko.prawko_server.test_data.TestDataFactory;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static pl.prawko.prawko_server.config.TestUtils.BASE_URL;
 
 @IntegrationTest
 public class ExamControllerTest {
@@ -34,90 +31,77 @@ public class ExamControllerTest {
     @LocalServerPort
     private int port;
 
-    private RestClient restClient;
+    private RestTestClient restClient;
 
     private final TestDataFactory testDataFactory = new TestDataFactory();
 
     @BeforeEach
     void setUp() {
-        restClient = RestClient.builder()
-                .baseUrl(BASE_URL + port)
-                .build();
+        restClient = TestUtils.createRestTestClient(port, ApiConstants.EXAMS_BASE_URL);
     }
 
     @Test
     void createExam_returnsCreated_whenRequestIsValid() {
         final var tester = userRepository.save(testDataFactory.createTestUserPippin());
-        final var dto = new CreateExamDto(tester.getId(), CategoryVariant.B);
+        final var validDto = new CreateExamDto(tester.getId(), CategoryVariant.B);
 
-        final var response = restClient.post()
-                .uri(ApiConstants.EXAMS_BASE_URL)
+        restClient.post()
                 .headers(TestUtils::authUser)
-                .body(dto)
-                .retrieve()
-                .toBodilessEntity();
-        final var createdExam = examRepository.findAll().getFirst();
-        final var expectedLocation = ApiConstants.EXAMS_BASE_URL + "/" + createdExam.getId();
-        final var location = response.getHeaders().getLocation().getPath();
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(location).isEqualTo(expectedLocation);
+                .body(validDto)
+                .exchange()
+                .expectStatus().isCreated()
+                .expectHeader().value("Location", location -> {
+                    final var createdExam = examRepository.findAll().getFirst();
+                    final var expectedLocation = ApiConstants.EXAMS_BASE_URL + "/" + createdExam.getId();
+                    assertThat(location).endsWith(expectedLocation);
+                })
+                .expectBody().isEmpty();
     }
 
     @Test
     void createExam_returnsBadRequest_whenRequestIsInvalid() {
-        final var dto = new CreateExamDto(null, null);
-        final var expectedMessage = "Validation for request failed.";
-        final var expectedDetails = Map.of(
-                "userId", "userId is required",
-                "categoryName", "category is required"
+        final var invalidDto = new CreateExamDto(null, null);
+        final var expected = Map.of(
+                "message", "Validation for request failed.",
+                "details", Map.of(
+                        "userId", "userId is required",
+                        "categoryName", "category is required"
+                )
         );
 
-        final var response = restClient.post()
-                .uri(ApiConstants.EXAMS_BASE_URL)
+        restClient.post()
                 .headers(TestUtils::authUser)
-                .body(dto)
-                .exchange((req, res) ->
-                        new ResponseEntity<>(res.bodyTo(Map.class), res.getStatusCode()));
+                .body(invalidDto)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody(Map.class).isEqualTo(expected);
+    }
 
-        final var body = (Map<String, Object>) response.getBody();
-        final var message = body.get("message");
-        final var details = (Map<String, String>) body.get("details");
+    @Test
+    void getExam_returnsNotFound_whenExamIsNotFound() {
+        final var nonExistingId = 666L;
+        final var expected = "Exam with '" + nonExistingId + "' not found.";
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(message).isEqualTo(expectedMessage);
-        assertThat(details).containsAllEntriesOf(expectedDetails);
+        restClient.get()
+                .uri(ApiConstants.BY_ID, nonExistingId)
+                .headers(TestUtils::authUser)
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody(String.class).isEqualTo(expected);
     }
 
     @Test
     void getExam_returnsExam_whenExamIsFound() {
         final var tester = userRepository.save(testDataFactory.createTestUserPippin());
         final var exam = examRepository.save(testDataFactory.createExam(tester));
+        final var expected = testDataFactory.createExamDto(exam);
 
-        final var response = restClient.get()
-                .uri(ApiConstants.EXAMS_BASE_URL + ApiConstants.BY_ID, exam.getId())
+        restClient.get()
+                .uri(ApiConstants.BY_ID, exam.getId())
                 .headers(TestUtils::authUser)
-                .retrieve()
-                .toEntity(ExamDto.class);
-        final var body = response.getBody();
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(body.userId()).isEqualTo(exam.getUser().getId());
-        assertThat(body.id()).isEqualTo(exam.getId());
-        //TODO add createExamDto to factory and check if object is equals
-    }
-
-    @Test
-    void getExam_returnsNotFound_whenExamIsNotFound() {
-        final var notExistingId = 666L;
-        final var response = restClient.get()
-                .uri(ApiConstants.EXAMS_BASE_URL + ApiConstants.BY_ID, notExistingId)
-                .headers(TestUtils::authUser)
-                .exchange((req, res) ->
-                        new ResponseEntity<>(res.bodyTo(String.class), res.getStatusCode()));
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(response.getBody()).isNotBlank();
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(ExamDto.class).isEqualTo(expected);
     }
 
 }
