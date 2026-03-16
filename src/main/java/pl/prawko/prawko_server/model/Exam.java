@@ -87,8 +87,9 @@ public class Exam {
         return id;
     }
 
-    public void setId(long id) {
+    public Exam setId(long id) {
         this.id = id;
+        return this;
     }
 
     public LocalDateTime getCreated() {
