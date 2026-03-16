@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.test_data;
 
+import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 
@@ -17,7 +18,7 @@ public class QuestionTestData {
                 final var answers = AnswerTestData.createAnswers(type);
                 final var question = new Question()
                         .setName("W9(2)")
-                        .setId(110)
+                        .setId(110L)
                         .setMedia("AK_D11_45org.webm")
                         .setType(type)
                         .setPoints(3)
@@ -33,7 +34,7 @@ public class QuestionTestData {
                 final var answers = AnswerTestData.createAnswers(type);
                 final var question = new Question()
                         .setName("PD10(3)")
-                        .setId(2143)
+                        .setId(2143L)
                         .setMedia("R_101org.jpg")
                         .setType(type)
                         .setPoints(2)
@@ -49,6 +50,22 @@ public class QuestionTestData {
                 yield question;
             }
         };
+    }
+
+    public static QuestionDto createQuestionDto() {
+        final var answers = AnswerTestData.createAnswersDtos();
+        final var categories = List.of(CategoryTestData.CATEGORY_PT.getName());
+        final var translations = QuestionTranslationsTestData.createDtos(QuestionType.SPECIAL);
+        return new QuestionDto(
+                2143L,
+                "PD10(3)",
+                answers,
+                "R_101org.jpg",
+                QuestionType.SPECIAL,
+                2,
+                categories,
+                translations
+        );
     }
 
     static List<Question> createQuestions(final QuestionType type) {

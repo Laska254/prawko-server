@@ -47,6 +47,14 @@ public class AnswerTestData {
                 AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.A));
     }
 
+    static List<AnswerDto> createAnswersDtos() {
+        return List.of(
+                new AnswerDto(1L, 2143L, false, AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.A)),
+                new AnswerDto(2L, 2143L, true, AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.B)),
+                new AnswerDto(3L, 2143L, false, AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.C))
+        );
+    }
+
     static List<Answer> createAnswers(final QuestionType type) {
         return switch (type) {
             case BASIC -> List.of(
