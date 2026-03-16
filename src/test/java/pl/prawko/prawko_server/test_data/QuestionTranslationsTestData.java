@@ -5,6 +5,7 @@ import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.QuestionTranslation;
 import pl.prawko.prawko_server.model.QuestionType;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +33,7 @@ public class QuestionTranslationsTestData {
 
     static List<QuestionTranslation> create(final QuestionType type) {
         return TRANSLATIONS.get(type).entrySet().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().getId()))
                 .map(e -> new QuestionTranslation()
                         .setContent(e.getValue())
                         .setLanguage(e.getKey()))
@@ -40,6 +42,7 @@ public class QuestionTranslationsTestData {
 
     static List<QuestionTranslationDto> createDtos(final QuestionType type) {
         return TRANSLATIONS.get(type).entrySet().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().getId()))
                 .map(e -> new QuestionTranslationDto(e.getValue(), e.getKey().getCode()))
                 .toList();
     }

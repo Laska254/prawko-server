@@ -4,10 +4,12 @@ import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Exam;
+import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.model.User;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.stream.Stream;
 
 public class ExamTestData {
@@ -32,6 +34,7 @@ public class ExamTestData {
 
     public static ExamDto createExamDto(final Exam exam) {
         final var questions = exam.getQuestions().stream()
+                .sorted(Comparator.comparing(Question::getId))
                 .map(question -> new QuestionDto(
                         question.getId(),
                         question.getName(),
