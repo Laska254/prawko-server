@@ -119,9 +119,7 @@ public class Answer {
         return "Answer{" +
                 "id=" + id +
                 ", correct=" + correct +
-                ", question=" + question.getId() +
                 ", translations=" + translations +
-                ", tests=" + tests +
                 '}';
     }
 
