@@ -6,30 +6,30 @@ import jakarta.validation.constraints.Size;
 
 public record RegisterDto(
 
-        @NotBlank(message = "{register.firstname.notblank}")
-        @Size(min = 3, message = "{register.firstname.size.min}")
-        @Size(max = 31, message = "{register.firstname.size.max}")
+        @NotBlank(message = "{firstname.required}")
+        @Size(min = 3, message = "{firstname.size.min}")
+        @Size(max = 31, message = "{firstname.size.max}")
         String firstName,
 
-        @NotBlank(message = "{register.lastname.notblank}")
-        @Size(min = 3, message = "register.lastname.size.min")
-        @Size(max = 31, message = "register.lastname.size.max")
+        @NotBlank(message = "{lastname.required}")
+        @Size(min = 3, message = "lastname.size.min")
+        @Size(max = 31, message = "lastname.size.max")
         String lastName,
 
-        @NotBlank(message = "{register.username.notblank}")
-        @Size(min = 3, message = "{register.username.size.min}")
-        @Size(max = 31, message = "{register.username.size.max}")
+        @NotBlank(message = "{username.required}")
+        @Size(min = 3, message = "{username.size.min}")
+        @Size(max = 31, message = "{username.size.max}")
         String userName,
 
-        @NotBlank(message = "{register.email.notblank}")
-        @Size(min = 5, message = "{register.email.size.min}")
-        @Size(max = 63, message = "{register.email.size.max}")
-        @Email(message = "{register.email.notvalid}")
+        @NotBlank(message = "{email.required}")
+        @Size(min = 5, message = "{email.size.min}")
+        @Size(max = 63, message = "{email.size.max}")
+        @Email(message = "{email.notvalid}")
         String email,
 
-        @NotBlank(message = "{register.password.notblank}")
-        @Size(min = 7, message = "{register.password.size.min}")
-        @Size(max = 63, message = "{register.password.size.max}")
+        @NotBlank(message = "{password.required}")
+        @Size(min = 7, message = "{password.size.min}")
+        @Size(max = 63, message = "{password.size.max}")
         String password
 
 ) {

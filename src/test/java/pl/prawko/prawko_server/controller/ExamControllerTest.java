@@ -69,8 +69,8 @@ public class ExamControllerTest {
             final var expected = Map.ofEntries(
                     Map.entry("message", "Validation for request failed."),
                     Map.entry("details", Map.ofEntries(
-                            Map.entry("userId", "userId is required"),
-                            Map.entry("categoryName", "category is required"))));
+                            Map.entry("userId", "User ID is required."),
+                            Map.entry("categoryName", "Category is required."))));
 
             restClient.post()
                     .headers(TestUtils::authUser)

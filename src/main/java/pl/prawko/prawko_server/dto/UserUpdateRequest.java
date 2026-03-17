@@ -7,24 +7,24 @@ import org.springframework.lang.Nullable;
 public record UserUpdateRequest(
 
         @Nullable
-        @Size(min = 3, message = "{userupdate.firstname.size.min}")
-        @Size(max = 31, message = "{userupdate.firstname.size.max}")
+        @Size(min = 3, message = "{firstname.size.min}")
+        @Size(max = 31, message = "{firstname.size.max}")
         String firstName,
 
         @Nullable
-        @Size(min = 3, message = "{userupdate.lastname.size.min}")
-        @Size(max = 31, message = "{userupdate.lastname.size.max}")
+        @Size(min = 3, message = "{lastname.size.min}")
+        @Size(max = 31, message = "{lastname.size.max}")
         String lastName,
 
         @Nullable
-        @Size(min = 3, message = "{userupdate.username.size.min}")
-        @Size(max = 31, message = "{userupdate.username.size.max}")
+        @Size(min = 3, message = "{username.size.min}")
+        @Size(max = 31, message = "{username.size.max}")
         String userName,
 
         @Nullable
-        @Size(min = 5, message = "{userupdate.email.size.max}")
-        @Size(max = 63, message = "{userupdate.email.size.max}")
-        @Email(message = "{userupdate.email.notvalid}")
+        @Size(min = 5, message = "{email.size.max}")
+        @Size(max = 63, message = "{email.size.max}")
+        @Email(message = "{email.notvalid}")
         String email
 
 ) {

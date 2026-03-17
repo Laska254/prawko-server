@@ -5,12 +5,12 @@ import jakarta.validation.constraints.Pattern;
 
 public record LoginDto(
 
-        @NotNull(message = "{login.username.notnull}")
-        @Pattern(regexp = "(?=.*\\S).{3,31}", message = "{login.username.pattern}")
+        @NotNull(message = "{username.required}")
+        @Pattern(regexp = "(?=.*\\S).{3,31}", message = "{username.pattern}")
         String userName,
 
-        @NotNull(message = "{login.password.notnull}")
-        @Pattern(regexp = "(?=.*\\S).{7,63}", message = "{login.password.pattern}")
+        @NotNull(message = "{password.required}")
+        @Pattern(regexp = "(?=.*\\S).{7,63}", message = "{password.pattern}")
         String password
 
 ) {
