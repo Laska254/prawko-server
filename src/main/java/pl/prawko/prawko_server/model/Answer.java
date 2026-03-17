@@ -119,10 +119,8 @@ public class Answer {
         return "Answer{" +
                 "id=" + id +
                 ", correct=" + correct +
-                ", question=" + question +
                 ", translations=" + translations +
-                ", tests=" + tests +
                 '}';
     }
-    
+
 }

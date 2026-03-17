@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.dto.QuestionDto;
@@ -108,6 +109,7 @@ public class QuestionService implements IQuestionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public QuestionDto getById(long id) {
         log.info("Fetching question with id '{}'", id);
         return repository.findById(id)
@@ -120,6 +122,7 @@ public class QuestionService implements IQuestionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<QuestionDto> getAll() {
         return repository.findAll().stream()
                 .map(mapper::toDto)

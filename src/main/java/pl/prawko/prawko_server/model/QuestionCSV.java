@@ -96,23 +96,19 @@ public record QuestionCSV(
      * @return a map where the key is a {@link Language} and the value is another map of answer labels to their translated content
      */
     public Map<String, Map<Character, String>> getAnswersTranslations() {
-        return Map.of(
-                Language.PL, Map.of(
-                        'A', answerPL1,
-                        'B', answerPL2,
-                        'C', answerPL3
-                ),
-                Language.EN, Map.of(
-                        'A', answerEN1,
-                        'B', answerEN2,
-                        'C', answerEN3
-                ),
-                Language.DE, Map.of(
-                        'A', answerDE1,
-                        'B', answerDE2,
-                        'C', answerDE3
-                )
-        );
+        return Map.ofEntries(
+                Map.entry(Language.PL, Map.ofEntries(
+                        Map.entry('A', answerPL1),
+                        Map.entry('B', answerPL2),
+                        Map.entry('C', answerPL3))),
+                Map.entry(Language.EN, Map.ofEntries(
+                        Map.entry('A', answerEN1),
+                        Map.entry('B', answerEN2),
+                        Map.entry('C', answerEN3))),
+                Map.entry(Language.DE, Map.ofEntries(
+                        Map.entry('A', answerDE1),
+                        Map.entry('B', answerDE2),
+                        Map.entry('C', answerDE3))));
     }
 
 }

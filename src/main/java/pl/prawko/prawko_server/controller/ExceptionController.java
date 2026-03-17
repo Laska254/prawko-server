@@ -3,8 +3,10 @@ package pl.prawko.prawko_server.controller;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -39,13 +41,18 @@ public class ExceptionController {
     public ResponseEntity<Map<String, Object>> handleAlreadyExists(final AlreadyExistsException exception) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(Map.of(exception.getMessage(), exception.getDetails()));
+                .body(
+                        Map.ofEntries(
+                                Map.entry("message", exception.getMessage()),
+                                Map.entry("details", exception.getDetails())));
     }
 
     @ApiResponse(responseCode = "404", description = "Entity not found")
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<String> handleEntityNotFound() {
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<String> handleEntityNotFound(final EntityNotFoundException exception) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(exception.getMessage());
     }
 
     @ApiResponse(responseCode = "400", description = "Invalid argument")
@@ -57,16 +64,33 @@ public class ExceptionController {
         return ResponseEntity
                 .badRequest()
                 .body(
-                        Map.of(
-                                "message", "Validation for request failed.",
-                                "details", errors
-                        ));
+                        Map.ofEntries(
+                                Map.entry("message", "Validation for request failed."),
+                                Map.entry("details", errors)));
     }
 
-    @ApiResponse(responseCode = "400", description = "Authentication failed")
+    @ApiResponse(responseCode = "401", description = "Authentication failed")
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<String> handleInvalidLoginRequest(final AuthenticationException exception) {
-        return ResponseEntity.badRequest().body(exception.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "400", description = "ID is negative or zero")
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<String> handleNotPositiveID() {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body("ID must be greater than 0.");
+    }
+
+    @ApiResponse(responseCode = "400", description = "Request body is missing")
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<String> handleMissingBody() {
+        return ResponseEntity
+                .badRequest()
+                .body("Request body is missing.");
     }
 
 }

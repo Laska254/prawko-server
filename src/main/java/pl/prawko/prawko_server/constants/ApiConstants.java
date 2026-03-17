@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.model;
+package pl.prawko.prawko_server.constants;
 
 public final class ApiConstants {
 

@@ -12,7 +12,8 @@ import pl.prawko.prawko_server.service.implementation.CategoryService;
 import pl.prawko.prawko_server.service.implementation.LanguageService;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
 import pl.prawko.prawko_server.test_data.LanguageTestData;
-import pl.prawko.prawko_server.test_data.TestDataFactory;
+import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
+import pl.prawko.prawko_server.test_data.QuestionTestData;
 
 import java.util.List;
 
@@ -31,7 +32,6 @@ class QuestionMapperTest {
     @InjectMocks
     private QuestionMapper questionMapper;
 
-    private final TestDataFactory testDataFactory = new TestDataFactory();
     private final List<Language> languages = LanguageTestData.ALL;
 
     @BeforeEach
@@ -46,8 +46,8 @@ class QuestionMapperTest {
         final var categories = List.of(CategoryTestData.CATEGORY_A, CategoryTestData.CATEGORY_B);
         when(categoryService.findAllFromString("A,B")).thenReturn(categories);
 
-        final var given = testDataFactory.createBasicQuestionCSV();
-        final var expected = testDataFactory.createQuestion(QuestionType.BASIC);
+        final var given = QuestionCSVTestData.createBasicQuestionCSV();
+        final var expected = QuestionTestData.createQuestion(QuestionType.BASIC);
 
         final var result = questionMapper.mapQuestionCSVToQuestion(given);
 
@@ -58,8 +58,8 @@ class QuestionMapperTest {
     void mapQuestionCSVToQuestion_returnSpecialQuestion() {
         final var category = CategoryTestData.CATEGORY_PT;
         when(categoryService.findAllFromString("PT")).thenReturn(List.of(category));
-        final var given = testDataFactory.createSpecialQuestionCSV();
-        final var expected = testDataFactory.createQuestion(QuestionType.SPECIAL);
+        final var given = QuestionCSVTestData.createSpecialQuestionCSV();
+        final var expected = QuestionTestData.createQuestion(QuestionType.SPECIAL);
 
         final var result = questionMapper.mapQuestionCSVToQuestion(given);
 

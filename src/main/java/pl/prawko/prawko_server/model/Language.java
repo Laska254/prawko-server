@@ -158,9 +158,6 @@ public class Language {
                 ", name='" + name + '\'' +
                 ", code='" + code + '\'' +
                 ", icon='" + icon + '\'' +
-                ", questionTranslations=" + questionTranslations +
-                ", answerTranslations=" + answerTranslations +
-                ", exams=" + exams +
                 '}';
     }
 

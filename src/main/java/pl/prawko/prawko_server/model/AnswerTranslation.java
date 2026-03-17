@@ -115,7 +115,6 @@ public class AnswerTranslation {
         return "AnswerTranslation{" +
                 "id=" + id +
                 ", content='" + content + '\'' +
-                ", answer=" + answer +
                 ", language=" + language +
                 '}';
     }

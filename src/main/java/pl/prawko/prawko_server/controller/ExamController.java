@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.CreateExamDto;
 import pl.prawko.prawko_server.dto.ExamDto;
-import pl.prawko.prawko_server.model.ApiConstants;
 import pl.prawko.prawko_server.service.implementation.ExamService;
 
 @Tag(name = "Exams", description = "Exams management endpoints")

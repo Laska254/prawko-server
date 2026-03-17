@@ -1,16 +1,40 @@
 SET REFERENTIAL_INTEGRITY FALSE;
 
+DELETE FROM question_translation;
+DELETE FROM answer_translation;
+DELETE FROM answer;
+DELETE FROM question_category;
 DELETE FROM question;
 DELETE FROM exam;
 DELETE FROM "user";
 DELETE FROM role;
+DELETE FROM category;
 
 ALTER TABLE question ALTER COLUMN id RESTART WITH 1;
 ALTER TABLE exam ALTER COLUMN id RESTART WITH 1;
 ALTER TABLE "user" ALTER COLUMN id RESTART WITH 1;
 ALTER TABLE role ALTER COLUMN id RESTART WITH 1;
+ALTER TABLE category ALTER COLUMN id RESTART WITH 1;
+ALTER TABLE question_translation ALTER COLUMN id RESTART WITH 1;
+ALTER TABLE answer_translation ALTER COLUMN id RESTART WITH 1;
+ALTER TABLE answer ALTER COLUMN id RESTART WITH 1;
 
 INSERT INTO role (name) VALUES ('USER');
 INSERT INTO role (name) VALUES ('ADMIN');
+
+INSERT INTO category (name)
+VALUES
+('A'),
+('A1'),
+('A2'),
+('AM'),
+('B'),
+('B1'),
+('C'),
+('C1'),
+('D'),
+('D1'),
+('T'),
+('PT');
 
 SET REFERENTIAL_INTEGRITY TRUE;
