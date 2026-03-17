@@ -5,10 +5,10 @@ import pl.prawko.prawko_server.model.CategoryVariant;
 
 public record CreateExamDto(
 
-        @NotNull(message = "userId is required")
+        @NotNull(message = "{createexam.userid.notnull}")
         Long userId,
 
-        @NotNull(message = "category is required")
+        @NotNull(message = "{createexam.categoryname.notnull}")
         CategoryVariant categoryName
 
 ) {
