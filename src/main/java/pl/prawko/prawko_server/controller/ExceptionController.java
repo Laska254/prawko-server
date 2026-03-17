@@ -42,10 +42,9 @@ public class ExceptionController {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(
-                        Map.of(
-                                "message", exception.getMessage(),
-                                "details", exception.getDetails()
-                        ));
+                        Map.ofEntries(
+                                Map.entry("message", exception.getMessage()),
+                                Map.entry("details", exception.getDetails())));
     }
 
     @ApiResponse(responseCode = "404", description = "Entity not found")
@@ -65,10 +64,9 @@ public class ExceptionController {
         return ResponseEntity
                 .badRequest()
                 .body(
-                        Map.of(
-                                "message", "Validation for request failed.",
-                                "details", errors
-                        ));
+                        Map.ofEntries(
+                                Map.entry("message", "Validation for request failed."),
+                                Map.entry("details", errors)));
     }
 
     @ApiResponse(responseCode = "401", description = "Authentication failed")

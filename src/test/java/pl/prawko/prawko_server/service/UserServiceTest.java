@@ -32,9 +32,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    private static final Map<String, String> EXPECTED = Map.of(
-            "userName", "User with username 'pippin' already exists.",
-            "email", "User with email 'pippin@shire.me' already exists."
+    private static final Map<String, String> EXPECTED = Map.ofEntries(
+            Map.entry("userName", "User with username 'pippin' already exists."),
+            Map.entry("email", "User with email 'pippin@shire.me' already exists.")
     );
 
     private static final String ERROR_MESSAGE = "User already exists.";

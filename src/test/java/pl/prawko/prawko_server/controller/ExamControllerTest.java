@@ -66,13 +66,11 @@ public class ExamControllerTest {
         @Test
         void returnBadRequest_whenRequestIsInvalid() {
             final var invalidDto = new CreateExamDto(null, null);
-            final var expected = Map.of(
-                    "message", "Validation for request failed.",
-                    "details", Map.of(
-                            "userId", "userId is required",
-                            "categoryName", "category is required"
-                    )
-            );
+            final var expected = Map.ofEntries(
+                    Map.entry("message", "Validation for request failed."),
+                    Map.entry("details", Map.ofEntries(
+                            Map.entry("userId", "userId is required"),
+                            Map.entry("categoryName", "category is required"))));
 
             restClient.post()
                     .headers(TestUtils::authUser)

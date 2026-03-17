@@ -66,14 +66,15 @@ public class UserControllerTest {
                     "OK",
                     "notValidMail@mail@mail",
                     "lembas");
-            final var expectedMap = Map.of("message", "Validation for request failed.",
-                    "details", Map.of(
-                            "firstName", "First name is too long.",
-                            "lastName", "Last name is required.",
-                            "userName", "Username is too short, must be longer than 3 characters.",
-                            "email", "Email format is not valid.",
-                            "password", "Password is too short, must be longer than 7 characters.")
-            );
+            final var expectedMap = Map.ofEntries(
+                    Map.entry("message", "Validation for request failed."),
+                    Map.entry("details", Map.ofEntries(
+                            Map.entry("firstName", "First name is too long."),
+                            Map.entry("lastName", "Last name is required."),
+                            Map.entry("userName", "Username is too short, must be longer than 3 characters."),
+                            Map.entry("email", "Email format is not valid."),
+                            Map.entry("password", "Password is too short, must be longer than 7 characters."))
+                    ));
 
             restClient.post()
                     .body(invalidDto)
@@ -96,15 +97,14 @@ public class UserControllerTest {
         void returnBadRequest_whenAllFieldsAreNull() {
             registerUser();
             final var invalidDto = new RegisterDto(null, null, null, null, null);
-            final var expected = Map.of(
-                    "message", "Validation for request failed.",
-                    "details", Map.of(
-                            "firstName", "First name is required.",
-                            "lastName", "Last name is required.",
-                            "userName", "Username is required.",
-                            "email", "Email is required.",
-                            "password", "Password is required.")
-            );
+            final var expected = Map.ofEntries(
+                    Map.entry("message", "Validation for request failed."),
+                    Map.entry("details", Map.ofEntries(
+                            Map.entry("firstName", "First name is required."),
+                            Map.entry("lastName", "Last name is required."),
+                            Map.entry("userName", "Username is required."),
+                            Map.entry("email", "Email is required."),
+                            Map.entry("password", "Password is required."))));
 
             restClient.post()
                     .body(invalidDto)
@@ -116,11 +116,11 @@ public class UserControllerTest {
         @Test
         void returnConflict_whenUserAlreadyExists() {
             registerUser();
-            final var expected = Map.of(
-                    "message", "User already exists.",
-                    "details", Map.of(
-                            "email", "User with email 'pippin@shire.me' already exists.",
-                            "userName", "User with username 'pippin' already exists."));
+            final var expected = Map.ofEntries(
+                    Map.entry("message", "User already exists."),
+                    Map.entry("details", Map.ofEntries(
+                            Map.entry("email", "User with email 'pippin@shire.me' already exists."),
+                            Map.entry("userName", "User with username 'pippin' already exists."))));
 
             restClient.post()
                     .body(registerDto)
@@ -252,12 +252,12 @@ public class UserControllerTest {
         @Test
         void returnBadRequest_whenDtoIsInvalid() {
             final var invalidUpdateRequest = UserTestData.createInvalidUserUpdateRequest();
-            final var expected = Map.of(
-                    "message", "Validation for request failed.",
-                    "details", Map.of(
-                            "firstName", "First name is too short.",
-                            "lastName", "Last name is too short.",
-                            "email", "Email format is not valid."));
+            final var expected = Map.ofEntries(
+                    Map.entry("message", "Validation for request failed."),
+                    Map.entry("details", Map.ofEntries(
+                            Map.entry("firstName", "First name is too short."),
+                            Map.entry("lastName", "Last name is too short."),
+                            Map.entry("email", "Email format is not valid."))));
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)
