@@ -6,30 +6,30 @@ import jakarta.validation.constraints.Size;
 
 public record RegisterDto(
 
-        @NotBlank(message = "First name is required.")
-        @Size(min = 3, message = "First name is too short.")
-        @Size(max = 31, message = "First name is too long.")
+        @NotBlank(message = "{firstname.required}")
+        @Size(min = 3, message = "{firstname.size.min}")
+        @Size(max = 31, message = "{firstname.size.max}")
         String firstName,
 
-        @NotBlank(message = "Last name is required.")
-        @Size(min = 3, message = "Last name is too short.")
-        @Size(max = 31, message = "Last name is too long.")
+        @NotBlank(message = "{lastname.required}")
+        @Size(min = 3, message = "lastname.size.min")
+        @Size(max = 31, message = "lastname.size.max")
         String lastName,
 
-        @NotBlank(message = "Username is required.")
-        @Size(min = 3, message = "Username is too short, must be longer than 3 characters.")
-        @Size(max = 31, message = "Username is too long, must be shorter than 31 characters.")
+        @NotBlank(message = "{username.required}")
+        @Size(min = 3, message = "{username.size.min}")
+        @Size(max = 31, message = "{username.size.max}")
         String userName,
 
-        @NotBlank(message = "Email is required.")
-        @Size(min = 5, message = "Email is too short, must be longer than 5 characters.")
-        @Size(max = 63, message = "Email is too long, must be shorter than 63 characters.")
-        @Email(message = "Email format is not valid.")
+        @NotBlank(message = "{email.required}")
+        @Size(min = 5, message = "{email.size.min}")
+        @Size(max = 63, message = "{email.size.max}")
+        @Email(message = "{email.notvalid}")
         String email,
 
-        @NotBlank(message = "Password is required.")
-        @Size(min = 7, message = "Password is too short, must be longer than 7 characters.")
-        @Size(max = 63, message = "Password is too long, must be shorter than 63 characters.")
+        @NotBlank(message = "{password.required}")
+        @Size(min = 7, message = "{password.size.min}")
+        @Size(max = 63, message = "{password.size.max}")
         String password
 
 ) {

@@ -69,11 +69,11 @@ public class UserControllerTest {
             final var expectedMap = Map.ofEntries(
                     Map.entry("message", "Validation for request failed."),
                     Map.entry("details", Map.ofEntries(
-                            Map.entry("firstName", "First name is too long."),
+                            Map.entry("firstName", "First name must be at most 31 characters."),
                             Map.entry("lastName", "Last name is required."),
-                            Map.entry("userName", "Username is too short, must be longer than 3 characters."),
+                            Map.entry("userName", "Username must be at least 3 characters."),
                             Map.entry("email", "Email format is not valid."),
-                            Map.entry("password", "Password is too short, must be longer than 7 characters."))
+                            Map.entry("password", "Password must be at least 7 characters."))
                     ));
 
             restClient.post()
@@ -255,8 +255,8 @@ public class UserControllerTest {
             final var expected = Map.ofEntries(
                     Map.entry("message", "Validation for request failed."),
                     Map.entry("details", Map.ofEntries(
-                            Map.entry("firstName", "First name is too short."),
-                            Map.entry("lastName", "Last name is too short."),
+                            Map.entry("firstName", "First name must be at least 3 characters."),
+                            Map.entry("lastName", "Last name must be at least 3 characters."),
                             Map.entry("email", "Email format is not valid."))));
 
             restClient.patch()
