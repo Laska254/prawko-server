@@ -7,16 +7,29 @@ import org.springframework.security.authentication.event.AbstractAuthenticationF
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.stereotype.Component;
 
+/**
+ * Authentication event listener for logging security events.
+ */
 @Component
 public class AuthenticationEvents {
 
     private static final Logger log = LoggerFactory.getLogger(AuthenticationEvents.class);
 
+    /**
+     * Logs successful authentication events.
+     *
+     * @param success the {@link AuthenticationSuccessEvent} containing authentication details
+     */
     @EventListener
     public void onSuccess(AuthenticationSuccessEvent success) {
         log.info("User {} logged successfully.", success.getAuthentication().getName());
     }
 
+    /**
+     * Logs failed authentication events.
+     *
+     * @param failure the {@link AbstractAuthenticationFailureEvent} containing failure details
+     */
     @EventListener
     public void onFailure(AbstractAuthenticationFailureEvent failure) {
         log.warn("User {} failed to authenticate. {}", failure.getAuthentication().getName(), failure.getException().getMessage());
