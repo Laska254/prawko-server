@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.service.support;
+package pl.prawko.prawko_server.util;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -13,7 +13,6 @@ import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.implementation.QuestionService;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
-import pl.prawko.prawko_server.util.ExamGenerator;
 
 import java.util.List;
 

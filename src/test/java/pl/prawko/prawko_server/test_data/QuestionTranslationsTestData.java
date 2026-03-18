@@ -15,7 +15,7 @@ import static pl.prawko.prawko_server.test_data.LanguageTestData.PL;
 
 public class QuestionTranslationsTestData {
 
-    private final static Map<QuestionType, Map<Language, String>> TRANSLATIONS = Map.ofEntries(
+    private static final Map<QuestionType, Map<Language, String>> TRANSLATIONS = Map.ofEntries(
             Map.entry(QuestionType.BASIC, Map.ofEntries(
                     Map.entry(PL, "Czy w przedstawionej sytuacji masz prawo - mimo podawanego sygnału - skręcić w prawo?"),
                     Map.entry(EN, "Are you allowed in this situation to turn right despite the light displayed?"),
