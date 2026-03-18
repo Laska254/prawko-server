@@ -2,7 +2,6 @@ package pl.prawko.prawko_server.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Question;
@@ -21,14 +20,13 @@ public class ExamGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(ExamGenerator.class);
 
-    @NonNull
     private final QuestionService questionService;
 
-    public ExamGenerator(@NonNull final QuestionService questionService) {
+    public ExamGenerator(final QuestionService questionService) {
         this.questionService = questionService;
     }
 
-    public List<Question> generate(@NonNull final Category category) {
+    public List<Question> generate(final Category category) {
         log.info("Preparing questions for exam, using category '{}'", category.getName());
         return Stream.of(QuestionType.BASIC, QuestionType.SPECIAL)
                 .map(type -> selectQuestionsBy(category, type))
@@ -36,8 +34,8 @@ public class ExamGenerator {
                 .toList();
     }
 
-    private List<Question> selectQuestionsBy(@NonNull final Category category,
-                                             @NonNull final QuestionType questionType) {
+    private List<Question> selectQuestionsBy(final Category category,
+                                             final QuestionType questionType) {
         log.debug("Fetching questions with category '{}' and type '{}'", category.getName(), questionType);
         final var questions = questionService.getAllByTypeAndCategory(questionType, category.getName())
                 .stream()
@@ -49,7 +47,7 @@ public class ExamGenerator {
                 .toList();
     }
 
-    private List<Question> selectRandomQuestions(@NonNull final List<Question> questions, final int count) {
+    private List<Question> selectRandomQuestions(final List<Question> questions, final int count) {
         log.debug("Shuffling {} questions and return {} random ones", questions.size(), count);
         var copy = new ArrayList<>(questions);
         Collections.shuffle(copy);

@@ -1,10 +1,9 @@
 package pl.prawko.prawko_server.service.implementation;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -38,13 +37,11 @@ public class UserService implements IUserService, UserDetailsService {
 
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
-    @NonNull
     private final UserRepository repository;
-    @NonNull
     private final UserMapper mapper;
 
-    public UserService(@NonNull final UserRepository repository,
-                       @NonNull final UserMapper mapper) {
+    public UserService(final UserRepository repository,
+                       final UserMapper mapper) {
         this.repository = repository;
         this.mapper = mapper;
     }
@@ -56,7 +53,7 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Override
     @Transactional
-    public long register(@NonNull final RegisterDto dto) {
+    public long register(final RegisterDto dto) {
         log.info("Attempting to register new user: {}", dto.userName());
         validateNoConflict(dto.userName(), dto.email());
         final var user = mapper.fromDto(dto);
@@ -72,7 +69,7 @@ public class UserService implements IUserService, UserDetailsService {
      * @return {@code true} if entity exist
      */
     @Override
-    public boolean checkIfExist(@NonNull final String userNameOrEmail) {
+    public boolean checkIfExist(final String userNameOrEmail) {
         log.debug("Checking if user exists by username or email: {}", userNameOrEmail);
         final var exists = repository.existsByUserName(userNameOrEmail) || repository.existsByEmail(userNameOrEmail);
         log.debug("User exists: {}", exists);
@@ -86,7 +83,7 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Nullable
     @Override
-    public User getByUserNameOrEmail(@NonNull final String userNameOrEmail) {
+    public User getByUserNameOrEmail(final String userNameOrEmail) {
         log.info("Fetching user by username or email: {}", userNameOrEmail);
         return repository.findByUserNameOrEmail(userNameOrEmail)
                 .orElseThrow(() -> {
@@ -104,7 +101,6 @@ public class UserService implements IUserService, UserDetailsService {
      * @return {@link org.springframework.security.core.userdetails.User} object with granted authorities based on user's roles
      * @throws UsernameNotFoundException if user have not been found with the provided details
      */
-    @Nullable
     @Override
     public UserDetails loadUserByUsername(final String userNameOrEmail) throws UsernameNotFoundException {
         log.info("Loading user by username or email: {}", userNameOrEmail);
@@ -157,7 +153,7 @@ public class UserService implements IUserService, UserDetailsService {
 
     @Transactional
     @Override
-    public UserDto updateUser(long userId, @NonNull final UserUpdateRequest updateRequest) {
+    public UserDto updateUser(long userId, final UserUpdateRequest updateRequest) {
         log.info("Updating user with id '{}' using: {}", userId, updateRequest);
         final var user = getById(userId);
         validateNoConflict(updateRequest.userName(), updateRequest.email());
@@ -184,7 +180,7 @@ public class UserService implements IUserService, UserDetailsService {
         log.info("Successfully deleted user '{}'", user.getUserName());
     }
 
-    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(@NonNull final Collection<Role> roles) {
+    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(final Collection<Role> roles) {
         log.debug("Mapping {} role(s) to authorities.", roles.size());
         return roles.stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
