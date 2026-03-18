@@ -16,7 +16,7 @@ import pl.prawko.prawko_server.util.ExamGenerator;
 import java.util.Collections;
 
 /**
- * Implementation of {@link IExamService} that manages an {@link Exam} entities.
+ * Implementation of {@link IExamService} that manages {@link Exam} entities.
  */
 @Service
 public class ExamService implements IExamService {
@@ -44,7 +44,7 @@ public class ExamService implements IExamService {
     /**
      * {@inheritDoc}
      *
-     * @return Optional of created {@code exam} or empty if {@code user} or {@code category} have not been found.
+     * @throws EntityNotFoundException if the user or category is not found
      */
     @Override
     @Transactional
@@ -66,6 +66,11 @@ public class ExamService implements IExamService {
         return exam.getId();
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException if the exam with the given ID is not found
+     */
     @Nullable
     @Override
     @Transactional
