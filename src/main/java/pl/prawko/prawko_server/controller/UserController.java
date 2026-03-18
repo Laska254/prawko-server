@@ -24,6 +24,11 @@ import pl.prawko.prawko_server.service.implementation.UserService;
 
 import java.util.List;
 
+/**
+ * REST controller for user management operations.
+ *
+ * <p>Provides endpoints for user registration, retrieval, updating, and deletion.
+ */
 @Tag(name = "Users", description = "User management endpoints")
 @Validated
 @RestController

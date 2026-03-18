@@ -16,6 +16,13 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.LoginDto;
 
+/**
+ * REST controller for authentication operations.
+ *
+ * <p>Provides endpoints for user login and authentication management.
+ * Authentication is performed using Spring Security's authentication manager,
+ * and successful authentication stores the Authentication in the SecurityContext.
+ */
 @Tag(name = "Auth", description = "Authentication management endpoints")
 @RestController
 @RequestMapping(ApiConstants.AUTH_BASE_URL)

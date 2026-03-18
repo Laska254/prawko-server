@@ -19,6 +19,14 @@ import pl.prawko.prawko_server.dto.CreateExamDto;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.service.implementation.ExamService;
 
+/**
+ * REST controller for exam management operations.
+ *
+ * <p>Provides endpoints for creating and retrieving exams. Exams are generated
+ * for users based on specified categories and contain randomized questions
+ * for assessment purposes.
+ *
+ */
 @Tag(name = "Exams", description = "Exams management endpoints")
 @Validated
 @RestController

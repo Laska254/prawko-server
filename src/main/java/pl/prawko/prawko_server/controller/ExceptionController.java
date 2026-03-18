@@ -18,6 +18,9 @@ import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Centralized exception handler for the entire REST API.
+ */
 @Tag(name = "Exceptions", description = "Controller to handle exceptions")
 @RestControllerAdvice
 public class ExceptionController {

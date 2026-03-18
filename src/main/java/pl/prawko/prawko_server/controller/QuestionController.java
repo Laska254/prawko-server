@@ -21,6 +21,13 @@ import pl.prawko.prawko_server.service.implementation.QuestionService;
 
 import java.util.List;
 
+/**
+ * REST controller for question management operations.
+ *
+ * <p>Provides endpoints for uploading questions via CSV files and retrieving
+ * individual or all questions from the database.
+ *
+ */
 @Tag(name = "Questions", description = "Questions management endpoints")
 @Validated
 @RestController
