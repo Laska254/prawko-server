@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,15 +31,15 @@ public class ExamGenerator {
     public List<Question> generate(@NonNull final Category category) {
         log.info("Preparing questions for exam, using category '{}'", category.getName());
         return Stream.of(QuestionType.BASIC, QuestionType.SPECIAL)
-                .map(type -> fetchQuestions(category, type))
+                .map(type -> selectQuestionsBy(category, type))
                 .flatMap(Collection::stream)
                 .toList();
     }
 
-    private List<Question> fetchQuestions(@NonNull final Category category,
-                                          @NonNull final QuestionType questionType) {
+    private List<Question> selectQuestionsBy(@NonNull final Category category,
+                                             @NonNull final QuestionType questionType) {
         log.debug("Fetching questions with category '{}' and type '{}'", category.getName(), questionType);
-        final Map<Integer, List<Question>> questions = questionService.getAllByTypeAndCategory(questionType, category.getName())
+        final var questions = questionService.getAllByTypeAndCategory(questionType, category.getName())
                 .stream()
                 .collect(Collectors.groupingBy(Question::getPoints));
         return questionType.getDistribution().entrySet().stream()
