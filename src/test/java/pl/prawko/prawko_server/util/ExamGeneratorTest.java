@@ -8,13 +8,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.model.Category;
-import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.implementation.QuestionService;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -57,9 +54,9 @@ public class ExamGeneratorTest {
 
         @Test
         void shouldReturnCorrectNumberOfSpecialQuestions() {
-            List<Question> result = examGenerator.generate(CATEGORY);
+            final var result = examGenerator.generate(CATEGORY);
 
-            long specialCount = result.stream().filter(q -> q.getType() == QuestionType.SPECIAL).count();
+            final var specialCount = result.stream().filter(q -> q.getType() == QuestionType.SPECIAL).count();
             assertThat(specialCount).isEqualTo(12);
         }
 
