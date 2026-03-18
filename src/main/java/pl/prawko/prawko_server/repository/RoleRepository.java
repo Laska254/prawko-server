@@ -1,7 +1,6 @@
 package pl.prawko.prawko_server.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 import pl.prawko.prawko_server.model.Role;
 
@@ -21,6 +20,6 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
      * @param name provided name of the role
      * @return role when found, otherwise empty
      */
-    Optional<Role> findByName(@NonNull final String name);
+    Optional<Role> findByName(final String name);
 
 }

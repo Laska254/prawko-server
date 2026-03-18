@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.service;
 
-import org.springframework.lang.NonNull;
 import pl.prawko.prawko_server.model.Category;
 
 import java.util.List;
@@ -19,7 +18,7 @@ public interface ICategoryService {
      * @param name name of the category to retrieve
      * @return found {@link Category}
      */
-    Category findByName(@NonNull String name);
+    Category findByName(String name);
 
     /**
      * Parses a comma-separated string of category names and retrieves all matching {@link Category} entities from the repository.
@@ -30,6 +29,6 @@ public interface ICategoryService {
      * @param input a comma-separated string of category names
      * @return a list of matching {@link Category} entities
      */
-    List<Category> findAllFromString(@NonNull String input);
+    List<Category> findAllFromString(String input);
 
 }

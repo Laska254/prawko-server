@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.service;
 
-import org.springframework.lang.NonNull;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.mapper.QuestionMapper;
@@ -26,14 +25,14 @@ public interface IQuestionService {
      * @param file the CSV file containing questions data
      * @return a list of {@link Question} entities
      */
-    List<Question> parseFileToQuestions(@NonNull MultipartFile file);
+    List<Question> parseFileToQuestions(MultipartFile file);
 
     /**
      * Saves provided list of {@link Question} entities to the database.
      *
      * @param questions the list of questions to save
      */
-    void saveAll(@NonNull List<Question> questions);
+    void saveAll(List<Question> questions);
 
     /**
      * Gets all questions by {@link QuestionType} and {@link Category}'s name.
@@ -42,7 +41,7 @@ public interface IQuestionService {
      * @param category category name
      * @return list of all found questions
      */
-    List<Question> getAllByTypeAndCategory(@NonNull QuestionType type, @NonNull String category);
+    List<Question> getAllByTypeAndCategory(QuestionType type, String category);
 
     /**
      * Get a {@code question} by id.
