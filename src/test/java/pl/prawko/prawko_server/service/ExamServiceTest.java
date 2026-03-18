@@ -9,7 +9,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.mapper.ExamMapper;
 import pl.prawko.prawko_server.model.Exam;
-import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.service.implementation.CategoryService;
 import pl.prawko.prawko_server.service.implementation.ExamService;
@@ -17,11 +16,10 @@ import pl.prawko.prawko_server.service.implementation.QuestionService;
 import pl.prawko.prawko_server.service.implementation.UserService;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
 import pl.prawko.prawko_server.test_data.ExamTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.util.ExamGenerator;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,6 +47,9 @@ public class ExamServiceTest {
     @Mock
     private ExamMapper examMapper;
 
+    @Mock
+    private ExamGenerator examGenerator;
+
     @InjectMocks
     private ExamService service;
 
@@ -59,14 +60,10 @@ public class ExamServiceTest {
         void returnExamId_whenExamIsCreated() {
             final var user = UserTestData.createTestUserPippin();
             final var category = CategoryTestData.CATEGORY_PT;
-            final var basicQuestions = List.of(QuestionTestData.createQuestion(QuestionType.BASIC));
-            final var specialQuestions = List.of(QuestionTestData.createQuestion(QuestionType.SPECIAL));
             final var exam = ExamTestData.createExam(user);
 
             when(userService.getById(user.getId())).thenReturn(user);
             when(categoryService.findByName(category.getName())).thenReturn(category);
-            when(questionService.getAllByTypeAndCategory(QuestionType.BASIC, category.getName())).thenReturn(basicQuestions);
-            when(questionService.getAllByTypeAndCategory(QuestionType.SPECIAL, category.getName())).thenReturn(specialQuestions);
             when(repository.save(any(Exam.class))).thenAnswer(inv -> {
                 inv.getArgument(0, Exam.class).setId(1L);
                 return null;
@@ -85,7 +82,7 @@ public class ExamServiceTest {
 
             when(userService.getById(user.getId())).thenReturn(user);
             when(categoryService.findByName(category.getName())).thenReturn(category);
-            when(questionService.getAllByTypeAndCategory(any(), any())).thenReturn(Collections.emptyList());
+            when(examGenerator.generate(category)).thenReturn(Collections.emptyList());
 
             service.createExam(user.getId(), category.getName());
 
@@ -103,7 +100,7 @@ public class ExamServiceTest {
                     .isInstanceOf(EntityNotFoundException.class)
                     .hasMessageContaining(expectedMessage);
 
-            verifyNoInteractions(repository, categoryService, questionService, examMapper);
+            verifyNoInteractions(repository, categoryService, questionService, examMapper, examGenerator);
         }
 
         @Test
@@ -118,7 +115,7 @@ public class ExamServiceTest {
                     .isInstanceOf(EntityNotFoundException.class)
                     .hasMessageContaining("Category not found");
 
-            verifyNoInteractions(repository, questionService);
+            verifyNoInteractions(repository, questionService, examMapper, examGenerator);
         }
 
     }
