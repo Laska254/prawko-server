@@ -28,9 +28,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Implementation of {@link IUserService} that manage users entities.
+ * Implementation of {@link IUserService} that manages user entities.
  * <p>
- * It also implements {@link UserDetailsService} for authentication purposes.
+ * Also implements {@link UserDetailsService} for authentication purposes.
  */
 @Service
 public class UserService implements IUserService, UserDetailsService {
@@ -95,7 +95,6 @@ public class UserService implements IUserService, UserDetailsService {
 
     /**
      * Load user-specific data during authentication.
-     * <p>
      *
      * @param userNameOrEmail the userName or email identifying the user
      * @return {@link org.springframework.security.core.userdetails.User} object with granted authorities based on user's roles
@@ -151,6 +150,12 @@ public class UserService implements IUserService, UserDetailsService {
                 .toList();
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException if user with the given ID have not been found
+     * @throws AlreadyExistsException  if the new username or email conflicts with another user
+     */
     @Transactional
     @Override
     public UserDto updateUser(long userId, final UserUpdateRequest updateRequest) {
