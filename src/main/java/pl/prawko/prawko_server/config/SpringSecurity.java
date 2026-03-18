@@ -17,14 +17,19 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Spring security configuration class for role-based access using basic authentication.
- * <p>
- * It disables CSRF protection and enforces role-based authorization for all endpoints.
- * <p>
- * Rules:
+ * Spring Security configuration class for the application.
+ *
+ * <p>This configuration enables HTTP Basic Authentication for stateless REST API access
+ * with role-based authorization (RBAC). It defines which endpoints are public and which
+ * require specific roles (ADMIN, USER) for access.
+ *
+ * <p>Authorization rules:
  * <ul>
- *     <li>Only user with the {@code ADMIN} role can upload file using {@code POST /questions}</li>
- *     <li>Allow public access to {@code POST /users} for registration</li>
+ *     <li>Public: {@code POST /auth} (login), {@code POST /users} (registration)</li>
+ *     <li>ADMIN only: {@code POST /questions} (upload), {@code GET /questions} (list all)</li>
+ *     <li>USER+ required: {@code GET /questions/**}, {@code POST/GET /exams}</li>
+ *     <li>ADMIN only: User management endpoints, delete operations</li>
+ *     <li>Public: Swagger UI and OpenAPI docs</li>
  * </ul>
  */
 @Configuration
@@ -78,7 +83,12 @@ public class SpringSecurity {
     /**
      * Configures the application's security filter chain.
      *
-     * @param http the {@link HttpSecurity} instance to customize
+     * <p>CSRF protection is disabled because this is a stateless REST API using HTTP Basic Authentication
+     * and Bearer tokens, which are inherently protected against CSRF attacks. CSRF protection is only
+     * necessary for form-based authentication in stateful sessions.
+     *
+     * @param http          the {@link HttpSecurity} instance to customize
+     * @param loggingFilter the {@link LoggingFilter} for request/response logging
      * @return a fully configured {@link SecurityFilterChain} with defined rules
      * @throws Exception if an error occurs while building the filter chain
      */
