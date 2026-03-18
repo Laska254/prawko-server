@@ -5,6 +5,7 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 public class QuestionTestData {
 
@@ -66,6 +67,12 @@ public class QuestionTestData {
                 categories,
                 translations
         );
+    }
+
+    public static List<Question> createQuestionsByTypeAndValue(QuestionType type, int points, int count) {
+        return IntStream.range(0, count)
+                .mapToObj(question -> new Question().setType(type).setPoints(points))
+                .toList();
     }
 
     static List<Question> createQuestions(final QuestionType type) {

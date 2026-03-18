@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.model;
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Represents the type of question.
@@ -11,22 +12,40 @@ import java.util.Arrays;
 public enum QuestionType {
 
     /**
+     * key - points value of questions
+     * value - amount of questions
+     */
+
+    /**
      * True/False question type
      */
-    BASIC("PODSTAWOWY"),
+    BASIC("PODSTAWOWY", Map.ofEntries(
+            Map.entry(1, 4),
+            Map.entry(2, 6),
+            Map.entry(3, 10))),
     /**
      * ABC question type
+     * //
      */
-    SPECIAL("SPECJALISTYCZNY");
+    SPECIAL("SPECJALISTYCZNY", Map.ofEntries(
+            Map.entry(1, 2),
+            Map.entry(2, 4),
+            Map.entry(3, 6)));
 
     private final String name;
+    private final Map<Integer, Integer> distribution;
 
-    QuestionType(final String name) {
+    QuestionType(final String name, final Map<Integer, Integer> distribution) {
         this.name = name;
+        this.distribution = distribution;
     }
 
     public String getName() {
         return name;
+    }
+
+    public Map<Integer, Integer> getDistribution() {
+        return distribution;
     }
 
     /**
