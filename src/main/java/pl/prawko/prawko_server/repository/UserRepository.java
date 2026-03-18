@@ -3,7 +3,6 @@ package pl.prawko.prawko_server.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.lang.NonNull;
 import pl.prawko.prawko_server.model.User;
 
 import java.util.Optional;
@@ -21,7 +20,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param userName provided username to check for existence
      * @return {@code true} if a user already exists, {@code false} otherwise
      */
-    boolean existsByUserName(@NonNull final String userName);
+    boolean existsByUserName(final String userName);
 
     /**
      * Checks whether {@link User} already exists with specified email.
@@ -29,7 +28,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param email provided email to check for existence
      * @return {@code true} if a user already exists, {@code false} otherwise
      */
-    boolean existsByEmail(@NonNull final String email);
+    boolean existsByEmail(final String email);
 
     /**
      * Retrieves {@code user} by its userName or email.
@@ -38,6 +37,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return An {@code user} when found
      */
     @Query("FROM User user WHERE user.userName = :input OR user.email = :input")
-    Optional<User> findByUserNameOrEmail(@NonNull @Param("input") final String userNameOrEmail);
+    Optional<User> findByUserNameOrEmail(@Param("input") final String userNameOrEmail);
 
 }

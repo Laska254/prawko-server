@@ -1,10 +1,9 @@
 package pl.prawko.prawko_server.service.implementation;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.repository.RoleRepository;
@@ -18,10 +17,9 @@ public class RoleService implements IRoleService {
 
     private static final Logger log = LoggerFactory.getLogger(RoleService.class);
 
-    @NonNull
     private final RoleRepository repository;
 
-    public RoleService(@NonNull final RoleRepository repository) {
+    public RoleService(final RoleRepository repository) {
         this.repository = repository;
     }
 
@@ -32,7 +30,7 @@ public class RoleService implements IRoleService {
      */
     @Nullable
     @Override
-    public Role getByName(@NonNull final String name) {
+    public Role getByName(final String name) {
         log.debug("Fetching role '{}'", name);
         return repository.findByName(name)
                 .orElseThrow(() -> {

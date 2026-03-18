@@ -3,7 +3,6 @@ package pl.prawko.prawko_server.service.implementation;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.repository.CategoryRepository;
@@ -21,7 +20,6 @@ public class CategoryService implements ICategoryService {
 
     private static final Logger log = LoggerFactory.getLogger(CategoryService.class);
 
-    @NonNull
     private final CategoryRepository repository;
 
     /**
@@ -29,7 +27,7 @@ public class CategoryService implements ICategoryService {
      *
      * @param repository the category repository used for data access
      */
-    public CategoryService(@NonNull final CategoryRepository repository) {
+    public CategoryService(final CategoryRepository repository) {
         this.repository = repository;
     }
 
@@ -39,14 +37,14 @@ public class CategoryService implements ICategoryService {
      * @throws RuntimeException when not found
      */
     @Override
-    public Category findByName(@NonNull final String name) {
+    public Category findByName(final String name) {
         log.info("Fetching for category '{}'", name);
         return repository.findByName(name)
                 .orElseThrow(() -> new EntityNotFoundException("Category '" + name + "' not found."));
     }
 
     @Override
-    public List<Category> findAllFromString(@NonNull final String input) {
+    public List<Category> findAllFromString(final String input) {
         log.info("Fetching categories from '{}'", input);
         return Arrays.stream(input.split(","))
                 .map(repository::findByName)

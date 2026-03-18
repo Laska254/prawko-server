@@ -6,7 +6,6 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,14 +24,13 @@ public class CSVParser {
 
     private static final Logger log = LoggerFactory.getLogger(CSVParser.class);
 
-    @NonNull
     private final QuestionMapper mapper;
 
-    public CSVParser(@NonNull final QuestionMapper mapper) {
+    public CSVParser(final QuestionMapper mapper) {
         this.mapper = mapper;
     }
 
-    public List<Question> parseFileToQuestions(@NonNull final MultipartFile file) {
+    public List<Question> parseFileToQuestions(final MultipartFile file) {
         validate(file);
         try (var reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
@@ -73,7 +71,7 @@ public class CSVParser {
      * @param questionCSVs the list of CSV models to map
      * @return the list of mapped {@link Question} entities
      */
-    private List<Question> mapQuestionCSVModelsToQuestions(@NonNull final List<QuestionCSV> questionCSVs) {
+    private List<Question> mapQuestionCSVModelsToQuestions(final List<QuestionCSV> questionCSVs) {
         log.debug("Mapping {} questions", questionCSVs.size());
         return questionCSVs.stream()
                 .map(mapper::mapQuestionCSVToQuestion)

@@ -1,7 +1,6 @@
 package pl.prawko.prawko_server.service;
 
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
@@ -20,7 +19,7 @@ public interface IUserService {
      * @param dto DTO containing registration details
      * @return created {@link User}
      */
-    long register(@NonNull RegisterDto dto);
+    long register(RegisterDto dto);
 
     /**
      * Checks if there is a {@link User} with same {@code userName} or {@code email}.
@@ -28,7 +27,7 @@ public interface IUserService {
      * @param userNameOrEmail provided name or email
      * @return true if exists
      */
-    boolean checkIfExist(@NonNull String userNameOrEmail);
+    boolean checkIfExist(String userNameOrEmail);
 
     /**
      * Gets an {@code user} when exists by userName or Email.
@@ -37,7 +36,7 @@ public interface IUserService {
      * @return {@code User} when found
      */
     @Nullable
-    User getByUserNameOrEmail(@NonNull String userNameOrEmail);
+    User getByUserNameOrEmail(String userNameOrEmail);
 
     /**
      * Get {@code user} by {@code id}.
@@ -68,7 +67,7 @@ public interface IUserService {
      * @param userId        provided id of user to update
      * @param updateRequest request that contain new details of user
      */
-    UserDto updateUser(long userId, @NonNull UserUpdateRequest updateRequest);
+    UserDto updateUser(long userId, UserUpdateRequest updateRequest);
 
     /**
      * Deletes an {@code user}.

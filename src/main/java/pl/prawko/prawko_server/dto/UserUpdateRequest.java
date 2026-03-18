@@ -2,7 +2,7 @@ package pl.prawko.prawko_server.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public record UserUpdateRequest(
 

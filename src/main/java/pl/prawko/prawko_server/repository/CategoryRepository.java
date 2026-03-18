@@ -1,7 +1,6 @@
 package pl.prawko.prawko_server.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 import pl.prawko.prawko_server.model.Category;
 
@@ -22,6 +21,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
      * @param name the name of the category to find
      * @return an {@link Optional} of {@link Category} if found, otherwise empty
      */
-    Optional<Category> findByName(@NonNull final String name);
+    Optional<Category> findByName(final String name);
 
 }

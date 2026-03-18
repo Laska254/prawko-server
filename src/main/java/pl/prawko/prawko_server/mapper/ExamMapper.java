@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.mapper;
 
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.model.Exam;
@@ -14,13 +13,11 @@ import pl.prawko.prawko_server.model.Exam;
 @Component
 public class ExamMapper {
 
-    @NonNull
     private final QuestionMapper questionMapper;
-    @NonNull
     private final AnswerMapper answerMapper;
 
-    public ExamMapper(@NonNull final QuestionMapper questionMapper,
-                      @NonNull final AnswerMapper answerMapper) {
+    public ExamMapper(final QuestionMapper questionMapper,
+                      final AnswerMapper answerMapper) {
         this.questionMapper = questionMapper;
         this.answerMapper = answerMapper;
     }
@@ -31,8 +28,7 @@ public class ExamMapper {
      * @param entity {@code Exam} to map
      * @return mapped {@code ExamDto}
      */
-    @NonNull
-    public ExamDto toDto(@NonNull final Exam entity) {
+    public ExamDto toDto(final Exam entity) {
         final var questions = entity.getQuestions().stream()
                 .map(questionMapper::toDto)
                 .toList();

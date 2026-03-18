@@ -1,7 +1,6 @@
 package pl.prawko.prawko_server.service;
 
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 import pl.prawko.prawko_server.model.Role;
 
 /**
@@ -16,6 +15,6 @@ public interface IRoleService {
      * @return matching role
      */
     @Nullable
-    Role getByName(@NonNull String name);
+    Role getByName(String name);
 
 }

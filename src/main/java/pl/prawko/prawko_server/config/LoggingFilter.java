@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -22,9 +21,9 @@ public class LoggingFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(LoggingFilter.class);
 
     @Override
-    protected void doFilterInternal(@NonNull final HttpServletRequest request,
-                                    @NonNull final HttpServletResponse response,
-                                    @NonNull final FilterChain filterChain)
+    protected void doFilterInternal(final HttpServletRequest request,
+                                    final HttpServletResponse response,
+                                    final FilterChain filterChain)
             throws ServletException, IOException {
         final var start = System.currentTimeMillis();
         final var method = request.getMethod();

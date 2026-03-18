@@ -1,7 +1,6 @@
 package pl.prawko.prawko_server.service;
 
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.model.Exam;
 
@@ -17,7 +16,7 @@ public interface IExamService {
      * @param categoryName category used to construct an exam
      * @return a correctly generated {@code exam}
      */
-    long createExam(long userId, @NonNull String categoryName);
+    long createExam(long userId, String categoryName);
 
     /**
      * Finds a {@link Exam} entity by its id and map it to {@link ExamDto}.

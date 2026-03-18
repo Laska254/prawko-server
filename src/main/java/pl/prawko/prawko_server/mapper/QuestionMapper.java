@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.mapper;
 
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.dto.QuestionTranslationDto;
@@ -28,16 +27,13 @@ import java.util.List;
 @Component
 public class QuestionMapper {
 
-    @NonNull
     private final CategoryService categoryService;
-    @NonNull
     private final LanguageService languageService;
-    @NonNull
     private final AnswerMapper answerMapper;
 
-    public QuestionMapper(@NonNull final CategoryService categoryService,
-                          @NonNull final LanguageService languageService,
-                          @NonNull final AnswerMapper answerMapper) {
+    public QuestionMapper(final CategoryService categoryService,
+                          final LanguageService languageService,
+                          final AnswerMapper answerMapper) {
         this.categoryService = categoryService;
         this.languageService = languageService;
         this.answerMapper = answerMapper;
@@ -50,8 +46,7 @@ public class QuestionMapper {
      * @param questionCSV CSV model to map question from
      * @return mapped {@code Question} entity
      */
-    @NonNull
-    public Question mapQuestionCSVToQuestion(@NonNull final QuestionCSV questionCSV) {
+    public Question mapQuestionCSVToQuestion(final QuestionCSV questionCSV) {
         final var question = new Question()
                 .setId(questionCSV.id())
                 .setName(questionCSV.name())
@@ -70,8 +65,7 @@ public class QuestionMapper {
      * @param question entity to map
      * @return mapped entity
      */
-    @NonNull
-    public QuestionDto toDto(@NonNull final Question question) {
+    public QuestionDto toDto(final Question question) {
         final var answers = question.getAnswers().stream()
                 .map(answerMapper::toDto)
                 .toList();
@@ -99,8 +93,8 @@ public class QuestionMapper {
      * @param question    {@link Question} entity that translations would be linked to
      * @return list of translated
      */
-    private List<QuestionTranslation> mapQuestionTranslations(@NonNull final QuestionCSV questionCSV,
-                                                              @NonNull final Question question) {
+    private List<QuestionTranslation> mapQuestionTranslations(final QuestionCSV questionCSV,
+                                                              final Question question) {
         return languageService.findAll().stream()
                 .sorted(Comparator.comparing(Language::getId))
                 .map(language -> new QuestionTranslation()
@@ -117,9 +111,8 @@ public class QuestionMapper {
      * @param language    language of translation that we are looking for
      * @return content translation in given language
      */
-    @NonNull
-    private String getContent(@NonNull final QuestionCSV questionCSV,
-                              @NonNull final Language language) {
+    private String getContent(final QuestionCSV questionCSV,
+                              final Language language) {
         return switch (language.getCode()) {
             case Language.PL -> questionCSV.contentPL();
             case Language.EN -> questionCSV.contentEN();

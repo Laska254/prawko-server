@@ -3,7 +3,6 @@ package pl.prawko.prawko_server.service.implementation;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
@@ -30,11 +29,8 @@ public class QuestionService implements IQuestionService {
 
     private static final Logger log = LoggerFactory.getLogger(QuestionService.class);
 
-    @NonNull
     private final QuestionRepository repository;
-    @NonNull
     private final QuestionMapper mapper;
-    @NonNull
     private final CSVParser parser;
 
     /**
@@ -43,9 +39,9 @@ public class QuestionService implements IQuestionService {
      * @param repository the {@link QuestionRepository} used to persist {@link Question} entities
      * @param parser     the {@link CSVParser} used to parse file to {@link Question} entities
      */
-    public QuestionService(@NonNull final QuestionRepository repository,
-                           @NonNull final QuestionMapper mapper,
-                           @NonNull final CSVParser parser) {
+    public QuestionService(final QuestionRepository repository,
+                           final QuestionMapper mapper,
+                           final CSVParser parser) {
         this.repository = repository;
         this.mapper = mapper;
         this.parser = parser;
@@ -58,20 +54,20 @@ public class QuestionService implements IQuestionService {
      * @throws RuntimeException   if there is an error reading or parsing CSV file
      */
     @Override
-    public List<Question> parseFileToQuestions(@NonNull final MultipartFile file) {
+    public List<Question> parseFileToQuestions(final MultipartFile file) {
         log.info("Attempting to parse file '{}'", file.getOriginalFilename());
         return parser.parseFileToQuestions(file);
     }
 
     @Override
-    public void saveAll(@NonNull final List<Question> questions) {
+    public void saveAll(final List<Question> questions) {
         log.info("Saving {} question(s)", questions.size());
         repository.saveAll(questions);
         log.info("Successfully saved {} questions", questions.size());
     }
 
     @Override
-    public List<Question> getAllByTypeAndCategory(@NonNull final QuestionType type, @NonNull final String category) {
+    public List<Question> getAllByTypeAndCategory(final QuestionType type, final String category) {
         log.info("Fetching questions by type '{}' and category '{}'", type, category);
         final var questions = repository.findByTypeAndCategories_NameContains(type, category);
         log.info("Found {} questions for type '{}' and category '{}'", questions.size(), type, category);
