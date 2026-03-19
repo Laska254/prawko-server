@@ -61,9 +61,10 @@ public class ExceptionController {
     @ApiResponse(responseCode = "400", description = "Invalid argument")
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidDto(final MethodArgumentNotValidException exception) {
-        final Map<String, String> errors = new HashMap<>();
-        exception.getBindingResult().getFieldErrors().forEach(error ->
-                errors.put(error.getField(), error.getDefaultMessage()));
+        final var errors = new HashMap<>();
+        exception.getBindingResult()
+                .getFieldErrors()
+                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
         return ResponseEntity
                 .badRequest()
                 .body(
