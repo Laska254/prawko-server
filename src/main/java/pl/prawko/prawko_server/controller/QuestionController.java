@@ -18,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.QuestionDto;
-import pl.prawko.prawko_server.model.QuestionCSV;
 import pl.prawko.prawko_server.service.implementation.QuestionService;
 
 import java.util.List;
@@ -46,7 +45,7 @@ public class QuestionController {
      * Uploads and parses questions from a CSV file.
      *
      * <p>Accepts a multipart file containing questions in CSV format and imports
-     * them into the database. The CSV format must match the {@link QuestionCSV} format.
+     * them into the database.
      *
      * @param file the multipart CSV file containing questions
      * @return a {@link ResponseEntity} with HTTP 201 Created
