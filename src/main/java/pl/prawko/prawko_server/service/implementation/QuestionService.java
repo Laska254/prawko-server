@@ -67,7 +67,7 @@ public class QuestionService implements IQuestionService {
     /**
      * {@inheritDoc}
      *
-     * @throws EntityNotFoundException if no question with the given ID is found
+     * @throws EntityNotFoundException if no question with the given ID was found
      */
     @Override
     @Transactional(readOnly = true)

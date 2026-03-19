@@ -44,7 +44,7 @@ public class ExamService implements IExamService {
     /**
      * {@inheritDoc}
      *
-     * @throws EntityNotFoundException if the user or category is not found
+     * @throws EntityNotFoundException if no user or category was found
      */
     @Override
     @Transactional
