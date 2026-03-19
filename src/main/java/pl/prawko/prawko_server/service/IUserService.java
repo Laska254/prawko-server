@@ -14,65 +14,91 @@ import java.util.List;
 public interface IUserService {
 
     /**
-     * Register new {@link User} using {@link RegisterDto}.
+     * Registers a new {@link User} with the provided registration details.
+     * <p>
+     * Creates a new user account from registration data and persists it to the database.
+     * </p>
      *
-     * @param dto DTO containing registration details
-     * @return created {@link User}
+     * @param dto the registration data containing username, email, password, and personal info
+     * @return the ID of the newly created user
      */
     long register(RegisterDto dto);
 
     /**
-     * Checks if there is a {@link User} with same {@code userName} or {@code email}.
+     * Checks if a user exists by username or email.
+     * <p>
+     * Used to validate user availability during registration and login operations.
+     * </p>
      *
-     * @param userNameOrEmail provided name or email
-     * @return true if exists
+     * @param userNameOrEmail the username or email to check
+     * @return {@code true} if a user with the given username or email exists, {@code false} otherwise
      */
     boolean checkIfExist(String userNameOrEmail);
 
     /**
-     * Gets an {@code user} when exists by userName or Email.
+     * Retrieves a {@link User} by username or email.
+     * <p>
+     * Searches the database for a user matching the provided username or email address.
+     * </p>
      *
-     * @param userNameOrEmail provided name or email
-     * @return {@code User} when found
+     * @param userNameOrEmail the username or email to search for
+     * @return the {@link User} if found
      */
     @Nullable
     User getByUserNameOrEmail(String userNameOrEmail);
 
     /**
-     * Get {@code user} by {@code id}.
+     * Retrieves a {@link User} by its ID.
+     * <p>
+     * Returns the complete user entity with all associated data.
+     * </p>
      *
-     * @param userId provided id
-     * @return an {@link User}
+     * @param userId the ID of the user to retrieve
+     * @return the {@link User} with the specified ID
      */
     User getById(long userId);
 
     /**
-     * Find {@code user} by {@code id}.
+     * Retrieves a user's data as a {@link UserDto} by user ID.
+     * <p>
+     * Returns user information in data transfer object format, suitable for API responses.
+     * </p>
      *
-     * @param userId provided id
-     * @return an {@link UserDto}
+     * @param userId the ID of the user to retrieve
+     * @return a {@link UserDto} containing the user's data
      */
     UserDto getUserDtoById(long userId);
 
     /**
-     * Find all users across application.
+     * Retrieves all users in the application.
+     * <p>
+     * Returns a complete list of all registered users converted to DTO format.
+     * </p>
      *
-     * @return list of all users
+     * @return a list of all users as {@link UserDto} objects
      */
     List<UserDto> getAllUsers();
 
     /**
-     * Updates user with new details.
+     * Updates an existing user's details.
+     * <p>
+     * Modifies user information such as firstname, lastname, username, and email address.
+     * Validation ensures no conflicts with other users' data.
+     * </p>
      *
-     * @param userId        provided id of user to update
-     * @param updateRequest request that contain new details of user
+     * @param userId        the ID of the user to update
+     * @param updateRequest the request containing new user details
+     * @return the updated user as a {@link UserDto}
      */
     UserDto updateUser(long userId, UserUpdateRequest updateRequest);
 
     /**
-     * Deletes an {@code user}.
+     * Deletes a user from the system.
+     * <p>
+     * Removes the user and all associated data from the database.
+     * </p>
      *
-     * @param userId provided id
+     * @param userId the ID of the user to delete
      */
     void deleteUser(long userId);
 

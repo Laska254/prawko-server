@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Implementation of {@link ICategoryService} that retrieves {@link Category} entities using a {@link CategoryRepository}.
+ * Implementation of {@link ICategoryService} that manages and retrieves {@link Category} entities.
  */
 @Service
 public class CategoryService implements ICategoryService {
@@ -22,11 +22,6 @@ public class CategoryService implements ICategoryService {
 
     private final CategoryRepository repository;
 
-    /**
-     * Constructs a {code CategoryService} with the given {@link CategoryRepository}.
-     *
-     * @param repository the category repository used for data access
-     */
     public CategoryService(final CategoryRepository repository) {
         this.repository = repository;
     }
@@ -34,7 +29,7 @@ public class CategoryService implements ICategoryService {
     /**
      * {@inheritDoc}
      *
-     * @throws RuntimeException when not found
+     * @throws EntityNotFoundException if category with the given name have not been found
      */
     @Override
     public Category findByName(final String name) {

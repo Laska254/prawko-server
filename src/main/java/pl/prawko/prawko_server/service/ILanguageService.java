@@ -6,13 +6,16 @@ import java.util.List;
 
 /**
  * Service interface for retrieving {@link Language} entities.
+ * <p>
+ * Provides operations to fetch all available languages used in the application.
+ * </p>
  */
 public interface ILanguageService {
 
     /**
-     * Returning list of all existing {@link Language} entities.
+     * Returns list of all existing {@link Language} entities.
      *
-     * @return list of {@link Language}
+     * @return a list of {@code Language}
      */
     List<Language> findAll();
 

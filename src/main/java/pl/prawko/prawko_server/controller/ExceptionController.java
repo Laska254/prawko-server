@@ -18,6 +18,9 @@ import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Centralized exception handler for the entire REST API.
+ */
 @Tag(name = "Exceptions", description = "Controller to handle exceptions")
 @RestControllerAdvice
 public class ExceptionController {
@@ -58,9 +61,10 @@ public class ExceptionController {
     @ApiResponse(responseCode = "400", description = "Invalid argument")
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidDto(final MethodArgumentNotValidException exception) {
-        final Map<String, String> errors = new HashMap<>();
-        exception.getBindingResult().getFieldErrors().forEach(error ->
-                errors.put(error.getField(), error.getDefaultMessage()));
+        final var errors = new HashMap<>();
+        exception.getBindingResult()
+                .getFieldErrors()
+                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
         return ResponseEntity
                 .badRequest()
                 .body(

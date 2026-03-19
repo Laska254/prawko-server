@@ -9,10 +9,14 @@ import pl.prawko.prawko_server.model.Role;
 public interface IRoleService {
 
     /**
-     * Gets a matching role with the provided role name.
+     * Retrieves a {@link Role} by its name.
+     * <p>
+     * Used during user registration and role assignment to find the role entity
+     * that matches the provided name.
+     * </p>
      *
-     * @param name role name that should be looked for
-     * @return matching role
+     * @param name the name of the role to retrieve
+     * @return the {@link Role} with the specified name, or {@code null} if not found
      */
     @Nullable
     Role getByName(String name);

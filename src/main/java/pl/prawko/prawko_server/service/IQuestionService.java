@@ -12,11 +12,15 @@ import java.util.List;
 
 /**
  * Service interface for managing {@link Question} entities.
+ * <p>
+ * Provides operations for parsing questions from CSV files, persisting questions to the database,
+ * and retrieving questions by type and category.
+ * </p>
  */
 public interface IQuestionService {
 
     /**
-     * Parses the provided CSV file into a list of {@link Question} entities.
+     * Parses the provided CSV file into a list of {@link Question} entities using {@link pl.prawko.prawko_server.util.CSVParser}.
      * <p>
      * The CSV file is expected to have a header row and use commas as column separators.
      * Each row is mapped to a {@link QuestionCSV} object, which is converted to a {@link Question} entity using {@link QuestionMapper}.
@@ -35,26 +39,26 @@ public interface IQuestionService {
     void saveAll(List<Question> questions);
 
     /**
-     * Gets all questions by {@link QuestionType} and {@link Category}'s name.
+     * Retrieves all questions by {@link QuestionType} and {@link Category}'s name.
      *
-     * @param type     question type
-     * @param category category name
-     * @return list of all found questions
+     * @param type     the type of questions to retrieve
+     * @param category the name of the category to filter by
+     * @return a list of all matching questions
      */
     List<Question> getAllByTypeAndCategory(QuestionType type, String category);
 
     /**
-     * Get a {@code question} by id.
+     * Retrieves a question by its ID.
      *
-     * @param id provided id
-     * @return {@link QuestionDto}
+     * @param id the ID of the question to retrieve
+     * @return the question as a {@link QuestionDto}
      */
     QuestionDto getById(long id);
 
     /**
-     * Get all questions from database.
+     * Returns a list of all questions converted to DTO.
      *
-     * @return list of all questions
+     * @return a list of {@link QuestionDto}
      */
     List<QuestionDto> getAll();
 
