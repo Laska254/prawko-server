@@ -19,7 +19,7 @@ public record CreateExamDto(
         Long userId,
 
         @NotNull(message = "{categoryname.required}")
-        @Schema(description = "Driving license category for the exam", implementation = CategoryVariant.class)
+        @Schema(description = "Driving license category for the exam")
         CategoryVariant categoryName
 
 ) {
