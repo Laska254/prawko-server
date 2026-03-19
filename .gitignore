@@ -2,6 +2,7 @@ target/
 src/main/resources/application-dev.properties
 src/main/resources/application-local.properties
 src/main/resources/application-test.properties
+/docs/
 /HELP.md
 /mvnw
 /mvnw.cmd
