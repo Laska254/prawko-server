@@ -24,25 +24,28 @@ public class CSVParser {
 
     private static final Logger log = LoggerFactory.getLogger(CSVParser.class);
 
+    private final CsvMapper csvMapper;
+    private final CsvSchema csvSchema;
     private final QuestionMapper mapper;
 
     public CSVParser(final QuestionMapper mapper) {
         this.mapper = mapper;
+        this.csvMapper = CsvMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
+        this.csvSchema = CsvSchema.emptySchema()
+                .withHeader()
+                .withColumnSeparator(',')
+                .withQuoteChar('"');
     }
 
     public List<Question> parseFileToQuestions(final MultipartFile file) {
         validate(file);
         try (var reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            final var csvMapper = new CsvMapper();
-            csvMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            final var schema = CsvSchema.emptySchema()
-                    .withHeader()
-                    .withColumnSeparator(',')
-                    .withQuoteChar('"');
             final MappingIterator<QuestionCSV> csvRows = csvMapper
                     .readerFor(QuestionCSV.class)
-                    .with(schema)
+                    .with(csvSchema)
                     .readValues(reader);
             final var questionCSVs = csvRows.readAll();
             log.info("Parsed {} rows from file '{}'", questionCSVs.size(), file.getOriginalFilename());
@@ -65,12 +68,6 @@ public class CSVParser {
         }
     }
 
-    /**
-     * Maps a list of {@link QuestionCSV} models to a list of {@link Question} using {@link QuestionMapper}
-     *
-     * @param questionCSVs the list of CSV models to map
-     * @return the list of mapped {@link Question} entities
-     */
     private List<Question> mapQuestionCSVModelsToQuestions(final List<QuestionCSV> questionCSVs) {
         log.debug("Mapping {} questions", questionCSVs.size());
         return questionCSVs.stream()
