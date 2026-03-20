@@ -12,7 +12,7 @@
 
 ## Overview
 
-**Prawko Server** is a REST API Server created with Java 21 and Spring 6 for Prawko projects.
+**Prawko Server** is a REST API Server created with Java 21 and Spring 7 for Prawko projects.
 
 ---
 
