@@ -10,7 +10,7 @@
     </parent>
     <groupId>pl.prawko</groupId>
     <artifactId>prawko-server</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>${revision}</version>
     <name>prawko-server</name>
     <description>Rest API server</description>
     <url/>
