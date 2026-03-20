@@ -33,7 +33,7 @@ jobs:
           cache: maven
 
       - name: Generate JavaDoc
-        run: mvn --batch-mode compile javadoc:javadoc -DskipTests
+        run: mvn --batch-mode javadoc:javadoc -DskipTests
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v4
