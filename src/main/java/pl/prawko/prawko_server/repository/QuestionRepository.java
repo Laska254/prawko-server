@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.repository;
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import pl.prawko.prawko_server.model.Question;
@@ -17,7 +16,6 @@ import java.util.List;
 @Repository
 public interface QuestionRepository extends JpaRepository<Question, Long> {
 
-    @Nullable
     List<Question> findByTypeAndCategories_NameContains(final QuestionType type, final String category);
 
 }

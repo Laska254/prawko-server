@@ -59,7 +59,6 @@ public class QuestionController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> addQuestions(@RequestPart final MultipartFile file) {
         final var questions = questionService.parseFileToQuestions(file);
-        questionService.saveAll(questions);
         final var location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .buildAndExpand(questions)

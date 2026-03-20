@@ -46,14 +46,11 @@ public class QuestionService implements IQuestionService {
     @Override
     public List<Question> parseFileToQuestions(final MultipartFile file) {
         log.info("Attempting to parse file '{}'", file.getOriginalFilename());
-        return parser.parseFileToQuestions(file);
-    }
-
-    @Override
-    public void saveAll(final List<Question> questions) {
+        final var questions = parser.parseFileToQuestions(file);
         log.info("Saving {} question(s)", questions.size());
         repository.saveAll(questions);
         log.info("Successfully saved {} questions", questions.size());
+        return questions;
     }
 
     @Override
