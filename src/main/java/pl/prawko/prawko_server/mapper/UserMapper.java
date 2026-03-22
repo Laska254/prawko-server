@@ -1,19 +1,11 @@
 package pl.prawko.prawko_server.mapper;
 
-import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
-import org.mapstruct.MappingTarget;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.model.User;
-import pl.prawko.prawko_server.service.implementation.RoleService;
-
-import java.util.List;
-import java.util.Objects;
 
 /**
  * This class is responsible for mapping {@link RegisterDto} to {@link User} entity.
@@ -23,12 +15,6 @@ import java.util.Objects;
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public abstract class UserMapper {
-
-    @Autowired
-    protected PasswordEncoder passwordEncoder;
-
-    @Autowired
-    protected RoleService roleService;
 
     @Mapping(target = "updated", ignore = true)
     @Mapping(target = "roles", ignore = true)
@@ -40,12 +26,5 @@ public abstract class UserMapper {
     public abstract User fromDto(final RegisterDto registerDto);
 
     public abstract UserDto toDto(final User user);
-
-    @AfterMapping
-    protected void enrichNewUser(final RegisterDto dto,
-                                 @MappingTarget final User user) {
-        user.setPassword(passwordEncoder.encode(dto.password()));
-        user.setRoles(List.of(Objects.requireNonNull(roleService.getByName("USER"))));
-    }
 
 }
