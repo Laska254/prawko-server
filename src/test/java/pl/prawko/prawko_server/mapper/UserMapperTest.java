@@ -2,10 +2,11 @@ package pl.prawko.prawko_server.mapper;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.service.implementation.RoleService;
@@ -14,16 +15,17 @@ import pl.prawko.prawko_server.test_data.UserTestData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = UserMapperImpl.class)
 class UserMapperTest {
 
-    @Mock
+    @MockitoBean
     private RoleService roleService;
 
-    @Mock
+    @MockitoBean
     private PasswordEncoder passwordEncoder;
 
-    @InjectMocks
+    @Autowired
     private UserMapper mapper;
 
     private static final String[] IGNORED_FIELDS = {"id", "created", "updated", "exams", "password"};
