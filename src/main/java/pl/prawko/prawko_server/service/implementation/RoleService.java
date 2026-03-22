@@ -1,7 +1,6 @@
 package pl.prawko.prawko_server.service.implementation;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,6 @@ public class RoleService implements IRoleService {
      *
      * @throws EntityNotFoundException when role doesn't exists
      */
-    @Nullable
     @Override
     public Role getByName(final String name) {
         log.debug("Fetching role '{}'", name);
