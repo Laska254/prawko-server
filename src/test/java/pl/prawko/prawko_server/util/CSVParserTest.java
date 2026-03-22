@@ -8,13 +8,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartException;
-import pl.prawko.prawko_server.mapper.AnswerMapper;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.implementation.CategoryService;
 import pl.prawko.prawko_server.service.implementation.LanguageService;
+import pl.prawko.prawko_server.test_data.AnswerTestData;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
 import pl.prawko.prawko_server.test_data.LanguageTestData;
+import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 
 import java.io.IOException;
@@ -37,8 +38,7 @@ public class CSVParserTest {
 
     @BeforeEach
     void setUp() {
-        final var answerMapper = new AnswerMapper(languageService);
-        parser = new CSVParser(answerMapper, languageService, categoryService);
+        parser = new CSVParser(languageService, categoryService);
     }
 
     @Test
@@ -69,6 +69,37 @@ public class CSVParserTest {
         assertThatThrownBy(() -> parser.parseFileToQuestions(file))
                 .isInstanceOf(MultipartException.class)
                 .hasMessage("Invalid file format.");
+    }
+
+    @Test
+    void fromQuestionCSVToAnswers_correctlyMapBasicAnswers() {
+        final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
+        final var given = QuestionCSVTestData.createBasicQuestionCSV();
+        final var expected = List.of(
+                AnswerTestData.noAnswer(),
+                AnswerTestData.yesAnswer()
+        );
+
+        final var result = parser.fromQuestionCSVToAnswers(given, question);
+
+        assertThat(result).isEqualTo(expected);
+    }
+
+    @Test
+    void fromQuestionsCSVToAnswers_correctlyMapSpecialAnswers() {
+        final var given = QuestionCSVTestData.createSpecialQuestionCSV();
+        final var question = QuestionTestData.createQuestion(QuestionType.SPECIAL);
+        final var languages = LanguageTestData.ALL;
+        final var expected = List.of(
+                AnswerTestData.answerA(),
+                AnswerTestData.answerB(),
+                AnswerTestData.answerC()
+        );
+        when(languageService.findAll()).thenReturn(languages);
+
+        final var result = parser.fromQuestionCSVToAnswers(given, question);
+
+        assertThat(result).isEqualTo(expected);
     }
 
 }

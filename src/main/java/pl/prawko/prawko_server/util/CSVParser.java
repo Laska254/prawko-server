@@ -5,7 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
-import pl.prawko.prawko_server.mapper.AnswerMapper;
+import pl.prawko.prawko_server.model.Answer;
+import pl.prawko.prawko_server.model.AnswerTranslation;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
@@ -29,17 +30,15 @@ import java.util.List;
 public class CSVParser {
 
     private static final Logger log = LoggerFactory.getLogger(CSVParser.class);
+    private static final List<Character> SPECIAL_LABELS = List.of('A', 'B', 'C');
 
     private final CsvMapper csvMapper;
     private final CsvSchema csvSchema;
-    private final AnswerMapper answerMapper;
     private final LanguageService languageService;
     private final CategoryService categoryService;
 
-    public CSVParser(final AnswerMapper answerMapper,
-                     final LanguageService languageService,
+    public CSVParser(final LanguageService languageService,
                      final CategoryService categoryService) {
-        this.answerMapper = answerMapper;
         this.languageService = languageService;
         this.categoryService = categoryService;
         this.csvMapper = CsvMapper.builder()
@@ -71,6 +70,57 @@ public class CSVParser {
         }
     }
 
+    /**
+     * This method recognizes question types and creates basic or special answers.
+     *
+     * @param questionCSV CSV model to map answers from
+     * @param question    {@link Question} entity that answers would be linked to
+     * @return list of basic or special {@link Answer} entities
+     */
+    public List<Answer> fromQuestionCSVToAnswers(final QuestionCSV questionCSV,
+                                                 final Question question) {
+        return switch (QuestionType.ofType(questionCSV.type())) {
+            case BASIC -> List.of(
+                    new Answer()
+                            .setQuestion(question)
+                            .setCorrect(true),
+                    new Answer()
+                            .setQuestion(question)
+                            .setCorrect(false)
+            );
+            case SPECIAL -> mapSpecialQuestionAnswers(questionCSV, question);
+        };
+    }
+
+    /**
+     * This method is responsible for creating special {@link Answer} with their translations from the CSV model.
+     *
+     * @param questionCSV CSV model to map answers with translations from
+     * @param question    {@link Question} entity that answers would be linked to
+     * @return list of special {@link Answer} entities
+     */
+    private List<Answer> mapSpecialQuestionAnswers(final QuestionCSV questionCSV,
+                                                   final Question question) {
+        final var languages = languageService.findAll();
+        return SPECIAL_LABELS.stream()
+                .map(label -> {
+                    final var answer = new Answer()
+                            .setQuestion(question)
+                            .setCorrect(label == questionCSV.correctAnswer());
+                    final var translations = languages.stream()
+                            .map(language -> new AnswerTranslation()
+                                    .setLanguage(language)
+                                    .setAnswer(answer)
+                                    .setContent(
+                                            questionCSV.getAnswersTranslations()
+                                                    .get(language.getCode())
+                                                    .get(label)))
+                            .toList();
+                    return answer.setTranslations(translations);
+                })
+                .toList();
+    }
+
     private Question mapQuestionCSVToQuestion(final QuestionCSV questionCSV) {
         final var question = new Question()
                 .setId(questionCSV.id())
@@ -81,7 +131,7 @@ public class CSVParser {
                 .setCategories(categoryService.findAllFromString(questionCSV.categories()));
         return question
                 .setTranslations(mapQuestionTranslations(questionCSV, question))
-                .setAnswers(answerMapper.fromQuestionCSVToAnswers(questionCSV, question));
+                .setAnswers(fromQuestionCSVToAnswers(questionCSV, question));
     }
 
     private void validate(final MultipartFile file) {
