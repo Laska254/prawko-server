@@ -9,7 +9,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartException;
 import pl.prawko.prawko_server.mapper.AnswerMapper;
-import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.implementation.CategoryService;
@@ -39,8 +38,7 @@ public class CSVParserTest {
     @BeforeEach
     void setUp() {
         final var answerMapper = new AnswerMapper(languageService);
-        final var questionMapper = new QuestionMapper(categoryService, languageService, answerMapper);
-        parser = new CSVParser(questionMapper);
+        parser = new CSVParser(answerMapper, languageService, categoryService);
     }
 
     @Test
