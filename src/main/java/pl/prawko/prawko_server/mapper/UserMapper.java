@@ -14,7 +14,7 @@ import pl.prawko.prawko_server.model.User;
  * The mapper is registered as a Spring Component, so it can be injected into services or other components that require user mapping functionality.
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
-public abstract class UserMapper {
+public interface UserMapper {
 
     @Mapping(target = "updated", ignore = true)
     @Mapping(target = "roles", ignore = true)
@@ -23,8 +23,8 @@ public abstract class UserMapper {
     @Mapping(target = "created", ignore = true)
     @Mapping(target = "password", ignore = true)
     @Mapping(target = "enabled", constant = "true")
-    public abstract User fromDto(final RegisterDto registerDto);
+    User fromDto(RegisterDto registerDto);
 
-    public abstract UserDto toDto(final User user);
+    UserDto toDto(User user);
 
 }
