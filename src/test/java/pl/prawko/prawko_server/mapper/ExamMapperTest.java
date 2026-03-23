@@ -1,9 +1,10 @@
 package pl.prawko.prawko_server.mapper;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Question;
@@ -15,26 +16,27 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
-@SpringJUnitConfig(classes = ExamMapperImpl.class)
+@ExtendWith(MockitoExtension.class)
 class ExamMapperTest {
 
-    @Autowired
-    private ExamMapper examMapper;
-
-    @MockitoBean
+    @Mock
     private QuestionMapper questionMapper;
 
-    @MockitoBean
+    @Mock
     private AnswerMapper answerMapper;
+
+    @InjectMocks
+    private ExamMapperImpl examMapper;
 
     @Test
     void toDto_shouldDelegate_ToQuestionAndAnswerMappersAndMapAllFields() {
-        var now = LocalDateTime.now();
-        var question = new Question().setId(10L);
-        var answer = new Answer().setId(20L);
-        var expected = new Exam()
+        final var now = LocalDateTime.now();
+        final var question = new Question().setId(10L);
+        final var answer = new Answer().setId(20L);
+        final var user = new User().setId(42L);
+        final var expected = new Exam()
                 .setId(1L)
-                .setUser(new User().setId(42L))
+                .setUser(user)
                 .setActive(true)
                 .setScore(67)
                 .setCreated(now)

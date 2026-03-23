@@ -8,7 +8,7 @@ import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.model.Exam;
 
 /**
- * This class is responsible for mapping {@link Exam} model into {@link ExamDto} and vice versa.
+ * This class is responsible for mapping {@link Exam} model into {@link ExamDto}.
  * <p>
  * The mapper is registered as a Spring {@link Component}, so it can be injected into services or other components that require answer mapping
  * functionality.
