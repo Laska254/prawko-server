@@ -8,7 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartException;
-import pl.prawko.prawko_server.mapper.QuestionMapperImpl;
+import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
 import pl.prawko.prawko_server.model.QuestionType;
@@ -38,7 +38,7 @@ public class CSVParserTest {
     private LanguageService languageService;
 
     @Mock
-    private QuestionMapperImpl questionMapper;
+    private QuestionMapper questionMapper;
 
     @InjectMocks
     private CSVParser parser;
