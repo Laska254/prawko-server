@@ -43,7 +43,6 @@ public class CSVParserTest {
     @InjectMocks
     private CSVParser parser;
 
-
     @Test
     void parseFileToQuestions_mapCSVFile_correctly() throws IOException {
         final var resource = new ClassPathResource("test_question.csv");
