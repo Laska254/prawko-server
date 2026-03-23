@@ -17,7 +17,7 @@ import pl.prawko.prawko_server.model.Exam;
         uses = {QuestionMapper.class, AnswerMapper.class})
 public interface ExamMapper {
 
-    @Mapping(source = "user.id", target = "userId")
+    @Mapping(target = "userId", source = "user.id")
     ExamDto toDto(Exam entity);
 
 }
