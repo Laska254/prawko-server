@@ -11,6 +11,7 @@ import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
 import pl.prawko.prawko_server.model.QuestionTranslation;
+import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.implementation.CategoryService;
 
 /**
@@ -22,7 +23,8 @@ import pl.prawko.prawko_server.service.implementation.CategoryService;
  * functionality.
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
-        uses = AnswerMapper.class)
+        uses = AnswerMapper.class,
+        imports = QuestionType.class)
 public interface QuestionMapper {
 
     @Mapping(target = "value", source = "points")
@@ -30,6 +32,15 @@ public interface QuestionMapper {
 
     @Mapping(target = "languageCode", source = "language.code")
     QuestionTranslationDto toTranslationDto(QuestionTranslation translation);
+
+    @Mapping(target = "translations", ignore = true)
+    @Mapping(target = "points", source = "value")
+    @Mapping(target = "exams", ignore = true)
+    @Mapping(target = "answers", ignore = true)
+    @Mapping(target = "categories", ignore = true)
+    @Mapping(target = "media", expression = "java(questionCSV.mediaName().replaceAll(\"\\\\.wmv$\", \".webm\"))")
+    @Mapping(target = "type", expression = "java(QuestionType.ofType(questionCSV.type()))")
+    Question toEntity(QuestionCSV questionCSV);
 
     default String categoryToName(Category category) {
         return category.getName();

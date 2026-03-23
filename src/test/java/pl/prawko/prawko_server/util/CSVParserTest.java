@@ -1,14 +1,16 @@
 package pl.prawko.prawko_server.util;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartException;
+import pl.prawko.prawko_server.mapper.QuestionMapperImpl;
 import pl.prawko.prawko_server.model.Question;
+import pl.prawko.prawko_server.model.QuestionCSV;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.implementation.CategoryService;
 import pl.prawko.prawko_server.service.implementation.LanguageService;
@@ -23,6 +25,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,12 +37,12 @@ public class CSVParserTest {
     @Mock
     private LanguageService languageService;
 
+    @Mock
+    private QuestionMapperImpl questionMapper;
+
+    @InjectMocks
     private CSVParser parser;
 
-    @BeforeEach
-    void setUp() {
-        parser = new CSVParser(languageService, categoryService);
-    }
 
     @Test
     void parseFileToQuestions_mapCSVFile_correctly() throws IOException {
@@ -51,8 +54,17 @@ public class CSVParserTest {
         when(categoryService.findAllFromString("A,B")).thenReturn(List.of(CategoryTestData.CATEGORY_A, CategoryTestData.CATEGORY_B));
         when(categoryService.findAllFromString("PT")).thenReturn(List.of(CategoryTestData.CATEGORY_PT));
         when(languageService.findAll()).thenReturn(LanguageTestData.ALL);
+        when(questionMapper.toEntity(any())).thenAnswer(invocation -> {
+            final QuestionCSV csv = invocation.getArgument(0);
+            return new Question()
+                    .setId(csv.id())
+                    .setName(csv.name())
+                    .setType(QuestionType.ofType(csv.type()))
+                    .setMedia(csv.mediaName().replaceAll("\\.wmv$", ".webm"))
+                    .setPoints(csv.value());
+        });
 
-        final var result = parser.parseFileToQuestions(file);
+        final var result = parser.parse(file);
 
         assertThat(resource)
                 .satisfies(res -> {
@@ -66,7 +78,7 @@ public class CSVParserTest {
     void parse_shouldThrowMultipartException_whenFileIsNotCSV() {
         final var file = new MockMultipartFile("file", "test.pdf", "application/pdf", new byte[]{});
 
-        assertThatThrownBy(() -> parser.parseFileToQuestions(file))
+        assertThatThrownBy(() -> parser.parse(file))
                 .isInstanceOf(MultipartException.class)
                 .hasMessage("Invalid file format.");
     }

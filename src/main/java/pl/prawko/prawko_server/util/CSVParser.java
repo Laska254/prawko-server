@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
+import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.AnswerTranslation;
 import pl.prawko.prawko_server.model.Language;
@@ -36,11 +37,14 @@ public class CSVParser {
     private final CsvSchema csvSchema;
     private final LanguageService languageService;
     private final CategoryService categoryService;
+    private final QuestionMapper questionMapper;
 
     public CSVParser(final LanguageService languageService,
-                     final CategoryService categoryService) {
+                     final CategoryService categoryService,
+                     final QuestionMapper questionMapper) {
         this.languageService = languageService;
         this.categoryService = categoryService;
+        this.questionMapper = questionMapper;
         this.csvMapper = CsvMapper.builder()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .build();
@@ -50,7 +54,7 @@ public class CSVParser {
                 .withQuoteChar('"');
     }
 
-    public List<Question> parseFileToQuestions(final MultipartFile file) {
+    public List<Question> parse(final MultipartFile file) {
         validate(file);
         try (var reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
@@ -122,16 +126,11 @@ public class CSVParser {
     }
 
     private Question mapQuestionCSVToQuestion(final QuestionCSV questionCSV) {
-        final var question = new Question()
-                .setId(questionCSV.id())
-                .setName(questionCSV.name())
-                .setType(QuestionType.ofType(questionCSV.type()))
-                .setMedia(questionCSV.mediaName().replaceAll("\\.wmv$", ".webm"))
-                .setPoints(questionCSV.value())
-                .setCategories(categoryService.findAllFromString(questionCSV.categories()));
+        var question = questionMapper.toEntity(questionCSV);
         return question
                 .setTranslations(mapQuestionTranslations(questionCSV, question))
-                .setAnswers(fromQuestionCSVToAnswers(questionCSV, question));
+                .setAnswers(fromQuestionCSVToAnswers(questionCSV, question))
+                .setCategories(categoryService.findAllFromString(questionCSV.categories()));
     }
 
     private void validate(final MultipartFile file) {

@@ -44,12 +44,12 @@ public class QuestionServiceTest {
             final var parsedQuestions = List.of(new Question(), new Question());
 
             when(file.getOriginalFilename()).thenReturn("test.csv");
-            when(parser.parseFileToQuestions(file)).thenReturn(parsedQuestions);
+            when(parser.parse(file)).thenReturn(parsedQuestions);
 
             final var result = questionService.parseFileToQuestions(file);
 
             assertThat(result).isEqualTo(parsedQuestions);
-            verify(parser).parseFileToQuestions(file);
+            verify(parser).parse(file);
             verify(repository).saveAll(parsedQuestions);
         }
 
