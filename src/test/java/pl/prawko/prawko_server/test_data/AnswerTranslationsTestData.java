@@ -39,7 +39,7 @@ public class AnswerTranslationsTestData {
         );
     }
 
-    static List<AnswerTranslationDto> createAnswerTranslationsDtos(final AnswerVariant variant) {
+    public static List<AnswerTranslationDto> createAnswerTranslationsDtos(final AnswerVariant variant) {
         return createAnswerTranslations(variant).stream()
                 .sorted(Comparator.comparing(t -> t.getLanguage().getId()))
                 .map(translation -> new AnswerTranslationDto(
@@ -48,7 +48,7 @@ public class AnswerTranslationsTestData {
                 .toList();
     }
 
-    static List<AnswerTranslation> createAnswerTranslations(final AnswerVariant variant) {
+    public static List<AnswerTranslation> createAnswerTranslations(final AnswerVariant variant) {
         return switch (variant) {
             case A -> AnswerTranslationsTestData.variantA();
             case B -> AnswerTranslationsTestData.variantB();
