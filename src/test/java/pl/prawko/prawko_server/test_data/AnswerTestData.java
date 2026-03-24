@@ -4,6 +4,7 @@ import pl.prawko.prawko_server.dto.AnswerDto;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.QuestionType;
 
+import java.util.Collections;
 import java.util.List;
 
 public class AnswerTestData {
@@ -47,7 +48,21 @@ public class AnswerTestData {
                 AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.A));
     }
 
-    static List<AnswerDto> createAnswersDtos() {
+    static List<AnswerDto> createAnswersDtos(final QuestionType type) {
+        return switch (type) {
+            case BASIC -> createAnswerDtos_Basic();
+            case SPECIAL -> createAnswerDtos_Special();
+        };
+    }
+
+    private static List<AnswerDto> createAnswerDtos_Basic() {
+        return List.of(
+                new AnswerDto(4L, 110L, false, Collections.emptyList()),
+                new AnswerDto(5L, 110L, true, Collections.emptyList())
+        );
+    }
+
+    private static List<AnswerDto> createAnswerDtos_Special() {
         return List.of(
                 new AnswerDto(1L, 2143L, false, AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.A)),
                 new AnswerDto(2L, 2143L, true, AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.B)),

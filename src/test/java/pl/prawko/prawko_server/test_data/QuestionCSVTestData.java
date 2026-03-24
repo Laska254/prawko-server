@@ -8,6 +8,13 @@ public class QuestionCSVTestData {
     private QuestionCSVTestData() {
     }
 
+    public static QuestionCSV createQuestionCSV(QuestionType type) {
+        return switch (type) {
+            case BASIC -> createBasicQuestionCSV();
+            case SPECIAL -> createSpecialQuestionCSV();
+        };
+    }
+
     public static QuestionCSV createSpecialQuestionCSV() {
         final var question = QuestionTestData.createQuestion(QuestionType.SPECIAL);
         final var answerTranslationsA = AnswerTranslationsTestData.variantA();
