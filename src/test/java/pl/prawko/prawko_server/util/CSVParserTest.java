@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 class CSVParserTest {
 
     @Mock
-    private QuestionCsvMapper questionCsvMapper;
+    private CsvFacade csvFacade;
 
     @InjectMocks
     private CSVParser csvParser;
@@ -43,13 +43,13 @@ class CSVParserTest {
                     QuestionTestData.createQuestion(QuestionType.BASIC),
                     QuestionTestData.createQuestion(QuestionType.SPECIAL));
 
-            when(questionCsvMapper.CSVsToEntities(any())).thenReturn(expected);
+            when(csvFacade.mapCsvRows(any())).thenReturn(expected);
 
             final var result = csvParser.parse(file);
 
             assertThat(result).isEqualTo(expected);
-            verify(questionCsvMapper).CSVsToEntities(any());
-            verifyNoMoreInteractions(questionCsvMapper);
+            verify(csvFacade).mapCsvRows(any());
+            verifyNoMoreInteractions(csvFacade);
         }
 
         @Test

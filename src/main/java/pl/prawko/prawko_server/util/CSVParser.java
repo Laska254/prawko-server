@@ -25,10 +25,10 @@ public class CSVParser {
 
     private final CsvMapper csvMapper;
     private final CsvSchema csvSchema;
-    private final QuestionCsvMapper questionCsvMapper;
+    private final CsvFacade csvFacade;
 
-    public CSVParser(final QuestionCsvMapper questionCsvMapper) {
-        this.questionCsvMapper = questionCsvMapper;
+    public CSVParser(final CsvFacade csvFacade) {
+        this.csvFacade = csvFacade;
         this.csvMapper = CsvMapper.builder()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .build();
@@ -48,7 +48,7 @@ public class CSVParser {
                     .readValues(reader);
             final var questionCSVs = csvRows.readAll();
             log.info("Parsed {} rows from file '{}'", questionCSVs.size(), file.getOriginalFilename());
-            final var questions = questionCsvMapper.CSVsToEntities(questionCSVs);
+            final var questions = csvFacade.mapCsvRows(questionCSVs);
             log.info("Successfully mapped {} questions from file '{}'", questions.size(), file.getOriginalFilename());
             return questions;
         } catch (IOException exception) {
