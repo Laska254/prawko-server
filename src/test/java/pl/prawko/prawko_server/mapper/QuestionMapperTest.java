@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.mapper;
 
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -28,62 +27,47 @@ class QuestionMapperTest {
     @InjectMocks
     private QuestionMapperImpl questionMapper;
 
-    @Nested
-    class ToDto {
+    @ParameterizedTest
+    @EnumSource(value = QuestionType.class)
+    void toDto_correctlyMapBothQuestionTypes(QuestionType type) {
+        final var given = QuestionTestData.createQuestion(type);
+        final var expected = QuestionTestData.createQuestionDto(type);
 
-        @ParameterizedTest
-        @EnumSource(value = QuestionType.class)
-        void correctlyMapBothQuestionTypes(QuestionType type) {
-            final var given = QuestionTestData.createQuestion(type);
-            final var expected = QuestionTestData.createQuestionDto(type);
+        final var result = questionMapper.toDto(given);
 
-            final var result = questionMapper.toDto(given);
-
-            assertThat(result)
-                    .usingRecursiveComparison()
-                    .ignoringFields("answers")
-                    .isEqualTo(expected);
-            verify(answerMapper, times(given.getAnswers().size())).toDto(any());
-        }
-
+        assertThat(result)
+                .usingRecursiveComparison()
+                .ignoringFields("answers")
+                .isEqualTo(expected);
+        verify(answerMapper, times(given.getAnswers().size())).toDto(any());
     }
 
-    @Nested
-    class ToTranslationDto {
+    @ParameterizedTest
+    @MethodSource("pl.prawko.prawko_server.test_data.QuestionTranslationsTestData#translations")
+    void toTranslationDto_correctlyMapsTranslation(Language language, String content) {
+        final var given = QuestionTranslationsTestData.createTranslation(language, content);
 
-        @ParameterizedTest
-        @MethodSource("pl.prawko.prawko_server.test_data.QuestionTranslationsTestData#translations")
-        void correctlyMapsTranslation(Language language, String content) {
-            final var given = QuestionTranslationsTestData.createTranslation(language, content);
+        final var result = questionMapper.toTranslationDto(given);
 
-            final var result = questionMapper.toTranslationDto(given);
-
-            assertThat(result.languageCode()).isEqualTo(language.getCode());
-            assertThat(result.content()).isEqualTo(content);
-        }
-
+        assertThat(result.languageCode()).isEqualTo(language.getCode());
+        assertThat(result.content()).isEqualTo(content);
     }
 
-    @Nested
-    class ToEntity {
+    @ParameterizedTest
+    @EnumSource(value = QuestionType.class)
+    void toEntity_correctlyMaps(QuestionType type) {
+        final var given = QuestionCSVTestData.createQuestionCSV(type);
+        final var expected = QuestionTestData.createQuestion(type);
 
-        @ParameterizedTest
-        @EnumSource(value = QuestionType.class)
-        void correctlyMaps(QuestionType type) {
-            final var given = QuestionCSVTestData.createQuestionCSV(type);
-            final var expected = QuestionTestData.createQuestion(type);
+        final var result = questionMapper.toEntity(given);
 
-            final var result = questionMapper.toEntity(given);
-
-            assertThat(result)
-                    .usingRecursiveComparison()
-                    .ignoringFields("translations", "answers", "categories", "exams")
-                    .isEqualTo(expected);
-            assertThat(result.getTranslations()).isNull();
-            assertThat(result.getAnswers()).isNull();
-            assertThat(result.getCategories()).isNull();
-        }
-
+        assertThat(result)
+                .usingRecursiveComparison()
+                .ignoringFields("translations", "answers", "categories", "exams")
+                .isEqualTo(expected);
+        assertThat(result.getTranslations()).isNull();
+        assertThat(result.getAnswers()).isNull();
+        assertThat(result.getCategories()).isNull();
     }
 
 }
