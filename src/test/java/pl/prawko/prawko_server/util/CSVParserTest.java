@@ -9,8 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartException;
-import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
+import pl.prawko.prawko_server.model.Question;
 
 import java.io.IOException;
 import java.util.List;
@@ -18,6 +17,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -39,16 +39,18 @@ class CSVParserTest {
             final var resource = new ClassPathResource("test_question.csv");
             final var file = new MockMultipartFile(
                     "file", "test_question.csv", "text/csv", resource.getInputStream());
-            final var expected = List.of(
-                    QuestionTestData.createQuestion(QuestionType.BASIC),
-                    QuestionTestData.createQuestion(QuestionType.SPECIAL));
+            final var question1 = new Question();
+            final var question2 = new Question();
+            final var expected = List.of(question1, question2);
 
-            when(csvFacade.mapCsvRows(any())).thenReturn(expected);
+            when(csvFacade.mapSingleRow(any()))
+                    .thenReturn(question1)
+                    .thenReturn(question2);
 
             final var result = csvParser.parse(file);
 
             assertThat(result).isEqualTo(expected);
-            verify(csvFacade).mapCsvRows(any());
+            verify(csvFacade, times(2)).mapSingleRow(any());
             verifyNoMoreInteractions(csvFacade);
         }
 
