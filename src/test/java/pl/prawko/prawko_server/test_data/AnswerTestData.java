@@ -70,7 +70,7 @@ public class AnswerTestData {
         );
     }
 
-    static List<Answer> createAnswers(final QuestionType type) {
+    public static List<Answer> createAnswers(final QuestionType type) {
         return switch (type) {
             case BASIC -> List.of(
                     AnswerTestData.noAnswer(),

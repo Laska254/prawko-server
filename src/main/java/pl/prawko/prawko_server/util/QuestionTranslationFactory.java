@@ -22,13 +22,13 @@ public class QuestionTranslationFactory {
     public List<QuestionTranslation> createTranslations(final QuestionCSV questionCSV, final Question question) {
         return languageService.findAll().stream()
                 .sorted(Comparator.comparing(Language::getId))
-                .map(language -> create(questionCSV, question, language))
+                .map(language -> createTranslation(questionCSV, question, language))
                 .toList();
     }
 
-    private QuestionTranslation create(final QuestionCSV questionCSV,
-                                       final Question question,
-                                       final Language language) {
+    private QuestionTranslation createTranslation(final QuestionCSV questionCSV,
+                                                  final Question question,
+                                                  final Language language) {
         return new QuestionTranslation()
                 .setQuestion(question)
                 .setLanguage(language)
