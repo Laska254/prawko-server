@@ -70,7 +70,7 @@ public class AuthControllerTest {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody()
-                .jsonPath("$.message").isEqualTo("Validation for request failed.");
+                .jsonPath("$.detail").isEqualTo("Validation for request failed.");
 
         if (expectedUserNameError != null) {
             response.jsonPath("$.details.userName").isEqualTo(expectedUserNameError);
@@ -89,8 +89,8 @@ public class AuthControllerTest {
                 .body(request)
                 .exchange()
                 .expectStatus().isUnauthorized()
-                .expectBody(String.class)
-                .isEqualTo(expectedMessage);
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(expectedMessage);
     }
 
     @Test
@@ -100,8 +100,8 @@ public class AuthControllerTest {
         restClient.post()
                 .exchange()
                 .expectStatus().isBadRequest()
-                .expectBody(String.class)
-                .isEqualTo(expectedMessage);
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(expectedMessage);
     }
 
 }

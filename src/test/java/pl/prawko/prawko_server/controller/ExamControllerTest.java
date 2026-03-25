@@ -77,7 +77,9 @@ public class ExamControllerTest {
                     .body(invalidDto)
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(Map.class).isEqualTo(expected);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expected.get("message"))
+                    .jsonPath("$.details").isEqualTo(expected.get("details"));
         }
 
         @Test
@@ -116,7 +118,8 @@ public class ExamControllerTest {
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isNotFound()
-                    .expectBody(String.class).isEqualTo(expected);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expected);
         }
 
         @ParameterizedTest
@@ -129,7 +132,8 @@ public class ExamControllerTest {
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expectedMessage);
         }
 
         @Test
