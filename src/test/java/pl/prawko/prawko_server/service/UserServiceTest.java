@@ -129,7 +129,7 @@ class UserServiceTest {
     @Test
     void getByUserNameOrEmail_returnUser_whenFoundByUserName() {
         final var userNameOrEmail = "pippin";
-        when(repository.findByUserNameOrEmail(userNameOrEmail)).thenReturn(Optional.of(tester));
+        when(repository.findByUserNameOrEmail(userNameOrEmail, userNameOrEmail)).thenReturn(Optional.of(tester));
 
         final var result = service.getByUserNameOrEmail(userNameOrEmail);
 
@@ -141,7 +141,7 @@ class UserServiceTest {
     @Test
     void getByUserNameOrEmail_returnUser_whenFoundByEmail() {
         final var userNameOrEmail = "pippin@shire.me";
-        when(repository.findByUserNameOrEmail(userNameOrEmail)).thenReturn(Optional.of(tester));
+        when(repository.findByUserNameOrEmail(userNameOrEmail, userNameOrEmail)).thenReturn(Optional.of(tester));
 
         final var result = service.getByUserNameOrEmail(userNameOrEmail);
 
@@ -154,7 +154,7 @@ class UserServiceTest {
     void getByUserNameOrEmail_throwException_whenNotFound() {
         final var userNameOrEmail = "wrongUserName";
         final var errorMessage = "User with username or email '" + userNameOrEmail + "' not found.";
-        when(repository.findByUserNameOrEmail(userNameOrEmail)).thenReturn(Optional.empty());
+        when(repository.findByUserNameOrEmail(userNameOrEmail, userNameOrEmail)).thenReturn(Optional.empty());
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.getByUserNameOrEmail(userNameOrEmail);
         final var exception = catchThrowableOfType(EntityNotFoundException.class, executable);
