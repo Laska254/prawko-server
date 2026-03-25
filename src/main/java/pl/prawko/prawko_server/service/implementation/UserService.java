@@ -9,6 +9,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.dto.RegisterDto;
@@ -39,11 +40,17 @@ public class UserService implements IUserService, UserDetailsService {
 
     private final UserRepository repository;
     private final UserMapper mapper;
+    private final PasswordEncoder passwordEncoder;
+    private final RoleService roleService;
 
     public UserService(final UserRepository repository,
-                       final UserMapper mapper) {
+                       final UserMapper mapper,
+                       final PasswordEncoder passwordEncoder,
+                       final RoleService roleService) {
         this.repository = repository;
         this.mapper = mapper;
+        this.passwordEncoder = passwordEncoder;
+        this.roleService = roleService;
     }
 
     /**
@@ -56,7 +63,13 @@ public class UserService implements IUserService, UserDetailsService {
     public long register(final RegisterDto dto) {
         log.info("Attempting to register new user: {}", dto.userName());
         validateNoConflict(dto.userName(), dto.email());
+        log.debug("No conflicts");
         final var user = mapper.fromDto(dto);
+        log.debug("Mapped successfully");
+        user.setPassword(passwordEncoder.encode(dto.password()));
+        log.debug("Password encoded");
+        user.setRoles(List.of(roleService.getByName("USER")));
+        log.debug("User roles set");
         repository.save(user);
         log.info("User {} registered successfully.", user.getUserName());
         return user.getId();

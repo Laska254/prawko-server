@@ -15,7 +15,7 @@ public class QuestionTestData {
     public static Question createQuestion(final QuestionType type) {
         return switch (type) {
             case BASIC -> {
-                final var translations = QuestionTranslationsTestData.create(QuestionType.BASIC);
+                final var translations = QuestionTranslationsTestData.createTranslations(type);
                 final var answers = AnswerTestData.createAnswers(type);
                 final var question = new Question()
                         .setName("W9(2)")
@@ -31,7 +31,7 @@ public class QuestionTestData {
                 yield question;
             }
             case SPECIAL -> {
-                final var translations = QuestionTranslationsTestData.create(QuestionType.SPECIAL);
+                final var translations = QuestionTranslationsTestData.createTranslations(type);
                 final var answers = AnswerTestData.createAnswers(type);
                 final var question = new Question()
                         .setName("PD10(3)")
@@ -53,8 +53,31 @@ public class QuestionTestData {
         };
     }
 
-    public static QuestionDto createQuestionDto() {
-        final var answers = AnswerTestData.createAnswersDtos();
+    public static QuestionDto createQuestionDto(final QuestionType type) {
+        return switch (type) {
+            case BASIC -> createQuestionDto_Basic();
+            case SPECIAL -> createQuestionDto_Special();
+        };
+    }
+
+    private static QuestionDto createQuestionDto_Basic() {
+        final var answers = AnswerTestData.createAnswersDtos(QuestionType.BASIC);
+        final var categories = List.of(CategoryTestData.CATEGORY_A.getName(), CategoryTestData.CATEGORY_B.getName());
+        final var translations = QuestionTranslationsTestData.createDtos(QuestionType.BASIC);
+        return new QuestionDto(
+                110L,
+                "W9(2)",
+                answers,
+                "AK_D11_45org.webm",
+                QuestionType.BASIC,
+                3,
+                categories,
+                translations
+        );
+    }
+
+    private static QuestionDto createQuestionDto_Special() {
+        final var answers = AnswerTestData.createAnswersDtos(QuestionType.SPECIAL);
         final var categories = List.of(CategoryTestData.CATEGORY_PT.getName());
         final var translations = QuestionTranslationsTestData.createDtos(QuestionType.SPECIAL);
         return new QuestionDto(

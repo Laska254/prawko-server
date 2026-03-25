@@ -105,7 +105,7 @@ public class QuestionControllerTest {
         @Test
         void returnQuestion_whenFound() {
             repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
-            final var expected = QuestionTestData.createQuestionDto();
+            final var expected = QuestionTestData.createQuestionDto(QuestionType.SPECIAL);
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, expected.id())
@@ -157,7 +157,7 @@ public class QuestionControllerTest {
         @Test
         void returnQuestions_whenAnyExists() {
             repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
-            final var expected = List.of(QuestionTestData.createQuestionDto());
+            final var expected = List.of(QuestionTestData.createQuestionDto(QuestionType.SPECIAL));
 
             restClient.get()
                     .headers(TestUtils::authAdmin)

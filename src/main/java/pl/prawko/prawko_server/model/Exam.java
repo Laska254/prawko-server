@@ -168,8 +168,9 @@ public class Exam {
         return updated;
     }
 
-    public void setUpdated(final LocalDateTime updated) {
+    public Exam setUpdated(final LocalDateTime updated) {
         this.updated = updated;
+        return this;
     }
 
     @Override

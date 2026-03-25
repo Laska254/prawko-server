@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.test_data;
 
+import org.junit.jupiter.params.provider.Arguments;
 import pl.prawko.prawko_server.dto.QuestionTranslationDto;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.QuestionTranslation;
@@ -8,6 +9,7 @@ import pl.prawko.prawko_server.model.QuestionType;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static pl.prawko.prawko_server.test_data.LanguageTestData.DE;
 import static pl.prawko.prawko_server.test_data.LanguageTestData.EN;
@@ -29,13 +31,23 @@ public class QuestionTranslationsTestData {
     private QuestionTranslationsTestData() {
     }
 
-    static List<QuestionTranslation> create(final QuestionType type) {
+    public static Stream<Arguments> translations() {
+        return TRANSLATIONS.values().stream()
+                .flatMap(map -> map.entrySet().stream())
+                .map(e -> Arguments.of(e.getKey(), e.getValue()));
+    }
+
+    public static List<QuestionTranslation> createTranslations(final QuestionType type) {
         return TRANSLATIONS.get(type).entrySet().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().getId()))
-                .map(e -> new QuestionTranslation()
-                        .setContent(e.getValue())
-                        .setLanguage(e.getKey()))
+                .sorted(Comparator.comparing(entry -> entry.getKey().getId()))
+                .map(e -> createTranslation(e.getKey(), e.getValue()))
                 .toList();
+    }
+
+    public static QuestionTranslation createTranslation(final Language language, final String content) {
+        return new QuestionTranslation()
+                .setContent(content)
+                .setLanguage(language);
     }
 
     static List<QuestionTranslationDto> createDtos(final QuestionType type) {

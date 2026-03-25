@@ -7,6 +7,7 @@ import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
 import pl.prawko.prawko_server.model.QuestionType;
+import pl.prawko.prawko_server.util.CSVParser;
 
 import java.util.List;
 
@@ -20,7 +21,8 @@ import java.util.List;
 public interface IQuestionService {
 
     /**
-     * Parses the provided CSV file into a list of {@link Question} entities using {@link pl.prawko.prawko_server.util.CSVParser}.
+     * Parses the provided CSV file into a list of {@link Question} entities
+     * using {@link CSVParser} and imports them to the database.
      * <p>
      * The CSV file is expected to have a header row and use commas as column separators.
      * Each row is mapped to a {@link QuestionCSV} object, which is converted to a {@link Question} entity using {@link QuestionMapper}.
@@ -30,13 +32,6 @@ public interface IQuestionService {
      * @return a list of {@link Question} entities
      */
     List<Question> parseFileToQuestions(MultipartFile file);
-
-    /**
-     * Saves provided list of {@link Question} entities to the database.
-     *
-     * @param questions the list of questions to save
-     */
-    void saveAll(List<Question> questions);
 
     /**
      * Retrieves all questions by {@link QuestionType} and {@link Category}'s name.

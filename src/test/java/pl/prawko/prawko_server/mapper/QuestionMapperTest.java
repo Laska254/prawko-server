@@ -1,69 +1,73 @@
 package pl.prawko.prawko_server.mapper;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.service.implementation.CategoryService;
-import pl.prawko.prawko_server.service.implementation.LanguageService;
-import pl.prawko.prawko_server.test_data.CategoryTestData;
-import pl.prawko.prawko_server.test_data.LanguageTestData;
 import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
-
-import java.util.List;
+import pl.prawko.prawko_server.test_data.QuestionTranslationsTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class QuestionMapperTest {
 
     @Mock
-    private CategoryService categoryService;
-
-    @Mock
-    private LanguageService languageService;
+    private AnswerMapper answerMapper;
 
     @InjectMocks
-    private QuestionMapper questionMapper;
+    private QuestionMapperImpl questionMapper;
 
-    private final List<Language> languages = LanguageTestData.ALL;
+    @ParameterizedTest
+    @EnumSource(value = QuestionType.class)
+    void toDto_correctlyMapBothQuestionTypes(QuestionType type) {
+        final var given = QuestionTestData.createQuestion(type);
+        final var expected = QuestionTestData.createQuestionDto(type);
 
-    @BeforeEach
-    void setUp() {
-        final var answerMapper = new AnswerMapper(languageService);
-        questionMapper = new QuestionMapper(categoryService, languageService, answerMapper);
-        when(languageService.findAll()).thenReturn(languages);
+        final var result = questionMapper.toDto(given);
+
+        assertThat(result)
+                .usingRecursiveComparison()
+                .ignoringFields("answers")
+                .isEqualTo(expected);
+        verify(answerMapper, times(given.getAnswers().size())).toDto(any());
     }
 
-    @Test
-    void mapQuestionCSVToQuestion_returnBasicQuestion() {
-        final var categories = List.of(CategoryTestData.CATEGORY_A, CategoryTestData.CATEGORY_B);
-        when(categoryService.findAllFromString("A,B")).thenReturn(categories);
+    @ParameterizedTest
+    @MethodSource("pl.prawko.prawko_server.test_data.QuestionTranslationsTestData#translations")
+    void toTranslationDto_correctlyMapsTranslation(Language language, String content) {
+        final var given = QuestionTranslationsTestData.createTranslation(language, content);
 
-        final var given = QuestionCSVTestData.createBasicQuestionCSV();
-        final var expected = QuestionTestData.createQuestion(QuestionType.BASIC);
+        final var result = questionMapper.toTranslationDto(given);
 
-        final var result = questionMapper.mapQuestionCSVToQuestion(given);
-
-        assertThat(result).isEqualTo(expected);
+        assertThat(result.languageCode()).isEqualTo(language.getCode());
+        assertThat(result.content()).isEqualTo(content);
     }
 
-    @Test
-    void mapQuestionCSVToQuestion_returnSpecialQuestion() {
-        final var category = CategoryTestData.CATEGORY_PT;
-        when(categoryService.findAllFromString("PT")).thenReturn(List.of(category));
-        final var given = QuestionCSVTestData.createSpecialQuestionCSV();
-        final var expected = QuestionTestData.createQuestion(QuestionType.SPECIAL);
+    @ParameterizedTest
+    @EnumSource(value = QuestionType.class)
+    void toEntity_correctlyMaps(QuestionType type) {
+        final var given = QuestionCSVTestData.createQuestionCSV(type);
+        final var expected = QuestionTestData.createQuestion(type);
 
-        final var result = questionMapper.mapQuestionCSVToQuestion(given);
+        final var result = questionMapper.toEntity(given);
 
-        assertThat(result).isEqualTo(expected);
+        assertThat(result)
+                .usingRecursiveComparison()
+                .ignoringFields("translations", "answers", "categories", "exams")
+                .isEqualTo(expected);
+        assertThat(result.getTranslations()).isNull();
+        assertThat(result.getAnswers()).isNull();
+        assertThat(result.getCategories()).isNull();
     }
 
 }

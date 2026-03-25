@@ -1,17 +1,16 @@
 package pl.prawko.prawko_server.util;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MappingIterator;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
-import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MappingIterator;
+import tools.jackson.dataformat.csv.CsvMapper;
+import tools.jackson.dataformat.csv.CsvSchema;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,29 +23,34 @@ public class CSVParser {
 
     private static final Logger log = LoggerFactory.getLogger(CSVParser.class);
 
-    private final QuestionMapper mapper;
+    private final CsvMapper csvMapper;
+    private final CsvSchema csvSchema;
+    private final CsvFacade csvFacade;
 
-    public CSVParser(final QuestionMapper mapper) {
-        this.mapper = mapper;
+    public CSVParser(final CsvFacade csvFacade) {
+        this.csvFacade = csvFacade;
+        this.csvMapper = CsvMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
+        this.csvSchema = CsvSchema.emptySchema()
+                .withHeader()
+                .withColumnSeparator(',')
+                .withQuoteChar('"');
     }
 
-    public List<Question> parseFileToQuestions(final MultipartFile file) {
+    public List<Question> parse(final MultipartFile file) {
         validate(file);
         try (var reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            final var csvMapper = new CsvMapper();
-            csvMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            final var schema = CsvSchema.emptySchema()
-                    .withHeader()
-                    .withColumnSeparator(',')
-                    .withQuoteChar('"');
             final MappingIterator<QuestionCSV> csvRows = csvMapper
                     .readerFor(QuestionCSV.class)
-                    .with(schema)
+                    .with(csvSchema)
                     .readValues(reader);
             final var questionCSVs = csvRows.readAll();
             log.info("Parsed {} rows from file '{}'", questionCSVs.size(), file.getOriginalFilename());
-            final var questions = mapQuestionCSVModelsToQuestions(questionCSVs);
+            final var questions = questionCSVs.stream()
+                    .map(csvFacade::mapSingleRow)
+                    .toList();
             log.info("Successfully mapped {} questions from file '{}'", questions.size(), file.getOriginalFilename());
             return questions;
         } catch (IOException exception) {
@@ -63,19 +67,6 @@ public class CSVParser {
             log.warn("{} '{}'", message, file.getContentType());
             throw new MultipartException(message);
         }
-    }
-
-    /**
-     * Maps a list of {@link QuestionCSV} models to a list of {@link Question} using {@link QuestionMapper}
-     *
-     * @param questionCSVs the list of CSV models to map
-     * @return the list of mapped {@link Question} entities
-     */
-    private List<Question> mapQuestionCSVModelsToQuestions(final List<QuestionCSV> questionCSVs) {
-        log.debug("Mapping {} questions", questionCSVs.size());
-        return questionCSVs.stream()
-                .map(mapper::mapQuestionCSVToQuestion)
-                .toList();
     }
 
 }

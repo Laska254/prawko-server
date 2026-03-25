@@ -1,78 +1,47 @@
 package pl.prawko.prawko_server.mapper;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import pl.prawko.prawko_server.model.Language;
-import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.service.implementation.LanguageService;
-import pl.prawko.prawko_server.test_data.AnswerTestData;
-import pl.prawko.prawko_server.test_data.LanguageTestData;
-import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
-
-import java.util.List;
+import pl.prawko.prawko_server.dto.AnswerDto;
+import pl.prawko.prawko_server.dto.AnswerTranslationDto;
+import pl.prawko.prawko_server.model.Answer;
+import pl.prawko.prawko_server.model.AnswerTranslation;
+import pl.prawko.prawko_server.model.Question;
+import pl.prawko.prawko_server.test_data.AnswerTranslationsTestData;
+import pl.prawko.prawko_server.test_data.AnswerVariant;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static pl.prawko.prawko_server.test_data.LanguageTestData.PL;
 
-@ExtendWith(MockitoExtension.class)
 class AnswerMapperTest {
 
-    @Mock
-    private LanguageService languageService;
-
-    @InjectMocks
-    private AnswerMapper mapper;
-
-    private final List<Language> languages = LanguageTestData.ALL;
-
-    @BeforeEach
-    void setUp() {
-        mapper = new AnswerMapper(languageService);
-    }
+    private final AnswerMapper mapper = new AnswerMapperImpl();
 
     @Test
-    void fromQuestionCSVToAnswers_correctlyMapBasicAnswers() {
-        final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
-        final var given = QuestionCSVTestData.createBasicQuestionCSV();
-        final var expected = List.of(
-                AnswerTestData.noAnswer(),
-                AnswerTestData.yesAnswer()
-        );
-
-        final var result = mapper.fromQuestionCSVToAnswers(given, question);
-
-        assertThat(result).isEqualTo(expected);
-    }
-
-    @Test
-    void fromQuestionsCSVToAnswers_correctlyMapSpecialAnswers() {
-        final var given = QuestionCSVTestData.createSpecialQuestionCSV();
-        final var question = QuestionTestData.createQuestion(QuestionType.SPECIAL);
-        final var expected = List.of(
-                AnswerTestData.answerA(),
-                AnswerTestData.answerB(),
-                AnswerTestData.answerC()
-        );
-        when(languageService.findAll()).thenReturn(languages);
-
-        final var result = mapper.fromQuestionCSVToAnswers(given, question);
-
-        assertThat(result).isEqualTo(expected);
-    }
-
-    @Test
-    void toDto_correctlyMapAnswer() {
-        final var given = QuestionTestData.createQuestion(QuestionType.SPECIAL)
-                .getAnswers()
-                .getFirst();
-        final var expected = AnswerTestData.createAnswerDtoA();
+    void toDto_correctlyMapsAllFields() {
+        final var translations = AnswerTranslationsTestData.createAnswerTranslations(AnswerVariant.A);
+        final var translationDtos = AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.A);
+        final var given = new Answer()
+                .setId(7L)
+                .setCorrect(false)
+                .setQuestion(new Question().setId(2143L))
+                .setTranslations(translations);
+        final var expected = new AnswerDto(7L, 2143L, false, translationDtos);
 
         final var result = mapper.toDto(given);
+
+        assertThat(result).isEqualTo(expected);
+    }
+
+    @Test
+    void toTranslationDto_correctlyMapAnswerTranslation_toDto() {
+        final var content = "Co 60 minut.";
+        final var lang = PL;
+        final var given = new AnswerTranslation()
+                .setLanguage(lang)
+                .setContent(content);
+        final var expected = new AnswerTranslationDto(content, lang.getCode());
+
+        final var result = mapper.toTranslationDto(given);
 
         assertThat(result).isEqualTo(expected);
     }

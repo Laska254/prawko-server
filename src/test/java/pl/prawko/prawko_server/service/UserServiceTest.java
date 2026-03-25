@@ -7,12 +7,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.mapper.UserMapper;
+import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
+import pl.prawko.prawko_server.service.implementation.RoleService;
 import pl.prawko.prawko_server.service.implementation.UserService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
@@ -45,6 +48,12 @@ class UserServiceTest {
     @Mock
     private UserMapper mapper;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private RoleService roleService;
+
     @InjectMocks
     private UserService service;
 
@@ -53,14 +62,19 @@ class UserServiceTest {
 
     @Test
     void register_success_whenUserNotExists() {
+        final var role = "USER";
+        final var user = new User();
         when(repository.existsByUserName(registerDto.userName())).thenReturn(false);
         when(repository.existsByEmail(registerDto.email())).thenReturn(false);
-        final var user = new User();
         when(mapper.fromDto(registerDto)).thenReturn(user);
+        when(roleService.getByName(role)).thenReturn(new Role().setName(role));
 
         service.register(registerDto);
 
         verify(repository).save(user);
+        verify(mapper).fromDto(registerDto);
+        verify(roleService).getByName(role);
+        verifyNoMoreInteractions(repository, mapper, roleService);
     }
 
     @Test
