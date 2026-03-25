@@ -48,7 +48,9 @@ public class CSVParser {
                     .readValues(reader);
             final var questionCSVs = csvRows.readAll();
             log.info("Parsed {} rows from file '{}'", questionCSVs.size(), file.getOriginalFilename());
-            final var questions = csvFacade.mapCsvRows(questionCSVs);
+            final var questions = questionCSVs.stream()
+                    .map(csvFacade::mapSingleRow)
+                    .toList();
             log.info("Successfully mapped {} questions from file '{}'", questions.size(), file.getOriginalFilename());
             return questions;
         } catch (IOException exception) {

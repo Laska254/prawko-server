@@ -6,8 +6,6 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
 import pl.prawko.prawko_server.service.implementation.CategoryService;
 
-import java.util.List;
-
 @Component
 public class CsvFacade {
 
@@ -26,13 +24,7 @@ public class CsvFacade {
         this.categoryService = categoryService;
     }
 
-    public List<Question> mapCsvRows(List<QuestionCSV> csvRows) {
-        return csvRows.stream()
-                .map(this::mapSingleRow)
-                .toList();
-    }
-
-    private Question mapSingleRow(final QuestionCSV questionCSV) {
+    public Question mapSingleRow(final QuestionCSV questionCSV) {
         final var question = questionMapper.toEntity(questionCSV);
         question.setTranslations(translationFactory.createTranslations(questionCSV, question));
         question.setAnswers(answerFactory.create(questionCSV, question));
