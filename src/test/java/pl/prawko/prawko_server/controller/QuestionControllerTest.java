@@ -65,7 +65,8 @@ public class QuestionControllerTest {
                     .body(multipart)
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(String.class).isEqualTo(expected);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expected);
         }
 
         @Test
@@ -79,7 +80,8 @@ public class QuestionControllerTest {
                     .body(multipart)
                     .exchange()
                     .expectStatus().isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                    .expectBody(String.class).isEqualTo(expected);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expected);
         }
 
         @Test
@@ -125,7 +127,8 @@ public class QuestionControllerTest {
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isNotFound()
-                    .expectBody(String.class).isEqualTo(expected);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expected);
         }
 
         @ParameterizedTest
@@ -138,7 +141,8 @@ public class QuestionControllerTest {
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expectedMessage);
         }
 
         @Test

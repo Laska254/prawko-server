@@ -80,7 +80,9 @@ public class UserControllerTest {
                     .body(invalidDto)
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(Map.class).isEqualTo(expectedMap);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expectedMap.get("message"))
+                    .jsonPath("$.details").isEqualTo(expectedMap.get("details"));
         }
 
         @Test
@@ -90,7 +92,8 @@ public class UserControllerTest {
             restClient.post()
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expectedMessage);
         }
 
         @Test
@@ -110,7 +113,9 @@ public class UserControllerTest {
                     .body(invalidDto)
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(Map.class).isEqualTo(expected);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expected.get("message"))
+                    .jsonPath("$.details").isEqualTo(expected.get("details"));
         }
 
         @Test
@@ -126,7 +131,9 @@ public class UserControllerTest {
                     .body(registerDto)
                     .exchange()
                     .expectStatus().isEqualTo(HttpStatus.CONFLICT)
-                    .expectBody(Map.class).isEqualTo(expected);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expected.get("message"))
+                    .jsonPath("$.details").isEqualTo(expected.get("details"));
         }
 
     }
@@ -165,7 +172,8 @@ public class UserControllerTest {
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expectedMessage);
         }
 
         @Test
@@ -178,7 +186,8 @@ public class UserControllerTest {
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isNotFound()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expectedMessage);
         }
 
         @Test
@@ -191,7 +200,8 @@ public class UserControllerTest {
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expectedMessage);
         }
 
     }
@@ -265,7 +275,9 @@ public class UserControllerTest {
                     .body(invalidUpdateRequest)
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(Map.class).isEqualTo(expected);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expected.get("message"))
+                    .jsonPath("$.details").isEqualTo(expected.get("details"));
         }
 
         @ParameterizedTest
@@ -280,7 +292,8 @@ public class UserControllerTest {
                     .body(validDto)
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expectedMessage);
         }
 
         @Test
@@ -295,7 +308,8 @@ public class UserControllerTest {
                     .body(validDto)
                     .exchange()
                     .expectStatus().isNotFound()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expectedMessage);
         }
 
         @Test
@@ -307,7 +321,8 @@ public class UserControllerTest {
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expectedMessage);
         }
 
 
@@ -352,7 +367,8 @@ public class UserControllerTest {
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isNotFound()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expectedMessage);
         }
 
         @ParameterizedTest
@@ -365,7 +381,8 @@ public class UserControllerTest {
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isBadRequest()
-                    .expectBody(String.class).isEqualTo(expectedMessage);
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expectedMessage);
         }
 
     }
