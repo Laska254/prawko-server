@@ -60,10 +60,9 @@ public class SpringSecurity {
      *
      * @param httpSecurity the {@link HttpSecurity} instance used to build the authentication manager
      * @return an {@link AuthenticationManager} instance
-     * @throws Exception if an error occurs while building the authentication manager
      */
     @Bean
-    public AuthenticationManager authenticationManager(final HttpSecurity httpSecurity) throws Exception {
+    public AuthenticationManager authenticationManager(final HttpSecurity httpSecurity) {
         return httpSecurity.getSharedObject(AuthenticationManagerBuilder.class)
                 .build();
     }
@@ -73,10 +72,9 @@ public class SpringSecurity {
      * {@link AuthenticationManagerBuilder}.
      *
      * @param auth the {@link AuthenticationManagerBuilder} to configure
-     * @throws Exception if an error occurs while setting up the authentication manager
      */
     @Autowired
-    public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
+    public void configureGlobal(final AuthenticationManagerBuilder auth) {
         auth
                 .userDetailsService(userDetailsService)
                 .passwordEncoder(passwordEncoder());
