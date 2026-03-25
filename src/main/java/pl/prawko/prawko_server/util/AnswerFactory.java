@@ -61,4 +61,5 @@ public class AnswerFactory {
                 .toList();
         return answer.setTranslations(translations);
     }
+
 }
