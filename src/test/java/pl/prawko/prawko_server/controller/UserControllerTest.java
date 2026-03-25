@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.controller;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,11 @@ public class UserControllerTest {
     @BeforeEach
     void setUp() {
         restClient = TestUtils.createRestTestClient(port, ApiConstants.USERS_BASE_URL);
+    }
+
+    @AfterEach
+    void tearDown() {
+        userRepository.deleteAll();
     }
 
     @Nested
@@ -143,11 +149,11 @@ public class UserControllerTest {
 
         @Test
         void returnUserDto_whenFound() {
-            registerUser();
-            final var expectedUserDto = UserTestData.createUserDto();
+            final var id = registerUser();
+            final var expectedUserDto = UserTestData.createUserDto(id);
 
             restClient.get()
-                    .uri(ApiConstants.BY_ID, 1L)
+                    .uri(ApiConstants.BY_ID, id)
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isOk()
@@ -211,8 +217,8 @@ public class UserControllerTest {
 
         @Test
         void returnList_whenUsersExist() {
-            registerUser();
-            final var expectedUserDto = UserTestData.createUserDto();
+            final var id = registerUser();
+            final var expectedUserDto = UserTestData.createUserDto(id);
             final var expected = List.of(expectedUserDto);
 
             restClient.get()
@@ -246,12 +252,12 @@ public class UserControllerTest {
 
         @Test
         void success_whenDtoIsValid() {
-            registerUser();
+            final var id = registerUser();
             final var validDto = UserTestData.createValidUserUpdateRequest();
-            final var expected = UserTestData.createUpdatedUserDto();
+            final var expected = UserTestData.createUpdatedUserDto(id);
 
             restClient.patch()
-                    .uri(ApiConstants.BY_ID, 1L)
+                    .uri(ApiConstants.BY_ID, id)
                     .headers(TestUtils::authAdmin)
                     .body(validDto)
                     .exchange()
@@ -341,9 +347,9 @@ public class UserControllerTest {
 
         @Test
         void returnNoContent_whenSuccess() {
-            registerUser();
+            final var id = registerUser();
             restClient.delete()
-                    .uri(ApiConstants.BY_ID, 1L)
+                    .uri(ApiConstants.BY_ID, id)
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isNoContent();
@@ -387,10 +393,11 @@ public class UserControllerTest {
 
     }
 
-    private void registerUser() {
+    private long registerUser() {
         restClient.post()
                 .body(registerDto)
                 .exchangeSuccessfully();
+        return userRepository.findAll().getFirst().getId();
     }
 
 }

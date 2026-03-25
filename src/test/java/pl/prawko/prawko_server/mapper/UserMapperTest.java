@@ -29,7 +29,7 @@ class UserMapperTest {
     @Test
     void toDto_correctlyMapUser() {
         final var user = tester.setId(1L);
-        final var expected = UserTestData.createUserDto();
+        final var expected = UserTestData.createUserDto(1L);
 
         final var result = mapper.toDto(user);
 

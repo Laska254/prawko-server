@@ -38,18 +38,18 @@ public class UserTestData {
         return createTestUser("Peregrin", "Tuk", "pippin", "pippin@shire.me");
     }
 
-    public static UserDto createUserDto() {
+    public static UserDto createUserDto(long id) {
         return new UserDto(
-                1L,
+                id,
                 "Peregrin",
                 "Tuk",
                 "pippin",
                 "pippin@shire.me");
     }
 
-    public static UserDto createUpdatedUserDto() {
+    public static UserDto createUpdatedUserDto(long id) {
         return new UserDto(
-                1L,
+                id,
                 "UpdatedFirstName",
                 "UpdatedLastName",
                 "UpdatedUserName",

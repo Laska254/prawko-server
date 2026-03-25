@@ -179,7 +179,7 @@ class UserServiceTest {
     @Test
     void getUserDtoById_returnUserDto_whenFound() {
         final var given = 44L;
-        final var expectedDto = UserTestData.createUserDto();
+        final var expectedDto = UserTestData.createUserDto(given);
         when(repository.findById(given)).thenReturn(Optional.of(tester));
         when(mapper.toDto(tester)).thenReturn(expectedDto);
 
@@ -209,7 +209,7 @@ class UserServiceTest {
     void getAllUsers_returnListOfUsers_whenFound() {
         final var tester2 = UserTestData.createTestUser("Meriadok", "Brandybuck", "Merry", "merry@shire.me");
         final var users = List.of(tester, tester2);
-        final var pippinDto = UserTestData.createUserDto();
+        final var pippinDto = UserTestData.createUserDto(4L);
         final var merryDto = new UserDto(45L, "Meriadok", "Brandybuck", "Merry", "merry@shire.me");
         final var expected = List.of(pippinDto, merryDto);
         when(repository.findAll()).thenReturn(users);
@@ -229,7 +229,7 @@ class UserServiceTest {
     void updateUser_returnUpdatedUser_whenSuccess() {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
-        final var updatedUserDto = UserTestData.createUpdatedUserDto();
+        final var updatedUserDto = UserTestData.createUpdatedUserDto(givenId);
         final var user = tester;
         when(repository.findById(givenId)).thenReturn(Optional.of(user));
         when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(false);
