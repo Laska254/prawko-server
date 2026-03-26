@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.controller;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,11 @@ public class QuestionControllerTest {
     @BeforeEach
     void setUp() {
         restClient = TestUtils.createRestTestClient(port, ApiConstants.QUESTIONS_BASE_URL);
+    }
+
+    @AfterEach
+    void tearDown() {
+        repository.deleteAll();
     }
 
     @Nested
@@ -106,8 +112,8 @@ public class QuestionControllerTest {
 
         @Test
         void returnQuestion_whenFound() {
-            repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
-            final var expected = QuestionTestData.createQuestionDto(QuestionType.SPECIAL);
+            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
+            final var expected = QuestionTestData.createQuestionDto(question);
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, expected.id())
@@ -160,8 +166,8 @@ public class QuestionControllerTest {
 
         @Test
         void returnQuestions_whenAnyExists() {
-            repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
-            final var expected = List.of(QuestionTestData.createQuestionDto(QuestionType.SPECIAL));
+            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
+            final var expected = List.of(QuestionTestData.createQuestionDto(question));
 
             restClient.get()
                     .headers(TestUtils::authAdmin)
