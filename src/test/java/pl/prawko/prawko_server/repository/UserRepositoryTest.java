@@ -55,25 +55,25 @@ class UserRepositoryTest {
 
     @Test
     void findByUserNameOrEmail_returnUser_whenFoundByUserName() {
-        final var result = repository.findByUserNameOrEmail(userName);
+        final var result = repository.findByUserNameOrEmail(userName, userName);
         assertThat(result.get().getUserName()).isEqualTo(userName);
     }
 
     @Test
     void findByUserNameOrEmail_returnUser_whenFoundByEmail() {
-        final var result = repository.findByUserNameOrEmail(email);
+        final var result = repository.findByUserNameOrEmail(email, email);
         assertThat(result.get().getEmail()).isEqualTo(email);
     }
 
     @Test
     void findByUserNameOrEmail_returnEmpty_whenNotFoundByUserName() {
-        final var result = repository.findByUserNameOrEmail(wrongUserName);
+        final var result = repository.findByUserNameOrEmail(wrongUserName, wrongUserName);
         assertThat(result).isEmpty();
     }
 
     @Test
     void findByUserNameOrEmail_returnEmpty_whenNotFoundByEmail() {
-        final var result = repository.findByUserNameOrEmail(wrongEmail);
+        final var result = repository.findByUserNameOrEmail(wrongEmail, wrongEmail);
         assertThat(result).isEmpty();
     }
 

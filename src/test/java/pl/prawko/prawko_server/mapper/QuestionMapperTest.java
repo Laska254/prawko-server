@@ -31,7 +31,7 @@ class QuestionMapperTest {
     @EnumSource(value = QuestionType.class)
     void toDto_correctlyMapBothQuestionTypes(QuestionType type) {
         final var given = QuestionTestData.createQuestion(type);
-        final var expected = QuestionTestData.createQuestionDto(type);
+        final var expected = QuestionTestData.createQuestionDto(given);
 
         final var result = questionMapper.toDto(given);
 

@@ -5,12 +5,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
-import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 
 public class UserTestData {
 
@@ -27,7 +26,7 @@ public class UserTestData {
                 .setUserName(userName)
                 .setEmail(email)
                 .setPassword(new BCryptPasswordEncoder().encode("lembasy"))
-                .setRoles(List.of(new Role().setName("USER")))
+                .setRoles(Collections.emptyList())
                 .setEnabled(true)
                 .setCreated(LocalDateTime.now())
                 .setUpdated(LocalDateTime.now())
@@ -38,18 +37,18 @@ public class UserTestData {
         return createTestUser("Peregrin", "Tuk", "pippin", "pippin@shire.me");
     }
 
-    public static UserDto createUserDto() {
+    public static UserDto createUserDto(long id) {
         return new UserDto(
-                1L,
+                id,
                 "Peregrin",
                 "Tuk",
                 "pippin",
                 "pippin@shire.me");
     }
 
-    public static UserDto createUpdatedUserDto() {
+    public static UserDto createUpdatedUserDto(long id) {
         return new UserDto(
-                1L,
+                id,
                 "UpdatedFirstName",
                 "UpdatedLastName",
                 "UpdatedUserName",

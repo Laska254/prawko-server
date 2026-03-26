@@ -40,34 +40,15 @@ public class AnswerTestData {
                 .setCorrect(true);
     }
 
-    public static AnswerDto createAnswerDtoA() {
-        return new AnswerDto(
-                0L,
-                2143L,
-                false,
-                AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.A));
-    }
-
-    static List<AnswerDto> createAnswersDtos(final QuestionType type) {
+    public static List<AnswerDto> createAnswerDtos(final List<Answer> savedAnswers, final QuestionType type) {
         return switch (type) {
-            case BASIC -> createAnswerDtos_Basic();
-            case SPECIAL -> createAnswerDtos_Special();
+            case BASIC -> savedAnswers.stream()
+                    .map(AnswerTestData::toDto_BASIC)
+                    .toList();
+            case SPECIAL -> savedAnswers.stream()
+                    .map(AnswerTestData::toDto_SPECIAL)
+                    .toList();
         };
-    }
-
-    private static List<AnswerDto> createAnswerDtos_Basic() {
-        return List.of(
-                new AnswerDto(4L, 110L, false, Collections.emptyList()),
-                new AnswerDto(5L, 110L, true, Collections.emptyList())
-        );
-    }
-
-    private static List<AnswerDto> createAnswerDtos_Special() {
-        return List.of(
-                new AnswerDto(1L, 2143L, false, AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.A)),
-                new AnswerDto(2L, 2143L, true, AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.B)),
-                new AnswerDto(3L, 2143L, false, AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.C))
-        );
     }
 
     public static List<Answer> createAnswers(final QuestionType type) {
@@ -82,6 +63,22 @@ public class AnswerTestData {
                     AnswerTestData.answerC()
             );
         };
+    }
+
+    private static AnswerDto toDto_BASIC(Answer answer) {
+        return new AnswerDto(
+                answer.getId(),
+                answer.getQuestion().getId(),
+                answer.isCorrect(),
+                Collections.emptyList());
+    }
+
+    private static AnswerDto toDto_SPECIAL(Answer answer) {
+        return new AnswerDto(
+                answer.getId(),
+                answer.getQuestion().getId(),
+                answer.isCorrect(),
+                AnswerTranslationsTestData.createAnswerTranslationsDtos(answer.getTranslations()));
     }
 
 }

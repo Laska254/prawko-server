@@ -53,15 +53,15 @@ public class QuestionTestData {
         };
     }
 
-    public static QuestionDto createQuestionDto(final QuestionType type) {
-        return switch (type) {
-            case BASIC -> createQuestionDto_Basic();
-            case SPECIAL -> createQuestionDto_Special();
+    public static QuestionDto createQuestionDto(final Question question) {
+        return switch (question.getType()) {
+            case BASIC -> createQuestionDto_Basic(question);
+            case SPECIAL -> createQuestionDto_Special(question);
         };
     }
 
-    private static QuestionDto createQuestionDto_Basic() {
-        final var answers = AnswerTestData.createAnswersDtos(QuestionType.BASIC);
+    private static QuestionDto createQuestionDto_Basic(final Question question) {
+        final var answers = AnswerTestData.createAnswerDtos(question.getAnswers(), question.getType());
         final var categories = List.of(CategoryTestData.CATEGORY_A.getName(), CategoryTestData.CATEGORY_B.getName());
         final var translations = QuestionTranslationsTestData.createDtos(QuestionType.BASIC);
         return new QuestionDto(
@@ -76,8 +76,8 @@ public class QuestionTestData {
         );
     }
 
-    private static QuestionDto createQuestionDto_Special() {
-        final var answers = AnswerTestData.createAnswersDtos(QuestionType.SPECIAL);
+    private static QuestionDto createQuestionDto_Special(final Question question) {
+        final var answers = AnswerTestData.createAnswerDtos(question.getAnswers(), question.getType());
         final var categories = List.of(CategoryTestData.CATEGORY_PT.getName());
         final var translations = QuestionTranslationsTestData.createDtos(QuestionType.SPECIAL);
         return new QuestionDto(

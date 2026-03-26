@@ -18,6 +18,13 @@ public final class ApiConstants {
     public static final String USERS_BASE_URL = "/users";
 
     /**
+     * Nested URL for user management endpoints.
+     *
+     * @see pl.prawko.prawko_server.controller.UserController
+     */
+    public static final String USERS_BASE_URL_ALL = "/users/**";
+
+    /**
      * Base URL for question management endpoints.
      *
      * @see pl.prawko.prawko_server.controller.QuestionController
@@ -25,11 +32,25 @@ public final class ApiConstants {
     public static final String QUESTIONS_BASE_URL = "/questions";
 
     /**
+     * Nested URL for question management endpoints.
+     *
+     * @see pl.prawko.prawko_server.controller.QuestionController
+     */
+    public static final String QUESTIONS_BASE_URL_ALL = "/questions/**";
+
+    /**
      * Base URL for exam management endpoints.
      *
      * @see pl.prawko.prawko_server.controller.ExamController
      */
     public static final String EXAMS_BASE_URL = "/exams";
+
+    /**
+     * Nested URL for exam management endpoints.
+     *
+     * @see pl.prawko.prawko_server.controller.ExamController
+     */
+    public static final String EXAMS_BASE_URL_ALL = "/exams/**";
 
     /**
      * Base URL for authentication endpoints.

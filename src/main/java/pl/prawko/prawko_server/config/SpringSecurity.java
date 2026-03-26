@@ -10,11 +10,13 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import pl.prawko.prawko_server.constants.ApiConstants;
 
 /**
  * Spring Security configuration class for the application.
@@ -58,10 +60,9 @@ public class SpringSecurity {
      *
      * @param httpSecurity the {@link HttpSecurity} instance used to build the authentication manager
      * @return an {@link AuthenticationManager} instance
-     * @throws Exception if an error occurs while building the authentication manager
      */
     @Bean
-    public AuthenticationManager authenticationManager(final HttpSecurity httpSecurity) throws Exception {
+    public AuthenticationManager authenticationManager(final HttpSecurity httpSecurity) {
         return httpSecurity.getSharedObject(AuthenticationManagerBuilder.class)
                 .build();
     }
@@ -71,10 +72,9 @@ public class SpringSecurity {
      * {@link AuthenticationManagerBuilder}.
      *
      * @param auth the {@link AuthenticationManagerBuilder} to configure
-     * @throws Exception if an error occurs while setting up the authentication manager
      */
     @Autowired
-    public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
+    public void configureGlobal(final AuthenticationManagerBuilder auth) {
         auth
                 .userDetailsService(userDetailsService)
                 .passwordEncoder(passwordEncoder());
@@ -90,28 +90,44 @@ public class SpringSecurity {
      * @param http          the {@link HttpSecurity} instance to customize
      * @param loggingFilter the {@link LoggingFilter} for request/response logging
      * @return a fully configured {@link SecurityFilterChain} with defined rules
-     * @throws Exception if an error occurs while building the filter chain
      */
     @Bean
     public SecurityFilterChain filterChain(final HttpSecurity http,
-                                           final LoggingFilter loggingFilter) throws Exception {
+                                           final LoggingFilter loggingFilter) {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .addFilterAfter(loggingFilter, UsernamePasswordAuthenticationFilter.class)
-                .authorizeHttpRequests(authorize ->
-                        authorize
-                                .requestMatchers(HttpMethod.POST, "/auth", "/users").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/questions").hasRole("ADMIN")
-                                .requestMatchers(HttpMethod.GET, "/questions/**").hasRole("USER")
-                                .requestMatchers(HttpMethod.GET, "/questions").hasRole("ADMIN")
-                                .requestMatchers(HttpMethod.POST, "/exams").hasRole("USER")
-                                .requestMatchers(HttpMethod.GET, "/exams/**").hasRole("USER")
-                                .requestMatchers(HttpMethod.GET, "/users/**").hasRole("ADMIN")
-                                .requestMatchers(HttpMethod.PATCH, "/users/**").hasRole("USER")
-                                .requestMatchers(HttpMethod.DELETE, "/users/**").hasRole("ADMIN")
-                                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll())
+                .authorizeHttpRequests(authorize -> {
+                    authorize
+                            .requestMatchers(HttpMethod.POST, ApiConstants.AUTH_BASE_URL).permitAll()
+                            .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll();
+                    configureEndpoint_Users(authorize);
+                    configureEndpoint_Questions(authorize);
+                    configureEndpoint_Exams(authorize);
+                })
                 .httpBasic(Customizer.withDefaults())
                 .build();
+    }
+
+    private void configureEndpoint_Users(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
+        authorize
+                .requestMatchers(HttpMethod.POST, ApiConstants.USERS_BASE_URL).permitAll()
+                .requestMatchers(HttpMethod.GET, ApiConstants.USERS_BASE_URL_ALL).hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, ApiConstants.USERS_BASE_URL_ALL).hasRole("USER")
+                .requestMatchers(HttpMethod.DELETE, ApiConstants.USERS_BASE_URL_ALL).hasRole("ADMIN");
+    }
+
+    private void configureEndpoint_Questions(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
+        authorize
+                .requestMatchers(HttpMethod.POST, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL_ALL).hasRole("USER")
+                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN");
+    }
+
+    private void configureEndpoint_Exams(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
+        authorize
+                .requestMatchers(HttpMethod.POST, ApiConstants.EXAMS_BASE_URL).hasRole("USER")
+                .requestMatchers(HttpMethod.GET, ApiConstants.EXAMS_BASE_URL_ALL).hasRole("USER");
     }
 
 }

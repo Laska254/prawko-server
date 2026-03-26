@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.controller;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,12 @@ public class ExamControllerTest {
     @BeforeEach
     void setUp() {
         restClient = TestUtils.createRestTestClient(port, ApiConstants.EXAMS_BASE_URL);
+    }
+
+    @AfterEach
+    void tearDown() {
+        examRepository.deleteAll();
+        userRepository.deleteAll();
     }
 
     @Nested

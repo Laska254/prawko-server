@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,12 +49,20 @@ public class ExamGenerator {
     }
 
     private List<Question> selectRandomQuestions(final List<Question> questions, final int count) {
-        log.debug("Shuffling {} questions and return {} random ones", questions.size(), count);
-        var copy = new ArrayList<>(questions);
-        Collections.shuffle(copy);
-        final var chosen = copy.subList(0, Math.min(count, copy.size()));
-        log.debug("Chosen {} questions", chosen.size());
-        return chosen;
+        final var poolSize = questions.size();
+        final var amount = Math.min(count, poolSize);
+        log.debug("Selecting {} random questions from {}", amount, poolSize);
+        final var shuffledQuestions = new ArrayList<>(questions);
+        final var random = ThreadLocalRandom.current();
+        var currentIndex = 0;
+        while (currentIndex < amount) {
+            final var swapIndex = currentIndex + random.nextInt(poolSize - currentIndex);
+            Collections.swap(shuffledQuestions, currentIndex, swapIndex);
+            currentIndex++;
+        }
+        final var selectedQuestions = new ArrayList<>(shuffledQuestions.subList(0, amount));
+        log.debug("Chosen {} questions", selectedQuestions.size());
+        return selectedQuestions;
     }
 
 }

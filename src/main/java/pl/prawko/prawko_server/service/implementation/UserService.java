@@ -98,7 +98,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     public User getByUserNameOrEmail(final String userNameOrEmail) {
         log.info("Fetching user by username or email: {}", userNameOrEmail);
-        return repository.findByUserNameOrEmail(userNameOrEmail)
+        return repository.findByUserNameOrEmail(userNameOrEmail, userNameOrEmail)
                 .orElseThrow(() -> {
                     final var message = "User with username or email '" + userNameOrEmail + "' not found.";
                     log.warn(message);
