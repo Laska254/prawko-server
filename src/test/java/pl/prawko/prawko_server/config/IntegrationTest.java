@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.config;
 
-
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 

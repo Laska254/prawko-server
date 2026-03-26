@@ -49,20 +49,20 @@ public class ExamGenerator {
     }
 
     private List<Question> selectRandomQuestions(final List<Question> questions, final int count) {
-        final var pool = questions.size();
-        final var k = Math.min(count, pool);
-        log.debug("Selecting {} random questions from {}", k, pool);
-        final var copy = new ArrayList<>(questions);
+        final var poolSize = questions.size();
+        final var amount = Math.min(count, poolSize);
+        log.debug("Selecting {} random questions from {}", amount, poolSize);
+        final var shuffledQuestions = new ArrayList<>(questions);
         final var random = ThreadLocalRandom.current();
-        var i = 0;
-        while (i < k) {
-            final var swapIndex = i + random.nextInt(pool - i);
-            Collections.swap(copy, i, swapIndex);
-            i++;
+        var currentIndex = 0;
+        while (currentIndex < amount) {
+            final var swapIndex = currentIndex + random.nextInt(poolSize - currentIndex);
+            Collections.swap(shuffledQuestions, currentIndex, swapIndex);
+            currentIndex++;
         }
-        final var chosen = new ArrayList<>(copy.subList(0, k));
-        log.debug("Chosen {} questions", chosen.size());
-        return chosen;
+        final var selectedQuestions = new ArrayList<>(shuffledQuestions.subList(0, amount));
+        log.debug("Chosen {} questions", selectedQuestions.size());
+        return selectedQuestions;
     }
 
 }
