@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -176,7 +177,9 @@ public class UserService implements IUserService, UserDetailsService {
     public UserDto updateUser(long userId, final UserUpdateRequest updateRequest) {
         log.info("Updating user with id '{}' using: {}", userId, updateRequest);
         final var user = getById(userId);
-        validateNoConflict(updateRequest.userName(), updateRequest.email());
+        validateNoConflict(
+                changedValueOrNull(updateRequest.userName(), user.getUserName()),
+                changedValueOrNull(updateRequest.email(), user.getEmail()));
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
         Optional.ofNullable(updateRequest.userName()).ifPresent(user::setUserName);
@@ -231,6 +234,11 @@ public class UserService implements IUserService, UserDetailsService {
         return roles.stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
                 .toList();
+    }
+
+    @Nullable
+    private static String changedValueOrNull(@Nullable final String newValue, final String currentValue) {
+        return Objects.equals(newValue, currentValue) ? null : newValue;
     }
 
     private void validateNoConflict(@Nullable final String userName, @Nullable final String email) {

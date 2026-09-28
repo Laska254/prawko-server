@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.mapper.UserMapper;
@@ -248,6 +249,21 @@ class UserServiceTest {
         verify(repository).existsByEmail(updateUserRequest.email());
         verify(mapper).toDto(user);
         verifyNoMoreInteractions(repository, mapper);
+    }
+
+    @Test
+    void updateUser_skipConflictCheck_whenUserNameAndEmailAreUnchanged() {
+        final var givenId = 44L;
+        final var updateUserRequest = new UserUpdateRequest("Peregrin", "Took", tester.getUserName(), tester.getEmail());
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(repository.save(tester)).thenReturn(tester);
+
+        service.updateUser(givenId, updateUserRequest);
+
+        assertThat(tester.getLastName()).isEqualTo("Took");
+        verify(repository, never()).existsByUserName(any());
+        verify(repository, never()).existsByEmail(any());
+        verify(repository).save(tester);
     }
 
     @Test

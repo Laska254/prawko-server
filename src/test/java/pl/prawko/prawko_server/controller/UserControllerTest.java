@@ -18,6 +18,7 @@ import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
@@ -264,6 +265,21 @@ public class UserControllerTest {
 
     @Nested
     class UpdateUser {
+
+        @Test
+        void success_whenUserNameAndEmailAreUnchanged() {
+            final var id = registerUser();
+            final var request = new UserUpdateRequest("Peregrin", "Took", "pippin", "pippin@shire.me");
+            final var expected = new UserDto(id, "Peregrin", "Took", "pippin", "pippin@shire.me");
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, id)
+                    .headers(TestUtils::authUser)
+                    .body(request)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserDto.class).isEqualTo(expected);
+        }
 
         @Test
         void success_whenDtoIsValid() {
