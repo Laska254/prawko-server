@@ -8,18 +8,22 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.CreateExamDto;
 import pl.prawko.prawko_server.dto.ExamDto;
+import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.ExamTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -147,6 +151,96 @@ public class ExamControllerTest {
         void returnUnauthorized_whenNotAuthenticated() {
             restClient.get()
                     .uri(ApiConstants.BY_ID, 666L)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+    }
+
+    @Nested
+    class GetUserExams {
+
+        @Test
+        void returnUserExams_fromNewest_whenUserHasExams() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var other = userRepository.save(UserTestData.createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me"));
+            final var older = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+            final var newer = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+            examRepository.save(ExamTestData.createExamWithoutQuestions(other));
+
+            final var result = restClient.get()
+                    .uri(uri -> uri.queryParam("userId", tester.getId()).build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(new ParameterizedTypeReference<List<ExamSummaryDto>>() {
+                    })
+                    .returnResult()
+                    .getResponseBody();
+
+            assertThat(result)
+                    .extracting(ExamSummaryDto::id)
+                    .containsExactly(newer.getId(), older.getId());
+            assertThat(result)
+                    .allSatisfy(summary -> {
+                        assertThat(summary.category()).isEqualTo("B");
+                        assertThat(summary.active()).isTrue();
+                        assertThat(summary.score()).isZero();
+                        assertThat(summary.created()).isNotNull();
+                    });
+        }
+
+        @Test
+        void returnEmptyList_whenUserHasNoExams() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+
+            restClient.get()
+                    .uri(uri -> uri.queryParam("userId", tester.getId()).build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(List.class).isEqualTo(Collections.emptyList());
+        }
+
+        @Test
+        void returnNotFound_whenUserDoesNotExist() {
+            final var nonExistentId = 666L;
+
+            restClient.get()
+                    .uri(uri -> uri.queryParam("userId", nonExistentId).build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isNotFound()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("User with id '" + nonExistentId + "' not found.");
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = {-1L, 0L})
+        void returnBadRequest_whenUserIdIsNotPositive(long invalidId) {
+            restClient.get()
+                    .uri(uri -> uri.queryParam("userId", invalidId).build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("ID must be greater than 0.");
+        }
+
+        @Test
+        void returnBadRequest_whenUserIdIsMissing() {
+            restClient.get()
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("Request parameter 'userId' is missing.");
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.get()
+                    .uri(uri -> uri.queryParam("userId", 1L).build())
                     .exchange()
                     .expectStatus().isUnauthorized();
         }

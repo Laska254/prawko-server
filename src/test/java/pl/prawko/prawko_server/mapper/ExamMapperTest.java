@@ -5,7 +5,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.model.Answer;
+import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.User;
@@ -15,6 +17,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class ExamMapperTest {
@@ -54,6 +57,32 @@ class ExamMapperTest {
         assertThat(result.updated()).isEqualTo(now);
         verify(questionMapper).toDto(question);
         verify(answerMapper).toDto(answer);
+    }
+
+    @Test
+    void toSummaryDto_shouldMapAllFields_withoutQuestionsAndAnswers() {
+        final var now = LocalDateTime.now();
+        final var exam = new Exam()
+                .setId(1L)
+                .setCategory(new Category().setName("B"))
+                .setActive(false)
+                .setScore(68)
+                .setCreated(now)
+                .setUpdated(now)
+                .setQuestions(List.of(new Question().setId(10L)))
+                .setUserAnswers(List.of(new Answer().setId(20L)));
+
+        final var result = examMapper.toSummaryDto(exam);
+
+        assertThat(result).isEqualTo(new ExamSummaryDto(1L, "B", now, now, 68, false));
+        verifyNoInteractions(questionMapper, answerMapper);
+    }
+
+    @Test
+    void toSummaryDto_shouldMapNullCategory_toNull() {
+        final var result = examMapper.toSummaryDto(new Exam().setId(1L));
+
+        assertThat(result.category()).isNull();
     }
 
 }

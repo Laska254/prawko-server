@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.dto.ExamDto;
+import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.mapper.ExamMapper;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.repository.ExamRepository;
@@ -14,6 +15,7 @@ import pl.prawko.prawko_server.service.IExamService;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Implementation of {@link IExamService} that manages {@link Exam} entities.
@@ -83,6 +85,23 @@ public class ExamService implements IExamService {
                     return new EntityNotFoundException(message);
                 });
         return examMapper.toDto(exam);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException if the user with the given ID is not found
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExamSummaryDto> getAllByUserId(final long userId) {
+        log.info("Fetching exams history of user with id: {}", userId);
+        userService.getById(userId);
+        final var exams = repository.findAllByUser_IdOrderByCreatedDescIdDesc(userId).stream()
+                .map(examMapper::toSummaryDto)
+                .toList();
+        log.info("Found {} exam(s) for user with id: {}", exams.size(), userId);
+        return exams;
     }
 
 }

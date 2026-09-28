@@ -13,12 +13,16 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.CreateExamDto;
 import pl.prawko.prawko_server.dto.ExamDto;
+import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.service.implementation.ExamService;
+
+import java.util.List;
 
 /**
  * REST controller for exam management operations.
@@ -81,6 +85,25 @@ public class ExamController {
     @GetMapping(ApiConstants.BY_ID)
     public ResponseEntity<ExamDto> getExam(@PathVariable @Positive final long id) {
         return ResponseEntity.ok(service.getById(id));
+    }
+
+    /**
+     * Retrieves history of all exams of a user.
+     *
+     * <p>Single exam details can be retrieved using {@link #getExam(long)} with an ID from the returned list.
+     *
+     * @param userId the unique identifier of the user (must be positive)
+     * @return a {@link ResponseEntity} containing a list of {@link ExamSummaryDto}'s ordered from the newest
+     */
+    @Operation(summary = "Get user's exams history", description = "Retrieves all exams of a user, ordered from the newest")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of user's exams"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "400", description = "User ID is missing, negative or zero"),
+    })
+    @GetMapping
+    public ResponseEntity<List<ExamSummaryDto>> getUserExams(@RequestParam @Positive final long userId) {
+        return ResponseEntity.ok(service.getAllByUserId(userId));
     }
 
 }

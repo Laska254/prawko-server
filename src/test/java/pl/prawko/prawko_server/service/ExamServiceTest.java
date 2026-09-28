@@ -20,6 +20,7 @@ import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -157,6 +158,54 @@ public class ExamServiceTest {
             service.getById(exam.getId());
 
             verify(examMapper).toDto(exam);
+        }
+
+    }
+
+    @Nested
+    class GetAllByUserId {
+
+        @Test
+        void returnSummaries_inRepositoryOrder_whenUserHasExams() {
+            final var userId = 44L;
+            final var user = UserTestData.createTestUserPippin();
+            final var older = ExamTestData.createExam(user).setId(1L);
+            final var newer = ExamTestData.createExam(user).setId(2L);
+            final var newerDto = ExamTestData.createExamSummaryDto(newer);
+            final var olderDto = ExamTestData.createExamSummaryDto(older);
+            when(userService.getById(userId)).thenReturn(user);
+            when(repository.findAllByUser_IdOrderByCreatedDescIdDesc(userId)).thenReturn(List.of(newer, older));
+            when(examMapper.toSummaryDto(newer)).thenReturn(newerDto);
+            when(examMapper.toSummaryDto(older)).thenReturn(olderDto);
+
+            final var result = service.getAllByUserId(userId);
+
+            assertThat(result).containsExactly(newerDto, olderDto);
+        }
+
+        @Test
+        void returnEmptyList_whenUserHasNoExams() {
+            final var userId = 44L;
+            when(userService.getById(userId)).thenReturn(UserTestData.createTestUserPippin());
+            when(repository.findAllByUser_IdOrderByCreatedDescIdDesc(userId)).thenReturn(Collections.emptyList());
+
+            final var result = service.getAllByUserId(userId);
+
+            assertThat(result).isEmpty();
+            verifyNoInteractions(examMapper);
+        }
+
+        @Test
+        void throwEntityNotFound_whenUserDoesNotExist() {
+            final var userId = 666L;
+            final var expectedMessage = "User with id '" + userId + "' not found.";
+            when(userService.getById(userId)).thenThrow(new EntityNotFoundException(expectedMessage));
+
+            assertThatThrownBy(() -> service.getAllByUserId(userId))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage(expectedMessage);
+
+            verifyNoInteractions(repository, examMapper);
         }
 
     }
