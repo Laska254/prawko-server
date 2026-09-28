@@ -233,7 +233,7 @@ public class ExamControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo("ID must be greater than 0.");
+                    .jsonPath("$.detail").isEqualTo("User ID must be greater than 0.");
         }
 
         @Test

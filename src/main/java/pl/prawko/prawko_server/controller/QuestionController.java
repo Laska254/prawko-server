@@ -79,7 +79,7 @@ public class QuestionController {
             @ApiResponse(responseCode = "400", description = "ID is negative or zero")
     })
     @GetMapping(ApiConstants.BY_ID)
-    public ResponseEntity<QuestionDto> getQuestion(@PathVariable @Positive final long id) {
+    public ResponseEntity<QuestionDto> getQuestion(@PathVariable @Positive(message = "{id.positive}") final long id) {
         return ResponseEntity.ok(questionService.getById(id));
     }
 

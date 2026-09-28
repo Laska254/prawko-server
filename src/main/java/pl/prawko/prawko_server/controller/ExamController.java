@@ -83,7 +83,7 @@ public class ExamController {
             @ApiResponse(responseCode = "400", description = "ID is negative or zero"),
     })
     @GetMapping(ApiConstants.BY_ID)
-    public ResponseEntity<ExamDto> getExam(@PathVariable @Positive final long id) {
+    public ResponseEntity<ExamDto> getExam(@PathVariable @Positive(message = "{id.positive}") final long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
@@ -102,7 +102,7 @@ public class ExamController {
             @ApiResponse(responseCode = "400", description = "User ID is missing, negative or zero"),
     })
     @GetMapping
-    public ResponseEntity<List<ExamSummaryDto>> getUserExams(@RequestParam @Positive final long userId) {
+    public ResponseEntity<List<ExamSummaryDto>> getUserExams(@RequestParam @Positive(message = "{userid.positive}") final long userId) {
         return ResponseEntity.ok(service.getAllByUserId(userId));
     }
 

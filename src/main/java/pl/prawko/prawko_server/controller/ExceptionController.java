@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.controller;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -18,6 +19,7 @@ import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 /**
  * Centralized exception handler for the entire REST API.
@@ -76,10 +78,14 @@ public class ExceptionController {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
     }
 
-    @ApiResponse(responseCode = "400", description = "ID is negative or zero")
+    @ApiResponse(responseCode = "400", description = "Invalid request parameter")
     @ExceptionHandler(ConstraintViolationException.class)
-    public ProblemDetail handleNotPositiveID() {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "ID must be greater than 0.");
+    public ProblemDetail handleConstraintViolation(final ConstraintViolationException exception) {
+        final var message = exception.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .sorted()
+                .collect(Collectors.joining(" "));
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
     }
 
     @ApiResponse(responseCode = "400", description = "Request parameter is missing")

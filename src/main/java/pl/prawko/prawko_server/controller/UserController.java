@@ -78,7 +78,7 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "User not found")
     })
     @GetMapping(ApiConstants.BY_ID)
-    public ResponseEntity<UserDto> getUserById(@PathVariable @Positive final long id) {
+    public ResponseEntity<UserDto> getUserById(@PathVariable @Positive(message = "{id.positive}") final long id) {
         return ResponseEntity.ok(userService.getUserDtoById(id));
     }
 
@@ -108,7 +108,7 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "Invalid update data or ID is negative or zero")
     })
     @PatchMapping(ApiConstants.BY_ID)
-    public ResponseEntity<UserDto> updateUser(@PathVariable @Positive final long id,
+    public ResponseEntity<UserDto> updateUser(@PathVariable @Positive(message = "{id.positive}") final long id,
                                               @Valid @RequestBody final UserUpdateRequest updateRequest) {
         return ResponseEntity.ok(userService.updateUser(id, updateRequest));
     }
@@ -127,7 +127,7 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "Invalid request data, incorrect current password or ID is negative or zero")
     })
     @PatchMapping(ApiConstants.PASSWORD)
-    public ResponseEntity<Void> changePassword(@PathVariable @Positive final long id,
+    public ResponseEntity<Void> changePassword(@PathVariable @Positive(message = "{id.positive}") final long id,
                                                @Valid @RequestBody final ChangePasswordRequest request) {
         userService.changePassword(id, request);
         return ResponseEntity.noContent().build();
@@ -146,7 +146,7 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "ID is negative or zero")
     })
     @DeleteMapping(ApiConstants.BY_ID)
-    public ResponseEntity<Void> deleteUser(@PathVariable @Positive final long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable @Positive(message = "{id.positive}") final long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
