@@ -1,7 +1,6 @@
 package pl.prawko.prawko_server.service.implementation;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -73,9 +72,8 @@ public class ExamService implements IExamService {
      *
      * @throws EntityNotFoundException if the exam with the given ID is not found
      */
-    @Nullable
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public ExamDto getById(long examId) {
         log.info("Fetching exam by id: {}", examId);
         final var exam = repository.findById(examId)

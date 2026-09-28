@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.service;
 
-import org.jspecify.annotations.Nullable;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.model.Exam;
@@ -36,9 +35,8 @@ public interface IExamService {
      * </p>
      *
      * @param examId the ID of the exam to retrieve
-     * @return {@link ExamDto} containing exam details, or {@code null} if not found
+     * @return {@link ExamDto} containing exam details
      */
-    @Nullable
     ExamDto getById(long examId);
 
     /**
