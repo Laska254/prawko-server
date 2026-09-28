@@ -180,7 +180,7 @@ public class QuestionControllerTest {
         @Test
         void returnEmptyList_whenNoQuestionsExist() {
             restClient.get()
-                    .headers(TestUtils::authUser)
+                    .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(new ParameterizedTypeReference<List<QuestionDto>>() {
