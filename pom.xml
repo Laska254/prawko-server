@@ -67,6 +67,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-data-jpa-test</artifactId>
+            <scope>test</scope>
         </dependency>
         <!-- Source: https://mvnrepository.com/artifact/tools.jackson.dataformat/jackson-dataformat-csv -->
         <dependency>
