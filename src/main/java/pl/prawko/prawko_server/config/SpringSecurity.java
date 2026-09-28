@@ -7,6 +7,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -31,11 +32,14 @@ import pl.prawko.prawko_server.constants.ApiConstants;
  *     <li>ADMIN only: {@code POST /questions} (upload), {@code GET /questions} (list all)</li>
  *     <li>USER+ required: {@code GET /questions/**}, {@code POST/GET /exams}</li>
  *     <li>ADMIN only: User management endpoints, delete operations</li>
+ *     <li>Owner or ADMIN: updating a user, changing password, creating and reading exams
+ *     (enforced by method security with {@link AccessGuard})</li>
  *     <li>Public: Swagger UI and OpenAPI docs</li>
  * </ul>
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SpringSecurity {
 
     @Autowired
@@ -120,8 +124,8 @@ public class SpringSecurity {
     private void configureEndpoint_Questions(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL_ALL).hasRole("USER")
-                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN");
+                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL_ALL).hasRole("USER");
     }
 
     private void configureEndpoint_Exams(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
