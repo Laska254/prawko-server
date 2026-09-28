@@ -65,7 +65,7 @@ public class Question {
     )
     private List<Category> categories;
 
-    @ManyToMany(mappedBy = "questions", cascade = CascadeType.ALL)
+    @ManyToMany(mappedBy = "questions")
     private List<Exam> exams;
 
     public long getId() {

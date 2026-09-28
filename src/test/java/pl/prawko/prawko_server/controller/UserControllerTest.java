@@ -18,7 +18,10 @@ import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.repository.ExamRepository;
+import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
+import pl.prawko.prawko_server.test_data.ExamTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.util.Collections;
@@ -36,6 +39,12 @@ public class UserControllerTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private ExamRepository examRepository;
+
+    @Autowired
+    private QuestionRepository questionRepository;
+
     @LocalServerPort
     private int port;
 
@@ -51,6 +60,7 @@ public class UserControllerTest {
     @AfterEach
     void tearDown() {
         userRepository.deleteAll();
+        questionRepository.deleteAll();
     }
 
     @Nested
@@ -467,6 +477,24 @@ public class UserControllerTest {
 
     @Nested
     class DeleteUser {
+
+        @Test
+        void keepQuestions_whenDeletedUserHadExams() {
+            final var id = registerUser();
+            final var exam = ExamTestData.createExam(UserTestData.createTestUserPippin().setId(id));
+            questionRepository.saveAll(exam.getQuestions());
+            examRepository.save(exam);
+            final var questionsCount = questionRepository.count();
+
+            restClient.delete()
+                    .uri(ApiConstants.BY_ID, id)
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            assertThat(examRepository.count()).isZero();
+            assertThat(questionRepository.count()).isEqualTo(questionsCount).isPositive();
+        }
 
         @Test
         void returnNoContent_whenSuccess() {

@@ -33,10 +33,6 @@ public class ExamTestData {
         return exam;
     }
 
-    public static Exam createExamWithoutQuestions(final User user) {
-        return createExam(user).setQuestions(Collections.emptyList());
-    }
-
     public static ExamSummaryDto createExamSummaryDto(final Exam exam) {
         return new ExamSummaryDto(
                 exam.getId(),

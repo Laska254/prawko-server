@@ -18,6 +18,7 @@ import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.repository.ExamRepository;
+import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.ExamTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
@@ -37,6 +38,9 @@ public class ExamControllerTest {
     @Autowired
     private ExamRepository examRepository;
 
+    @Autowired
+    private QuestionRepository questionRepository;
+
     @LocalServerPort
     private int port;
 
@@ -50,6 +54,7 @@ public class ExamControllerTest {
     @AfterEach
     void tearDown() {
         examRepository.deleteAll();
+        questionRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -108,7 +113,9 @@ public class ExamControllerTest {
         @Test
         void returnsExam_whenExamIsFound() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
-            final var exam = examRepository.save(ExamTestData.createExam(tester));
+            final var exam = ExamTestData.createExam(tester);
+            questionRepository.saveAll(exam.getQuestions());
+            examRepository.save(exam);
             final var expected = ExamTestData.createExamDto(exam);
 
             restClient.get()
@@ -164,9 +171,11 @@ public class ExamControllerTest {
         void returnUserExams_fromNewest_whenUserHasExams() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var other = userRepository.save(UserTestData.createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me"));
-            final var older = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
-            final var newer = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
-            examRepository.save(ExamTestData.createExamWithoutQuestions(other));
+            final var older = ExamTestData.createExam(tester);
+            questionRepository.saveAll(older.getQuestions());
+            examRepository.save(older);
+            final var newer = examRepository.save(ExamTestData.createExam(tester));
+            examRepository.save(ExamTestData.createExam(other));
 
             final var result = restClient.get()
                     .uri(uri -> uri.queryParam("userId", tester.getId()).build())
