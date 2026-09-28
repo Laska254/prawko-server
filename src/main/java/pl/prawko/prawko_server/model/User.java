@@ -54,10 +54,10 @@ public class User {
     @Column(length = 31)
     private String lastName;
 
-    @Column(length = 31)
+    @Column(length = 31, unique = true)
     private String userName;
 
-    @Column(length = 63)
+    @Column(length = 63, unique = true)
     private String email;
 
     @Column(length = 63)
