@@ -9,6 +9,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MultipartException;
@@ -79,6 +80,13 @@ public class ExceptionController {
     @ExceptionHandler(ConstraintViolationException.class)
     public ProblemDetail handleNotPositiveID() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "ID must be greater than 0.");
+    }
+
+    @ApiResponse(responseCode = "400", description = "Request parameter is missing")
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ProblemDetail handleMissingParameter(final MissingServletRequestParameterException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Request parameter '" + exception.getParameterName() + "' is missing.");
     }
 
     @ApiResponse(responseCode = "400", description = "Request body is missing")

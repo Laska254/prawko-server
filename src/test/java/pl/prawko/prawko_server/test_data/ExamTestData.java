@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.test_data;
 
 import pl.prawko.prawko_server.dto.ExamDto;
+import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Exam;
@@ -30,6 +31,20 @@ public class ExamTestData {
                 .setUserAnswers(Collections.emptyList());
         user.getExams().add(exam);
         return exam;
+    }
+
+    public static Exam createExamWithoutQuestions(final User user) {
+        return createExam(user).setQuestions(Collections.emptyList());
+    }
+
+    public static ExamSummaryDto createExamSummaryDto(final Exam exam) {
+        return new ExamSummaryDto(
+                exam.getId(),
+                exam.getCategory().getName(),
+                exam.getCreated(),
+                exam.getUpdated(),
+                exam.getScore(),
+                exam.isActive());
     }
 
     public static ExamDto createExamDto(final Exam exam) {

@@ -5,6 +5,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.springframework.stereotype.Component;
 import pl.prawko.prawko_server.dto.ExamDto;
+import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.model.Exam;
 
 /**
@@ -19,5 +20,8 @@ public interface ExamMapper {
 
     @Mapping(target = "userId", source = "user.id")
     ExamDto toDto(Exam entity);
+
+    @Mapping(target = "category", source = "category.name")
+    ExamSummaryDto toSummaryDto(Exam entity);
 
 }
