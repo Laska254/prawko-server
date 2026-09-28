@@ -10,10 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.repository.UserRepository;
@@ -30,6 +32,9 @@ public class UserControllerTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @LocalServerPort
     private int port;
@@ -336,6 +341,124 @@ public class UserControllerTest {
         void returnUnauthorized_whenNotAuthenticated() {
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+    }
+
+    @Nested
+    class ChangePassword {
+
+        @Test
+        void returnNoContent_andChangePassword_whenRequestIsValid() {
+            final var id = registerUser();
+            final var request = UserTestData.createValidChangePasswordRequest();
+
+            restClient.patch()
+                    .uri(ApiConstants.PASSWORD, id)
+                    .headers(TestUtils::authUser)
+                    .body(request)
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            final var storedPassword = userRepository.findById(id).orElseThrow().getPassword();
+            assertThat(passwordEncoder.matches(request.newPassword(), storedPassword)).isTrue();
+        }
+
+        @Test
+        void returnBadRequest_whenCurrentPasswordIsIncorrect() {
+            final var id = registerUser();
+            final var request = new ChangePasswordRequest("wrongPassword", "drugieSniadanie");
+
+            restClient.patch()
+                    .uri(ApiConstants.PASSWORD, id)
+                    .headers(TestUtils::authUser)
+                    .body(request)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("Current password is incorrect.");
+        }
+
+        @Test
+        void returnBadRequest_whenNewPasswordIsSameAsCurrent() {
+            final var id = registerUser();
+            final var request = new ChangePasswordRequest("lembasy", "lembasy");
+
+            restClient.patch()
+                    .uri(ApiConstants.PASSWORD, id)
+                    .headers(TestUtils::authUser)
+                    .body(request)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("New password must be different from the current one.");
+        }
+
+        @Test
+        void returnBadRequest_whenDtoIsInvalid() {
+            final var invalidRequest = new ChangePasswordRequest(" ", "short");
+            final var expected = Map.ofEntries(
+                    Map.entry("message", "Validation for request failed."),
+                    Map.entry("details", Map.ofEntries(
+                            Map.entry("currentPassword", "Current password is required."),
+                            Map.entry("newPassword", "Password must be at least 7 characters."))));
+
+            restClient.patch()
+                    .uri(ApiConstants.PASSWORD, 1L)
+                    .headers(TestUtils::authUser)
+                    .body(invalidRequest)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(expected.get("message"))
+                    .jsonPath("$.details").isEqualTo(expected.get("details"));
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = {-1L, 0L})
+        void returnBadRequest_whenIdIsNotPositive(long invalidId) {
+            restClient.patch()
+                    .uri(ApiConstants.PASSWORD, invalidId)
+                    .headers(TestUtils::authUser)
+                    .body(UserTestData.createValidChangePasswordRequest())
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("ID must be greater than 0.");
+        }
+
+        @Test
+        void returnNotFound_whenUserDoesNotExist() {
+            final var nonExistentId = 666L;
+
+            restClient.patch()
+                    .uri(ApiConstants.PASSWORD, nonExistentId)
+                    .headers(TestUtils::authUser)
+                    .body(UserTestData.createValidChangePasswordRequest())
+                    .exchange()
+                    .expectStatus().isNotFound()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("User with id '" + nonExistentId + "' not found.");
+        }
+
+        @Test
+        void returnBadRequest_whenBodyIsMissing() {
+            restClient.patch()
+                    .uri(ApiConstants.PASSWORD, 1L)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("Request body is missing.");
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.patch()
+                    .uri(ApiConstants.PASSWORD, 1L)
+                    .body(UserTestData.createValidChangePasswordRequest())
                     .exchange()
                     .expectStatus().isUnauthorized();
         }

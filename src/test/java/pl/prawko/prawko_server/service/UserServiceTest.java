@@ -8,9 +8,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
+import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
@@ -278,6 +280,75 @@ class UserServiceTest {
         verify(repository).findById(givenId);
         verify(repository).existsByEmail(updateUserRequest.email());
         verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void changePassword_success_whenCurrentPasswordMatches() {
+        final var givenId = 44L;
+        final var request = UserTestData.createValidChangePasswordRequest();
+        final var oldEncoded = tester.getPassword();
+        final var newEncoded = "encodedNewPassword";
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(passwordEncoder.matches(request.currentPassword(), oldEncoded)).thenReturn(true);
+        when(passwordEncoder.encode(request.newPassword())).thenReturn(newEncoded);
+
+        service.changePassword(givenId, request);
+
+        assertThat(tester.getPassword()).isEqualTo(newEncoded);
+        verify(repository).findById(givenId);
+        verify(repository).save(tester);
+        verifyNoMoreInteractions(repository);
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void changePassword_throwException_whenCurrentPasswordIsIncorrect() {
+        final var givenId = 44L;
+        final var request = new ChangePasswordRequest("wrongPassword", "drugieSniadanie");
+        final var oldEncoded = tester.getPassword();
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(passwordEncoder.matches(request.currentPassword(), oldEncoded)).thenReturn(false);
+
+        final ThrowableAssert.ThrowingCallable executable = () -> service.changePassword(givenId, request);
+        final var exception = catchThrowableOfType(InvalidPasswordException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo("Current password is incorrect.");
+        assertThat(tester.getPassword()).isEqualTo(oldEncoded);
+        verify(repository).findById(givenId);
+        verify(repository, never()).save(any());
+        verify(passwordEncoder, never()).encode(any());
+        verifyNoMoreInteractions(repository);
+    }
+
+    @Test
+    void changePassword_throwException_whenNewPasswordIsSameAsCurrent() {
+        final var givenId = 44L;
+        final var request = new ChangePasswordRequest("lembasy", "lembasy");
+        final var oldEncoded = tester.getPassword();
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(passwordEncoder.matches(request.currentPassword(), oldEncoded)).thenReturn(true);
+
+        final ThrowableAssert.ThrowingCallable executable = () -> service.changePassword(givenId, request);
+        final var exception = catchThrowableOfType(InvalidPasswordException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo("New password must be different from the current one.");
+        assertThat(tester.getPassword()).isEqualTo(oldEncoded);
+        verify(repository, never()).save(any());
+        verify(passwordEncoder, never()).encode(any());
+    }
+
+    @Test
+    void changePassword_throwException_whenUserNotFound() {
+        final var givenId = 666L;
+        final var request = UserTestData.createValidChangePasswordRequest();
+        when(repository.findById(givenId)).thenReturn(Optional.empty());
+
+        final ThrowableAssert.ThrowingCallable executable = () -> service.changePassword(givenId, request);
+        final var exception = catchThrowableOfType(EntityNotFoundException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo("User with id '" + givenId + "' not found.");
+        verify(repository, never()).save(any());
+        verifyNoInteractions(passwordEncoder);
     }
 
     @Test
