@@ -13,3 +13,6 @@ src/main/resources/application-test.properties
 /.idea/misc.xml
 /.idea/modules.xml
 /.mvn/
+
+### Claude Code ###
+CLAUDE.local.md
