@@ -63,12 +63,12 @@ public class QuestionServiceTest {
             final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
             final var category = "B";
             final var expected = List.of(question);
-            when(repository.findByTypeAndCategories_NameContains(question.getType(), category)).thenReturn(expected);
+            when(repository.findByTypeAndCategories_Name(question.getType(), category)).thenReturn(expected);
 
             final var result = questionService.getAllByTypeAndCategory(question.getType(), category);
 
             assertThat(result).isEqualTo(expected);
-            verify(repository).findByTypeAndCategories_NameContains(question.getType(), category);
+            verify(repository).findByTypeAndCategories_Name(question.getType(), category);
             verifyNoMoreInteractions(repository);
         }
 
@@ -76,24 +76,24 @@ public class QuestionServiceTest {
         void returnEmptyList_whenCategoryNotExists() {
             final var category = "Z";
             final var type = QuestionType.BASIC;
-            when(repository.findByTypeAndCategories_NameContains(type, category)).thenReturn(Collections.emptyList());
+            when(repository.findByTypeAndCategories_Name(type, category)).thenReturn(Collections.emptyList());
 
             final var result = questionService.getAllByTypeAndCategory(type, category);
 
             assertThat(result).isEmpty();
-            verify(repository).findByTypeAndCategories_NameContains(type, category);
+            verify(repository).findByTypeAndCategories_Name(type, category);
             verifyNoMoreInteractions(repository);
         }
 
         @Test
         void returnEmptyList_whenTypeIsWrong() {
             final var category = "B";
-            when(repository.findByTypeAndCategories_NameContains(null, category)).thenReturn(Collections.emptyList());
+            when(repository.findByTypeAndCategories_Name(null, category)).thenReturn(Collections.emptyList());
 
             final var result = questionService.getAllByTypeAndCategory(null, category);
 
             assertThat(result).isEmpty();
-            verify(repository).findByTypeAndCategories_NameContains(null, category);
+            verify(repository).findByTypeAndCategories_Name(null, category);
             verifyNoMoreInteractions(repository);
         }
 

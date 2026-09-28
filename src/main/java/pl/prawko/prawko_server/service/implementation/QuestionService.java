@@ -56,7 +56,7 @@ public class QuestionService implements IQuestionService {
     @Override
     public List<Question> getAllByTypeAndCategory(final QuestionType type, final String category) {
         log.info("Fetching questions by type '{}' and category '{}'", type, category);
-        final var questions = repository.findByTypeAndCategories_NameContains(type, category);
+        final var questions = repository.findByTypeAndCategories_Name(type, category);
         log.info("Found {} questions for type '{}' and category '{}'", questions.size(), type, category);
         return questions;
     }
