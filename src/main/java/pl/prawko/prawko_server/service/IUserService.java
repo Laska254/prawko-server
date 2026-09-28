@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.service;
 
 import org.jspecify.annotations.Nullable;
+import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
@@ -91,6 +92,17 @@ public interface IUserService {
      * @return the updated user as a {@link UserDto}
      */
     UserDto updateUser(long userId, UserUpdateRequest updateRequest);
+
+    /**
+     * Changes a user's password.
+     * <p>
+     * Verifies the current password before encoding and persisting the new one.
+     * </p>
+     *
+     * @param userId  the ID of the user whose password should be changed
+     * @param request the request containing current and new password
+     */
+    void changePassword(long userId, ChangePasswordRequest request);
 
     /**
      * Deletes a user from the system.

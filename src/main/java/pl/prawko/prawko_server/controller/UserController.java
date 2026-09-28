@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
@@ -110,6 +111,26 @@ public class UserController {
     public ResponseEntity<UserDto> updateUser(@PathVariable @Positive final long id,
                                               @Valid @RequestBody final UserUpdateRequest updateRequest) {
         return ResponseEntity.ok(userService.updateUser(id, updateRequest));
+    }
+
+    /**
+     * Changes user's password.
+     *
+     * @param id      the unique identifier of the user (must be positive)
+     * @param request the {@link ChangePasswordRequest} containing current and new password
+     * @return a {@link ResponseEntity} with HTTP 200 OK
+     */
+    @Operation(summary = "Change user password", description = "Changes password of an existing user after verifying the current one.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Password changed successfully"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data, incorrect current password or ID is negative or zero")
+    })
+    @PatchMapping(ApiConstants.PASSWORD)
+    public ResponseEntity<Void> changePassword(@PathVariable @Positive final long id,
+                                               @Valid @RequestBody final ChangePasswordRequest request) {
+        userService.changePassword(id, request);
+        return ResponseEntity.noContent().build();
     }
 
     /**

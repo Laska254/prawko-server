@@ -2,6 +2,7 @@ package pl.prawko.prawko_server.test_data;
 
 import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
@@ -66,6 +67,10 @@ public class UserTestData {
 
     public static UserUpdateRequest createInvalidUserUpdateRequest() {
         return new UserUpdateRequest("", "", "gimli", "gimli.shire.me");
+    }
+
+    public static ChangePasswordRequest createValidChangePasswordRequest() {
+        return new ChangePasswordRequest("lembasy", "racuchy");
     }
 
     public static RegisterDto createValidRegisterDto() {

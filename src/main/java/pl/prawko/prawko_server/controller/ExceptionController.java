@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
+import pl.prawko.prawko_server.exception.InvalidPasswordException;
 
 import java.util.HashMap;
 
@@ -42,6 +43,12 @@ public class ExceptionController {
         final var problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
         problemDetail.setProperty("details", exception.getDetails());
         return problemDetail;
+    }
+
+    @ApiResponse(responseCode = "400", description = "Invalid password")
+    @ExceptionHandler(InvalidPasswordException.class)
+    public ProblemDetail handleInvalidPassword(final InvalidPasswordException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
     @ApiResponse(responseCode = "404", description = "Entity not found")

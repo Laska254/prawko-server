@@ -12,10 +12,12 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
+import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
@@ -182,6 +184,32 @@ public class UserService implements IUserService, UserDetailsService {
         final var updated = repository.save(user);
         log.info("Successfully updated user '{}'", user.getUserName());
         return mapper.toDto(updated);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException  if a user with provided id have not been found
+     * @throws InvalidPasswordException if the current password doesn't match or the new password is the same as current
+     */
+    @Transactional
+    @Override
+    public void changePassword(final long userId, final ChangePasswordRequest request) {
+        log.info("Changing password for user with id: {}", userId);
+        final var user = getById(userId);
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            final var message = "Current password is incorrect.";
+            log.warn("{} User id: {}", message, userId);
+            throw new InvalidPasswordException(message);
+        }
+        if (request.currentPassword().equals(request.newPassword())) {
+            final var message = "New password must be different from the current one.";
+            log.warn("{} User id: {}", message, userId);
+            throw new InvalidPasswordException(message);
+        }
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        repository.save(user);
+        log.info("Successfully changed password for user '{}'", user.getUserName());
     }
 
     /**
