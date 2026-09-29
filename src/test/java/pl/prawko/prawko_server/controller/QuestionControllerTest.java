@@ -180,7 +180,7 @@ public class QuestionControllerTest {
         @Test
         void returnEmptyList_whenNoQuestionsExist() {
             restClient.get()
-                    .headers(TestUtils::authUser)
+                    .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(new ParameterizedTypeReference<List<QuestionDto>>() {
@@ -197,7 +197,7 @@ public class QuestionControllerTest {
 
         @Test
         void returnForbidden_whenNotAdmin() {
-            restClient.post()
+            restClient.get()
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isForbidden();

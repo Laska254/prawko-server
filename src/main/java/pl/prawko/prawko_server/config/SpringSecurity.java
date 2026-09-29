@@ -120,8 +120,8 @@ public class SpringSecurity {
     private void configureEndpoint_Questions(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL_ALL).hasRole("USER")
-                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN");
+                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL_ALL).hasRole("USER");
     }
 
     private void configureEndpoint_Exams(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
