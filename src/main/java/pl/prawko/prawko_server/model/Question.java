@@ -50,10 +50,10 @@ public class Question {
     @Enumerated(EnumType.STRING)
     private QuestionType type;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "question")
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuestionTranslation> translations;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "question")
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> answers;
 
     @ManyToMany
@@ -64,7 +64,7 @@ public class Question {
     )
     private List<Category> categories;
 
-    @ManyToMany(mappedBy = "questions", cascade = CascadeType.ALL)
+    @ManyToMany(mappedBy = "questions")
     private List<Exam> exams;
 
     public long getId() {

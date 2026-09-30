@@ -18,6 +18,7 @@ import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.repository.ExamRepository;
+import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.ExamTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
@@ -37,6 +38,9 @@ public class ExamControllerTest {
     @Autowired
     private ExamRepository examRepository;
 
+    @Autowired
+    private QuestionRepository questionRepository;
+
     @LocalServerPort
     private int port;
 
@@ -51,6 +55,7 @@ public class ExamControllerTest {
     void tearDown() {
         examRepository.deleteAll();
         userRepository.deleteAll();
+        questionRepository.deleteAll();
     }
 
     @Nested
@@ -108,7 +113,9 @@ public class ExamControllerTest {
         @Test
         void returnsExam_whenExamIsFound() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
-            final var exam = examRepository.save(ExamTestData.createExam(tester));
+            final var exam = ExamTestData.createExam(tester);
+            exam.setQuestions(questionRepository.saveAll(exam.getQuestions()));
+            examRepository.save(exam);
             final var expected = ExamTestData.createExamDto(exam);
 
             restClient.get()

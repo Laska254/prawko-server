@@ -44,10 +44,10 @@ public class Answer {
     @JoinColumn(name = "question_id")
     private Question question;
 
-    @OneToMany(mappedBy = "answer", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "answer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AnswerTranslation> translations;
 
-    @ManyToMany(mappedBy = "userAnswers", cascade = CascadeType.ALL)
+    @ManyToMany(mappedBy = "userAnswers")
     @JsonBackReference
     private List<Exam> tests;
 

@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.model;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -58,7 +57,7 @@ public class Exam {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany
     @JoinTable(
             name = "test_question",
             joinColumns = @JoinColumn(name = "test_id"),
@@ -66,7 +65,7 @@ public class Exam {
     )
     private List<Question> questions;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany
     @JoinTable(
             name = "test_answer",
             joinColumns = @JoinColumn(name = "test_id"),

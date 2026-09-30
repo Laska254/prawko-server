@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.model;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -61,10 +60,10 @@ public class Language {
     @Column(length = 3)
     private String icon;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "language")
+    @OneToMany(mappedBy = "language")
     private List<QuestionTranslation> questionTranslations;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "language")
+    @OneToMany(mappedBy = "language")
     private List<AnswerTranslation> answerTranslations;
 
     @OneToMany(mappedBy = "language")
