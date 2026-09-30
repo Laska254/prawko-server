@@ -8,7 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
-import java.util.Objects;
 
 /**
  * Represents a translation of a {@link Question} into a specific {@link Language}
@@ -82,18 +81,18 @@ public class QuestionTranslation {
 
     @Override
     public boolean equals(final Object object) {
-        if (object == null || getClass() != object.getClass()) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof QuestionTranslation other)) {
             return false;
         }
-        final var that = (QuestionTranslation) object;
-        return id == that.id
-                && Objects.equals(content, that.content)
-                && Objects.equals(language, that.language);
+        return id != 0 && id == other.getId();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, content, language);
+        return QuestionTranslation.class.hashCode();
     }
 
     @Override
@@ -101,8 +100,8 @@ public class QuestionTranslation {
         return "QuestionTranslation{" +
                 "id=" + id +
                 ", content='" + content + '\'' +
-                ", question=" + question.getId() +
-                ", language=" + language.getCode() +
+                ", question=" + (question == null ? null : question.getId()) +
+                ", language=" + (language == null ? null : language.getCode()) +
                 '}';
     }
 

@@ -37,7 +37,10 @@ class AnswerFactoryTest {
 
         final var result = answerFactory.create(csv, question);
 
-        assertThat(result).isEqualTo(expected);
+        assertThat(result)
+                .usingRecursiveComparison()
+                .ignoringFields("question", "translations.answer")
+                .isEqualTo(expected);
     }
 
 }

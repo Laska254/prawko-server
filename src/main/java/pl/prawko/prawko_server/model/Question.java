@@ -12,7 +12,6 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Represents a {@code Question} entity within the application.
@@ -151,23 +150,18 @@ public class Question {
 
     @Override
     public boolean equals(final Object object) {
-        if (object == null || getClass() != object.getClass()) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof Question other)) {
             return false;
         }
-        final var question = (Question) object;
-        return id == question.id
-                && points == question.points
-                && Objects.equals(name, question.name)
-                && Objects.equals(translations, question.translations)
-                && Objects.equals(answers, question.answers)
-                && Objects.equals(media, question.media)
-                && type == question.type
-                && Objects.equals(categories, question.categories);
+        return id != 0 && id == other.getId();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, points, translations, answers, media, type, categories);
+        return Question.class.hashCode();
     }
 
     @Override
@@ -178,10 +172,6 @@ public class Question {
                 ", points=" + points +
                 ", media='" + media + '\'' +
                 ", type=" + type +
-                ", translations=" + translations +
-                ", answers=" + answers +
-                ", categories=" + categories +
-                ", exams=" + exams +
                 '}';
     }
 

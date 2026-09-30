@@ -35,7 +35,10 @@ class QuestionTranslationFactoryTest {
 
         final var result = factory.createTranslations(questionCSV, question);
 
-        assertThat(result).isEqualTo(expected);
+        assertThat(result)
+                .usingRecursiveComparison()
+                .ignoringFields("question")
+                .isEqualTo(expected);
     }
 
 }

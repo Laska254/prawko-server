@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Represents a role entity within the application.
@@ -66,17 +65,18 @@ public class Role {
 
     @Override
     public boolean equals(final Object object) {
-        if (object == null || getClass() != object.getClass()) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof Role other)) {
             return false;
         }
-        final var role = (Role) object;
-        return id == role.id
-                && Objects.equals(name, role.name);
+        return id != 0 && id == other.getId();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name);
+        return Role.class.hashCode();
     }
 
     @Override
@@ -84,7 +84,6 @@ public class Role {
         return "Role{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", users=" + users +
                 '}';
     }
 

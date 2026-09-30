@@ -17,7 +17,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Represents a {@code User} entity within the application.
@@ -183,24 +182,18 @@ public class User {
 
     @Override
     public boolean equals(final Object object) {
-        if (object == null || getClass() != object.getClass()) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof User other)) {
             return false;
         }
-        final var user = (User) object;
-        return id == user.id
-                && Objects.equals(firstName, user.firstName)
-                && Objects.equals(lastName, user.lastName)
-                && Objects.equals(userName, user.userName)
-                && Objects.equals(email, user.email)
-                && enabled == user.enabled
-                && created.equals(user.created)
-                && updated.equals(user.updated)
-                && roles.equals(user.roles);
+        return id != 0 && id == other.getId();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, firstName, lastName, userName, email, enabled, created, updated, roles);
+        return User.class.hashCode();
     }
 
     @Override
@@ -211,12 +204,9 @@ public class User {
                 ", lastName='" + lastName + '\'' +
                 ", userName='" + userName + '\'' +
                 ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
                 ", enabled=" + enabled +
                 ", created=" + created +
                 ", updated=" + updated +
-                ", roles=" + roles +
-                ", exams=" + exams +
                 '}';
     }
 

@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Represents a {@code Language} entity within the application.
@@ -136,19 +135,18 @@ public class Language {
 
     @Override
     public boolean equals(final Object object) {
-        if (object == null || getClass() != object.getClass()) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof Language other)) {
             return false;
         }
-        final var language = (Language) object;
-        return id == language.id
-                && Objects.equals(name, language.name)
-                && Objects.equals(code, language.code)
-                && Objects.equals(icon, language.icon);
+        return id != 0 && id == other.getId();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, code, icon);
+        return Language.class.hashCode();
     }
 
     @Override

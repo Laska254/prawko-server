@@ -12,7 +12,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Represents a {@code Answer} entity within the application.
@@ -99,27 +98,26 @@ public class Answer {
 
     @Override
     public boolean equals(final Object object) {
-        if (object == null || getClass() != object.getClass()) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof Answer other)) {
             return false;
         }
-        final var answer = (Answer) object;
-        return id == answer.id
-                && correct == answer.correct
-                && Objects.equals(translations, answer.translations);
+        return id != 0 && id == other.getId();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, correct, translations);
+        return Answer.class.hashCode();
     }
-
 
     @Override
     public String toString() {
         return "Answer{" +
                 "id=" + id +
                 ", correct=" + correct +
-                ", translations=" + translations +
+                ", question=" + (question == null ? null : question.getId()) +
                 '}';
     }
 
