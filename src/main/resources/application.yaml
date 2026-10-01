@@ -8,6 +8,16 @@ spring:
   application:
     name: "Prawko server"
 
+  data:
+    web:
+      pageable:
+        max-page-size: 100
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
   datasource:
     url: jdbc:h2:mem:prawko
     username: sa

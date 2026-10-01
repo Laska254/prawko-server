@@ -39,7 +39,7 @@ public class Question {
     @Id
     private long id;
 
-    @Column(length = 7)
+    @Column(length = 15)
     private String name;
 
     private int points;
