@@ -22,7 +22,6 @@ import pl.prawko.prawko_server.model.AuthenticatedUser;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
-import pl.prawko.prawko_server.service.implementation.RoleService;
 import pl.prawko.prawko_server.service.implementation.UserService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
@@ -53,9 +52,6 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
-    @Mock
-    private RoleService roleService;
-
     @InjectMocks
     private UserService service;
 
@@ -64,19 +60,17 @@ class UserServiceTest {
 
     @Test
     void register_success_whenUserNotExists() {
-        final var role = "USER";
         final var user = new User();
         when(repository.existsByUserName(registerDto.userName())).thenReturn(false);
         when(repository.existsByEmail(registerDto.email())).thenReturn(false);
         when(mapper.fromDto(registerDto)).thenReturn(user);
-        when(roleService.getByName(role)).thenReturn(new Role().setName(role));
 
         service.register(registerDto);
 
+        assertThat(user.getRole()).isEqualTo(Role.USER);
         verify(repository).save(user);
         verify(mapper).fromDto(registerDto);
-        verify(roleService).getByName(role);
-        verifyNoMoreInteractions(repository, mapper, roleService);
+        verifyNoMoreInteractions(repository, mapper);
     }
 
     @Test
@@ -384,7 +378,7 @@ class UserServiceTest {
 
     @Test
     void loadUserByUsername_returnUserDetails_whenUserExists() {
-        final var user = tester.setId(7L).setRoles(List.of(new Role().setName("USER")));
+        final var user = tester.setId(7L).setRole(Role.USER);
         when(repository.findByUserNameOrEmail("pippin", "pippin")).thenReturn(Optional.of(user));
 
         final var result = service.loadUserByUsername("pippin");

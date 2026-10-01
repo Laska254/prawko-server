@@ -24,7 +24,6 @@ class EntityIdentityTest {
                 Arguments.of(Named.of("Language", id -> new Language().setId(id))),
                 Arguments.of(Named.of("Question", id -> new Question().setId(id))),
                 Arguments.of(Named.of("QuestionTranslation", id -> new QuestionTranslation().setId(id))),
-                Arguments.of(Named.of("Role", id -> new Role().setId(id))),
                 Arguments.of(Named.of("User", id -> new User().setId(id)))
         );
     }
@@ -74,7 +73,7 @@ class EntityIdentityTest {
 
     @Test
     void shouldNotBeEqualToOtherEntityTypeWithSameId() {
-        assertThat(new User().setId(1)).isNotEqualTo(new Role().setId(1));
+        assertThat(new User().setId(1)).isNotEqualTo(new Exam().setId(1));
     }
 
     @Test
@@ -113,13 +112,10 @@ class EntityIdentityTest {
     }
 
     @Test
-    void shouldPrintRoleWithUsersWithoutRecursion() {
-        final var role = new Role().setId(1).setName("USER");
-        final var user = new User().setId(2).setRoles(List.of(role));
-        role.setUsers(List.of(user));
+    void shouldPrintUserWithRole() {
+        final var user = new User().setId(2).setRole(Role.ADMIN);
 
-        assertThat(role.toString()).contains("name='USER'");
-        assertThat(user.toString()).contains("id=2");
+        assertThat(user.toString()).contains("id=2", "role=ADMIN");
     }
 
     private record Named(String name, LongFunction<Object> factory) {

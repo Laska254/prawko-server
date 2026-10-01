@@ -6,11 +6,11 @@ import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 
 public class UserTestData {
 
@@ -27,7 +27,7 @@ public class UserTestData {
                 .setUserName(userName)
                 .setEmail(email)
                 .setPassword(new BCryptPasswordEncoder().encode("lembasy"))
-                .setRoles(Collections.emptyList())
+                .setRole(Role.USER)
                 .setEnabled(true)
                 .setCreated(LocalDateTime.now())
                 .setUpdated(LocalDateTime.now())

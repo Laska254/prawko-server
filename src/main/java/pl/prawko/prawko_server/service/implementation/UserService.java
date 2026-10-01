@@ -6,8 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,9 +26,7 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IUserService;
 
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -46,16 +43,13 @@ public class UserService implements IUserService, UserDetailsService {
     private final UserRepository repository;
     private final UserMapper mapper;
     private final PasswordEncoder passwordEncoder;
-    private final RoleService roleService;
 
     public UserService(final UserRepository repository,
                        final UserMapper mapper,
-                       final PasswordEncoder passwordEncoder,
-                       final RoleService roleService) {
+                       final PasswordEncoder passwordEncoder) {
         this.repository = repository;
         this.mapper = mapper;
         this.passwordEncoder = passwordEncoder;
-        this.roleService = roleService;
     }
 
     /**
@@ -73,8 +67,8 @@ public class UserService implements IUserService, UserDetailsService {
         log.debug("Mapped successfully");
         user.setPassword(passwordEncoder.encode(dto.password()));
         log.debug("Password encoded");
-        user.setRoles(List.of(roleService.getByName("USER")));
-        log.debug("User roles set");
+        user.setRole(Role.USER);
+        log.debug("User role set");
         repository.save(user);
         log.info("User {} registered successfully.", user.getUserName());
         return user.getId();
@@ -115,7 +109,7 @@ public class UserService implements IUserService, UserDetailsService {
      * Load user-specific data during authentication.
      *
      * @param userNameOrEmail the userName or email identifying the user
-     * @return {@link AuthenticatedUser} carrying the user's ID, with granted authorities based on user's roles
+     * @return {@link AuthenticatedUser} carrying the user's ID, with granted authority based on user's role
      * @throws UsernameNotFoundException if user have not been found with the provided details
      */
     @Override
@@ -131,7 +125,7 @@ public class UserService implements IUserService, UserDetailsService {
                 user.getId(),
                 user.getUserName(),
                 user.getPassword(),
-                mapRolesToAuthorities(user.getRoles()));
+                AuthorityUtils.createAuthorityList("ROLE_" + user.getRole()));
     }
 
     /**
@@ -227,13 +221,6 @@ public class UserService implements IUserService, UserDetailsService {
         final var user = getById(userId);
         repository.delete(user);
         log.info("Successfully deleted user '{}'", user.getUserName());
-    }
-
-    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(final Collection<Role> roles) {
-        log.debug("Mapping {} role(s) to authorities.", roles.size());
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
-                .toList();
     }
 
     private void validateNoConflict(@Nullable final String userName, @Nullable final String email) {

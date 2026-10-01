@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.test_data.UserTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,10 +24,7 @@ class UserRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        tester = new User()
-                .setUserName(userName)
-                .setEmail(email);
-        repository.save(tester);
+        tester = repository.save(UserTestData.createTestUserPippin());
     }
 
     @Test

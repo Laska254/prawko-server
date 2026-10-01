@@ -10,7 +10,7 @@ class UserMapperTest {
 
     private final UserMapper mapper = new UserMapperImpl();
 
-    private static final String[] IGNORED_FIELDS = {"id", "created", "updated", "exams", "password", "roles"};
+    private static final String[] IGNORED_FIELDS = {"id", "created", "updated", "exams", "password", "role"};
 
     private final User tester = UserTestData.createTestUserPippin();
 

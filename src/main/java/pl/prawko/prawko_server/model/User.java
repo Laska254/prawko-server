@@ -3,13 +3,11 @@ package pl.prawko.prawko_server.model;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
@@ -29,11 +27,11 @@ import java.util.List;
  *     <li>email - limited to 63 characters</li>
  *     <li>password - hashed and limited to 63 characters</li>
  * </ul>
- * and system-related attributes like whether the account is enabled, the creation timestamp and the last update timestamp.
+ * and system-related attributes like the {@link Role}, whether the account is enabled, the creation timestamp and the last
+ * update timestamp.
  * <p>
  * Relationships:
  * <ul>
- *     <li>{@link Role}: A user can have multiple roles, defining their permissions in the system.</li>
  *     <li>{@link Exam}: A user can be assigned to multiple exams.</li>
  * </ul>
  * The entity is mapped to the database table {@code user} and uses automatic timestamp handling.
@@ -70,13 +68,9 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updated;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "user_role",
-            joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
-            inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")}
-    )
-    private List<Role> roles;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 5)
+    private Role role;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Exam> exams;
@@ -162,12 +156,12 @@ public class User {
         return this;
     }
 
-    public List<Role> getRoles() {
-        return roles;
+    public Role getRole() {
+        return role;
     }
 
-    public User setRoles(final List<Role> roles) {
-        this.roles = roles;
+    public User setRole(final Role role) {
+        this.role = role;
         return this;
     }
 
@@ -204,6 +198,7 @@ public class User {
                 ", lastName='" + lastName + '\'' +
                 ", userName='" + userName + '\'' +
                 ", email='" + email + '\'' +
+                ", role=" + role +
                 ", enabled=" + enabled +
                 ", created=" + created +
                 ", updated=" + updated +
