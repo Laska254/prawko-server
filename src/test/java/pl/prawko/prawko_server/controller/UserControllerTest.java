@@ -45,7 +45,6 @@ public class UserControllerTest {
 
     @BeforeEach
     void setUp() {
-        userRepository.deleteAll();
         restClient = TestUtils.createRestTestClient(port, ApiConstants.USERS_BASE_URL);
     }
 
