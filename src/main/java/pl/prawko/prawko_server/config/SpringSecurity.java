@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.annotation.AnnotationTemplateExpressionDefaults;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,7 +29,8 @@ import pl.prawko.prawko_server.constants.ApiConstants;
  * are public and which require specific roles (ADMIN, USER) for access.
  *
  * <p>Resource ownership (e.g. a user may only modify their own account) is enforced by method security
- * ({@link org.springframework.security.access.prepost.PreAuthorize}) on controllers.
+ * ({@link org.springframework.security.access.prepost.PreAuthorize} and annotations templated on it, like
+ * {@link IsSelfOrAdmin}) on controllers.
  *
  * <p>Authorization rules:
  * <ul>
@@ -45,9 +47,6 @@ import pl.prawko.prawko_server.constants.ApiConstants;
 @EnableMethodSecurity
 public class SpringSecurity {
 
-    @Autowired
-    private UserDetailsService userDetailsService;
-
     /**
      * Provides a {@link PasswordEncoder} bean for encoding user passwords.
      * <p>
@@ -58,6 +57,16 @@ public class SpringSecurity {
     @Bean
     public static PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * Enables placeholders in method security meta-annotations, like {@code {userId}} in {@link IsSelfOrAdmin}.
+     *
+     * @return default {@link AnnotationTemplateExpressionDefaults}
+     */
+    @Bean
+    public static AnnotationTemplateExpressionDefaults annotationTemplateExpressionDefaults() {
+        return new AnnotationTemplateExpressionDefaults();
     }
 
     /**
@@ -78,13 +87,17 @@ public class SpringSecurity {
      * Configures global authentication by registering the {@link UserDetailsService} and {@link PasswordEncoder} with the
      * {@link AuthenticationManagerBuilder}.
      *
-     * @param auth the {@link AuthenticationManagerBuilder} to configure
+     * @param auth               the {@link AuthenticationManagerBuilder} to configure
+     * @param userDetailsService the {@link UserDetailsService} loading users during authentication
+     * @param passwordEncoder    the {@link PasswordEncoder} verifying passwords
      */
     @Autowired
-    public void configureGlobal(final AuthenticationManagerBuilder auth) {
+    public void configureGlobal(final AuthenticationManagerBuilder auth,
+                                final UserDetailsService userDetailsService,
+                                final PasswordEncoder passwordEncoder) {
         auth
                 .userDetailsService(userDetailsService)
-                .passwordEncoder(passwordEncoder());
+                .passwordEncoder(passwordEncoder);
     }
 
     /**

@@ -21,6 +21,7 @@ import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.mapper.UserMapper;
+import pl.prawko.prawko_server.model.AuthenticatedUser;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
@@ -114,23 +115,23 @@ public class UserService implements IUserService, UserDetailsService {
      * Load user-specific data during authentication.
      *
      * @param userNameOrEmail the userName or email identifying the user
-     * @return {@link org.springframework.security.core.userdetails.User} object with granted authorities based on user's roles
+     * @return {@link AuthenticatedUser} carrying the user's ID, with granted authorities based on user's roles
      * @throws UsernameNotFoundException if user have not been found with the provided details
      */
     @Override
     public UserDetails loadUserByUsername(final String userNameOrEmail) throws UsernameNotFoundException {
         log.info("Loading user by username or email: {}", userNameOrEmail);
-        if (checkIfExist(userNameOrEmail)) {
-            final var user = getByUserNameOrEmail(userNameOrEmail);
-            log.info("User {} loaded successfully.", userNameOrEmail);
-            return new org.springframework.security.core.userdetails.User(
-                    user.getUserName(),
-                    user.getPassword(),
-                    mapRolesToAuthorities(user.getRoles()));
-        } else {
-            log.warn("User '{}' not found.", userNameOrEmail);
-            throw new UsernameNotFoundException("Invalid login or password.");
-        }
+        final var user = repository.findByUserNameOrEmail(userNameOrEmail, userNameOrEmail)
+                .orElseThrow(() -> {
+                    log.warn("User '{}' not found.", userNameOrEmail);
+                    return new UsernameNotFoundException("Invalid login or password.");
+                });
+        log.info("User {} loaded successfully.", userNameOrEmail);
+        return new AuthenticatedUser(
+                user.getId(),
+                user.getUserName(),
+                user.getPassword(),
+                mapRolesToAuthorities(user.getRoles()));
     }
 
     /**
@@ -191,22 +192,22 @@ public class UserService implements IUserService, UserDetailsService {
     /**
      * {@inheritDoc}
      *
-     * @throws EntityNotFoundException  if a user with provided username have not been found
+     * @throws EntityNotFoundException  if a user with provided id have not been found
      * @throws InvalidPasswordException if the current password doesn't match or the new password is the same as current
      */
     @Transactional
     @Override
-    public void changePassword(final String userName, final ChangePasswordRequest request) {
-        log.info("Changing password for user '{}'", userName);
-        final var user = getByUserNameOrEmail(userName);
+    public void changePassword(final long userId, final ChangePasswordRequest request) {
+        log.info("Changing password for user with id: {}", userId);
+        final var user = getById(userId);
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
             final var message = "Current password is incorrect.";
-            log.warn("{} User: '{}'", message, userName);
+            log.warn("{} User id: {}", message, userId);
             throw new InvalidPasswordException(message);
         }
         if (request.currentPassword().equals(request.newPassword())) {
             final var message = "New password must be different from the current one.";
-            log.warn("{} User: '{}'", message, userName);
+            log.warn("{} User id: {}", message, userId);
             throw new InvalidPasswordException(message);
         }
         user.setPassword(passwordEncoder.encode(request.newPassword()));

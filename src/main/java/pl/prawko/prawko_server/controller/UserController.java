@@ -11,7 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.data.web.SortDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,14 +22,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import pl.prawko.prawko_server.config.IsSelfOrAdmin;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.service.implementation.UserService;
-
-import java.security.Principal;
 
 /**
  * REST controller for user management operations.
@@ -122,7 +121,7 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "User not found"),
             @ApiResponse(responseCode = "400", description = "Invalid update data or ID is negative or zero")
     })
-    @PreAuthorize("hasRole('ADMIN') or @userAuthorization.isSelf(#id, authentication)")
+    @IsSelfOrAdmin(userId = "#id")
     @PatchMapping(ApiConstants.BY_ID)
     public ResponseEntity<UserDto> updateUser(@PathVariable @Positive final long id,
                                               @Valid @RequestBody final UserUpdateRequest updateRequest) {
@@ -132,8 +131,8 @@ public class UserController {
     /**
      * Changes password of the currently authenticated user.
      *
-     * @param principal the currently authenticated user
-     * @param request   the {@link ChangePasswordRequest} containing current and new password
+     * @param userId  the ID of the currently authenticated user
+     * @param request the {@link ChangePasswordRequest} containing current and new password
      * @return a {@link ResponseEntity} with HTTP 204 No Content
      */
     @Operation(summary = "Change own password", description = "Changes password of the authenticated user after verifying the current one.")
@@ -142,9 +141,9 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "Invalid request data or incorrect current password")
     })
     @PatchMapping(ApiConstants.PASSWORD)
-    public ResponseEntity<Void> changePassword(final Principal principal,
+    public ResponseEntity<Void> changePassword(@AuthenticationPrincipal(expression = "id") final long userId,
                                                @Valid @RequestBody final ChangePasswordRequest request) {
-        userService.changePassword(principal.getName(), request);
+        userService.changePassword(userId, request);
         return ResponseEntity.noContent().build();
     }
 

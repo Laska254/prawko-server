@@ -13,7 +13,6 @@ import org.springframework.data.web.PagedModel;
 import org.springframework.data.web.SortDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import pl.prawko.prawko_server.config.IsSelfOrAdmin;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.CreateExamDto;
 import pl.prawko.prawko_server.dto.ExamDto;
@@ -66,7 +66,7 @@ public class ExamController {
             @ApiResponse(responseCode = "403", description = "Creating an exam for another user is not allowed"),
             @ApiResponse(responseCode = "404", description = "User or category not found")
     })
-    @PreAuthorize("hasRole('ADMIN') or @userAuthorization.isSelf(#dto.userId(), authentication)")
+    @IsSelfOrAdmin(userId = "#dto.userId()")
     @PostMapping
     public ResponseEntity<Void> createExam(@RequestBody @Valid final CreateExamDto dto) {
         final var location = ServletUriComponentsBuilder
@@ -92,7 +92,7 @@ public class ExamController {
             @ApiResponse(responseCode = "404", description = "Exam not found"),
             @ApiResponse(responseCode = "400", description = "ID is negative or zero"),
     })
-    @PostAuthorize("hasRole('ADMIN') or @userAuthorization.isSelf(returnObject.body.userId(), authentication)")
+    @PostAuthorize("hasRole('ADMIN') or principal.isSelf(returnObject.body.userId())")
     @GetMapping(ApiConstants.BY_ID)
     public ResponseEntity<ExamDto> getExam(@PathVariable @Positive final long id) {
         return ResponseEntity.ok(service.getById(id));
@@ -115,7 +115,7 @@ public class ExamController {
             @ApiResponse(responseCode = "404", description = "User not found"),
             @ApiResponse(responseCode = "400", description = "User ID is missing, negative or zero, or invalid sort property"),
     })
-    @PreAuthorize("hasRole('ADMIN') or @userAuthorization.isSelf(#userId, authentication)")
+    @IsSelfOrAdmin(userId = "#userId")
     @GetMapping
     public ResponseEntity<PagedModel<ExamSummaryDto>> getUserExams(
             @RequestParam @Positive final long userId,
