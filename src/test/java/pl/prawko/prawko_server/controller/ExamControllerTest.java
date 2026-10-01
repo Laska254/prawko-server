@@ -17,6 +17,7 @@ import pl.prawko.prawko_server.dto.CreateExamDto;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
+import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
@@ -45,6 +46,8 @@ public class ExamControllerTest {
     private int port;
 
     private RestTestClient restClient;
+
+    private static final String ACCESS_DENIED = "Access denied.";
 
     @BeforeEach
     void setUp() {
@@ -77,6 +80,33 @@ public class ExamControllerTest {
                         assertThat(location).endsWith(expectedLocation);
                     })
                     .expectBody().isEmpty();
+        }
+
+        @Test
+        void returnCreated_whenAdminCreatesExamForAnotherUser() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+
+            restClient.post()
+                    .headers(TestUtils::authAdmin)
+                    .body(new CreateExamDto(tester.getId(), CategoryVariant.B))
+                    .exchange()
+                    .expectStatus().isCreated();
+        }
+
+        @Test
+        void returnForbidden_whenCreatingExamForAnotherUser() {
+            userRepository.save(UserTestData.createTestUserPippin());
+            final var other = userRepository.save(createMerry());
+
+            restClient.post()
+                    .headers(TestUtils::authUser)
+                    .body(new CreateExamDto(other.getId(), CategoryVariant.B))
+                    .exchange()
+                    .expectStatus().isForbidden()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(ACCESS_DENIED);
+
+            assertThat(examRepository.findAll()).isEmpty();
         }
 
         @Test
@@ -127,6 +157,35 @@ public class ExamControllerTest {
         }
 
         @Test
+        void returnsExam_whenAdminRequestsExamOfAnotherUser() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, exam.getId())
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.id").isEqualTo(exam.getId());
+        }
+
+        @Test
+        void returnsForbidden_whenExamBelongsToAnotherUser() {
+            userRepository.save(UserTestData.createTestUserPippin());
+            final var other = userRepository.save(createMerry());
+            final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(other));
+
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, exam.getId())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isForbidden()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(ACCESS_DENIED);
+        }
+
+        @Test
         void returnsNotFound_whenExamIsNotFound() {
             final var nonExistingId = 666L;
             final var expected = "Exam with '" + nonExistingId + "' not found.";
@@ -170,7 +229,7 @@ public class ExamControllerTest {
         @Test
         void returnUserExams_fromNewest_whenUserHasExams() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
-            final var other = userRepository.save(UserTestData.createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me"));
+            final var other = userRepository.save(createMerry());
             final var older = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
             final var newer = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
             examRepository.save(ExamTestData.createExamWithoutQuestions(other));
@@ -210,12 +269,40 @@ public class ExamControllerTest {
         }
 
         @Test
+        void returnUserExams_whenAdminRequestsExamsOfAnotherUser() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+
+            restClient.get()
+                    .uri(uri -> uri.queryParam("userId", tester.getId()).build())
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$[0].id").isEqualTo(exam.getId());
+        }
+
+        @Test
+        void returnForbidden_whenRequestingExamsOfAnotherUser() {
+            userRepository.save(UserTestData.createTestUserPippin());
+            final var other = userRepository.save(createMerry());
+
+            restClient.get()
+                    .uri(uri -> uri.queryParam("userId", other.getId()).build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isForbidden()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(ACCESS_DENIED);
+        }
+
+        @Test
         void returnNotFound_whenUserDoesNotExist() {
             final var nonExistentId = 666L;
 
             restClient.get()
                     .uri(uri -> uri.queryParam("userId", nonExistentId).build())
-                    .headers(TestUtils::authUser)
+                    .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isNotFound()
                     .expectBody()
@@ -227,7 +314,7 @@ public class ExamControllerTest {
         void returnBadRequest_whenUserIdIsNotPositive(long invalidId) {
             restClient.get()
                     .uri(uri -> uri.queryParam("userId", invalidId).build())
-                    .headers(TestUtils::authUser)
+                    .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -252,6 +339,10 @@ public class ExamControllerTest {
                     .expectStatus().isUnauthorized();
         }
 
+    }
+
+    private static User createMerry() {
+        return UserTestData.createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me");
     }
 
 }

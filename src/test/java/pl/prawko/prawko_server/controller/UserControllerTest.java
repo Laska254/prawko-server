@@ -271,6 +271,38 @@ public class UserControllerTest {
         }
 
         @Test
+        void success_whenUserUpdatesThemselves() {
+            final var id = registerUser();
+            final var validDto = UserTestData.createValidUserUpdateRequest();
+            final var expected = UserTestData.createUpdatedUserDto(id);
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, id)
+                    .headers(TestUtils::authUser)
+                    .body(validDto)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserDto.class).isEqualTo(expected);
+        }
+
+        @Test
+        void returnForbidden_whenUserUpdatesAnotherUser() {
+            registerUser();
+            final var other = userRepository.save(UserTestData.createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me"));
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, other.getId())
+                    .headers(TestUtils::authUser)
+                    .body(UserTestData.createValidUserUpdateRequest())
+                    .exchange()
+                    .expectStatus().isForbidden()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("Access denied.");
+
+            assertThat(userRepository.findById(other.getId()).orElseThrow().getUserName()).isEqualTo("merry");
+        }
+
+        @Test
         void returnBadRequest_whenDtoIsInvalid() {
             final var invalidUpdateRequest = UserTestData.createInvalidUserUpdateRequest();
             final var expected = Map.ofEntries(
@@ -299,7 +331,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, invalidId)
-                    .headers(TestUtils::authUser)
+                    .headers(TestUtils::authAdmin)
                     .body(validDto)
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -315,7 +347,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, nonExistentId)
-                    .headers(TestUtils::authUser)
+                    .headers(TestUtils::authAdmin)
                     .body(validDto)
                     .exchange()
                     .expectStatus().isNotFound()
@@ -356,7 +388,7 @@ public class UserControllerTest {
             final var request = UserTestData.createValidChangePasswordRequest();
 
             restClient.patch()
-                    .uri(ApiConstants.PASSWORD, id)
+                    .uri(ApiConstants.PASSWORD)
                     .headers(TestUtils::authUser)
                     .body(request)
                     .exchange()
@@ -367,12 +399,29 @@ public class UserControllerTest {
         }
 
         @Test
+        void changeOnlyOwnPassword_whenOtherUsersExist() {
+            registerUser();
+            final var other = userRepository.save(UserTestData.createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me"));
+            final var request = UserTestData.createValidChangePasswordRequest();
+
+            restClient.patch()
+                    .uri(ApiConstants.PASSWORD)
+                    .headers(TestUtils::authUser)
+                    .body(request)
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            final var otherPassword = userRepository.findById(other.getId()).orElseThrow().getPassword();
+            assertThat(passwordEncoder.matches(request.currentPassword(), otherPassword)).isTrue();
+        }
+
+        @Test
         void returnBadRequest_whenCurrentPasswordIsIncorrect() {
             final var id = registerUser();
             final var request = new ChangePasswordRequest("wrongPassword", "drugieSniadanie");
 
             restClient.patch()
-                    .uri(ApiConstants.PASSWORD, id)
+                    .uri(ApiConstants.PASSWORD)
                     .headers(TestUtils::authUser)
                     .body(request)
                     .exchange()
@@ -387,7 +436,7 @@ public class UserControllerTest {
             final var request = new ChangePasswordRequest("lembasy", "lembasy");
 
             restClient.patch()
-                    .uri(ApiConstants.PASSWORD, id)
+                    .uri(ApiConstants.PASSWORD)
                     .headers(TestUtils::authUser)
                     .body(request)
                     .exchange()
@@ -406,7 +455,7 @@ public class UserControllerTest {
                             Map.entry("newPassword", "Password must be at least 7 characters."))));
 
             restClient.patch()
-                    .uri(ApiConstants.PASSWORD, 1L)
+                    .uri(ApiConstants.PASSWORD)
                     .headers(TestUtils::authUser)
                     .body(invalidRequest)
                     .exchange()
@@ -416,37 +465,10 @@ public class UserControllerTest {
                     .jsonPath("$.details").isEqualTo(expected.get("details"));
         }
 
-        @ParameterizedTest
-        @ValueSource(longs = {-1L, 0L})
-        void returnBadRequest_whenIdIsNotPositive(long invalidId) {
-            restClient.patch()
-                    .uri(ApiConstants.PASSWORD, invalidId)
-                    .headers(TestUtils::authUser)
-                    .body(UserTestData.createValidChangePasswordRequest())
-                    .exchange()
-                    .expectStatus().isBadRequest()
-                    .expectBody()
-                    .jsonPath("$.detail").isEqualTo("ID must be greater than 0.");
-        }
-
-        @Test
-        void returnNotFound_whenUserDoesNotExist() {
-            final var nonExistentId = 666L;
-
-            restClient.patch()
-                    .uri(ApiConstants.PASSWORD, nonExistentId)
-                    .headers(TestUtils::authUser)
-                    .body(UserTestData.createValidChangePasswordRequest())
-                    .exchange()
-                    .expectStatus().isNotFound()
-                    .expectBody()
-                    .jsonPath("$.detail").isEqualTo("User with id '" + nonExistentId + "' not found.");
-        }
-
         @Test
         void returnBadRequest_whenBodyIsMissing() {
             restClient.patch()
-                    .uri(ApiConstants.PASSWORD, 1L)
+                    .uri(ApiConstants.PASSWORD)
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -457,7 +479,7 @@ public class UserControllerTest {
         @Test
         void returnUnauthorized_whenNotAuthenticated() {
             restClient.patch()
-                    .uri(ApiConstants.PASSWORD, 1L)
+                    .uri(ApiConstants.PASSWORD)
                     .body(UserTestData.createValidChangePasswordRequest())
                     .exchange()
                     .expectStatus().isUnauthorized();

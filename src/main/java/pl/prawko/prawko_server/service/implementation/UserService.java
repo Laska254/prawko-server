@@ -189,22 +189,22 @@ public class UserService implements IUserService, UserDetailsService {
     /**
      * {@inheritDoc}
      *
-     * @throws EntityNotFoundException  if a user with provided id have not been found
+     * @throws EntityNotFoundException  if a user with provided username have not been found
      * @throws InvalidPasswordException if the current password doesn't match or the new password is the same as current
      */
     @Transactional
     @Override
-    public void changePassword(final long userId, final ChangePasswordRequest request) {
-        log.info("Changing password for user with id: {}", userId);
-        final var user = getById(userId);
+    public void changePassword(final String userName, final ChangePasswordRequest request) {
+        log.info("Changing password for user '{}'", userName);
+        final var user = getByUserNameOrEmail(userName);
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
             final var message = "Current password is incorrect.";
-            log.warn("{} User id: {}", message, userId);
+            log.warn("{} User: '{}'", message, userName);
             throw new InvalidPasswordException(message);
         }
         if (request.currentPassword().equals(request.newPassword())) {
             final var message = "New password must be different from the current one.";
-            log.warn("{} User id: {}", message, userId);
+            log.warn("{} User: '{}'", message, userName);
             throw new InvalidPasswordException(message);
         }
         user.setPassword(passwordEncoder.encode(request.newPassword()));

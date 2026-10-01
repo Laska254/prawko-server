@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,7 @@ import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.service.implementation.UserService;
 
+import java.security.Principal;
 import java.util.List;
 
 /**
@@ -97,6 +99,8 @@ public class UserController {
     /**
      * Updates user details.
      *
+     * <p>Allowed only for the user themselves or an admin.
+     *
      * @param id            the unique identifier of the user to update (must be positive)
      * @param updateRequest the {@link UserUpdateRequest} containing fields to update
      * @return a {@link ResponseEntity} containing the updated {@link UserDto}
@@ -104,9 +108,11 @@ public class UserController {
     @Operation(summary = "Update user details", description = "Updates specified fields of an existing user.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User updated successfully"),
+            @ApiResponse(responseCode = "403", description = "Updating another user is not allowed"),
             @ApiResponse(responseCode = "404", description = "User not found"),
             @ApiResponse(responseCode = "400", description = "Invalid update data or ID is negative or zero")
     })
+    @PreAuthorize("hasRole('ADMIN') or @userAuthorization.isSelf(#id, authentication)")
     @PatchMapping(ApiConstants.BY_ID)
     public ResponseEntity<UserDto> updateUser(@PathVariable @Positive final long id,
                                               @Valid @RequestBody final UserUpdateRequest updateRequest) {
@@ -114,22 +120,21 @@ public class UserController {
     }
 
     /**
-     * Changes user's password.
+     * Changes password of the currently authenticated user.
      *
-     * @param id      the unique identifier of the user (must be positive)
-     * @param request the {@link ChangePasswordRequest} containing current and new password
-     * @return a {@link ResponseEntity} with HTTP 200 OK
+     * @param principal the currently authenticated user
+     * @param request   the {@link ChangePasswordRequest} containing current and new password
+     * @return a {@link ResponseEntity} with HTTP 204 No Content
      */
-    @Operation(summary = "Change user password", description = "Changes password of an existing user after verifying the current one.")
+    @Operation(summary = "Change own password", description = "Changes password of the authenticated user after verifying the current one.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Password changed successfully"),
-            @ApiResponse(responseCode = "404", description = "User not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid request data, incorrect current password or ID is negative or zero")
+            @ApiResponse(responseCode = "400", description = "Invalid request data or incorrect current password")
     })
     @PatchMapping(ApiConstants.PASSWORD)
-    public ResponseEntity<Void> changePassword(@PathVariable @Positive final long id,
+    public ResponseEntity<Void> changePassword(final Principal principal,
                                                @Valid @RequestBody final ChangePasswordRequest request) {
-        userService.changePassword(id, request);
+        userService.changePassword(principal.getName(), request);
         return ResponseEntity.noContent().build();
     }
 

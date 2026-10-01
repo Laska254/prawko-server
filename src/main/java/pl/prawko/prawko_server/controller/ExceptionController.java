@@ -7,6 +7,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -74,6 +75,12 @@ public class ExceptionController {
     @ExceptionHandler(AuthenticationException.class)
     public ProblemDetail handleInvalidLoginRequest(final AuthenticationException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "403", description = "Access denied")
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied.");
     }
 
     @ApiResponse(responseCode = "400", description = "ID is negative or zero")

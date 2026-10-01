@@ -99,10 +99,10 @@ public interface IUserService {
      * Verifies the current password before encoding and persisting the new one.
      * </p>
      *
-     * @param userId  the ID of the user whose password should be changed
-     * @param request the request containing current and new password
+     * @param userName the username of the user whose password should be changed
+     * @param request  the request containing current and new password
      */
-    void changePassword(long userId, ChangePasswordRequest request);
+    void changePassword(String userName, ChangePasswordRequest request);
 
     /**
      * Deletes a user from the system.

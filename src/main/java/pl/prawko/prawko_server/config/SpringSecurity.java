@@ -7,10 +7,12 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,8 +24,11 @@ import pl.prawko.prawko_server.constants.ApiConstants;
  * Spring Security configuration class for the application.
  *
  * <p>This configuration enables HTTP Basic Authentication for stateless REST API access
- * with role-based authorization (RBAC). It defines which endpoints are public and which
- * require specific roles (ADMIN, USER) for access.
+ * (no HTTP session is created) with role-based authorization (RBAC). It defines which endpoints
+ * are public and which require specific roles (ADMIN, USER) for access.
+ *
+ * <p>Resource ownership (e.g. a user may only modify their own account) is enforced by method security
+ * ({@link org.springframework.security.access.prepost.PreAuthorize}) on controllers.
  *
  * <p>Authorization rules:
  * <ul>
@@ -32,10 +37,12 @@ import pl.prawko.prawko_server.constants.ApiConstants;
  *     <li>USER+ required: {@code GET /questions/**}, {@code POST/GET /exams}</li>
  *     <li>ADMIN only: User management endpoints, delete operations</li>
  *     <li>Public: Swagger UI and OpenAPI docs</li>
+ *     <li>Any other request is denied</li>
  * </ul>
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SpringSecurity {
 
     @Autowired
@@ -96,6 +103,7 @@ public class SpringSecurity {
                                            final LoggingFilter loggingFilter) {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterAfter(loggingFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize -> {
                     authorize
@@ -104,6 +112,7 @@ public class SpringSecurity {
                     configureEndpoint_Users(authorize);
                     configureEndpoint_Questions(authorize);
                     configureEndpoint_Exams(authorize);
+                    authorize.anyRequest().denyAll();
                 })
                 .httpBasic(Customizer.withDefaults())
                 .build();

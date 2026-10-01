@@ -8,8 +8,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,8 +19,8 @@ import pl.prawko.prawko_server.dto.LoginDto;
  * REST controller for authentication operations.
  *
  * <p>Provides endpoints for user login and authentication management.
- * Authentication is performed using Spring Security's authentication manager,
- * and successful authentication stores the Authentication in the SecurityContext.
+ * Authentication is performed using Spring Security's authentication manager.
+ * The API is stateless, so nothing is stored between requests.
  */
 @Tag(name = "Auth", description = "Authentication management endpoints")
 @RestController
@@ -38,9 +36,8 @@ public class AuthController {
     /**
      * Authenticates a user with provided credentials.
      *
-     * <p>Upon successful authentication, the user's Authentication is stored in the
-     * SecurityContext for the current session, allowing subsequent requests to be
-     * processed with the user's granted authorities.
+     * <p>Only verifies the credentials. The API is stateless, so no session is created and
+     * every subsequent request must carry its own HTTP Basic credentials.
      *
      * @param request the {@link LoginDto} containing username and password
      * @return a {@link ResponseEntity} with HTTP 200 Ok and success message
@@ -53,11 +50,10 @@ public class AuthController {
     })
     @PostMapping
     public ResponseEntity<String> login(@Valid @RequestBody final LoginDto request) {
-        final Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 request.userName(),
                 request.password()
         ));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
         return ResponseEntity.ok("User signed-in successfully.");
     }
 

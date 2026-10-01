@@ -42,6 +42,18 @@ class UserRepositoryTest {
     }
 
     @Test
+    void existsByIdAndUserName_returnTrue_whenIdAndUserNameMatch() {
+        final var result = repository.existsByIdAndUserName(tester.getId(), userName);
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void existsByIdAndUserName_returnFalse_whenUserNameDoesNotMatch() {
+        final var result = repository.existsByIdAndUserName(tester.getId(), wrongUserName);
+        assertThat(result).isFalse();
+    }
+
+    @Test
     void existsByEmail_returnTrue() {
         final var result = repository.existsByEmail(tester.getEmail());
         assertThat(result).isTrue();

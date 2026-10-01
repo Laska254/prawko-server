@@ -7,6 +7,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
@@ -26,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -284,18 +287,18 @@ class UserServiceTest {
 
     @Test
     void changePassword_success_whenCurrentPasswordMatches() {
-        final var givenId = 44L;
+        final var givenUserName = "pippin";
         final var request = UserTestData.createValidChangePasswordRequest();
         final var oldEncoded = tester.getPassword();
         final var newEncoded = "encodedNewPassword";
-        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(repository.findByUserNameOrEmail(givenUserName, givenUserName)).thenReturn(Optional.of(tester));
         when(passwordEncoder.matches(request.currentPassword(), oldEncoded)).thenReturn(true);
         when(passwordEncoder.encode(request.newPassword())).thenReturn(newEncoded);
 
-        service.changePassword(givenId, request);
+        service.changePassword(givenUserName, request);
 
         assertThat(tester.getPassword()).isEqualTo(newEncoded);
-        verify(repository).findById(givenId);
+        verify(repository).findByUserNameOrEmail(givenUserName, givenUserName);
         verify(repository).save(tester);
         verifyNoMoreInteractions(repository);
         verifyNoInteractions(mapper);
@@ -303,18 +306,18 @@ class UserServiceTest {
 
     @Test
     void changePassword_throwException_whenCurrentPasswordIsIncorrect() {
-        final var givenId = 44L;
+        final var givenUserName = "pippin";
         final var request = new ChangePasswordRequest("wrongPassword", "drugieSniadanie");
         final var oldEncoded = tester.getPassword();
-        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(repository.findByUserNameOrEmail(givenUserName, givenUserName)).thenReturn(Optional.of(tester));
         when(passwordEncoder.matches(request.currentPassword(), oldEncoded)).thenReturn(false);
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.changePassword(givenId, request);
+        final ThrowableAssert.ThrowingCallable executable = () -> service.changePassword(givenUserName, request);
         final var exception = catchThrowableOfType(InvalidPasswordException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo("Current password is incorrect.");
         assertThat(tester.getPassword()).isEqualTo(oldEncoded);
-        verify(repository).findById(givenId);
+        verify(repository).findByUserNameOrEmail(givenUserName, givenUserName);
         verify(repository, never()).save(any());
         verify(passwordEncoder, never()).encode(any());
         verifyNoMoreInteractions(repository);
@@ -322,13 +325,13 @@ class UserServiceTest {
 
     @Test
     void changePassword_throwException_whenNewPasswordIsSameAsCurrent() {
-        final var givenId = 44L;
+        final var givenUserName = "pippin";
         final var request = new ChangePasswordRequest("lembasy", "lembasy");
         final var oldEncoded = tester.getPassword();
-        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(repository.findByUserNameOrEmail(givenUserName, givenUserName)).thenReturn(Optional.of(tester));
         when(passwordEncoder.matches(request.currentPassword(), oldEncoded)).thenReturn(true);
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.changePassword(givenId, request);
+        final ThrowableAssert.ThrowingCallable executable = () -> service.changePassword(givenUserName, request);
         final var exception = catchThrowableOfType(InvalidPasswordException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo("New password must be different from the current one.");
@@ -339,14 +342,14 @@ class UserServiceTest {
 
     @Test
     void changePassword_throwException_whenUserNotFound() {
-        final var givenId = 666L;
+        final var givenUserName = "nobody";
         final var request = UserTestData.createValidChangePasswordRequest();
-        when(repository.findById(givenId)).thenReturn(Optional.empty());
+        when(repository.findByUserNameOrEmail(givenUserName, givenUserName)).thenReturn(Optional.empty());
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.changePassword(givenId, request);
+        final ThrowableAssert.ThrowingCallable executable = () -> service.changePassword(givenUserName, request);
         final var exception = catchThrowableOfType(EntityNotFoundException.class, executable);
 
-        assertThat(exception.getMessage()).isEqualTo("User with id '" + givenId + "' not found.");
+        assertThat(exception.getMessage()).isEqualTo("User with username or email '" + givenUserName + "' not found.");
         verify(repository, never()).save(any());
         verifyNoInteractions(passwordEncoder);
     }
@@ -377,6 +380,34 @@ class UserServiceTest {
         verify(repository, never()).delete(any());
         verifyNoMoreInteractions(repository);
         verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void loadUserByUsername_returnUserDetails_whenUserExists() {
+        final var user = tester.setRoles(List.of(new Role().setName("USER")));
+        when(repository.existsByUserName("pippin")).thenReturn(true);
+        when(repository.findByUserNameOrEmail("pippin", "pippin")).thenReturn(Optional.of(user));
+
+        final var result = service.loadUserByUsername("pippin");
+
+        assertThat(result.getUsername()).isEqualTo("pippin");
+        assertThat(result.getPassword()).isEqualTo(user.getPassword());
+        assertThat(result.getAuthorities())
+                .extracting(GrantedAuthority::getAuthority)
+                .containsExactly("ROLE_USER");
+    }
+
+    @Test
+    void loadUserByUsername_throwException_whenUserNotExists() {
+        when(repository.existsByUserName("nobody")).thenReturn(false);
+        when(repository.existsByEmail("nobody")).thenReturn(false);
+
+        final ThrowableAssert.ThrowingCallable executable = () -> service.loadUserByUsername("nobody");
+
+        assertThatThrownBy(executable)
+                .isInstanceOf(UsernameNotFoundException.class)
+                .hasMessage("Invalid login or password.");
+        verify(repository, never()).findByUserNameOrEmail(any(), any());
     }
 
 }
