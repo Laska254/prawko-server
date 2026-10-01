@@ -8,7 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
-
 /**
  * Represents a translation of a {@link Question} into a specific {@link Language}
  * <p>
