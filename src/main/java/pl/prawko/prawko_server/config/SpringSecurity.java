@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -32,6 +34,8 @@ import pl.prawko.prawko_server.constants.ApiConstants;
  * ({@link org.springframework.security.access.prepost.PreAuthorize} and annotations templated on it, like
  * {@link IsSelfOrAdmin}) on controllers.
  *
+ * <p>Roles are hierarchical: ADMIN implies USER, so an admin passes every USER rule.
+ *
  * <p>Authorization rules:
  * <ul>
  *     <li>Public: {@code POST /auth} (login), {@code POST /users} (registration)</li>
@@ -57,6 +61,20 @@ public class SpringSecurity {
     @Bean
     public static PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * Defines the role hierarchy, applied to both URL rules and method security.
+     *
+     * <p>ADMIN implies USER, so an account with only the ADMIN role can access every USER endpoint.
+     *
+     * @return the {@link RoleHierarchy} where ADMIN implies USER
+     */
+    @Bean
+    public static RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.withDefaultRolePrefix()
+                .role("ADMIN").implies("USER")
+                .build();
     }
 
     /**

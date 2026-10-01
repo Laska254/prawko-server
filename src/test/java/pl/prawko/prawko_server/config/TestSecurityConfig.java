@@ -27,7 +27,7 @@ public class TestSecurityConfig {
                         .build(),
                 User.withUsername("gimli")
                         .password(passwordEncoder.encode("krasnoludka"))
-                        .roles("USER", "ADMIN")
+                        .roles("ADMIN")
                         .build());
         return username -> {
             final var account = accounts.loadUserByUsername(username);
