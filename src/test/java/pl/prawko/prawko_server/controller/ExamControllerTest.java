@@ -11,6 +11,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
+import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.CreateExamDto;
@@ -24,8 +25,6 @@ import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.ExamTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -239,15 +238,16 @@ public class ExamControllerTest {
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isOk()
-                    .expectBody(new ParameterizedTypeReference<List<ExamSummaryDto>>() {
+                    .expectBody(new ParameterizedTypeReference<PageResponse<ExamSummaryDto>>() {
                     })
                     .returnResult()
                     .getResponseBody();
 
-            assertThat(result)
+            assertThat(result.content())
                     .extracting(ExamSummaryDto::id)
                     .containsExactly(newer.getId(), older.getId());
-            assertThat(result)
+            assertThat(result.page().totalElements()).isEqualTo(2);
+            assertThat(result.content())
                     .allSatisfy(summary -> {
                         assertThat(summary.category()).isEqualTo("B");
                         assertThat(summary.active()).isTrue();
@@ -257,7 +257,51 @@ public class ExamControllerTest {
         }
 
         @Test
-        void returnEmptyList_whenUserHasNoExams() {
+        void returnRequestedPage_whenPageAndSizeAreGiven() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var oldest = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+            examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+            examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+
+            restClient.get()
+                    .uri(uri -> uri
+                            .queryParam("userId", tester.getId())
+                            .queryParam("page", 1)
+                            .queryParam("size", 2)
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.content.length()").isEqualTo(1)
+                    .jsonPath("$.content[0].id").isEqualTo(oldest.getId())
+                    .jsonPath("$.page.number").isEqualTo(1)
+                    .jsonPath("$.page.size").isEqualTo(2)
+                    .jsonPath("$.page.totalElements").isEqualTo(3)
+                    .jsonPath("$.page.totalPages").isEqualTo(2);
+        }
+
+        @Test
+        void returnUserExams_inRequestedOrder_whenSortIsGiven() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var older = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+            final var newer = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+
+            restClient.get()
+                    .uri(uri -> uri
+                            .queryParam("userId", tester.getId())
+                            .queryParam("sort", "id,asc")
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.content[0].id").isEqualTo(older.getId())
+                    .jsonPath("$.content[1].id").isEqualTo(newer.getId());
+        }
+
+        @Test
+        void returnEmptyPage_whenUserHasNoExams() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
 
             restClient.get()
@@ -265,7 +309,25 @@ public class ExamControllerTest {
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isOk()
-                    .expectBody(List.class).isEqualTo(Collections.emptyList());
+                    .expectBody()
+                    .jsonPath("$.content").isEmpty()
+                    .jsonPath("$.page.totalElements").isEqualTo(0);
+        }
+
+        @Test
+        void returnBadRequest_whenSortPropertyIsInvalid() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+
+            restClient.get()
+                    .uri(uri -> uri
+                            .queryParam("userId", tester.getId())
+                            .queryParam("sort", "nonExisting")
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("Cannot sort by 'nonExisting'.");
         }
 
         @Test
@@ -279,7 +341,7 @@ public class ExamControllerTest {
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
-                    .jsonPath("$[0].id").isEqualTo(exam.getId());
+                    .jsonPath("$.content[0].id").isEqualTo(exam.getId());
         }
 
         @Test

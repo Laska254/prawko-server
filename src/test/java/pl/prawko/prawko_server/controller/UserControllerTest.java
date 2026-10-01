@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
+import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
@@ -21,7 +22,6 @@ import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -45,6 +45,7 @@ public class UserControllerTest {
 
     @BeforeEach
     void setUp() {
+        userRepository.deleteAll();
         restClient = TestUtils.createRestTestClient(port, ApiConstants.USERS_BASE_URL);
     }
 
@@ -221,26 +222,79 @@ public class UserControllerTest {
     class GetAllUsers {
 
         @Test
-        void returnList_whenUsersExist() {
+        void returnPage_whenUsersExist() {
             final var id = registerUser();
             final var expectedUserDto = UserTestData.createUserDto(id);
             final var expected = List.of(expectedUserDto);
 
-            restClient.get()
+            final var result = restClient.get()
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isOk()
-                    .expectBody(new ParameterizedTypeReference<List<UserDto>>() {
-                    }).isEqualTo(expected);
+                    .expectBody(new ParameterizedTypeReference<PageResponse<UserDto>>() {
+                    })
+                    .returnResult()
+                    .getResponseBody();
+
+            assertThat(result.content()).isEqualTo(expected);
+            assertThat(result.page().number()).isZero();
+            assertThat(result.page().size()).isEqualTo(20);
+            assertThat(result.page().totalElements()).isEqualTo(1);
         }
 
         @Test
-        void returnEmptyList_whenNoUsersExist() {
+        void returnRequestedPage_whenPageSizeAndSortAreGiven() {
+            userRepository.save(UserTestData.createTestUserPippin());
+            final var merry = userRepository.save(UserTestData.createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me"));
+            userRepository.save(UserTestData.createTestUser("Samwise", "Gamgee", "sam", "sam@shire.me"));
+
+            restClient.get()
+                    .uri(uri -> uri
+                            .queryParam("page", 1)
+                            .queryParam("size", 2)
+                            .queryParam("sort", "userName,desc")
+                            .build())
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.content.length()").isEqualTo(1)
+                    .jsonPath("$.content[0].id").isEqualTo(merry.getId())
+                    .jsonPath("$.page.totalElements").isEqualTo(3)
+                    .jsonPath("$.page.totalPages").isEqualTo(2);
+        }
+
+        @Test
+        void capPageSize_whenRequestedSizeExceedsMaximum() {
+            restClient.get()
+                    .uri(uri -> uri.queryParam("size", 1000).build())
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.page.size").isEqualTo(100);
+        }
+
+        @Test
+        void returnEmptyPage_whenNoUsersExist() {
             restClient.get()
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isOk()
-                    .expectBody(List.class).isEqualTo(Collections.emptyList());
+                    .expectBody()
+                    .jsonPath("$.content").isEmpty()
+                    .jsonPath("$.page.totalElements").isEqualTo(0);
+        }
+
+        @Test
+        void returnBadRequest_whenSortPropertyIsInvalid() {
+            restClient.get()
+                    .uri(uri -> uri.queryParam("sort", "nonExisting").build())
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("Cannot sort by 'nonExisting'.");
         }
 
         @Test

@@ -5,6 +5,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Positive;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedModel;
+import org.springframework.data.web.SortDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -19,8 +23,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.service.implementation.QuestionService;
-
-import java.util.List;
 
 /**
  * REST controller for question management operations.
@@ -84,15 +86,22 @@ public class QuestionController {
     }
 
     /**
-     * Retrieves all questions from database.
+     * Retrieves a page of questions from database.
      *
-     * @return a {@link ResponseEntity} containing a list of {@link QuestionDto}'s
+     * <p>Sorted by ID ascending unless specified otherwise.
+     *
+     * @param pageable the pagination and sorting information
+     * @return a {@link ResponseEntity} containing a {@link PagedModel} of {@link QuestionDto}'s
      */
-    @Operation(summary = "Get all questions", description = "Retrieves a list of all questions in the database.")
-    @ApiResponse(responseCode = "200", description = "List of all questions")
+    @Operation(summary = "Get all questions", description = "Retrieves a page of questions in the database.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Page of questions"),
+            @ApiResponse(responseCode = "400", description = "Invalid sort property")
+    })
     @GetMapping
-    public ResponseEntity<List<QuestionDto>> getAllQuestions() {
-        return ResponseEntity.ok(questionService.getAll());
+    public ResponseEntity<PagedModel<QuestionDto>> getAllQuestions(
+            @ParameterObject @SortDefault("id") final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(questionService.getAll(pageable)));
     }
 
 }

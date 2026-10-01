@@ -6,7 +6,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.multipart.MultipartFile;
+import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
@@ -31,6 +35,9 @@ public class QuestionServiceTest {
 
     @Mock
     private QuestionRepository repository;
+
+    @Mock
+    private QuestionMapper mapper;
 
     @InjectMocks
     private QuestionService questionService;
@@ -95,6 +102,37 @@ public class QuestionServiceTest {
             assertThat(result).isEmpty();
             verify(repository).findByTypeAndCategories_NameContains(null, category);
             verifyNoMoreInteractions(repository);
+        }
+
+    }
+
+    @Nested
+    class GetAll {
+
+        @Test
+        void returnPageOfDtos_whenQuestionsExist() {
+            final var question = QuestionTestData.createQuestion(QuestionType.SPECIAL);
+            final var dto = QuestionTestData.createQuestionDto(question);
+            final var pageable = PageRequest.of(2, 1);
+            when(repository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(question), pageable, 3));
+            when(mapper.toDto(question)).thenReturn(dto);
+
+            final var result = questionService.getAll(pageable);
+
+            assertThat(result.getContent()).containsExactly(dto);
+            assertThat(result.getTotalElements()).isEqualTo(3);
+            assertThat(result.getPageable()).isEqualTo(pageable);
+        }
+
+        @Test
+        void returnEmptyPage_whenNoQuestionsExist() {
+            final var pageable = PageRequest.of(0, 20);
+            when(repository.findAll(pageable)).thenReturn(Page.empty(pageable));
+
+            final var result = questionService.getAll(pageable);
+
+            assertThat(result).isEmpty();
+            verifyNoMoreInteractions(mapper);
         }
 
     }

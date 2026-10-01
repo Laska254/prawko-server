@@ -1,13 +1,13 @@
 package pl.prawko.prawko_server.service;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.User;
-
-import java.util.List;
 
 /**
  * Service interface for managing {@link User} entities.
@@ -71,14 +71,15 @@ public interface IUserService {
     UserDto getUserDtoById(long userId);
 
     /**
-     * Retrieves all users in the application.
+     * Retrieves a page of users in the application.
      * <p>
-     * Returns a complete list of all registered users converted to DTO format.
+     * Returns registered users converted to DTO format.
      * </p>
      *
-     * @return a list of all users as {@link UserDto} objects
+     * @param pageable the pagination and sorting information
+     * @return a page of users as {@link UserDto} objects
      */
-    List<UserDto> getAllUsers();
+    Page<UserDto> getAllUsers(Pageable pageable);
 
     /**
      * Updates an existing user's details.

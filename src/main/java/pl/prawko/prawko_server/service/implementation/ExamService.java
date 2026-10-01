@@ -4,6 +4,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.dto.ExamDto;
@@ -15,7 +17,6 @@ import pl.prawko.prawko_server.service.IExamService;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
 import java.util.Collections;
-import java.util.List;
 
 /**
  * Implementation of {@link IExamService} that manages {@link Exam} entities.
@@ -94,13 +95,12 @@ public class ExamService implements IExamService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<ExamSummaryDto> getAllByUserId(final long userId) {
+    public Page<ExamSummaryDto> getAllByUserId(final long userId, final Pageable pageable) {
         log.info("Fetching exams history of user with id: {}", userId);
         userService.getById(userId);
-        final var exams = repository.findAllByUser_IdOrderByCreatedDescIdDesc(userId).stream()
-                .map(examMapper::toSummaryDto)
-                .toList();
-        log.info("Found {} exam(s) for user with id: {}", exams.size(), userId);
+        final var exams = repository.findAllByUser_Id(userId, pageable)
+                .map(examMapper::toSummaryDto);
+        log.info("Found {} exam(s) for user with id: {}", exams.getTotalElements(), userId);
         return exams;
     }
 

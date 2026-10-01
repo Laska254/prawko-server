@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -94,6 +95,13 @@ public class ExceptionController {
     public ProblemDetail handleMissingParameter(final MissingServletRequestParameterException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                 "Request parameter '" + exception.getParameterName() + "' is missing.");
+    }
+
+    @ApiResponse(responseCode = "400", description = "Invalid sort property")
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ProblemDetail handleInvalidSortProperty(final PropertyReferenceException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Cannot sort by '" + exception.getPropertyName() + "'.");
     }
 
     @ApiResponse(responseCode = "400", description = "Request body is missing")

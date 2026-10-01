@@ -7,6 +7,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -211,20 +213,23 @@ class UserServiceTest {
     }
 
     @Test
-    void getAllUsers_returnListOfUsers_whenFound() {
+    void getAllUsers_returnPageOfUsers_whenFound() {
         final var tester2 = UserTestData.createTestUser("Meriadok", "Brandybuck", "Merry", "merry@shire.me");
         final var users = List.of(tester, tester2);
         final var pippinDto = UserTestData.createUserDto(4L);
         final var merryDto = new UserDto(45L, "Meriadok", "Brandybuck", "Merry", "merry@shire.me");
         final var expected = List.of(pippinDto, merryDto);
-        when(repository.findAll()).thenReturn(users);
+        final var pageable = PageRequest.of(1, 2);
+        when(repository.findAll(pageable)).thenReturn(new PageImpl<>(users, pageable, 4));
         when(mapper.toDto(tester)).thenReturn(pippinDto);
         when(mapper.toDto(tester2)).thenReturn(merryDto);
 
-        final var result = service.getAllUsers();
+        final var result = service.getAllUsers(pageable);
 
-        assertThat(result).isEqualTo(expected);
-        verify(repository).findAll();
+        assertThat(result.getContent()).isEqualTo(expected);
+        assertThat(result.getTotalElements()).isEqualTo(4);
+        assertThat(result.getPageable()).isEqualTo(pageable);
+        verify(repository).findAll(pageable);
         verify(mapper).toDto(tester);
         verify(mapper).toDto(tester2);
         verifyNoMoreInteractions(repository, mapper);

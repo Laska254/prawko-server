@@ -6,6 +6,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedModel;
+import org.springframework.data.web.SortDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -26,7 +30,6 @@ import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.service.implementation.UserService;
 
 import java.security.Principal;
-import java.util.List;
 
 /**
  * REST controller for user management operations.
@@ -85,15 +88,22 @@ public class UserController {
     }
 
     /**
-     * Retrieves all users in the system.
+     * Retrieves a page of users in the system.
      *
-     * @return a {@link ResponseEntity} containing a list of {@link UserDto}'s
+     * <p>Sorted by ID ascending unless specified otherwise.
+     *
+     * @param pageable the pagination and sorting information
+     * @return a {@link ResponseEntity} containing a {@link PagedModel} of {@link UserDto}'s
      */
-    @Operation(summary = "Get all users", description = "Retrieves a list of all registered users.")
-    @ApiResponse(responseCode = "200", description = "List of all users")
+    @Operation(summary = "Get all users", description = "Retrieves a page of registered users.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Page of users"),
+            @ApiResponse(responseCode = "400", description = "Invalid sort property")
+    })
     @GetMapping
-    public ResponseEntity<List<UserDto>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<PagedModel<UserDto>> getAllUsers(
+            @ParameterObject @SortDefault("id") final Pageable pageable) {
+        return ResponseEntity.ok(new PagedModel<>(userService.getAllUsers(pageable)));
     }
 
     /**
