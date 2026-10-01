@@ -18,7 +18,6 @@ import pl.prawko.prawko_server.dto.CreateExamDto;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
-import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
@@ -95,7 +94,7 @@ public class ExamControllerTest {
         @Test
         void returnForbidden_whenCreatingExamForAnotherUser() {
             userRepository.save(UserTestData.createTestUserPippin());
-            final var other = userRepository.save(createMerry());
+            final var other = userRepository.save(UserTestData.createMerry());
 
             restClient.post()
                     .headers(TestUtils::authUser)
@@ -172,7 +171,7 @@ public class ExamControllerTest {
         @Test
         void returnsForbidden_whenExamBelongsToAnotherUser() {
             userRepository.save(UserTestData.createTestUserPippin());
-            final var other = userRepository.save(createMerry());
+            final var other = userRepository.save(UserTestData.createMerry());
             final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(other));
 
             restClient.get()
@@ -228,7 +227,7 @@ public class ExamControllerTest {
         @Test
         void returnUserExams_fromNewest_whenUserHasExams() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
-            final var other = userRepository.save(createMerry());
+            final var other = userRepository.save(UserTestData.createMerry());
             final var older = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
             final var newer = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
             examRepository.save(ExamTestData.createExamWithoutQuestions(other));
@@ -347,7 +346,7 @@ public class ExamControllerTest {
         @Test
         void returnForbidden_whenRequestingExamsOfAnotherUser() {
             userRepository.save(UserTestData.createTestUserPippin());
-            final var other = userRepository.save(createMerry());
+            final var other = userRepository.save(UserTestData.createMerry());
 
             restClient.get()
                     .uri(uri -> uri.queryParam("userId", other.getId()).build())
@@ -401,10 +400,6 @@ public class ExamControllerTest {
                     .expectStatus().isUnauthorized();
         }
 
-    }
-
-    private static User createMerry() {
-        return UserTestData.createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me");
     }
 
 }

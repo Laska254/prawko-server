@@ -38,6 +38,10 @@ public class UserTestData {
         return createTestUser("Peregrin", "Tuk", "pippin", "pippin@shire.me");
     }
 
+    public static User createMerry() {
+        return createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me");
+    }
+
     public static UserDto createUserDto(long id) {
         return new UserDto(
                 id,
