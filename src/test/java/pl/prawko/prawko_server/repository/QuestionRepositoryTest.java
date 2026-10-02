@@ -29,7 +29,7 @@ public class QuestionRepositoryTest {
     private QuestionRepository repository;
 
     @Test
-    void saveAll_correctly() {
+    void saveAll_persistQuestions_whenQuestionsAreValid() {
         final var question1 = QuestionTestData.createQuestion(QuestionType.BASIC);
         final var question2 = QuestionTestData.createQuestion(QuestionType.SPECIAL);
         final var expected = List.of(question1, question2);
@@ -43,7 +43,7 @@ public class QuestionRepositoryTest {
     }
 
     @Test
-    void findByTypeAndCategoriesContaining() {
+    void findByTypeAndCategoriesNameContains_returnQuestions_whenTypeAndCategoryMatch() {
         final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
         final var category = CategoryTestData.CATEGORY_B;
         repository.save(question);

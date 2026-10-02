@@ -30,7 +30,7 @@ class EntityIdentityTest {
 
     @ParameterizedTest
     @MethodSource("entities")
-    void shouldBeEqualOnlyToItselfWhenTransient(final LongFunction<Object> factory) {
+    void equals_matchOnlySameInstance_whenTransient(final LongFunction<Object> factory) {
         final var entity = factory.apply(0);
 
         assertThat(entity).isEqualTo(entity);
@@ -40,7 +40,7 @@ class EntityIdentityTest {
 
     @ParameterizedTest
     @MethodSource("entities")
-    void shouldCompareByIdWhenPersisted(final LongFunction<Object> factory) {
+    void equals_compareById_whenPersisted(final LongFunction<Object> factory) {
         final var entity = factory.apply(1);
 
         assertThat(entity).isEqualTo(factory.apply(1));
@@ -50,18 +50,18 @@ class EntityIdentityTest {
 
     @ParameterizedTest
     @MethodSource("entities")
-    void shouldHaveSameHashCodeRegardlessOfId(final LongFunction<Object> factory) {
+    void hashCode_returnSameValue_whenIdDiffers(final LongFunction<Object> factory) {
         assertThat(factory.apply(0)).hasSameHashCodeAs(factory.apply(5));
     }
 
     @ParameterizedTest
     @MethodSource("entities")
-    void shouldPrintWithoutAssociationsSet(final LongFunction<Object> factory) {
+    void toString_notThrow_whenAssociationsAreNotSet(final LongFunction<Object> factory) {
         assertThatNoException().isThrownBy(() -> factory.apply(0).toString());
     }
 
     @Test
-    void shouldStayInHashSetAfterIdIsAssigned() {
+    void hashCode_keepEntityInHashSet_whenIdIsAssignedAfterAdding() {
         final var user = new User();
         final var set = new HashSet<User>();
         set.add(user);
@@ -72,12 +72,12 @@ class EntityIdentityTest {
     }
 
     @Test
-    void shouldNotBeEqualToOtherEntityTypeWithSameId() {
+    void equals_returnFalse_whenOtherEntityTypeHasSameId() {
         assertThat(new User().setId(1)).isNotEqualTo(new Exam().setId(1));
     }
 
     @Test
-    void shouldPrintBidirectionalUserExamAssociationWithoutRecursion() {
+    void toString_notRecurse_whenUserAndExamReferenceEachOther() {
         final var user = new User().setId(1).setUserName("pippin").setPassword("secret-hash");
         final var category = new Category().setId(2).setName("B");
         final var exam = new Exam().setId(3).setUser(user).setCategory(category);
@@ -92,7 +92,7 @@ class EntityIdentityTest {
     }
 
     @Test
-    void shouldPrintBidirectionalQuestionAssociationsWithoutRecursion() {
+    void toString_notRecurse_whenQuestionAssociationsAreBidirectional() {
         final var language = new Language().setId(1).setCode(Language.PL);
         final var question = new Question().setId(10).setName("Q10");
         final var translation = new QuestionTranslation().setId(11).setQuestion(question).setLanguage(language);
@@ -112,7 +112,7 @@ class EntityIdentityTest {
     }
 
     @Test
-    void shouldPrintUserWithRole() {
+    void toString_includeRole_whenUserHasRole() {
         final var user = new User().setId(2).setRole(Role.ADMIN);
 
         assertThat(user.toString()).contains("id=2", "role=ADMIN");

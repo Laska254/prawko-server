@@ -14,7 +14,7 @@ class CategoryRepositoryTest {
     private CategoryRepository repository;
 
     @Test
-    void findByName_returnCategory() {
+    void findByName_returnCategory_whenCategoryExists() {
         final var category = new Category().setName("C4");
         repository.save(category);
 
@@ -25,7 +25,7 @@ class CategoryRepositoryTest {
     }
 
     @Test
-    void findByName_returnEmpty() {
+    void findByName_returnEmpty_whenCategoryDoesNotExist() {
         final var result = repository.findByName("WRONG");
 
         assertThat(result).isEmpty();

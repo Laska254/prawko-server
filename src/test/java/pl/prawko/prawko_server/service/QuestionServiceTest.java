@@ -46,7 +46,7 @@ public class QuestionServiceTest {
     class ParseFileToQuestions {
 
         @Test
-        void delegateParsingAndSaving() {
+        void parseAndSaveQuestions_whenFileIsCsv() {
             final var file = mock(MultipartFile.class);
             final var parsedQuestions = List.of(new Question(), new Question());
 

@@ -94,7 +94,7 @@ public class ExamServiceTest {
         }
 
         @Test
-        void shouldThrowWhenUserNotFound() {
+        void throwEntityNotFound_whenUserDoesNotExist() {
             final long nonExistentUserId = 666L;
             final var categoryName = CategoryTestData.CATEGORY_B.getName();
             final var expectedMessage = UserTestData.userNotFoundMessage(nonExistentUserId);
@@ -108,7 +108,7 @@ public class ExamServiceTest {
         }
 
         @Test
-        void shouldThrowWhenCategoryNotFound() {
+        void throwEntityNotFound_whenCategoryDoesNotExist() {
             final var user = UserTestData.createTestUserPippin();
             final var nonExistentCategory = "NON_EXISTENT";
 
@@ -128,7 +128,7 @@ public class ExamServiceTest {
     class GetById {
 
         @Test
-        void shouldReturnExamDtoWhenFound() {
+        void returnExamDto_whenExamExists() {
             final var user = UserTestData.createTestUserPippin();
             final var exam = ExamTestData.createExam(user);
             final var expectedDto = ExamTestData.createExamDto(exam);
@@ -142,7 +142,7 @@ public class ExamServiceTest {
         }
 
         @Test
-        void shouldThrowEntityNotFoundExceptionWhenExamDoesNotExist() {
+        void throwEntityNotFound_whenExamDoesNotExist() {
             final long nonExistentId = 666L;
             when(repository.findById(nonExistentId)).thenReturn(Optional.empty());
 
@@ -152,7 +152,7 @@ public class ExamServiceTest {
         }
 
         @Test
-        void shouldCallMapperWithCorrectExam() {
+        void mapFoundExam_whenExamExists() {
             final var user = UserTestData.createTestUserPippin();
             final var exam = ExamTestData.createExam(user);
             when(repository.findById(exam.getId())).thenReturn(Optional.of(exam));

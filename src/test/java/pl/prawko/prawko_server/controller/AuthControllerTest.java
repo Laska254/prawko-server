@@ -43,7 +43,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    void login_returnsOk_whenCredentialsAreValid() {
+    void login_returnOk_whenCredentialsAreValid() {
         final var request = new LoginDto(TestUtils.USER_NAME, TestUtils.USER_PASSWORD);
         final var expectedMessage = "User signed-in successfully.";
 
@@ -57,7 +57,7 @@ public class AuthControllerTest {
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("invalidLoginRequests")
-    void login_returnsBadRequest_onValidationFailure(
+    void login_returnBadRequest_whenValidationFails(
             final String name,
             final LoginDto request,
             final String expectedUserNameError,
@@ -79,7 +79,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    void login_passesValidation_whenEmailIsLongerThanUsernameLimit() {
+    void login_passValidation_whenEmailIsLongerThanUsernameLimit() {
         final var request = new LoginDto("meriadoc.brandybuck@buckland.shire.me", "lembasy");
 
         restClient.post()
@@ -89,7 +89,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    void login_returnsUnauthorized_whenCredentialsAreInvalid() {
+    void login_returnUnauthorized_whenCredentialsAreInvalid() {
         final var request = new LoginDto("nonExistentUser", "wrongPassword");
         final var expectedMessage = "Bad credentials";
 
@@ -102,7 +102,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    void login_returnsBadRequest_whenBodyIsMissing() {
+    void login_returnBadRequest_whenBodyIsMissing() {
         final var expectedMessage = TestUtils.BODY_MISSING;
 
         restClient.post()

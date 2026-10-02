@@ -137,7 +137,7 @@ public class ExamControllerTest {
     class GetExamById {
 
         @Test
-        void returnsExam_whenExamIsFound() {
+        void returnExam_whenExamIsFound() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var exam = ExamTestData.createExam(tester);
             exam.setQuestions(questionRepository.saveAll(exam.getQuestions()));
@@ -153,7 +153,7 @@ public class ExamControllerTest {
         }
 
         @Test
-        void returnsExam_whenAdminRequestsExamOfAnotherUser() {
+        void returnExam_whenAdminRequestsExamOfAnotherUser() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
 
@@ -167,7 +167,7 @@ public class ExamControllerTest {
         }
 
         @Test
-        void returnsForbidden_whenExamBelongsToAnotherUser() {
+        void returnForbidden_whenExamBelongsToAnotherUser() {
             userRepository.save(UserTestData.createTestUserPippin());
             final var other = userRepository.save(UserTestData.createMerry());
             final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(other));
@@ -182,7 +182,7 @@ public class ExamControllerTest {
         }
 
         @Test
-        void returnsNotFound_whenExamIsNotFound() {
+        void returnNotFound_whenExamIsNotFound() {
             final var nonExistingId = 666L;
             final var expected = "Exam with '" + nonExistingId + "' not found.";
 

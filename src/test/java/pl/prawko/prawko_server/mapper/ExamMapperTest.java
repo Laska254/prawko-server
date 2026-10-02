@@ -32,7 +32,7 @@ class ExamMapperTest {
     private ExamMapperImpl examMapper;
 
     @Test
-    void toDto_shouldDelegate_ToQuestionAndAnswerMappersAndMapAllFields() {
+    void toDto_mapFieldsAndDelegateToNestedMappers_whenAllFieldsAreSet() {
         final var now = LocalDateTime.now();
         final var question = new Question().setId(10L);
         final var answer = new Answer().setId(20L);
@@ -60,7 +60,7 @@ class ExamMapperTest {
     }
 
     @Test
-    void toSummaryDto_shouldMapAllFields_withoutQuestionsAndAnswers() {
+    void toSummaryDto_mapFieldsWithoutQuestionsAndAnswers_whenAllFieldsAreSet() {
         final var now = LocalDateTime.now();
         final var exam = new Exam()
                 .setId(1L)
@@ -79,7 +79,7 @@ class ExamMapperTest {
     }
 
     @Test
-    void toSummaryDto_shouldMapNullCategory_toNull() {
+    void toSummaryDto_returnNullCategory_whenCategoryIsNull() {
         final var result = examMapper.toSummaryDto(new Exam().setId(1L));
 
         assertThat(result.category()).isNull();

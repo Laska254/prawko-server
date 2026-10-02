@@ -26,25 +26,25 @@ class UserRepositoryTest {
     }
 
     @Test
-    void existsByUserName_returnTrue() {
+    void existsByUserName_returnTrue_whenUserNameExists() {
         final var result = repository.existsByUserName(tester.getUserName());
         assertThat(result).isTrue();
     }
 
     @Test
-    void existsByUserName_returnFalse() {
+    void existsByUserName_returnFalse_whenUserNameDoesNotExist() {
         final var result = repository.existsByUserName(wrongUserName);
         assertThat(result).isFalse();
     }
 
     @Test
-    void existsByEmailIgnoreCase_returnTrue() {
+    void existsByEmailIgnoreCase_returnTrue_whenEmailExists() {
         final var result = repository.existsByEmailIgnoreCase(tester.getEmail());
         assertThat(result).isTrue();
     }
 
     @Test
-    void existsByEmailIgnoreCase_returnFalse() {
+    void existsByEmailIgnoreCase_returnFalse_whenEmailDoesNotExist() {
         final var result = repository.existsByEmailIgnoreCase(wrongEmail);
         assertThat(result).isFalse();
     }

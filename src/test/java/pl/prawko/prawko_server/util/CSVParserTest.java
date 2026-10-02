@@ -36,7 +36,7 @@ class CSVParserTest {
     class Parse {
 
         @Test
-        void successfullyParsesCSVFile() throws IOException {
+        void returnQuestions_whenFileIsCSV() throws IOException {
             final var resource = new ClassPathResource(QuestionCSVTestData.CSV_FILE);
             final var file = new MockMultipartFile(
                     "file", QuestionCSVTestData.CSV_FILE, "text/csv", resource.getInputStream());

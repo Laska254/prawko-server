@@ -27,7 +27,7 @@ class AnswerFactoryTest {
 
     @ParameterizedTest
     @EnumSource(QuestionType.class)
-    void shouldCreateAnswers(QuestionType type) {
+    void create_returnAnswers_whenCsvIsValid(QuestionType type) {
         final var csv = QuestionCSVTestData.createQuestionCSV(type);
         final var question = QuestionTestData.createQuestion(type);
         final var expected = AnswerTestData.createAnswers(type);

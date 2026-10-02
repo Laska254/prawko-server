@@ -21,7 +21,7 @@ class SpringSecurityTest {
     }
 
     @Test
-    void doNotCreateSession_whenRequestIsAuthenticated() {
+    void filterChain_doNotCreateSession_whenRequestIsAuthenticated() {
         restClient.get()
                 .uri(ApiConstants.USERS_BASE_URL)
                 .headers(TestUtils::authAdmin)
@@ -31,7 +31,7 @@ class SpringSecurityTest {
     }
 
     @Test
-    void doNotCreateSession_whenRequestIsUnauthenticated() {
+    void filterChain_doNotCreateSession_whenRequestIsUnauthenticated() {
         restClient.get()
                 .uri(ApiConstants.USERS_BASE_URL)
                 .exchange()
@@ -40,7 +40,7 @@ class SpringSecurityTest {
     }
 
     @Test
-    void denyRequest_whenNoAuthorizationRuleMatches() {
+    void filterChain_denyRequest_whenNoAuthorizationRuleMatches() {
         restClient.get()
                 .uri("/unmapped")
                 .headers(TestUtils::authAdmin)

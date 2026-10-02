@@ -15,7 +15,7 @@ class UserMapperTest {
     private final User tester = UserTestData.createTestUserPippin();
 
     @Test
-    void fromDto_correctlyMapUser() {
+    void fromDto_mapUserFields_whenDtoIsValid() {
         final var dto = UserTestData.createValidRegisterDto();
 
         final var result = mapper.fromDto(dto);
@@ -27,7 +27,7 @@ class UserMapperTest {
     }
 
     @Test
-    void toDto_correctlyMapUser() {
+    void toDto_mapUserFields_whenUserIsPersisted() {
         final var user = tester.setId(1L);
         final var expected = UserTestData.createUserDto(1L);
 
