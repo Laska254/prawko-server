@@ -14,6 +14,7 @@ class UserRepositoryTest {
 
     private final String wrongUserName = "nonExistingUserName";
     private final String wrongEmail = "nonExistingEmail";
+    private final String tokenHash = "a".repeat(64);
 
     @Autowired
     private UserRepository repository;
@@ -70,6 +71,39 @@ class UserRepositoryTest {
     @Test
     void findByUserNameOrEmailIgnoreCase_returnEmpty_whenNotFoundByEmail() {
         final var result = repository.findByUserNameOrEmailIgnoreCase(wrongEmail, wrongEmail);
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findByEmailIgnoreCase_returnUser_whenEmailCaseDiffers() {
+        final var result = repository.findByEmailIgnoreCase(tester.getEmail().toUpperCase());
+        assertThat(result).get().extracting(User::getId).isEqualTo(tester.getId());
+    }
+
+    @Test
+    void findByEmailIgnoreCase_returnEmpty_whenEmailDoesNotExist() {
+        final var result = repository.findByEmailIgnoreCase(wrongEmail);
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findByEmailIgnoreCase_returnEmpty_whenGivenUserName() {
+        final var result = repository.findByEmailIgnoreCase(tester.getUserName());
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findByPasswordResetTokenHash_returnUser_whenHashMatches() {
+        repository.save(tester.setPasswordResetTokenHash(tokenHash));
+
+        final var result = repository.findByPasswordResetTokenHash(tokenHash);
+
+        assertThat(result).get().extracting(User::getId).isEqualTo(tester.getId());
+    }
+
+    @Test
+    void findByPasswordResetTokenHash_returnEmpty_whenNoTokenIssued() {
+        final var result = repository.findByPasswordResetTokenHash(tokenHash);
         assertThat(result).isEmpty();
     }
 
