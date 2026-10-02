@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.repository.UserRepository;
 
 @TestConfiguration
@@ -22,11 +23,11 @@ public class TestSecurityConfig {
         final var accounts = new InMemoryUserDetailsManager(
                 User.withUsername(TestUtils.USER_NAME)
                         .password(passwordEncoder.encode(TestUtils.USER_PASSWORD))
-                        .roles("USER")
+                        .authorities(Role.USER.getAuthority())
                         .build(),
                 User.withUsername(TestUtils.ADMIN_NAME)
                         .password(passwordEncoder.encode(TestUtils.ADMIN_PASSWORD))
-                        .roles("ADMIN")
+                        .authorities(Role.ADMIN.getAuthority())
                         .build());
         return username -> {
             final var account = accounts.loadUserByUsername(username);

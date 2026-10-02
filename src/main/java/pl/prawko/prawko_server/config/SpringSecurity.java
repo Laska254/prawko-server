@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.model.Role;
 
 /**
  * Spring Security configuration class for the application.
@@ -72,8 +73,8 @@ public class SpringSecurity {
      */
     @Bean
     public static RoleHierarchy roleHierarchy() {
-        return RoleHierarchyImpl.withDefaultRolePrefix()
-                .role("ADMIN").implies("USER")
+        return RoleHierarchyImpl.withRolePrefix("")
+                .role(Role.ADMIN.getAuthority()).implies(Role.USER.getAuthority())
                 .build();
     }
 

@@ -348,7 +348,7 @@ class UserServiceTest {
         assertThat(result.getPassword()).isEqualTo(user.getPassword());
         assertThat(result.getAuthorities())
                 .extracting(GrantedAuthority::getAuthority)
-                .containsExactly("ROLE_USER");
+                .containsExactly(Role.USER.getAuthority());
     }
 
     @Test

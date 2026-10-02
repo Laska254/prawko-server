@@ -94,7 +94,7 @@ public class UserService implements IUserService, UserDetailsService {
                 user.getId(),
                 user.getUserName(),
                 user.getPassword(),
-                AuthorityUtils.createAuthorityList("ROLE_" + user.getRole()));
+                AuthorityUtils.createAuthorityList(user.getRole().getAuthority()));
     }
 
     /**

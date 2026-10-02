@@ -4,8 +4,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.model.Role;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @IntegrationTest
 class SpringSecurityTest {
@@ -46,6 +51,17 @@ class SpringSecurityTest {
                 .headers(TestUtils::authAdmin)
                 .exchange()
                 .expectStatus().isForbidden();
+    }
+
+    @Test
+    void roleHierarchy_grantUserAuthority_whenUserIsAdmin() {
+        final var adminAuthorities = AuthorityUtils.createAuthorityList(Role.ADMIN.getAuthority());
+
+        final var reachable = SpringSecurity.roleHierarchy().getReachableGrantedAuthorities(adminAuthorities);
+
+        assertThat(reachable)
+                .extracting(GrantedAuthority::getAuthority)
+                .containsExactlyInAnyOrder(Role.ADMIN.getAuthority(), Role.USER.getAuthority());
     }
 
 }
