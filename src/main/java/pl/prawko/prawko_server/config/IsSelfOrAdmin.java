@@ -1,7 +1,6 @@
 package pl.prawko.prawko_server.config;
 
 import org.springframework.security.access.prepost.PreAuthorize;
-import pl.prawko.prawko_server.model.AuthenticatedUser;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

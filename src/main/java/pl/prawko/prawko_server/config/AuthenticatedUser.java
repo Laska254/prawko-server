@@ -1,8 +1,7 @@
-package pl.prawko.prawko_server.model;
+package pl.prawko.prawko_server.config;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
-import pl.prawko.prawko_server.config.IsSelfOrAdmin;
 
 import java.io.Serial;
 import java.util.Collection;
@@ -37,11 +36,6 @@ public class AuthenticatedUser extends User {
         this.id = id;
     }
 
-    /**
-     * Returns the ID of the authenticated user.
-     *
-     * @return the user's ID
-     */
     public long getId() {
         return id;
     }
