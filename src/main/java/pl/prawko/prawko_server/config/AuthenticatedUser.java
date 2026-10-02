@@ -20,14 +20,6 @@ public class AuthenticatedUser extends User {
 
     private final long id;
 
-    /**
-     * Creates a principal for an existing user.
-     *
-     * @param id          the ID of the user
-     * @param username    the username of the user
-     * @param password    the encoded password of the user
-     * @param authorities the authorities granted to the user
-     */
     public AuthenticatedUser(final long id,
                              final String username,
                              final String password,
@@ -39,13 +31,7 @@ public class AuthenticatedUser extends User {
     public long getId() {
         return id;
     }
-
-    /**
-     * Checks whether this principal is the user with the given ID.
-     *
-     * @param userId the ID of the user being accessed
-     * @return {@code true} if this principal has the given ID
-     */
+    
     public boolean isSelf(final long userId) {
         return id == userId;
     }
