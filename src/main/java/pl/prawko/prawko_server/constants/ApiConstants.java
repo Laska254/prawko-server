@@ -83,6 +83,24 @@ public final class ApiConstants {
      */
     public static final String PASSWORD = ME + "/password";
 
+    /**
+     * Path segment for requesting a password reset link by email.
+     *
+     * <p>Example: {@code /auth/password/forgot}
+     *
+     * @see pl.prawko.prawko_server.controller.AuthController
+     */
+    public static final String FORGOT_PASSWORD = "/password/forgot";
+
+    /**
+     * Path segment for setting a new password with a password reset token.
+     *
+     * <p>Example: {@code /auth/password/reset}
+     *
+     * @see pl.prawko.prawko_server.controller.AuthController
+     */
+    public static final String RESET_PASSWORD = "/password/reset";
+
     private ApiConstants() {
     }
 
