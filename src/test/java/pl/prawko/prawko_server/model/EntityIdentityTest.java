@@ -1,8 +1,8 @@
 package pl.prawko.prawko_server.model;
 
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.HashSet;
@@ -15,49 +15,49 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 
 class EntityIdentityTest {
 
-    static Stream<Arguments> entities() {
+    static Stream<Named<LongFunction<Object>>> entities() {
         return Stream.of(
-                Arguments.of(Named.of("Answer", id -> new Answer().setId(id))),
-                Arguments.of(Named.of("AnswerTranslation", id -> new AnswerTranslation().setId(id))),
-                Arguments.of(Named.of("Category", id -> new Category().setId(id))),
-                Arguments.of(Named.of("Exam", id -> new Exam().setId(id))),
-                Arguments.of(Named.of("Language", id -> new Language().setId(id))),
-                Arguments.of(Named.of("Question", id -> new Question().setId(id))),
-                Arguments.of(Named.of("QuestionTranslation", id -> new QuestionTranslation().setId(id))),
-                Arguments.of(Named.of("User", id -> new User().setId(id)))
+                Named.of("Answer", id -> new Answer().setId(id)),
+                Named.of("AnswerTranslation", id -> new AnswerTranslation().setId(id)),
+                Named.of("Category", id -> new Category().setId(id)),
+                Named.of("Exam", id -> new Exam().setId(id)),
+                Named.of("Language", id -> new Language().setId(id)),
+                Named.of("Question", id -> new Question().setId(id)),
+                Named.of("QuestionTranslation", id -> new QuestionTranslation().setId(id)),
+                Named.of("User", id -> new User().setId(id))
         );
     }
 
     @ParameterizedTest
     @MethodSource("entities")
-    void shouldBeEqualOnlyToItselfWhenTransient(final Named factory) {
-        final var entity = factory.create(0);
+    void shouldBeEqualOnlyToItselfWhenTransient(final LongFunction<Object> factory) {
+        final var entity = factory.apply(0);
 
         assertThat(entity).isEqualTo(entity);
-        assertThat(entity).isNotEqualTo(factory.create(0));
+        assertThat(entity).isNotEqualTo(factory.apply(0));
         assertThat(entity).isNotEqualTo(null);
     }
 
     @ParameterizedTest
     @MethodSource("entities")
-    void shouldCompareByIdWhenPersisted(final Named factory) {
-        final var entity = factory.create(1);
+    void shouldCompareByIdWhenPersisted(final LongFunction<Object> factory) {
+        final var entity = factory.apply(1);
 
-        assertThat(entity).isEqualTo(factory.create(1));
-        assertThat(entity).hasSameHashCodeAs(factory.create(1));
-        assertThat(entity).isNotEqualTo(factory.create(2));
+        assertThat(entity).isEqualTo(factory.apply(1));
+        assertThat(entity).hasSameHashCodeAs(factory.apply(1));
+        assertThat(entity).isNotEqualTo(factory.apply(2));
     }
 
     @ParameterizedTest
     @MethodSource("entities")
-    void shouldHaveSameHashCodeRegardlessOfId(final Named factory) {
-        assertThat(factory.create(0)).hasSameHashCodeAs(factory.create(5));
+    void shouldHaveSameHashCodeRegardlessOfId(final LongFunction<Object> factory) {
+        assertThat(factory.apply(0)).hasSameHashCodeAs(factory.apply(5));
     }
 
     @ParameterizedTest
     @MethodSource("entities")
-    void shouldPrintWithoutAssociationsSet(final Named factory) {
-        assertThatNoException().isThrownBy(() -> factory.create(0).toString());
+    void shouldPrintWithoutAssociationsSet(final LongFunction<Object> factory) {
+        assertThatNoException().isThrownBy(() -> factory.apply(0).toString());
     }
 
     @Test
@@ -116,23 +116,6 @@ class EntityIdentityTest {
         final var user = new User().setId(2).setRole(Role.ADMIN);
 
         assertThat(user.toString()).contains("id=2", "role=ADMIN");
-    }
-
-    private record Named(String name, LongFunction<Object> factory) {
-
-        static Named of(final String name, final LongFunction<Object> factory) {
-            return new Named(name, factory);
-        }
-
-        Object create(final long id) {
-            return factory.apply(id);
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
-
     }
 
 }
