@@ -17,9 +17,9 @@ public class UserTestData {
 
     public static final String USER_ALREADY_EXISTS = "User already exists.";
 
-    public static final Map<String, String> PIPPIN_CONFLICT_DETAILS = Map.of(
-            "userName", "User with username 'pippin' already exists.",
-            "email", "User with email 'pippin@shire.me' already exists.");
+    public static final Map<String, String> PIPPIN_CONFLICT_DETAILS = Map.ofEntries(
+            Map.entry("userName", "User with username 'pippin' already exists."),
+            Map.entry("email", "User with email 'pippin@shire.me' already exists."));
 
     private UserTestData() {
     }
