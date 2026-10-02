@@ -97,7 +97,7 @@ public class ExamServiceTest {
         void shouldThrowWhenUserNotFound() {
             final long nonExistentUserId = 666L;
             final var categoryName = CategoryTestData.CATEGORY_B.getName();
-            final var expectedMessage = "User with id '" + nonExistentUserId + "' not found.";
+            final var expectedMessage = UserTestData.userNotFoundMessage(nonExistentUserId);
             when(userService.getById(nonExistentUserId)).thenThrow(new EntityNotFoundException(expectedMessage));
 
             assertThatThrownBy(() -> service.createExam(nonExistentUserId, categoryName))
@@ -205,7 +205,7 @@ public class ExamServiceTest {
         @Test
         void throwEntityNotFound_whenUserDoesNotExist() {
             final var userId = 666L;
-            final var expectedMessage = "User with id '" + userId + "' not found.";
+            final var expectedMessage = UserTestData.userNotFoundMessage(userId);
             when(userService.getById(userId)).thenThrow(new EntityNotFoundException(expectedMessage));
 
             assertThatThrownBy(() -> service.getAllByUserId(userId, PageRequest.of(0, 20)))

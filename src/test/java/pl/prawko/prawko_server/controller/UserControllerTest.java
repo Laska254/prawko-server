@@ -18,6 +18,7 @@ import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.UserTestData;
@@ -40,6 +41,8 @@ public class UserControllerTest {
     private int port;
 
     private RestTestClient restClient;
+
+    private static final String USERNAME_CONTAINS_AT_MSG = "Username must not contain '@'.";
 
     private final RegisterDto registerDto = UserTestData.createValidRegisterDto();
 
@@ -78,7 +81,7 @@ public class UserControllerTest {
                     "notValidMail@mail@mail",
                     "lembas");
             final var expectedMap = Map.ofEntries(
-                    Map.entry("message", "Validation for request failed."),
+                    Map.entry("message", TestUtils.VALIDATION_FAILED),
                     Map.entry("details", Map.ofEntries(
                             Map.entry("firstName", "First name must be at most 31 characters."),
                             Map.entry("lastName", "Last name is required."),
@@ -97,8 +100,20 @@ public class UserControllerTest {
         }
 
         @Test
+        void returnBadRequest_whenUserNameContainsAt() {
+            final var invalidDto = new RegisterDto("Peregrin", "Tuk", "pippin@shire", "pippin@shire.me", "lembasy");
+
+            restClient.post()
+                    .body(invalidDto)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.details.userName").isEqualTo(USERNAME_CONTAINS_AT_MSG);
+        }
+
+        @Test
         void returnBadRequest_whenBodyIsMissing() {
-            final var expectedMessage = "Request body is missing.";
+            final var expectedMessage = TestUtils.BODY_MISSING;
 
             restClient.post()
                     .exchange()
@@ -112,13 +127,13 @@ public class UserControllerTest {
             registerUser();
             final var invalidDto = new RegisterDto(null, null, null, null, null);
             final var expected = Map.ofEntries(
-                    Map.entry("message", "Validation for request failed."),
+                    Map.entry("message", TestUtils.VALIDATION_FAILED),
                     Map.entry("details", Map.ofEntries(
                             Map.entry("firstName", "First name is required."),
                             Map.entry("lastName", "Last name is required."),
-                            Map.entry("userName", "Username is required."),
+                            Map.entry("userName", TestUtils.USERNAME_REQUIRED),
                             Map.entry("email", "Email is required."),
-                            Map.entry("password", "Password is required."))));
+                            Map.entry("password", TestUtils.PASSWORD_REQUIRED))));
 
             restClient.post()
                     .body(invalidDto)
@@ -130,13 +145,25 @@ public class UserControllerTest {
         }
 
         @Test
+        void returnConflict_whenEmailDiffersOnlyInCase() {
+            registerUser();
+            final var dto = new RegisterDto("Peregrin", "Tuk", "peregrin", "Pippin@Shire.ME", "lembasy");
+
+            restClient.post()
+                    .body(dto)
+                    .exchange()
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.details.email").isEqualTo("User with email 'Pippin@Shire.ME' already exists.")
+                    .jsonPath("$.details.userName").doesNotExist();
+        }
+
+        @Test
         void returnConflict_whenUserAlreadyExists() {
             registerUser();
             final var expected = Map.ofEntries(
-                    Map.entry("message", "User already exists."),
-                    Map.entry("details", Map.ofEntries(
-                            Map.entry("email", "User with email 'pippin@shire.me' already exists."),
-                            Map.entry("userName", "User with username 'pippin' already exists."))));
+                    Map.entry("message", UserTestData.USER_ALREADY_EXISTS),
+                    Map.entry("details", UserTestData.PIPPIN_CONFLICT_DETAILS));
 
             restClient.post()
                     .body(registerDto)
@@ -176,7 +203,7 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenIdIsZero() {
-            final var expectedMessage = "ID must be greater than 0.";
+            final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, 0L)
@@ -190,7 +217,7 @@ public class UserControllerTest {
         @Test
         void returnNotFound_whenUserDoesNotExist() {
             final var nonExistentId = 666L;
-            final var expectedMessage = "User with id '" + nonExistentId + "' not found.";
+            final var expectedMessage = UserTestData.userNotFoundMessage(nonExistentId);
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, nonExistentId)
@@ -204,7 +231,7 @@ public class UserControllerTest {
         @Test
         void returnBadRequest_whenIdIsNegative() {
             final var negativeId = -1L;
-            final var expectedMessage = "ID must be greater than 0.";
+            final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, negativeId)
@@ -244,7 +271,7 @@ public class UserControllerTest {
         @Test
         void returnRequestedPage_whenPageSizeAndSortAreGiven() {
             userRepository.save(UserTestData.createTestUserPippin());
-            final var merry = userRepository.save(UserTestData.createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me"));
+            final var merry = userRepository.save(UserTestData.createMerry());
             userRepository.save(UserTestData.createTestUser("Samwise", "Gamgee", "sam", "sam@shire.me"));
 
             restClient.get()
@@ -293,7 +320,7 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo("Cannot sort by 'nonExisting'.");
+                    .jsonPath("$.detail").isEqualTo(TestUtils.INVALID_SORT);
         }
 
         @Test
@@ -341,7 +368,7 @@ public class UserControllerTest {
         @Test
         void returnForbidden_whenUserUpdatesAnotherUser() {
             registerUser();
-            final var other = userRepository.save(UserTestData.createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me"));
+            final var other = userRepository.save(UserTestData.createMerry());
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, other.getId())
@@ -350,7 +377,7 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isForbidden()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo("Access denied.");
+                    .jsonPath("$.detail").isEqualTo(TestUtils.ACCESS_DENIED);
 
             assertThat(userRepository.findById(other.getId()).orElseThrow().getUserName()).isEqualTo("merry");
         }
@@ -359,7 +386,7 @@ public class UserControllerTest {
         void returnBadRequest_whenDtoIsInvalid() {
             final var invalidUpdateRequest = UserTestData.createInvalidUserUpdateRequest();
             final var expected = Map.ofEntries(
-                    Map.entry("message", "Validation for request failed."),
+                    Map.entry("message", TestUtils.VALIDATION_FAILED),
                     Map.entry("details", Map.ofEntries(
                             Map.entry("firstName", "First name must be at least 3 characters."),
                             Map.entry("lastName", "Last name must be at least 3 characters."),
@@ -376,11 +403,25 @@ public class UserControllerTest {
                     .jsonPath("$.details").isEqualTo(expected.get("details"));
         }
 
+        @Test
+        void returnBadRequest_whenUserNameContainsAt() {
+            final var invalidUpdateRequest = new UserUpdateRequest(null, null, "pippin@shire", null);
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, 1L)
+                    .headers(TestUtils::authUser)
+                    .body(invalidUpdateRequest)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.details.userName").isEqualTo(USERNAME_CONTAINS_AT_MSG);
+        }
+
         @ParameterizedTest
         @ValueSource(longs = {-1L, 0L})
         void returnBadRequest_whenIdIsNotPositive(long invalidId) {
             final var validDto = UserTestData.createValidUserUpdateRequest();
-            final var expectedMessage = "ID must be greater than 0.";
+            final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, invalidId)
@@ -396,7 +437,7 @@ public class UserControllerTest {
         void returnNotFound_whenUserDoesNotExist() {
             final var nonExistentId = 666L;
             final var validDto = UserTestData.createValidUserUpdateRequest();
-            final var expectedMessage = "User with id '" + nonExistentId + "' not found.";
+            final var expectedMessage = UserTestData.userNotFoundMessage(nonExistentId);
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, nonExistentId)
@@ -410,7 +451,7 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenBodyIsMissing() {
-            final var expectedMessage = "Request body is missing.";
+            final var expectedMessage = TestUtils.BODY_MISSING;
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)
@@ -454,7 +495,7 @@ public class UserControllerTest {
         @Test
         void changeOnlyOwnPassword_whenOtherUsersExist() {
             registerUser();
-            final var other = userRepository.save(UserTestData.createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me"));
+            final var other = userRepository.save(UserTestData.createMerry());
             final var request = UserTestData.createValidChangePasswordRequest();
 
             restClient.patch()
@@ -471,7 +512,7 @@ public class UserControllerTest {
         @Test
         void returnBadRequest_whenCurrentPasswordIsIncorrect() {
             final var id = registerUser();
-            final var request = new ChangePasswordRequest("wrongPassword", "drugieSniadanie");
+            final var request = UserTestData.createWrongCurrentPasswordRequest();
 
             restClient.patch()
                     .uri(ApiConstants.PASSWORD)
@@ -486,7 +527,7 @@ public class UserControllerTest {
         @Test
         void returnBadRequest_whenNewPasswordIsSameAsCurrent() {
             final var id = registerUser();
-            final var request = new ChangePasswordRequest("lembasy", "lembasy");
+            final var request = UserTestData.createSameAsCurrentPasswordRequest();
 
             restClient.patch()
                     .uri(ApiConstants.PASSWORD)
@@ -502,7 +543,7 @@ public class UserControllerTest {
         void returnBadRequest_whenDtoIsInvalid() {
             final var invalidRequest = new ChangePasswordRequest(" ", "short");
             final var expected = Map.ofEntries(
-                    Map.entry("message", "Validation for request failed."),
+                    Map.entry("message", TestUtils.VALIDATION_FAILED),
                     Map.entry("details", Map.ofEntries(
                             Map.entry("currentPassword", "Current password is required."),
                             Map.entry("newPassword", "Password must be at least 7 characters."))));
@@ -526,7 +567,7 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo("Request body is missing.");
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
         }
 
         @Test
@@ -564,7 +605,7 @@ public class UserControllerTest {
         @Test
         void returnNotFound_whenUserDoesNotExist() {
             final var nonExistentId = 666L;
-            final var expectedMessage = "User with id '" + nonExistentId + "' not found.";
+            final var expectedMessage = UserTestData.userNotFoundMessage(nonExistentId);
 
             restClient.delete()
                     .uri(ApiConstants.BY_ID, nonExistentId)
@@ -578,7 +619,7 @@ public class UserControllerTest {
         @ParameterizedTest
         @ValueSource(longs = {-1L, 0L})
         void returnBadRequest_whenIdIsNotPositive(long invalidId) {
-            final var expectedMessage = "ID must be greater than 0.";
+            final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
             restClient.delete()
                     .uri(ApiConstants.BY_ID, invalidId)

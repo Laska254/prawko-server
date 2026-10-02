@@ -2,7 +2,6 @@ package pl.prawko.prawko_server.config;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.authority.AuthorityUtils;
-import pl.prawko.prawko_server.model.AuthenticatedUser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

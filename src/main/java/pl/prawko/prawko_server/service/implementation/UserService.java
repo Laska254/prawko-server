@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
@@ -20,7 +21,6 @@ import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.mapper.UserMapper;
-import pl.prawko.prawko_server.model.AuthenticatedUser;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
@@ -75,37 +75,6 @@ public class UserService implements IUserService, UserDetailsService {
     }
 
     /**
-     * Checks if entity exists by userName or email.
-     *
-     * @param userNameOrEmail provided name or email to look for
-     * @return {@code true} if entity exist
-     */
-    @Override
-    public boolean checkIfExist(final String userNameOrEmail) {
-        log.debug("Checking if user exists by username or email: {}", userNameOrEmail);
-        final var exists = repository.existsByUserName(userNameOrEmail) || repository.existsByEmail(userNameOrEmail);
-        log.debug("User exists: {}", exists);
-        return exists;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @throws EntityNotFoundException if the user with provided userName or email doesn't exist
-     */
-    @Nullable
-    @Override
-    public User getByUserNameOrEmail(final String userNameOrEmail) {
-        log.info("Fetching user by username or email: {}", userNameOrEmail);
-        return repository.findByUserNameOrEmail(userNameOrEmail, userNameOrEmail)
-                .orElseThrow(() -> {
-                    final var message = "User with username or email '" + userNameOrEmail + "' not found.";
-                    log.warn(message);
-                    return new EntityNotFoundException(message);
-                });
-    }
-
-    /**
      * Load user-specific data during authentication.
      *
      * @param userNameOrEmail the userName or email identifying the user
@@ -115,7 +84,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(final String userNameOrEmail) throws UsernameNotFoundException {
         log.info("Loading user by username or email: {}", userNameOrEmail);
-        final var user = repository.findByUserNameOrEmail(userNameOrEmail, userNameOrEmail)
+        final var user = repository.findByUserNameOrEmailIgnoreCase(userNameOrEmail, userNameOrEmail)
                 .orElseThrow(() -> {
                     log.warn("User '{}' not found.", userNameOrEmail);
                     return new UsernameNotFoundException("Invalid login or password.");
@@ -229,7 +198,7 @@ public class UserService implements IUserService, UserDetailsService {
         if (userName != null && repository.existsByUserName(userName)) {
             errorDetails.put("userName", "User with username '" + userName + "' already exists.");
         }
-        if (email != null && repository.existsByEmail(email)) {
+        if (email != null && repository.existsByEmailIgnoreCase(email)) {
             errorDetails.put("email", "User with email '" + email + "' already exists.");
         }
         if (!errorDetails.isEmpty()) {

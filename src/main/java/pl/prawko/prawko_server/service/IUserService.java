@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.service;
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
@@ -24,29 +23,6 @@ public interface IUserService {
      * @return the ID of the newly created user
      */
     long register(RegisterDto dto);
-
-    /**
-     * Checks if a user exists by username or email.
-     * <p>
-     * Used to validate user availability during registration and login operations.
-     * </p>
-     *
-     * @param userNameOrEmail the username or email to check
-     * @return {@code true} if a user with the given username or email exists, {@code false} otherwise
-     */
-    boolean checkIfExist(String userNameOrEmail);
-
-    /**
-     * Retrieves a {@link User} by username or email.
-     * <p>
-     * Searches the database for a user matching the provided username or email address.
-     * </p>
-     *
-     * @param userNameOrEmail the username or email to search for
-     * @return the {@link User} if found
-     */
-    @Nullable
-    User getByUserNameOrEmail(String userNameOrEmail);
 
     /**
      * Retrieves a {@link User} by its ID.

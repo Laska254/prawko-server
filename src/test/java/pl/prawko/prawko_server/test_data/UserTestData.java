@@ -11,10 +11,21 @@ import pl.prawko.prawko_server.model.User;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class UserTestData {
 
+    public static final String USER_ALREADY_EXISTS = "User already exists.";
+
+    public static final Map<String, String> PIPPIN_CONFLICT_DETAILS = Map.of(
+            "userName", "User with username 'pippin' already exists.",
+            "email", "User with email 'pippin@shire.me' already exists.");
+
     private UserTestData() {
+    }
+
+    public static String userNotFoundMessage(final long id) {
+        return "User with id '" + id + "' not found.";
     }
 
     public static User createTestUser(@NonNull final String firstName,
@@ -75,6 +86,14 @@ public class UserTestData {
 
     public static ChangePasswordRequest createValidChangePasswordRequest() {
         return new ChangePasswordRequest("lembasy", "racuchy");
+    }
+
+    public static ChangePasswordRequest createWrongCurrentPasswordRequest() {
+        return new ChangePasswordRequest("wrongPassword", "drugieSniadanie");
+    }
+
+    public static ChangePasswordRequest createSameAsCurrentPasswordRequest() {
+        return new ChangePasswordRequest("lembasy", "lembasy");
     }
 
     public static RegisterDto createValidRegisterDto() {

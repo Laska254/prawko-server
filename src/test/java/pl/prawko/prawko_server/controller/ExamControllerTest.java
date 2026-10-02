@@ -45,8 +45,6 @@ public class ExamControllerTest {
 
     private RestTestClient restClient;
 
-    private static final String ACCESS_DENIED = "Access denied.";
-
     @BeforeEach
     void setUp() {
         restClient = TestUtils.createRestTestClient(port, ApiConstants.EXAMS_BASE_URL);
@@ -102,7 +100,7 @@ public class ExamControllerTest {
                     .exchange()
                     .expectStatus().isForbidden()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(ACCESS_DENIED);
+                    .jsonPath("$.detail").isEqualTo(TestUtils.ACCESS_DENIED);
 
             assertThat(examRepository.findAll()).isEmpty();
         }
@@ -111,7 +109,7 @@ public class ExamControllerTest {
         void returnBadRequest_whenRequestIsInvalid() {
             final var invalidDto = new CreateExamDto(null, null);
             final var expected = Map.ofEntries(
-                    Map.entry("message", "Validation for request failed."),
+                    Map.entry("message", TestUtils.VALIDATION_FAILED),
                     Map.entry("details", Map.ofEntries(
                             Map.entry("userId", "User ID is required."),
                             Map.entry("categoryName", "Category is required."))));
@@ -180,7 +178,7 @@ public class ExamControllerTest {
                     .exchange()
                     .expectStatus().isForbidden()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(ACCESS_DENIED);
+                    .jsonPath("$.detail").isEqualTo(TestUtils.ACCESS_DENIED);
         }
 
         @Test
@@ -200,7 +198,7 @@ public class ExamControllerTest {
         @ParameterizedTest
         @ValueSource(longs = {-1L, 0L})
         void returnBadRequest_whenIdIsNotPositive(long invalidId) {
-            final var expectedMessage = "ID must be greater than 0.";
+            final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, invalidId)
@@ -326,7 +324,7 @@ public class ExamControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo("Cannot sort by 'nonExisting'.");
+                    .jsonPath("$.detail").isEqualTo(TestUtils.INVALID_SORT);
         }
 
         @Test
@@ -354,7 +352,7 @@ public class ExamControllerTest {
                     .exchange()
                     .expectStatus().isForbidden()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(ACCESS_DENIED);
+                    .jsonPath("$.detail").isEqualTo(TestUtils.ACCESS_DENIED);
         }
 
         @Test
@@ -367,7 +365,7 @@ public class ExamControllerTest {
                     .exchange()
                     .expectStatus().isNotFound()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo("User with id '" + nonExistentId + "' not found.");
+                    .jsonPath("$.detail").isEqualTo(UserTestData.userNotFoundMessage(nonExistentId));
         }
 
         @ParameterizedTest
@@ -379,7 +377,7 @@ public class ExamControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo("ID must be greater than 0.");
+                    .jsonPath("$.detail").isEqualTo(TestUtils.ID_NOT_POSITIVE);
         }
 
         @Test

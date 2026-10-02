@@ -7,7 +7,6 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import pl.prawko.prawko_server.model.AuthenticatedUser;
 import pl.prawko.prawko_server.repository.UserRepository;
 
 @TestConfiguration
@@ -21,17 +20,17 @@ public class TestSecurityConfig {
     @Primary
     public UserDetailsService users(final PasswordEncoder passwordEncoder, final UserRepository userRepository) {
         final var accounts = new InMemoryUserDetailsManager(
-                User.withUsername("pippin")
-                        .password(passwordEncoder.encode("lembasy"))
+                User.withUsername(TestUtils.USER_NAME)
+                        .password(passwordEncoder.encode(TestUtils.USER_PASSWORD))
                         .roles("USER")
                         .build(),
-                User.withUsername("gimli")
-                        .password(passwordEncoder.encode("krasnoludka"))
+                User.withUsername(TestUtils.ADMIN_NAME)
+                        .password(passwordEncoder.encode(TestUtils.ADMIN_PASSWORD))
                         .roles("ADMIN")
                         .build());
         return username -> {
             final var account = accounts.loadUserByUsername(username);
-            final var id = userRepository.findByUserNameOrEmail(username, username)
+            final var id = userRepository.findByUserNameOrEmailIgnoreCase(username, username)
                     .map(pl.prawko.prawko_server.model.User::getId)
                     .orElse(0L);
             return new AuthenticatedUser(id, account.getUsername(), account.getPassword(), account.getAuthorities());

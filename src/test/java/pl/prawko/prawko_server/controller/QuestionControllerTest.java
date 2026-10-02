@@ -21,6 +21,7 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.test_data.MultiPartFactory;
+import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 
 import java.util.List;
@@ -53,7 +54,7 @@ public class QuestionControllerTest {
 
         @Test
         void returnCreated_whenSuccess() {
-            final var multipart = MultiPartFactory.fromClasspath("test_question.csv");
+            final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.CSV_FILE);
 
             restClient.post()
                     .headers(TestUtils::authAdmin)
@@ -143,7 +144,7 @@ public class QuestionControllerTest {
         @ParameterizedTest
         @ValueSource(longs = {-1L, 0L})
         void returnBadRequest_whenIdIsNotPositive(long invalidId) {
-            final var expectedMessage = "ID must be greater than 0.";
+            final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, invalidId)
@@ -225,7 +226,7 @@ public class QuestionControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo("Cannot sort by 'nonExisting'.");
+                    .jsonPath("$.detail").isEqualTo(TestUtils.INVALID_SORT);
         }
 
         @Test

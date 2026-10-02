@@ -5,6 +5,8 @@ import pl.prawko.prawko_server.model.QuestionType;
 
 public class QuestionCSVTestData {
 
+    public static final String CSV_FILE = "test_question.csv";
+
     private QuestionCSVTestData() {
     }
 
