@@ -1,91 +1,34 @@
 package pl.prawko.prawko_server.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToMany;
-
-import java.util.List;
-import java.util.Objects;
-
 /**
- * Represents a role entity within the application.
- * <p>
- * A {@code Role} contains a name limited to 7 characters.
- * <p>
- * Relationships:
- * <ul>
- *     <li>{@link User}: A role can be assigned to multiple users.</li>
- * </ul>
- * The entity is mapped to the database table {@code role}.
- * All setters are returning {@code Role} itself, enabling method chaining.
+ * Role of a {@link User}, defining their permissions in the system.
+ *
+ * <p>Roles are hierarchical: {@link #ADMIN} implies {@link #USER}
+ * (see {@link pl.prawko.prawko_server.config.SpringSecurity#roleHierarchy()}).
  */
-@Entity
-public class Role {
+public enum Role {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    /**
+     * Regular user, allowed to take exams and manage their own account.
+     */
+    USER,
 
-    @Column(length = 7)
-    private String name;
+    /**
+     * Administrator, allowed to manage questions and all users.
+     */
+    ADMIN;
 
-    @ManyToMany(mappedBy = "roles")
-    @JsonBackReference
-    private List<User> users;
+    private static final String AUTHORITY_PREFIX = "ROLE_";
 
-    public long getId() {
-        return id;
-    }
-
-    public Role setId(final long id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Role setName(final String name) {
-        this.name = name;
-        return this;
-    }
-
-    public List<User> getUsers() {
-        return users;
-    }
-
-    public Role setUsers(final List<User> users) {
-        this.users = users;
-        return this;
-    }
-
-    @Override
-    public boolean equals(final Object object) {
-        if (object == null || getClass() != object.getClass()) {
-            return false;
-        }
-        final var role = (Role) object;
-        return id == role.id
-                && Objects.equals(name, role.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, name);
-    }
-
-    @Override
-    public String toString() {
-        return "Role{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", users=" + users +
-                '}';
+    /**
+     * Returns the Spring Security authority of this role, e.g. {@code ROLE_ADMIN}.
+     *
+     * <p>The prefix matches the default one expected by {@code hasRole(...)} expressions.
+     *
+     * @return the role name prefixed with {@code ROLE_}
+     */
+    public String getAuthority() {
+        return AUTHORITY_PREFIX + name();
     }
 
 }

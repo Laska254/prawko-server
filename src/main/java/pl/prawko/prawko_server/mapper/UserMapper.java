@@ -17,7 +17,7 @@ import pl.prawko.prawko_server.model.User;
 public interface UserMapper {
 
     @Mapping(target = "updated", ignore = true)
-    @Mapping(target = "roles", ignore = true)
+    @Mapping(target = "role", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "exams", ignore = true)
     @Mapping(target = "created", ignore = true)

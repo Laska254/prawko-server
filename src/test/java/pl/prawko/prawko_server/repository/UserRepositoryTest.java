@@ -5,14 +5,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.test_data.UserTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 class UserRepositoryTest {
 
-    private final String userName = "pippin";
-    private final String email = "pippin@shire.me";
     private final String wrongUserName = "nonExistingUserName";
     private final String wrongEmail = "nonExistingEmail";
 
@@ -23,57 +22,74 @@ class UserRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        tester = new User()
-                .setUserName(userName)
-                .setEmail(email);
-        repository.save(tester);
+        tester = repository.save(UserTestData.createTestUserPippin());
     }
 
     @Test
-    void existsByUserName_returnTrue() {
-        final var result = repository.existsByUserName(userName);
+    void existsByUserName_returnTrue_whenUserNameExists() {
+        final var result = repository.existsByUserName(tester.getUserName());
         assertThat(result).isTrue();
     }
 
     @Test
-    void existsByUserName_returnFalse() {
+    void existsByUserName_returnFalse_whenUserNameDoesNotExist() {
         final var result = repository.existsByUserName(wrongUserName);
         assertThat(result).isFalse();
     }
 
     @Test
-    void existsByEmail_returnTrue() {
-        final var result = repository.existsByEmail(tester.getEmail());
+    void existsByEmailIgnoreCase_returnTrue_whenEmailExists() {
+        final var result = repository.existsByEmailIgnoreCase(tester.getEmail());
         assertThat(result).isTrue();
     }
 
     @Test
-    void existsByEmail_returnFalse() {
-        final var result = repository.existsByEmail(wrongEmail);
+    void existsByEmailIgnoreCase_returnFalse_whenEmailDoesNotExist() {
+        final var result = repository.existsByEmailIgnoreCase(wrongEmail);
         assertThat(result).isFalse();
     }
 
     @Test
-    void findByUserNameOrEmail_returnUser_whenFoundByUserName() {
-        final var result = repository.findByUserNameOrEmail(userName, userName);
-        assertThat(result.get().getUserName()).isEqualTo(userName);
+    void findByUserNameOrEmailIgnoreCase_returnUser_whenFoundByUserName() {
+        final var result = repository.findByUserNameOrEmailIgnoreCase(tester.getUserName(), tester.getUserName());
+        assertThat(result.get().getUserName()).isEqualTo(tester.getUserName());
     }
 
     @Test
-    void findByUserNameOrEmail_returnUser_whenFoundByEmail() {
-        final var result = repository.findByUserNameOrEmail(email, email);
-        assertThat(result.get().getEmail()).isEqualTo(email);
+    void findByUserNameOrEmailIgnoreCase_returnUser_whenFoundByEmail() {
+        final var result = repository.findByUserNameOrEmailIgnoreCase(tester.getEmail(), tester.getEmail());
+        assertThat(result.get().getEmail()).isEqualTo(tester.getEmail());
     }
 
     @Test
-    void findByUserNameOrEmail_returnEmpty_whenNotFoundByUserName() {
-        final var result = repository.findByUserNameOrEmail(wrongUserName, wrongUserName);
+    void findByUserNameOrEmailIgnoreCase_returnEmpty_whenNotFoundByUserName() {
+        final var result = repository.findByUserNameOrEmailIgnoreCase(wrongUserName, wrongUserName);
         assertThat(result).isEmpty();
     }
 
     @Test
-    void findByUserNameOrEmail_returnEmpty_whenNotFoundByEmail() {
-        final var result = repository.findByUserNameOrEmail(wrongEmail, wrongEmail);
+    void findByUserNameOrEmailIgnoreCase_returnEmpty_whenNotFoundByEmail() {
+        final var result = repository.findByUserNameOrEmailIgnoreCase(wrongEmail, wrongEmail);
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void existsByEmailIgnoreCase_returnTrue_whenCaseDiffers() {
+        final var result = repository.existsByEmailIgnoreCase(tester.getEmail().toUpperCase());
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void findByUserNameOrEmailIgnoreCase_returnUser_whenEmailCaseDiffers() {
+        final var input = "Pippin@Shire.ME";
+        final var result = repository.findByUserNameOrEmailIgnoreCase(input, input);
+        assertThat(result).get().extracting(User::getEmail).isEqualTo(tester.getEmail());
+    }
+
+    @Test
+    void findByUserNameOrEmailIgnoreCase_returnEmpty_whenUserNameCaseDiffers() {
+        final var input = tester.getUserName().toUpperCase();
+        final var result = repository.findByUserNameOrEmailIgnoreCase(input, input);
         assertThat(result).isEmpty();
     }
 

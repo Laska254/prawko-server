@@ -4,14 +4,16 @@ import jakarta.persistence.EntityNotFoundException;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
@@ -24,9 +26,7 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IUserService;
 
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -43,16 +43,13 @@ public class UserService implements IUserService, UserDetailsService {
     private final UserRepository repository;
     private final UserMapper mapper;
     private final PasswordEncoder passwordEncoder;
-    private final RoleService roleService;
 
     public UserService(final UserRepository repository,
                        final UserMapper mapper,
-                       final PasswordEncoder passwordEncoder,
-                       final RoleService roleService) {
+                       final PasswordEncoder passwordEncoder) {
         this.repository = repository;
         this.mapper = mapper;
         this.passwordEncoder = passwordEncoder;
-        this.roleService = roleService;
     }
 
     /**
@@ -70,65 +67,34 @@ public class UserService implements IUserService, UserDetailsService {
         log.debug("Mapped successfully");
         user.setPassword(passwordEncoder.encode(dto.password()));
         log.debug("Password encoded");
-        user.setRoles(List.of(roleService.getByName("USER")));
-        log.debug("User roles set");
+        user.setRole(Role.USER);
+        log.debug("User role set");
         repository.save(user);
         log.info("User {} registered successfully.", user.getUserName());
         return user.getId();
     }
 
     /**
-     * Checks if entity exists by userName or email.
-     *
-     * @param userNameOrEmail provided name or email to look for
-     * @return {@code true} if entity exist
-     */
-    @Override
-    public boolean checkIfExist(final String userNameOrEmail) {
-        log.debug("Checking if user exists by username or email: {}", userNameOrEmail);
-        final var exists = repository.existsByUserName(userNameOrEmail) || repository.existsByEmail(userNameOrEmail);
-        log.debug("User exists: {}", exists);
-        return exists;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @throws EntityNotFoundException if the user with provided userName or email doesn't exist
-     */
-    @Nullable
-    @Override
-    public User getByUserNameOrEmail(final String userNameOrEmail) {
-        log.info("Fetching user by username or email: {}", userNameOrEmail);
-        return repository.findByUserNameOrEmail(userNameOrEmail, userNameOrEmail)
-                .orElseThrow(() -> {
-                    final var message = "User with username or email '" + userNameOrEmail + "' not found.";
-                    log.warn(message);
-                    return new EntityNotFoundException(message);
-                });
-    }
-
-    /**
      * Load user-specific data during authentication.
      *
      * @param userNameOrEmail the userName or email identifying the user
-     * @return {@link org.springframework.security.core.userdetails.User} object with granted authorities based on user's roles
+     * @return {@link AuthenticatedUser} carrying the user's ID, with granted authority based on user's role
      * @throws UsernameNotFoundException if user have not been found with the provided details
      */
     @Override
     public UserDetails loadUserByUsername(final String userNameOrEmail) throws UsernameNotFoundException {
         log.info("Loading user by username or email: {}", userNameOrEmail);
-        if (checkIfExist(userNameOrEmail)) {
-            final var user = getByUserNameOrEmail(userNameOrEmail);
-            log.info("User {} loaded successfully.", userNameOrEmail);
-            return new org.springframework.security.core.userdetails.User(
-                    user.getUserName(),
-                    user.getPassword(),
-                    mapRolesToAuthorities(user.getRoles()));
-        } else {
-            log.warn("User '{}' not found.", userNameOrEmail);
-            throw new UsernameNotFoundException("Invalid login or password.");
-        }
+        final var user = repository.findByUserNameOrEmailIgnoreCase(userNameOrEmail, userNameOrEmail)
+                .orElseThrow(() -> {
+                    log.warn("User '{}' not found.", userNameOrEmail);
+                    return new UsernameNotFoundException("Invalid login or password.");
+                });
+        log.info("User {} loaded successfully.", userNameOrEmail);
+        return new AuthenticatedUser(
+                user.getId(),
+                user.getUserName(),
+                user.getPassword(),
+                AuthorityUtils.createAuthorityList(user.getRole().getAuthority()));
     }
 
     /**
@@ -159,10 +125,10 @@ public class UserService implements IUserService, UserDetailsService {
     }
 
     @Override
-    public List<UserDto> getAllUsers() {
-        return repository.findAll().stream()
-                .map(mapper::toDto)
-                .toList();
+    @Transactional(readOnly = true)
+    public Page<UserDto> getAllUsers(final Pageable pageable) {
+        return repository.findAll(pageable)
+                .map(mapper::toDto);
     }
 
     /**
@@ -226,20 +192,13 @@ public class UserService implements IUserService, UserDetailsService {
         log.info("Successfully deleted user '{}'", user.getUserName());
     }
 
-    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(final Collection<Role> roles) {
-        log.debug("Mapping {} role(s) to authorities.", roles.size());
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
-                .toList();
-    }
-
     private void validateNoConflict(@Nullable final String userName, @Nullable final String email) {
         log.debug("Checking if there is no other user with username '{}' or email '{}'", userName, email);
         Map<String, String> errorDetails = new HashMap<>();
         if (userName != null && repository.existsByUserName(userName)) {
             errorDetails.put("userName", "User with username '" + userName + "' already exists.");
         }
-        if (email != null && repository.existsByEmail(email)) {
+        if (email != null && repository.existsByEmailIgnoreCase(email)) {
             errorDetails.put("email", "User with email '" + email + "' already exists.");
         }
         if (!errorDetails.isEmpty()) {

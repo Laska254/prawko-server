@@ -17,7 +17,7 @@ class AnswerMapperTest {
     private final AnswerMapper mapper = new AnswerMapperImpl();
 
     @Test
-    void toDto_correctlyMapsAllFields() {
+    void toDto_mapAllFields_whenAllFieldsAreSet() {
         final var translations = AnswerTranslationsTestData.createAnswerTranslations(AnswerVariant.A);
         final var translationDtos = AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.A);
         final var given = new Answer()
@@ -33,7 +33,7 @@ class AnswerMapperTest {
     }
 
     @Test
-    void toTranslationDto_correctlyMapAnswerTranslation_toDto() {
+    void toTranslationDto_mapContentAndLanguageCode_whenBothAreSet() {
         final var content = "Co 60 minut.";
         final var lang = PL;
         final var given = new AnswerTranslation()

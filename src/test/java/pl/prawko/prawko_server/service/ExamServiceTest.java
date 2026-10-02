@@ -7,6 +7,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import pl.prawko.prawko_server.mapper.ExamMapper;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.repository.ExamRepository;
@@ -91,10 +94,10 @@ public class ExamServiceTest {
         }
 
         @Test
-        void shouldThrowWhenUserNotFound() {
+        void throwEntityNotFound_whenUserDoesNotExist() {
             final long nonExistentUserId = 666L;
             final var categoryName = CategoryTestData.CATEGORY_B.getName();
-            final var expectedMessage = "User with id '" + nonExistentUserId + "' not found.";
+            final var expectedMessage = UserTestData.userNotFoundMessage(nonExistentUserId);
             when(userService.getById(nonExistentUserId)).thenThrow(new EntityNotFoundException(expectedMessage));
 
             assertThatThrownBy(() -> service.createExam(nonExistentUserId, categoryName))
@@ -105,7 +108,7 @@ public class ExamServiceTest {
         }
 
         @Test
-        void shouldThrowWhenCategoryNotFound() {
+        void throwEntityNotFound_whenCategoryDoesNotExist() {
             final var user = UserTestData.createTestUserPippin();
             final var nonExistentCategory = "NON_EXISTENT";
 
@@ -125,7 +128,7 @@ public class ExamServiceTest {
     class GetById {
 
         @Test
-        void shouldReturnExamDtoWhenFound() {
+        void returnExamDto_whenExamExists() {
             final var user = UserTestData.createTestUserPippin();
             final var exam = ExamTestData.createExam(user);
             final var expectedDto = ExamTestData.createExamDto(exam);
@@ -139,7 +142,7 @@ public class ExamServiceTest {
         }
 
         @Test
-        void shouldThrowEntityNotFoundExceptionWhenExamDoesNotExist() {
+        void throwEntityNotFound_whenExamDoesNotExist() {
             final long nonExistentId = 666L;
             when(repository.findById(nonExistentId)).thenReturn(Optional.empty());
 
@@ -149,7 +152,7 @@ public class ExamServiceTest {
         }
 
         @Test
-        void shouldCallMapperWithCorrectExam() {
+        void mapFoundExam_whenExamExists() {
             final var user = UserTestData.createTestUserPippin();
             final var exam = ExamTestData.createExam(user);
             when(repository.findById(exam.getId())).thenReturn(Optional.of(exam));
@@ -174,22 +177,26 @@ public class ExamServiceTest {
             final var newerDto = ExamTestData.createExamSummaryDto(newer);
             final var olderDto = ExamTestData.createExamSummaryDto(older);
             when(userService.getById(userId)).thenReturn(user);
-            when(repository.findAllByUser_IdOrderByCreatedDescIdDesc(userId)).thenReturn(List.of(newer, older));
+            final var pageable = PageRequest.of(0, 2);
+            when(repository.findAllByUser_Id(userId, pageable)).thenReturn(new PageImpl<>(List.of(newer, older), pageable, 5));
             when(examMapper.toSummaryDto(newer)).thenReturn(newerDto);
             when(examMapper.toSummaryDto(older)).thenReturn(olderDto);
 
-            final var result = service.getAllByUserId(userId);
+            final var result = service.getAllByUserId(userId, pageable);
 
-            assertThat(result).containsExactly(newerDto, olderDto);
+            assertThat(result.getContent()).containsExactly(newerDto, olderDto);
+            assertThat(result.getTotalElements()).isEqualTo(5);
+            assertThat(result.getPageable()).isEqualTo(pageable);
         }
 
         @Test
         void returnEmptyList_whenUserHasNoExams() {
             final var userId = 44L;
             when(userService.getById(userId)).thenReturn(UserTestData.createTestUserPippin());
-            when(repository.findAllByUser_IdOrderByCreatedDescIdDesc(userId)).thenReturn(Collections.emptyList());
+            final var pageable = PageRequest.of(0, 20);
+            when(repository.findAllByUser_Id(userId, pageable)).thenReturn(Page.empty(pageable));
 
-            final var result = service.getAllByUserId(userId);
+            final var result = service.getAllByUserId(userId, pageable);
 
             assertThat(result).isEmpty();
             verifyNoInteractions(examMapper);
@@ -198,10 +205,10 @@ public class ExamServiceTest {
         @Test
         void throwEntityNotFound_whenUserDoesNotExist() {
             final var userId = 666L;
-            final var expectedMessage = "User with id '" + userId + "' not found.";
+            final var expectedMessage = UserTestData.userNotFoundMessage(userId);
             when(userService.getById(userId)).thenThrow(new EntityNotFoundException(expectedMessage));
 
-            assertThatThrownBy(() -> service.getAllByUserId(userId))
+            assertThatThrownBy(() -> service.getAllByUserId(userId, PageRequest.of(0, 20)))
                     .isInstanceOf(EntityNotFoundException.class)
                     .hasMessage(expectedMessage);
 

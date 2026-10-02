@@ -1,13 +1,12 @@
 package pl.prawko.prawko_server.service;
 
-import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.User;
-
-import java.util.List;
 
 /**
  * Service interface for managing {@link User} entities.
@@ -24,29 +23,6 @@ public interface IUserService {
      * @return the ID of the newly created user
      */
     long register(RegisterDto dto);
-
-    /**
-     * Checks if a user exists by username or email.
-     * <p>
-     * Used to validate user availability during registration and login operations.
-     * </p>
-     *
-     * @param userNameOrEmail the username or email to check
-     * @return {@code true} if a user with the given username or email exists, {@code false} otherwise
-     */
-    boolean checkIfExist(String userNameOrEmail);
-
-    /**
-     * Retrieves a {@link User} by username or email.
-     * <p>
-     * Searches the database for a user matching the provided username or email address.
-     * </p>
-     *
-     * @param userNameOrEmail the username or email to search for
-     * @return the {@link User} if found
-     */
-    @Nullable
-    User getByUserNameOrEmail(String userNameOrEmail);
 
     /**
      * Retrieves a {@link User} by its ID.
@@ -71,14 +47,15 @@ public interface IUserService {
     UserDto getUserDtoById(long userId);
 
     /**
-     * Retrieves all users in the application.
+     * Retrieves a page of users in the application.
      * <p>
-     * Returns a complete list of all registered users converted to DTO format.
+     * Returns registered users converted to DTO format.
      * </p>
      *
-     * @return a list of all users as {@link UserDto} objects
+     * @param pageable the pagination and sorting information
+     * @return a page of users as {@link UserDto} objects
      */
-    List<UserDto> getAllUsers();
+    Page<UserDto> getAllUsers(Pageable pageable);
 
     /**
      * Updates an existing user's details.

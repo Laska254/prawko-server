@@ -3,13 +3,11 @@ package pl.prawko.prawko_server.model;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
@@ -17,7 +15,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Represents a {@code User} entity within the application.
@@ -30,11 +27,11 @@ import java.util.Objects;
  *     <li>email - limited to 63 characters</li>
  *     <li>password - hashed and limited to 63 characters</li>
  * </ul>
- * and system-related attributes like whether the account is enabled, the creation timestamp and the last update timestamp.
+ * and system-related attributes like the {@link Role}, whether the account is enabled, the creation timestamp and the last
+ * update timestamp.
  * <p>
  * Relationships:
  * <ul>
- *     <li>{@link Role}: A user can have multiple roles, defining their permissions in the system.</li>
  *     <li>{@link Exam}: A user can be assigned to multiple exams.</li>
  * </ul>
  * The entity is mapped to the database table {@code user} and uses automatic timestamp handling.
@@ -71,13 +68,9 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updated;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "user_role",
-            joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
-            inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")}
-    )
-    private List<Role> roles;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 5)
+    private Role role;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Exam> exams;
@@ -163,12 +156,12 @@ public class User {
         return this;
     }
 
-    public List<Role> getRoles() {
-        return roles;
+    public Role getRole() {
+        return role;
     }
 
-    public User setRoles(final List<Role> roles) {
-        this.roles = roles;
+    public User setRole(final Role role) {
+        this.role = role;
         return this;
     }
 
@@ -183,24 +176,18 @@ public class User {
 
     @Override
     public boolean equals(final Object object) {
-        if (object == null || getClass() != object.getClass()) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof User other)) {
             return false;
         }
-        final var user = (User) object;
-        return id == user.id
-                && Objects.equals(firstName, user.firstName)
-                && Objects.equals(lastName, user.lastName)
-                && Objects.equals(userName, user.userName)
-                && Objects.equals(email, user.email)
-                && enabled == user.enabled
-                && created.equals(user.created)
-                && updated.equals(user.updated)
-                && roles.equals(user.roles);
+        return id != 0 && id == other.getId();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, firstName, lastName, userName, email, enabled, created, updated, roles);
+        return User.class.hashCode();
     }
 
     @Override
@@ -211,12 +198,10 @@ public class User {
                 ", lastName='" + lastName + '\'' +
                 ", userName='" + userName + '\'' +
                 ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
+                ", role=" + role +
                 ", enabled=" + enabled +
                 ", created=" + created +
                 ", updated=" + updated +
-                ", roles=" + roles +
-                ", exams=" + exams +
                 '}';
     }
 

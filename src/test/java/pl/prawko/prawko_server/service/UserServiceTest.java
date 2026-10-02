@@ -7,8 +7,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import pl.prawko.prawko_server.dto.ChangePasswordRequest;
+import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
@@ -17,15 +21,14 @@ import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
-import pl.prawko.prawko_server.service.implementation.RoleService;
 import pl.prawko.prawko_server.service.implementation.UserService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -37,13 +40,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    private static final Map<String, String> EXPECTED = Map.ofEntries(
-            Map.entry("userName", "User with username 'pippin' already exists."),
-            Map.entry("email", "User with email 'pippin@shire.me' already exists.")
-    );
-
-    private static final String ERROR_MESSAGE = "User already exists.";
-
     @Mock
     private UserRepository repository;
 
@@ -53,9 +49,6 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
-    @Mock
-    private RoleService roleService;
-
     @InjectMocks
     private UserService service;
 
@@ -64,33 +57,31 @@ class UserServiceTest {
 
     @Test
     void register_success_whenUserNotExists() {
-        final var role = "USER";
         final var user = new User();
         when(repository.existsByUserName(registerDto.userName())).thenReturn(false);
-        when(repository.existsByEmail(registerDto.email())).thenReturn(false);
+        when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(false);
         when(mapper.fromDto(registerDto)).thenReturn(user);
-        when(roleService.getByName(role)).thenReturn(new Role().setName(role));
 
         service.register(registerDto);
 
+        assertThat(user.getRole()).isEqualTo(Role.USER);
         verify(repository).save(user);
         verify(mapper).fromDto(registerDto);
-        verify(roleService).getByName(role);
-        verifyNoMoreInteractions(repository, mapper, roleService);
+        verifyNoMoreInteractions(repository, mapper);
     }
 
     @Test
     void register_throwAlreadyExists_whenExistsByUserName() {
         final var field = "userName";
         when(repository.existsByUserName(registerDto.userName())).thenReturn(true);
-        when(repository.existsByEmail(registerDto.email())).thenReturn(false);
+        when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(false);
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.register(registerDto);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
-        assertThat(exception.getMessage()).isEqualTo(ERROR_MESSAGE);
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
         assertThat(exception.getDetails().get(field))
-                .isEqualTo(EXPECTED.get(field));
+                .isEqualTo(UserTestData.PIPPIN_CONFLICT_DETAILS.get(field));
         verify(repository, never()).save(any());
         verifyNoInteractions(mapper);
         verifyNoMoreInteractions(repository);
@@ -100,14 +91,14 @@ class UserServiceTest {
     void register_throwAlreadyExists_whenExistsByEmail() {
         final var field = "email";
         when(repository.existsByUserName(registerDto.userName())).thenReturn(false);
-        when(repository.existsByEmail(registerDto.email())).thenReturn(true);
+        when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(true);
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.register(registerDto);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
-        assertThat(exception.getMessage()).isEqualTo(ERROR_MESSAGE);
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
         assertThat(exception.getDetails().get(field))
-                .isEqualTo(EXPECTED.get(field));
+                .isEqualTo(UserTestData.PIPPIN_CONFLICT_DETAILS.get(field));
         verify(repository, never()).save(any());
         verifyNoInteractions(mapper);
         verifyNoMoreInteractions(repository);
@@ -116,52 +107,14 @@ class UserServiceTest {
     @Test
     void register_throwAlreadyExists_whenUserNameAndEmailExists() {
         when(repository.existsByUserName(registerDto.userName())).thenReturn(true);
-        when(repository.existsByEmail(registerDto.email())).thenReturn(true);
+        when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(true);
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.register(registerDto);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
-        assertThat(exception.getMessage()).isEqualTo(ERROR_MESSAGE);
-        assertThat(exception.getDetails()).containsAllEntriesOf(EXPECTED);
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
+        assertThat(exception.getDetails()).containsAllEntriesOf(UserTestData.PIPPIN_CONFLICT_DETAILS);
         verify(repository, never()).save(any());
-        verifyNoInteractions(mapper);
-        verifyNoMoreInteractions(repository);
-    }
-
-    @Test
-    void getByUserNameOrEmail_returnUser_whenFoundByUserName() {
-        final var userNameOrEmail = "pippin";
-        when(repository.findByUserNameOrEmail(userNameOrEmail, userNameOrEmail)).thenReturn(Optional.of(tester));
-
-        final var result = service.getByUserNameOrEmail(userNameOrEmail);
-
-        assertThat(result).isEqualTo(tester);
-        verifyNoInteractions(mapper);
-        verifyNoMoreInteractions(repository);
-    }
-
-    @Test
-    void getByUserNameOrEmail_returnUser_whenFoundByEmail() {
-        final var userNameOrEmail = "pippin@shire.me";
-        when(repository.findByUserNameOrEmail(userNameOrEmail, userNameOrEmail)).thenReturn(Optional.of(tester));
-
-        final var result = service.getByUserNameOrEmail(userNameOrEmail);
-
-        assertThat(result).isEqualTo(tester);
-        verifyNoInteractions(mapper);
-        verifyNoMoreInteractions(repository);
-    }
-
-    @Test
-    void getByUserNameOrEmail_throwException_whenNotFound() {
-        final var userNameOrEmail = "wrongUserName";
-        final var errorMessage = "User with username or email '" + userNameOrEmail + "' not found.";
-        when(repository.findByUserNameOrEmail(userNameOrEmail, userNameOrEmail)).thenReturn(Optional.empty());
-
-        final ThrowableAssert.ThrowingCallable executable = () -> service.getByUserNameOrEmail(userNameOrEmail);
-        final var exception = catchThrowableOfType(EntityNotFoundException.class, executable);
-
-        assertThat(exception.getMessage()).isEqualTo(errorMessage);
         verifyNoInteractions(mapper);
         verifyNoMoreInteractions(repository);
     }
@@ -201,27 +154,30 @@ class UserServiceTest {
         final ThrowableAssert.ThrowingCallable executable = () -> service.getUserDtoById(givenId);
         final var exception = catchThrowableOfType(EntityNotFoundException.class, executable);
 
-        assertThat(exception.getMessage()).isEqualTo("User with id '" + givenId + "' not found.");
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.userNotFoundMessage(givenId));
         verify(repository).findById(givenId);
         verifyNoMoreInteractions(repository);
         verifyNoInteractions(mapper);
     }
 
     @Test
-    void getAllUsers_returnListOfUsers_whenFound() {
-        final var tester2 = UserTestData.createTestUser("Meriadok", "Brandybuck", "Merry", "merry@shire.me");
+    void getAllUsers_returnPageOfUsers_whenFound() {
+        final var tester2 = UserTestData.createMerry();
         final var users = List.of(tester, tester2);
         final var pippinDto = UserTestData.createUserDto(4L);
-        final var merryDto = new UserDto(45L, "Meriadok", "Brandybuck", "Merry", "merry@shire.me");
+        final var merryDto = new UserDto(45L, tester2.getFirstName(), tester2.getLastName(), tester2.getUserName(), tester2.getEmail());
         final var expected = List.of(pippinDto, merryDto);
-        when(repository.findAll()).thenReturn(users);
+        final var pageable = PageRequest.of(1, 2);
+        when(repository.findAll(pageable)).thenReturn(new PageImpl<>(users, pageable, 4));
         when(mapper.toDto(tester)).thenReturn(pippinDto);
         when(mapper.toDto(tester2)).thenReturn(merryDto);
 
-        final var result = service.getAllUsers();
+        final var result = service.getAllUsers(pageable);
 
-        assertThat(result).isEqualTo(expected);
-        verify(repository).findAll();
+        assertThat(result.getContent()).isEqualTo(expected);
+        assertThat(result.getTotalElements()).isEqualTo(4);
+        assertThat(result.getPageable()).isEqualTo(pageable);
+        verify(repository).findAll(pageable);
         verify(mapper).toDto(tester);
         verify(mapper).toDto(tester2);
         verifyNoMoreInteractions(repository, mapper);
@@ -235,7 +191,7 @@ class UserServiceTest {
         final var user = tester;
         when(repository.findById(givenId)).thenReturn(Optional.of(user));
         when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(false);
-        when(repository.existsByEmail(updateUserRequest.email())).thenReturn(false);
+        when(repository.existsByEmailIgnoreCase(updateUserRequest.email())).thenReturn(false);
         when(repository.save(user)).thenReturn(user);
         when(mapper.toDto(user)).thenReturn(updatedUserDto);
 
@@ -245,7 +201,7 @@ class UserServiceTest {
         verify(repository).findById(givenId);
         verify(repository).save(user);
         verify(repository).existsByUserName(updateUserRequest.userName());
-        verify(repository).existsByEmail(updateUserRequest.email());
+        verify(repository).existsByEmailIgnoreCase(updateUserRequest.email());
         verify(mapper).toDto(user);
         verifyNoMoreInteractions(repository, mapper);
     }
@@ -260,7 +216,7 @@ class UserServiceTest {
         final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
-        assertThat(exception.getMessage()).isEqualTo("User already exists.");
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
         verify(repository).findById(givenId);
         verify(repository).existsByUserName(updateUserRequest.userName());
         verifyNoInteractions(mapper);
@@ -271,14 +227,14 @@ class UserServiceTest {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createInvalidUserUpdateRequest();
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
-        when(repository.existsByEmail(updateUserRequest.email())).thenReturn(true);
+        when(repository.existsByEmailIgnoreCase(updateUserRequest.email())).thenReturn(true);
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
-        assertThat(exception.getMessage()).isEqualTo("User already exists.");
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
         verify(repository).findById(givenId);
-        verify(repository).existsByEmail(updateUserRequest.email());
+        verify(repository).existsByEmailIgnoreCase(updateUserRequest.email());
         verifyNoInteractions(mapper);
     }
 
@@ -304,7 +260,7 @@ class UserServiceTest {
     @Test
     void changePassword_throwException_whenCurrentPasswordIsIncorrect() {
         final var givenId = 44L;
-        final var request = new ChangePasswordRequest("wrongPassword", "drugieSniadanie");
+        final var request = UserTestData.createWrongCurrentPasswordRequest();
         final var oldEncoded = tester.getPassword();
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(passwordEncoder.matches(request.currentPassword(), oldEncoded)).thenReturn(false);
@@ -323,7 +279,7 @@ class UserServiceTest {
     @Test
     void changePassword_throwException_whenNewPasswordIsSameAsCurrent() {
         final var givenId = 44L;
-        final var request = new ChangePasswordRequest("lembasy", "lembasy");
+        final var request = UserTestData.createSameAsCurrentPasswordRequest();
         final var oldEncoded = tester.getPassword();
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(passwordEncoder.matches(request.currentPassword(), oldEncoded)).thenReturn(true);
@@ -346,7 +302,7 @@ class UserServiceTest {
         final ThrowableAssert.ThrowingCallable executable = () -> service.changePassword(givenId, request);
         final var exception = catchThrowableOfType(EntityNotFoundException.class, executable);
 
-        assertThat(exception.getMessage()).isEqualTo("User with id '" + givenId + "' not found.");
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.userNotFoundMessage(givenId));
         verify(repository, never()).save(any());
         verifyNoInteractions(passwordEncoder);
     }
@@ -372,11 +328,38 @@ class UserServiceTest {
         final ThrowableAssert.ThrowingCallable executable = () -> service.deleteUser(givenId);
         final var exception = catchThrowableOfType(EntityNotFoundException.class, executable);
 
-        assertThat(exception.getMessage()).isEqualTo("User with id '" + givenId + "' not found.");
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.userNotFoundMessage(givenId));
         verify(repository).findById(givenId);
         verify(repository, never()).delete(any());
         verifyNoMoreInteractions(repository);
         verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void loadUserByUsername_returnUserDetails_whenUserExists() {
+        final var user = tester.setId(7L).setRole(Role.USER);
+        when(repository.findByUserNameOrEmailIgnoreCase("pippin", "pippin")).thenReturn(Optional.of(user));
+
+        final var result = service.loadUserByUsername("pippin");
+
+        assertThat(result).isInstanceOfSatisfying(AuthenticatedUser.class,
+                principal -> assertThat(principal.getId()).isEqualTo(7L));
+        assertThat(result.getUsername()).isEqualTo("pippin");
+        assertThat(result.getPassword()).isEqualTo(user.getPassword());
+        assertThat(result.getAuthorities())
+                .extracting(GrantedAuthority::getAuthority)
+                .containsExactly(Role.USER.getAuthority());
+    }
+
+    @Test
+    void loadUserByUsername_throwException_whenUserNotExists() {
+        when(repository.findByUserNameOrEmailIgnoreCase("nobody", "nobody")).thenReturn(Optional.empty());
+
+        final ThrowableAssert.ThrowingCallable executable = () -> service.loadUserByUsername("nobody");
+
+        assertThatThrownBy(executable)
+                .isInstanceOf(UsernameNotFoundException.class)
+                .hasMessage("Invalid login or password.");
     }
 
 }

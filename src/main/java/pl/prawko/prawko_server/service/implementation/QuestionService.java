@@ -3,6 +3,8 @@ package pl.prawko.prawko_server.service.implementation;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
@@ -81,10 +83,9 @@ public class QuestionService implements IQuestionService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<QuestionDto> getAll() {
-        return repository.findAll().stream()
-                .map(mapper::toDto)
-                .toList();
+    public Page<QuestionDto> getAll(final Pageable pageable) {
+        return repository.findAll(pageable)
+                .map(mapper::toDto);
     }
 
 }

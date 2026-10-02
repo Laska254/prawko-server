@@ -29,7 +29,7 @@ class QuestionMapperTest {
 
     @ParameterizedTest
     @EnumSource(value = QuestionType.class)
-    void toDto_correctlyMapBothQuestionTypes(QuestionType type) {
+    void toDto_mapAllFields_whenQuestionIsOfAnyType(QuestionType type) {
         final var given = QuestionTestData.createQuestion(type);
         final var expected = QuestionTestData.createQuestionDto(given);
 
@@ -44,7 +44,7 @@ class QuestionMapperTest {
 
     @ParameterizedTest
     @MethodSource("pl.prawko.prawko_server.test_data.QuestionTranslationsTestData#translations")
-    void toTranslationDto_correctlyMapsTranslation(Language language, String content) {
+    void toTranslationDto_mapContentAndLanguageCode_whenTranslationIsInAnyLanguage(Language language, String content) {
         final var given = QuestionTranslationsTestData.createTranslation(language, content);
 
         final var result = questionMapper.toTranslationDto(given);
@@ -55,7 +55,7 @@ class QuestionMapperTest {
 
     @ParameterizedTest
     @EnumSource(value = QuestionType.class)
-    void toEntity_correctlyMaps(QuestionType type) {
+    void toEntity_mapFieldsWithoutAssociations_whenCsvIsOfAnyType(QuestionType type) {
         final var given = QuestionCSVTestData.createQuestionCSV(type);
         final var expected = QuestionTestData.createQuestion(type);
 

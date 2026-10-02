@@ -20,13 +20,13 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class ExamGeneratorTest {
 
+    private static final Category CATEGORY = CategoryTestData.CATEGORY_B;
+
     @Mock
     private QuestionService questionService;
 
     @InjectMocks
     private ExamGenerator examGenerator;
-
-    private static final Category CATEGORY = CategoryTestData.CATEGORY_B;
 
     @Nested
     class Generate {
@@ -38,14 +38,14 @@ public class ExamGeneratorTest {
         }
 
         @Test
-        void shouldReturnCorrectTotalNumberOfQuestions() {
+        void return32Questions_whenEnoughQuestionsExist() {
             final var questions = examGenerator.generate(CATEGORY);
 
             assertThat(questions).hasSize(32);
         }
 
         @Test
-        void shouldReturnCorrectNumberOfBasicQuestions() {
+        void return20BasicQuestions_whenEnoughQuestionsExist() {
             final var questions = examGenerator.generate(CATEGORY);
 
             final var basicCount = questions.stream().filter(q -> q.getType() == QuestionType.BASIC).count();
@@ -53,7 +53,7 @@ public class ExamGeneratorTest {
         }
 
         @Test
-        void shouldReturnCorrectNumberOfSpecialQuestions() {
+        void return12SpecialQuestions_whenEnoughQuestionsExist() {
             final var result = examGenerator.generate(CATEGORY);
 
             final var specialCount = result.stream().filter(q -> q.getType() == QuestionType.SPECIAL).count();
@@ -61,7 +61,7 @@ public class ExamGeneratorTest {
         }
 
         @Test
-        void shouldDelegateToQuestionServiceForBothTypes() {
+        void fetchBasicAndSpecialQuestions_whenCategoryIsGiven() {
             examGenerator.generate(CATEGORY);
 
             verify(questionService).getAllByTypeAndCategory(QuestionType.BASIC, CATEGORY.getName());

@@ -21,20 +21,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUserName(final String userName);
 
     /**
-     * Checks whether {@link User} already exists with specified email.
+     * Checks whether {@link User} already exists with specified email, ignoring case.
      *
      * @param email provided email to check for existence
      * @return {@code true} if a user already exists, {@code false} otherwise
      */
-    boolean existsByEmail(final String email);
+    boolean existsByEmailIgnoreCase(final String email);
 
     /**
-     * Retrieves {@code user} by its userName or email.
+     * Retrieves {@code user} by its userName (exact match) or email (ignoring case).
+     *
+     * <p>Unambiguous, since usernames can't contain '@' and emails must.
      *
      * @param userName provided name to look for
      * @param email    provided email to look for
      * @return An {@code user} when found
      */
-    Optional<User> findByUserNameOrEmail(final String userName, final String email);
+    Optional<User> findByUserNameOrEmailIgnoreCase(final String userName, final String email);
 
 }

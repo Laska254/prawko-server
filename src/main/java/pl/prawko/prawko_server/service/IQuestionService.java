@@ -1,5 +1,7 @@
 package pl.prawko.prawko_server.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.mapper.QuestionMapper;
@@ -51,10 +53,11 @@ public interface IQuestionService {
     QuestionDto getById(long id);
 
     /**
-     * Returns a list of all questions converted to DTO.
+     * Returns a page of questions converted to DTO.
      *
-     * @return a list of {@link QuestionDto}
+     * @param pageable the pagination and sorting information
+     * @return a page of {@link QuestionDto}
      */
-    List<QuestionDto> getAll();
+    Page<QuestionDto> getAll(Pageable pageable);
 
 }

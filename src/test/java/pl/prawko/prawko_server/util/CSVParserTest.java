@@ -10,6 +10,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartException;
 import pl.prawko.prawko_server.model.Question;
+import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
 
 import java.io.IOException;
 import java.util.List;
@@ -35,10 +36,10 @@ class CSVParserTest {
     class Parse {
 
         @Test
-        void successfullyParsesCSVFile() throws IOException {
-            final var resource = new ClassPathResource("test_question.csv");
+        void returnQuestions_whenFileIsCSV() throws IOException {
+            final var resource = new ClassPathResource(QuestionCSVTestData.CSV_FILE);
             final var file = new MockMultipartFile(
-                    "file", "test_question.csv", "text/csv", resource.getInputStream());
+                    "file", QuestionCSVTestData.CSV_FILE, "text/csv", resource.getInputStream());
             final var question1 = new Question();
             final var question2 = new Question();
             final var expected = List.of(question1, question2);

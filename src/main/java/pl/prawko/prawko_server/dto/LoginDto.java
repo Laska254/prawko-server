@@ -15,8 +15,8 @@ import jakarta.validation.constraints.Pattern;
 public record LoginDto(
 
         @NotNull(message = "{username.required}")
-        @Pattern(regexp = "(?=.*\\S).{3,31}", message = "{username.pattern}")
-        @Schema(description = "Username or email address for login")
+        @Pattern(regexp = "(?=.*\\S).{3,63}", message = "{login.pattern}")
+        @Schema(description = "Username or email address for login", minLength = 3, maxLength = 63)
         String userName,
 
         @NotNull(message = "{password.required}")

@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.model;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -14,7 +13,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Represents a {@code Exam} entity within the application.
@@ -59,7 +57,7 @@ public class Exam {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany
     @JoinTable(
             name = "test_question",
             joinColumns = @JoinColumn(name = "test_id"),
@@ -67,7 +65,7 @@ public class Exam {
     )
     private List<Question> questions;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany
     @JoinTable(
             name = "test_answer",
             joinColumns = @JoinColumn(name = "test_id"),
@@ -175,20 +173,18 @@ public class Exam {
 
     @Override
     public boolean equals(final Object object) {
-        if (object == null || getClass() != object.getClass()) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof Exam other)) {
             return false;
         }
-        final var exam = (Exam) object;
-        return id == exam.id
-                && Objects.equals(user, exam.user)
-                && Objects.equals(questions, exam.questions)
-                && Objects.equals(category, exam.category)
-                && Objects.equals(language, exam.language);
+        return id != 0 && id == other.getId();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, user, questions, category, language);
+        return Exam.class.hashCode();
     }
 
     @Override
@@ -199,11 +195,9 @@ public class Exam {
                 ", score=" + score +
                 ", created=" + created +
                 ", updated=" + updated +
-                ", user=" + user +
-                ", questions=" + questions +
-                ", userAnswers=" + userAnswers +
-                ", language=" + language +
-                ", category=" + category +
+                ", user=" + (user == null ? null : user.getId()) +
+                ", language=" + (language == null ? null : language.getCode()) +
+                ", category=" + (category == null ? null : category.getName()) +
                 '}';
     }
 

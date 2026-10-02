@@ -68,13 +68,20 @@ public final class ApiConstants {
     public static final String BY_ID = "/{id}";
 
     /**
-     * Path segment for password management of a specific user.
+     * Path segment identifying the currently authenticated user.
      *
-     * <p>Example: {@code /users/{id}/password}
+     * <p>Example: {@code /users/me}
+     */
+    public static final String ME = "/me";
+
+    /**
+     * Path segment for password management of the currently authenticated user.
+     *
+     * <p>Example: {@code /users/me/password}
      *
      * @see pl.prawko.prawko_server.controller.UserController
      */
-    public static final String PASSWORD = BY_ID + "/password";
+    public static final String PASSWORD = ME + "/password";
 
     private ApiConstants() {
     }

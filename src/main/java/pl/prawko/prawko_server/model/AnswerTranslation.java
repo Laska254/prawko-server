@@ -8,8 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
-import java.util.Objects;
-
 /**
  * Represents a {@code AnswerTranslation} entity within the application.
  * <p>
@@ -96,18 +94,18 @@ public class AnswerTranslation {
 
     @Override
     public boolean equals(final Object object) {
-        if (object == null || getClass() != object.getClass()) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof AnswerTranslation other)) {
             return false;
         }
-        final var that = (AnswerTranslation) object;
-        return id == that.id
-                && Objects.equals(content, that.content)
-                && Objects.equals(language, that.language);
+        return id != 0 && id == other.getId();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, content, language);
+        return AnswerTranslation.class.hashCode();
     }
 
     @Override
@@ -115,7 +113,8 @@ public class AnswerTranslation {
         return "AnswerTranslation{" +
                 "id=" + id +
                 ", content='" + content + '\'' +
-                ", language=" + language +
+                ", answer=" + (answer == null ? null : answer.getId()) +
+                ", language=" + (language == null ? null : language.getCode()) +
                 '}';
     }
 

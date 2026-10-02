@@ -1,10 +1,10 @@
 package pl.prawko.prawko_server.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import pl.prawko.prawko_server.model.Exam;
-
-import java.util.List;
 
 /**
  * Repository for {@link Exam} entities.
@@ -15,11 +15,12 @@ import java.util.List;
 public interface ExamRepository extends JpaRepository<Exam, Long> {
 
     /**
-     * Retrieves all exams of a user, starting from the newest one.
+     * Retrieves a page of exams of a user.
      *
-     * @param userId the ID of the user owning the exams
-     * @return list of user's exams ordered by creation time descending
+     * @param userId   the ID of the user owning the exams
+     * @param pageable the pagination and sorting information
+     * @return a page of user's exams
      */
-    List<Exam> findAllByUser_IdOrderByCreatedDescIdDesc(final long userId);
+    Page<Exam> findAllByUser_Id(final long userId, final Pageable pageable);
 
 }

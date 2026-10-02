@@ -4,9 +4,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -76,6 +78,12 @@ public class ExceptionController {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
     }
 
+    @ApiResponse(responseCode = "403", description = "Access denied")
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied.");
+    }
+
     @ApiResponse(responseCode = "400", description = "ID is negative or zero")
     @ExceptionHandler(ConstraintViolationException.class)
     public ProblemDetail handleNotPositiveID() {
@@ -87,6 +95,13 @@ public class ExceptionController {
     public ProblemDetail handleMissingParameter(final MissingServletRequestParameterException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                 "Request parameter '" + exception.getParameterName() + "' is missing.");
+    }
+
+    @ApiResponse(responseCode = "400", description = "Invalid sort property")
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ProblemDetail handleInvalidSortProperty(final PropertyReferenceException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Cannot sort by '" + exception.getPropertyName() + "'.");
     }
 
     @ApiResponse(responseCode = "400", description = "Request body is missing")

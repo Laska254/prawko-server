@@ -10,7 +10,6 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Represents a {@code Category} entity within the application.
@@ -85,17 +84,18 @@ public class Category {
 
     @Override
     public boolean equals(final Object object) {
-        if (object == null || getClass() != object.getClass()) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof Category other)) {
             return false;
         }
-        final var category = (Category) object;
-        return id == category.id
-                && Objects.equals(name, category.name);
+        return id != 0 && id == other.getId();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name);
+        return Category.class.hashCode();
     }
 
     @Override
@@ -103,8 +103,6 @@ public class Category {
         return "Category{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", questions=" + questions +
-                ", exams=" + exams +
                 '}';
     }
 

@@ -4,26 +4,38 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.annotation.AnnotationTemplateExpressionDefaults;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.model.Role;
 
 /**
  * Spring Security configuration class for the application.
  *
  * <p>This configuration enables HTTP Basic Authentication for stateless REST API access
- * with role-based authorization (RBAC). It defines which endpoints are public and which
- * require specific roles (ADMIN, USER) for access.
+ * (no HTTP session is created) with role-based authorization (RBAC). It defines which endpoints
+ * are public and which require specific roles (ADMIN, USER) for access.
+ *
+ * <p>Resource ownership (e.g. a user may only modify their own account) is enforced by method security
+ * ({@link org.springframework.security.access.prepost.PreAuthorize} and annotations templated on it, like
+ * {@link IsSelfOrAdmin}) on controllers.
+ *
+ * <p>Roles are hierarchical: ADMIN implies USER, so an admin passes every USER rule.
  *
  * <p>Authorization rules:
  * <ul>
@@ -32,14 +44,13 @@ import pl.prawko.prawko_server.constants.ApiConstants;
  *     <li>USER+ required: {@code GET /questions/**}, {@code POST/GET /exams}</li>
  *     <li>ADMIN only: User management endpoints, delete operations</li>
  *     <li>Public: Swagger UI and OpenAPI docs</li>
+ *     <li>Any other request is denied</li>
  * </ul>
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SpringSecurity {
-
-    @Autowired
-    private UserDetailsService userDetailsService;
 
     /**
      * Provides a {@link PasswordEncoder} bean for encoding user passwords.
@@ -51,6 +62,30 @@ public class SpringSecurity {
     @Bean
     public static PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * Defines the role hierarchy, applied to both URL rules and method security.
+     *
+     * <p>ADMIN implies USER, so an account with only the ADMIN role can access every USER endpoint.
+     *
+     * @return the {@link RoleHierarchy} where ADMIN implies USER
+     */
+    @Bean
+    public static RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.withRolePrefix("")
+                .role(Role.ADMIN.getAuthority()).implies(Role.USER.getAuthority())
+                .build();
+    }
+
+    /**
+     * Enables placeholders in method security meta-annotations, like {@code {userId}} in {@link IsSelfOrAdmin}.
+     *
+     * @return default {@link AnnotationTemplateExpressionDefaults}
+     */
+    @Bean
+    public static AnnotationTemplateExpressionDefaults annotationTemplateExpressionDefaults() {
+        return new AnnotationTemplateExpressionDefaults();
     }
 
     /**
@@ -71,13 +106,17 @@ public class SpringSecurity {
      * Configures global authentication by registering the {@link UserDetailsService} and {@link PasswordEncoder} with the
      * {@link AuthenticationManagerBuilder}.
      *
-     * @param auth the {@link AuthenticationManagerBuilder} to configure
+     * @param auth               the {@link AuthenticationManagerBuilder} to configure
+     * @param userDetailsService the {@link UserDetailsService} loading users during authentication
+     * @param passwordEncoder    the {@link PasswordEncoder} verifying passwords
      */
     @Autowired
-    public void configureGlobal(final AuthenticationManagerBuilder auth) {
+    public void configureGlobal(final AuthenticationManagerBuilder auth,
+                                final UserDetailsService userDetailsService,
+                                final PasswordEncoder passwordEncoder) {
         auth
                 .userDetailsService(userDetailsService)
-                .passwordEncoder(passwordEncoder());
+                .passwordEncoder(passwordEncoder);
     }
 
     /**
@@ -96,6 +135,7 @@ public class SpringSecurity {
                                            final LoggingFilter loggingFilter) {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterAfter(loggingFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize -> {
                     authorize
@@ -104,6 +144,7 @@ public class SpringSecurity {
                     configureEndpoint_Users(authorize);
                     configureEndpoint_Questions(authorize);
                     configureEndpoint_Exams(authorize);
+                    authorize.anyRequest().denyAll();
                 })
                 .httpBasic(Customizer.withDefaults())
                 .build();
@@ -120,8 +161,8 @@ public class SpringSecurity {
     private void configureEndpoint_Questions(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL_ALL).hasRole("USER")
-                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN");
+                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL_ALL).hasRole("USER");
     }
 
     private void configureEndpoint_Exams(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {

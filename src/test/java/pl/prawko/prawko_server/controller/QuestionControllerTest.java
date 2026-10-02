@@ -13,16 +13,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
+import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.QuestionDto;
+import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.test_data.MultiPartFactory;
+import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 
-import java.util.Collections;
 import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @IntegrationTest
 public class QuestionControllerTest {
@@ -50,7 +54,7 @@ public class QuestionControllerTest {
 
         @Test
         void returnCreated_whenSuccess() {
-            final var multipart = MultiPartFactory.fromClasspath("test_question.csv");
+            final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.CSV_FILE);
 
             restClient.post()
                     .headers(TestUtils::authAdmin)
@@ -140,7 +144,7 @@ public class QuestionControllerTest {
         @ParameterizedTest
         @ValueSource(longs = {-1L, 0L})
         void returnBadRequest_whenIdIsNotPositive(long invalidId) {
-            final var expectedMessage = "ID must be greater than 0.";
+            final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, invalidId)
@@ -169,23 +173,60 @@ public class QuestionControllerTest {
             final var question = repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
             final var expected = List.of(QuestionTestData.createQuestionDto(question));
 
+            final var result = restClient.get()
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(new ParameterizedTypeReference<PageResponse<QuestionDto>>() {
+                    })
+                    .returnResult()
+                    .getResponseBody();
+
+            assertThat(result.content()).isEqualTo(expected);
+            assertThat(result.page().number()).isZero();
+            assertThat(result.page().size()).isEqualTo(20);
+            assertThat(result.page().totalElements()).isEqualTo(1);
+        }
+
+        @Test
+        void returnRequestedPage_sortedById_whenPageAndSizeAreGiven() {
+            repository.saveAll(List.of(
+                    new Question().setId(3L).setType(QuestionType.BASIC),
+                    new Question().setId(1L).setType(QuestionType.BASIC),
+                    new Question().setId(2L).setType(QuestionType.BASIC)));
+
+            restClient.get()
+                    .uri(uri -> uri.queryParam("page", 1).queryParam("size", 2).build())
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.content.length()").isEqualTo(1)
+                    .jsonPath("$.content[0].id").isEqualTo(3)
+                    .jsonPath("$.page.totalElements").isEqualTo(3)
+                    .jsonPath("$.page.totalPages").isEqualTo(2);
+        }
+
+        @Test
+        void returnEmptyPage_whenNoQuestionsExist() {
             restClient.get()
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isOk()
-                    .expectBody(new ParameterizedTypeReference<List<QuestionDto>>() {
-                    }).isEqualTo(expected);
+                    .expectBody()
+                    .jsonPath("$.content").isEmpty()
+                    .jsonPath("$.page.totalElements").isEqualTo(0);
         }
 
         @Test
-        void returnEmptyList_whenNoQuestionsExist() {
+        void returnBadRequest_whenSortPropertyIsInvalid() {
             restClient.get()
-                    .headers(TestUtils::authUser)
+                    .uri(uri -> uri.queryParam("sort", "nonExisting").build())
+                    .headers(TestUtils::authAdmin)
                     .exchange()
-                    .expectStatus().isOk()
-                    .expectBody(new ParameterizedTypeReference<List<QuestionDto>>() {
-                    })
-                    .isEqualTo(Collections.emptyList());
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.INVALID_SORT);
         }
 
         @Test
@@ -197,7 +238,7 @@ public class QuestionControllerTest {
 
         @Test
         void returnForbidden_whenNotAdmin() {
-            restClient.post()
+            restClient.get()
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isForbidden();

@@ -27,7 +27,7 @@ class QuestionTranslationFactoryTest {
 
     @ParameterizedTest
     @EnumSource(QuestionType.class)
-    void createTranslationTranslations(QuestionType type) {
+    void createTranslations_returnTranslations_whenCsvIsValid(QuestionType type) {
         final var questionCSV = QuestionCSVTestData.createQuestionCSV(type);
         final var question = QuestionTestData.createQuestion(type);
         final var expected = QuestionTranslationsTestData.createTranslations(type);
@@ -35,7 +35,10 @@ class QuestionTranslationFactoryTest {
 
         final var result = factory.createTranslations(questionCSV, question);
 
-        assertThat(result).isEqualTo(expected);
+        assertThat(result)
+                .usingRecursiveComparison()
+                .ignoringFields("question")
+                .isEqualTo(expected);
     }
 
 }
