@@ -30,6 +30,9 @@ import java.util.List;
  * and system-related attributes like the {@link Role}, whether the account is enabled, the creation timestamp and the last
  * update timestamp.
  * <p>
+ * A pending password reset is stored as the SHA-256 hash of its token (never the token itself) with an expiry time.
+ * Both are {@code null} when no reset is pending.
+ * <p>
  * Relationships:
  * <ul>
  *     <li>{@link Exam}: A user can be assigned to multiple exams.</li>
@@ -67,6 +70,11 @@ public class User {
 
     @UpdateTimestamp
     private LocalDateTime updated;
+
+    @Column(length = 63, unique = true)
+    private String passwordResetTokenHash;
+
+    private LocalDateTime passwordResetTokenExpires;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 5)
@@ -153,6 +161,24 @@ public class User {
 
     public User setUpdated(final LocalDateTime updated) {
         this.updated = updated;
+        return this;
+    }
+
+    public String getPasswordResetTokenHash() {
+        return passwordResetTokenHash;
+    }
+
+    public User setPasswordResetTokenHash(final String passwordResetTokenHash) {
+        this.passwordResetTokenHash = passwordResetTokenHash;
+        return this;
+    }
+
+    public LocalDateTime getPasswordResetTokenExpires() {
+        return passwordResetTokenExpires;
+    }
+
+    public User setPasswordResetTokenExpires(final LocalDateTime passwordResetTokenExpires) {
+        this.passwordResetTokenExpires = passwordResetTokenExpires;
         return this;
     }
 
