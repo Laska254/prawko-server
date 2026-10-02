@@ -49,11 +49,19 @@ Clone repository
 
 `cd prawko-server`
 
-By default, application is using H2 database.
-It can be run with MySQL and MariaDB databases.
-To configure database connection edit
-this [file](https://github.com/turczak/prawko-server/blob/main/src/main/resources/application.properties)
-before build.
+The application has two profiles:
+
+* `dev` (default) - in-memory H2 database recreated and seeded with `data.sql` on every start, CORS allowed from
+  `localhost`.
+* `prod` - MariaDB, schema updated by Hibernate, Swagger disabled. Requires environment variables:
+    + `DB_URL` e.g. `jdbc:mariadb://localhost:3306/prawko`
+    + `DB_USERNAME`
+    + `DB_PASSWORD`
+    + `CORS_ALLOWED_ORIGIN_PATTERNS` comma-separated, e.g. `https://prawko.pl`
+
+  `data.sql` is not run in `prod` - seed categories and languages once manually.
+
+Select the profile with `SPRING_PROFILES_ACTIVE=prod` or `--spring.profiles.active=prod`.
 
 Test
 

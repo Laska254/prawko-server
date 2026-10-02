@@ -4,12 +4,12 @@ server:
     whitelabel:
       enabled: false
 
-cors:
-  allowed-origin-patterns: "http://localhost:[*],http://127.0.0.1:[*]"
-
 spring:
   application:
     name: "Prawko server"
+
+  profiles:
+    default: dev
 
   data:
     web:
@@ -21,15 +21,5 @@ spring:
       max-file-size: 5MB
       max-request-size: 10MB
 
-  datasource:
-    url: jdbc:h2:mem:prawko
-    username: sa
-    password: ""
-    driver-class-name: org.h2.Driver
-
   jpa:
-    hibernate:
-      ddl-auto: create-drop
-    defer-datasource-initialization: true
-    generate-ddl: true
     open-in-view: false
