@@ -1,8 +1,10 @@
 package pl.prawko.prawko_server.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
@@ -21,8 +23,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.model.Role;
+
+import java.util.List;
 
 /**
  * Spring Security configuration class for the application.
@@ -36,6 +43,8 @@ import pl.prawko.prawko_server.model.Role;
  * {@link IsSelfOrAdmin}) on controllers.
  *
  * <p>Roles are hierarchical: ADMIN implies USER, so an admin passes every USER rule.
+ *
+ * <p>Cross-origin requests are allowed from origins matching {@code cors.allowed-origin-patterns}.
  *
  * <p>Authorization rules:
  * <ul>
@@ -89,6 +98,29 @@ public class SpringSecurity {
     }
 
     /**
+     * Configures CORS for every endpoint, so a frontend served from another origin can call the API.
+     *
+     * <p>Spring Security handles preflight ({@code OPTIONS}) requests before authentication, so they don't require
+     * credentials. The {@code Location} header is exposed so clients can read the URL of created resources.
+     *
+     * @param allowedOriginPatterns origin patterns allowed to call the API, e.g. {@code http://localhost:[*]}
+     * @return the {@link CorsConfigurationSource} applied by the security filter chain
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${cors.allowed-origin-patterns}") final List<String> allowedOriginPatterns) {
+        final var configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(allowedOriginPatterns);
+        configuration.setAllowedMethods(List.of(
+                HttpMethod.GET.name(), HttpMethod.POST.name(), HttpMethod.PATCH.name(), HttpMethod.DELETE.name()));
+        configuration.setAllowedHeaders(List.of(HttpHeaders.AUTHORIZATION, HttpHeaders.CONTENT_TYPE));
+        configuration.setExposedHeaders(List.of(HttpHeaders.LOCATION));
+        final var source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    /**
      * Provides the {@link AuthenticationManager} bean used by Spring Security.
      * <p>
      * Allows authentication in the application using globally configured {@link UserDetailsService}
@@ -135,6 +167,7 @@ public class SpringSecurity {
                                            final LoggingFilter loggingFilter) {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterAfter(loggingFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize -> {

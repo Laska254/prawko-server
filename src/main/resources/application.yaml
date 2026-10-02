@@ -4,6 +4,9 @@ server:
     whitelabel:
       enabled: false
 
+cors:
+  allowed-origin-patterns: "http://localhost:[*],http://127.0.0.1:[*]"
+
 spring:
   application:
     name: "Prawko server"
