@@ -2,6 +2,7 @@ package pl.prawko.prawko_server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
 
@@ -30,7 +31,8 @@ public record UserUpdateRequest(
         @Nullable
         @Size(min = 3, message = "{username.size.min}")
         @Size(max = 31, message = "{username.size.max}")
-        @Schema(description = "Username for login", minLength = 3, maxLength = 31, nullable = true)
+        @Pattern(regexp = "[^@]*", message = "{username.noat}")
+        @Schema(description = "Username for login, must not contain '@'", minLength = 3, maxLength = 31, nullable = true)
         String userName,
 
         @Nullable
