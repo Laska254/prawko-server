@@ -71,7 +71,7 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updated;
 
-    @Column(length = 63, unique = true)
+    @Column(length = 64, unique = true)
     private String passwordResetTokenHash;
 
     private LocalDateTime passwordResetTokenExpires;

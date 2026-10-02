@@ -13,12 +13,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
+import pl.prawko.prawko_server.service.implementation.PasswordResetService;
 
 /**
  * REST controller for authentication operations.
  *
- * <p>Provides endpoints for user login and authentication management.
+ * <p>Provides endpoints for user login and resetting forgotten passwords.
  * Authentication is performed using Spring Security's authentication manager.
  * The API is stateless, so nothing is stored between requests.
  */
@@ -28,9 +30,12 @@ import pl.prawko.prawko_server.dto.LoginDto;
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
+    private final PasswordResetService passwordResetService;
 
-    public AuthController(final AuthenticationManager authenticationManager) {
+    public AuthController(final AuthenticationManager authenticationManager,
+                          final PasswordResetService passwordResetService) {
         this.authenticationManager = authenticationManager;
+        this.passwordResetService = passwordResetService;
     }
 
     /**
@@ -55,6 +60,25 @@ public class AuthController {
                 request.password()
         ));
         return ResponseEntity.ok("User signed-in successfully.");
+    }
+
+    /**
+     * Requests a password reset link to be emailed.
+     *
+     * <p>Responds the same whether or not an account with the email exists, so it can't be used to discover accounts.
+     *
+     * @param request the {@link ForgotPasswordRequest} containing the account's email
+     * @return a {@link ResponseEntity} with HTTP 202 Accepted
+     */
+    @Operation(summary = "Forgot password", description = "Emails a password reset link if an account with the email exists.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "202", description = "Request accepted"),
+            @ApiResponse(responseCode = "400", description = "Invalid argument"),
+    })
+    @PostMapping(ApiConstants.FORGOT_PASSWORD)
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody final ForgotPasswordRequest request) {
+        passwordResetService.requestReset(request.email());
+        return ResponseEntity.accepted().build();
     }
 
 }

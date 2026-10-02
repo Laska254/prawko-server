@@ -23,3 +23,6 @@ spring:
 
   jpa:
     open-in-view: false
+
+password-reset:
+  token-validity: 15m

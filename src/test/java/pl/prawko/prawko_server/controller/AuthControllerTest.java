@@ -1,24 +1,43 @@
 package pl.prawko.prawko_server.controller;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.mail.MailSender;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
+import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.repository.UserRepository;
+import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @IntegrationTest
 public class AuthControllerTest {
 
     private static final String USERNAME_SIZE_MSG = "Username or email must not be blank and between 3 and 63 characters.";
     private static final String PASSWORD_SIZE_MSG = "Password must not be blank and between 7 and 63 characters.";
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private MailSender mailSender;
 
     @LocalServerPort
     private int port;
@@ -40,6 +59,11 @@ public class AuthControllerTest {
     @BeforeEach
     void setUp() {
         restClient = TestUtils.createRestTestClient(port, ApiConstants.AUTH_BASE_URL);
+    }
+
+    @AfterEach
+    void tearDown() {
+        userRepository.deleteAll();
     }
 
     @Test
@@ -110,6 +134,47 @@ public class AuthControllerTest {
                 .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.detail").isEqualTo(expectedMessage);
+    }
+
+    @Test
+    void forgotPassword_returnAcceptedAndEmailResetLink_whenEmailExists() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+
+        forgotPassword(tester.getEmail().toUpperCase());
+
+        final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(captor.capture());
+        assertThat(captor.getValue().getTo()).containsExactly(tester.getEmail());
+        assertThat(userRepository.findById(tester.getId()))
+                .get().extracting(User::getPasswordResetTokenHash).isNotNull();
+    }
+
+    @Test
+    void forgotPassword_returnAcceptedWithoutEmail_whenEmailDoesNotExist() {
+        forgotPassword(UserTestData.createTestUserPippin().getEmail());
+
+        verifyNoInteractions(mailSender);
+    }
+
+    @Test
+    void forgotPassword_returnBadRequest_whenEmailIsInvalid() {
+        restClient.post()
+                .uri(ApiConstants.FORGOT_PASSWORD)
+                .body(new ForgotPasswordRequest("pippin.shire.me"))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
+                .jsonPath("$.details.email").isEqualTo("Email format is not valid.");
+        verifyNoInteractions(mailSender);
+    }
+
+    private void forgotPassword(final String email) {
+        restClient.post()
+                .uri(ApiConstants.FORGOT_PASSWORD)
+                .body(new ForgotPasswordRequest(email))
+                .exchange()
+                .expectStatus().isAccepted();
     }
 
 }
