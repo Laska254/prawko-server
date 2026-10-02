@@ -31,6 +31,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @IntegrationTest
 public class UserControllerTest {
 
+    private static final String USERNAME_CONTAINS_AT_MSG = "Username must not contain '@'.";
+
     @Autowired
     private UserRepository userRepository;
 
@@ -41,8 +43,6 @@ public class UserControllerTest {
     private int port;
 
     private RestTestClient restClient;
-
-    private static final String USERNAME_CONTAINS_AT_MSG = "Username must not contain '@'.";
 
     private final RegisterDto registerDto = UserTestData.createValidRegisterDto();
 

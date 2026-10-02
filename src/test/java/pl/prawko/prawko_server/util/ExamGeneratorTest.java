@@ -20,13 +20,13 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class ExamGeneratorTest {
 
+    private static final Category CATEGORY = CategoryTestData.CATEGORY_B;
+
     @Mock
     private QuestionService questionService;
 
     @InjectMocks
     private ExamGenerator examGenerator;
-
-    private static final Category CATEGORY = CategoryTestData.CATEGORY_B;
 
     @Nested
     class Generate {

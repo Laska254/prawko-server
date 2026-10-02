@@ -8,9 +8,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class UserMapperTest {
 
-    private final UserMapper mapper = new UserMapperImpl();
-
     private static final String[] IGNORED_FIELDS = {"id", "created", "updated", "exams", "password", "role"};
+
+    private final UserMapper mapper = new UserMapperImpl();
 
     private final User tester = UserTestData.createTestUserPippin();
 
