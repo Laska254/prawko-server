@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
+import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.service.implementation.PasswordResetService;
 
 /**
@@ -79,6 +80,23 @@ public class AuthController {
     public ResponseEntity<Void> forgotPassword(@Valid @RequestBody final ForgotPasswordRequest request) {
         passwordResetService.requestReset(request.email());
         return ResponseEntity.accepted().build();
+    }
+
+    /**
+     * Sets a new password using the token from a password reset link.
+     *
+     * @param request the {@link ResetPasswordRequest} containing the token and new password
+     * @return a {@link ResponseEntity} with HTTP 204 No Content
+     */
+    @Operation(summary = "Reset password", description = "Sets a new password using a password reset token.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Password reset successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid argument or invalid/expired token"),
+    })
+    @PostMapping(ApiConstants.RESET_PASSWORD)
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody final ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request);
+        return ResponseEntity.noContent().build();
     }
 
 }

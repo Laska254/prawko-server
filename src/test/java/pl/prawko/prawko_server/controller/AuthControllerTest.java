@@ -11,12 +11,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
+import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.UserTestData;
@@ -35,6 +37,9 @@ public class AuthControllerTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private MailSender mailSender;
@@ -142,9 +147,7 @@ public class AuthControllerTest {
 
         forgotPassword(tester.getEmail().toUpperCase());
 
-        final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender).send(captor.capture());
-        assertThat(captor.getValue().getTo()).containsExactly(tester.getEmail());
+        assertThat(captureSentMessage().getTo()).containsExactly(tester.getEmail());
         assertThat(userRepository.findById(tester.getId()))
                 .get().extracting(User::getPasswordResetTokenHash).isNotNull();
     }
@@ -175,6 +178,69 @@ public class AuthControllerTest {
                 .body(new ForgotPasswordRequest(email))
                 .exchange()
                 .expectStatus().isAccepted();
+    }
+
+    @Test
+    void resetPassword_returnNoContentAndChangePassword_whenTokenIsValid() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+        final var request = UserTestData.createValidResetPasswordRequest(requestResetToken(tester.getEmail()));
+
+        resetPassword(request)
+                .expectStatus().isNoContent();
+
+        final var updated = userRepository.findById(tester.getId()).orElseThrow();
+        assertThat(passwordEncoder.matches(request.newPassword(), updated.getPassword())).isTrue();
+        assertThat(updated.getPasswordResetTokenHash()).isNull();
+        assertThat(updated.getPasswordResetTokenExpires()).isNull();
+    }
+
+    @Test
+    void resetPassword_returnBadRequest_whenTokenIsAlreadyUsed() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+        final var request = UserTestData.createValidResetPasswordRequest(requestResetToken(tester.getEmail()));
+        resetPassword(request)
+                .expectStatus().isNoContent();
+
+        resetPassword(request)
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(UserTestData.INVALID_RESET_TOKEN);
+    }
+
+    @Test
+    void resetPassword_returnBadRequest_whenTokenIsUnknown() {
+        resetPassword(UserTestData.createValidResetPasswordRequest("unknownToken"))
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(UserTestData.INVALID_RESET_TOKEN);
+    }
+
+    @Test
+    void resetPassword_returnBadRequest_whenValidationFails() {
+        resetPassword(new ResetPasswordRequest(" ", "short"))
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
+                .jsonPath("$.details.token").isEqualTo("Token is required.")
+                .jsonPath("$.details.newPassword").isEqualTo("Password must be at least 7 characters.");
+    }
+
+    private String requestResetToken(final String email) {
+        forgotPassword(email);
+        return UserTestData.extractResetToken(captureSentMessage());
+    }
+
+    private RestTestClient.ResponseSpec resetPassword(final ResetPasswordRequest request) {
+        return restClient.post()
+                .uri(ApiConstants.RESET_PASSWORD)
+                .body(request)
+                .exchange();
+    }
+
+    private SimpleMailMessage captureSentMessage() {
+        final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(captor.capture());
+        return captor.getValue();
     }
 
 }

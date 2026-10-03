@@ -6,9 +6,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
+import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IPasswordResetService;
@@ -33,8 +36,10 @@ public class PasswordResetService implements IPasswordResetService {
 
     private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
     private static final int TOKEN_BYTES = 32;
+    private static final String INVALID_TOKEN = "Password reset token is invalid or expired.";
 
     private final UserRepository repository;
+    private final PasswordEncoder passwordEncoder;
     private final MailSender mailSender;
     private final SecureRandom secureRandom = new SecureRandom();
     private final String resetUrl;
@@ -42,11 +47,13 @@ public class PasswordResetService implements IPasswordResetService {
     private final String mailFrom;
 
     public PasswordResetService(final UserRepository repository,
+                                final PasswordEncoder passwordEncoder,
                                 final MailSender mailSender,
                                 @Value("${password-reset.url}") final String resetUrl,
                                 @Value("${password-reset.token-validity}") final Duration tokenValidity,
                                 @Value("${mail.from}") final String mailFrom) {
         this.repository = repository;
+        this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
         this.resetUrl = resetUrl;
         this.tokenValidity = tokenValidity;
@@ -67,9 +74,25 @@ public class PasswordResetService implements IPasswordResetService {
                 () -> log.info("No user with email '{}', password reset skipped.", email));
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @throws InvalidTokenException if the token is unknown or expired
+     */
     @Override
-    public void resetPassword(ResetPasswordRequest request) {
-        // TODO
+    @Transactional
+    public void resetPassword(final ResetPasswordRequest request) {
+        final var user = repository.findByPasswordResetTokenHash(hash(request.token()))
+                .filter(found -> found.getPasswordResetTokenExpires().isAfter(LocalDateTime.now()))
+                .orElseThrow(() -> {
+                    log.warn(INVALID_TOKEN);
+                    return new InvalidTokenException(INVALID_TOKEN);
+                });
+        user.setPassword(passwordEncoder.encode(request.newPassword()))
+                .setPasswordResetTokenHash(null)
+                .setPasswordResetTokenExpires(null);
+        repository.save(user);
+        log.info("Successfully reset password for user '{}'", user.getUserName());
     }
 
     private void generateToken(final User user) {

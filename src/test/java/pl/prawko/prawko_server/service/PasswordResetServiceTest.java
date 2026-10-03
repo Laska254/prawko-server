@@ -9,6 +9,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.PasswordResetService;
@@ -19,10 +21,13 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -38,6 +43,9 @@ class PasswordResetServiceTest {
     private UserRepository repository;
 
     @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
     private MailSender mailSender;
 
     private PasswordResetService service;
@@ -46,7 +54,7 @@ class PasswordResetServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PasswordResetService(repository, mailSender, RESET_URL, TOKEN_VALIDITY, MAIL_FROM);
+        service = new PasswordResetService(repository, passwordEncoder, mailSender, RESET_URL, TOKEN_VALIDITY, MAIL_FROM);
     }
 
     @Test
@@ -99,6 +107,56 @@ class PasswordResetServiceTest {
 
         assertThat(tester.getPasswordResetTokenHash()).isNotNull();
         verify(repository).save(tester);
+    }
+
+    @Test
+    void resetPassword_changePasswordAndClearToken_whenTokenIsValid() {
+        final var token = issueToken();
+        final var request = UserTestData.createValidResetPasswordRequest(token);
+        final var encoded = "encodedPassword";
+        when(repository.findByPasswordResetTokenHash(tester.getPasswordResetTokenHash())).thenReturn(Optional.of(tester));
+        when(passwordEncoder.encode(request.newPassword())).thenReturn(encoded);
+
+        service.resetPassword(request);
+
+        assertThat(tester.getPassword()).isEqualTo(encoded);
+        assertThat(tester.getPasswordResetTokenHash()).isNull();
+        assertThat(tester.getPasswordResetTokenExpires()).isNull();
+        verify(repository, times(2)).save(tester);
+    }
+
+    @Test
+    void resetPassword_throwInvalidToken_whenTokenIsUnknown() {
+        final var request = UserTestData.createValidResetPasswordRequest("unknownToken");
+        when(repository.findByPasswordResetTokenHash(anyString())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.resetPassword(request))
+                .isInstanceOf(InvalidTokenException.class)
+                .hasMessage(UserTestData.INVALID_RESET_TOKEN);
+        verify(repository, never()).save(any());
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void resetPassword_throwInvalidToken_whenTokenIsExpired() {
+        final var token = issueToken();
+        tester.setPasswordResetTokenExpires(LocalDateTime.now().minusSeconds(1));
+        final var request = UserTestData.createValidResetPasswordRequest(token);
+        when(repository.findByPasswordResetTokenHash(tester.getPasswordResetTokenHash())).thenReturn(Optional.of(tester));
+
+        assertThatThrownBy(() -> service.resetPassword(request))
+                .isInstanceOf(InvalidTokenException.class)
+                .hasMessage(UserTestData.INVALID_RESET_TOKEN);
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    /**
+     * Issues a token through {@link PasswordResetService#requestReset}, so tests use the real hashing.
+     */
+    private String issueToken() {
+        when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
+        service.requestReset(tester.getEmail());
+        return UserTestData.extractResetToken(captureSentMessage());
     }
 
     private SimpleMailMessage captureSentMessage() {
