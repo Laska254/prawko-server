@@ -48,7 +48,8 @@ import java.util.List;
  *
  * <p>Authorization rules:
  * <ul>
- *     <li>Public: {@code POST /auth} (login), {@code POST /users} (registration)</li>
+ *     <li>Public: {@code POST /auth} (login), {@code POST /auth/password/forgot} and {@code POST /auth/password/reset}
+ *     (password reset), {@code POST /users} (registration)</li>
  *     <li>ADMIN only: {@code POST /questions} (upload), {@code GET /questions} (list all)</li>
  *     <li>USER+ required: {@code GET /questions/**}, {@code POST/GET /exams}</li>
  *     <li>ADMIN only: User management endpoints, delete operations</li>
@@ -172,7 +173,10 @@ public class SpringSecurity {
                 .addFilterAfter(loggingFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize -> {
                     authorize
-                            .requestMatchers(HttpMethod.POST, ApiConstants.AUTH_BASE_URL).permitAll()
+                            .requestMatchers(HttpMethod.POST,
+                                    ApiConstants.AUTH_BASE_URL,
+                                    ApiConstants.AUTH_BASE_URL + ApiConstants.FORGOT_PASSWORD,
+                                    ApiConstants.AUTH_BASE_URL + ApiConstants.RESET_PASSWORD).permitAll()
                             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll();
                     configureEndpoint_Users(authorize);
                     configureEndpoint_Questions(authorize);

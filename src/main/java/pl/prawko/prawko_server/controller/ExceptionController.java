@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
+import pl.prawko.prawko_server.exception.InvalidTokenException;
 
 import java.util.HashMap;
 
@@ -51,6 +52,12 @@ public class ExceptionController {
     @ApiResponse(responseCode = "400", description = "Invalid password")
     @ExceptionHandler(InvalidPasswordException.class)
     public ProblemDetail handleInvalidPassword(final InvalidPasswordException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "400", description = "Invalid or expired token")
+    @ExceptionHandler(InvalidTokenException.class)
+    public ProblemDetail handleInvalidToken(final InvalidTokenException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
