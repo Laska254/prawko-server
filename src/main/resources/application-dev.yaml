@@ -21,4 +21,4 @@ mail:
   from: no-reply@prawko.local
 
 password-reset:
-  url: http://localhost:5173/reset-password
+  url: http://localhost:5173/auth/password/reset
