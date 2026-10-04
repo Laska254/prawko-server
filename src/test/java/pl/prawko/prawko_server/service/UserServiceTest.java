@@ -24,6 +24,7 @@ import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.UserService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -255,6 +256,22 @@ class UserServiceTest {
         verify(repository).save(tester);
         verifyNoMoreInteractions(repository);
         verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void changePassword_clearResetToken_whenResetTokenPending() {
+        final var givenId = 44L;
+        final var request = UserTestData.createValidChangePasswordRequest();
+        tester.setPasswordResetTokenHash("pendingTokenHash")
+                .setPasswordResetTokenExpires(LocalDateTime.now().plusMinutes(30));
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(passwordEncoder.matches(request.currentPassword(), tester.getPassword())).thenReturn(true);
+
+        service.changePassword(givenId, request);
+
+        assertThat(tester.getPasswordResetTokenHash()).isNull();
+        assertThat(tester.getPasswordResetTokenExpires()).isNull();
+        verify(repository).save(tester);
     }
 
     @Test

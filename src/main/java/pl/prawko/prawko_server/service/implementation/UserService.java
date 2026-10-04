@@ -173,7 +173,9 @@ public class UserService implements IUserService, UserDetailsService {
             log.warn("{} User id: {}", message, userId);
             throw new InvalidPasswordException(message);
         }
-        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        user.setPassword(passwordEncoder.encode(request.newPassword()))
+                .setPasswordResetTokenHash(null)
+                .setPasswordResetTokenExpires(null);
         repository.save(user);
         log.info("Successfully changed password for user '{}'", user.getUserName());
     }
