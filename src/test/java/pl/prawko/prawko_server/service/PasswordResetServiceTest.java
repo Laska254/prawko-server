@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PasswordResetServiceTest {
 
-    private static final String RESET_URL = "http://localhost:5173/reset-password";
+    private static final String RESET_URL = "http://localhost:5173/auth/password/reset";
     private static final Duration TOKEN_VALIDITY = Duration.ofMinutes(15);
     private static final String MAIL_FROM = "no-reply@prawko.local";
 
