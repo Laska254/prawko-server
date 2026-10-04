@@ -44,6 +44,7 @@ public class PasswordResetService implements IPasswordResetService {
     private final SecureRandom secureRandom = new SecureRandom();
     private final String resetUrl;
     private final Duration tokenValidity;
+    private final Duration cooldown;
     private final String mailFrom;
 
     public PasswordResetService(final UserRepository repository,
@@ -51,12 +52,14 @@ public class PasswordResetService implements IPasswordResetService {
                                 final MailSender mailSender,
                                 @Value("${password-reset.url}") final String resetUrl,
                                 @Value("${password-reset.token-validity}") final Duration tokenValidity,
+                                @Value("${password-reset.cooldown}") final Duration cooldown,
                                 @Value("${mail.from}") final String mailFrom) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
         this.resetUrl = resetUrl;
         this.tokenValidity = tokenValidity;
+        this.cooldown = cooldown;
         this.mailFrom = mailFrom;
     }
 
@@ -65,12 +68,20 @@ public class PasswordResetService implements IPasswordResetService {
      * <p>
      * Not transactional, so the token is committed before the email goes out. A failure to send the email is only
      * logged, as reporting it would reveal that the account exists.
+     * <p>
+     * The issue time isn't stored, it's derived from the expiry and the current token validity.
      */
     @Override
     public void requestReset(final String email) {
         log.info("Password reset requested for email: {}", email);
         repository.findByEmailIgnoreCase(email).ifPresentOrElse(
-                user -> sendResetEmail(user.getEmail(), issueToken(user)),
+                user -> {
+                    if (hasRecentToken(user)) {
+                        log.info("Password reset for user '{}' requested within cooldown, skipped.", user.getUserName());
+                        return;
+                    }
+                    sendResetEmail(user.getEmail(), issueToken(user));
+                },
                 () -> log.info("No user with email '{}', password reset skipped.", email));
     }
 
@@ -93,6 +104,11 @@ public class PasswordResetService implements IPasswordResetService {
                 .setPasswordResetTokenExpires(null);
         repository.save(user);
         log.info("Successfully reset password for user '{}'", user.getUserName());
+    }
+
+    private boolean hasRecentToken(final User user) {
+        final var expires = user.getPasswordResetTokenExpires();
+        return expires != null && expires.minus(tokenValidity).plus(cooldown).isAfter(LocalDateTime.now());
     }
 
     private String issueToken(final User user) {

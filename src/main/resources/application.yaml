@@ -26,3 +26,4 @@ spring:
 
 password-reset:
   token-validity: 15m
+  cooldown: 30m

@@ -26,6 +26,7 @@ import pl.prawko.prawko_server.test_data.UserTestData;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -157,6 +158,18 @@ public class AuthControllerTest {
         forgotPassword(UserTestData.createTestUserPippin().getEmail());
 
         verifyNoInteractions(mailSender);
+    }
+
+    @Test
+    void forgotPassword_returnAcceptedWithoutEmail_whenRequestedWithinCooldown() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+        final var token = requestResetToken(tester.getEmail());
+
+        forgotPassword(tester.getEmail());
+
+        verify(mailSender).send(any(SimpleMailMessage.class));
+        resetPassword(UserTestData.createValidResetPasswordRequest(token))
+                .expectStatus().isNoContent();
     }
 
     @Test

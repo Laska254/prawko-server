@@ -12,7 +12,8 @@ public interface IPasswordResetService {
      * Issues a single-use password reset token and emails a reset link to the user.
      * <p>
      * Does nothing if no user has the given email, so callers can't tell whether an account exists.
-     * A new request invalidates any previously issued token.
+     * A new request invalidates any previously issued token. Requests made within a cooldown after issuing a token are
+     * ignored, so the user can't be flooded with emails.
      * </p>
      *
      * @param email the email address of the account, case-insensitive

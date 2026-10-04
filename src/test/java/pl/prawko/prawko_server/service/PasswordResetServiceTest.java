@@ -37,6 +37,7 @@ class PasswordResetServiceTest {
 
     private static final String RESET_URL = "http://localhost:5173/auth/password/reset";
     private static final Duration TOKEN_VALIDITY = Duration.ofMinutes(15);
+    private static final Duration COOLDOWN = Duration.ofMinutes(30);
     private static final String MAIL_FROM = "no-reply@prawko.local";
 
     @Mock
@@ -54,7 +55,7 @@ class PasswordResetServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PasswordResetService(repository, passwordEncoder, mailSender, RESET_URL, TOKEN_VALIDITY, MAIL_FROM);
+        service = new PasswordResetService(repository, passwordEncoder, mailSender, RESET_URL, TOKEN_VALIDITY, COOLDOWN, MAIL_FROM);
     }
 
     @Test
@@ -77,14 +78,31 @@ class PasswordResetServiceTest {
     }
 
     @Test
-    void requestReset_issueNewToken_whenRequestedAgain() {
+    void requestReset_issueNewToken_whenCooldownHasPassed() {
         when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
         service.requestReset(tester.getEmail());
         final var firstHash = tester.getPasswordResetTokenHash();
+        tester.setPasswordResetTokenExpires(tester.getPasswordResetTokenExpires().minus(COOLDOWN));
 
         service.requestReset(tester.getEmail());
 
         assertThat(tester.getPasswordResetTokenHash()).isNotEqualTo(firstHash);
+        verify(mailSender, times(2)).send(any(SimpleMailMessage.class));
+    }
+
+    @Test
+    void requestReset_keepTokenAndSkipEmail_whenRequestedWithinCooldown() {
+        when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
+        service.requestReset(tester.getEmail());
+        final var hash = tester.getPasswordResetTokenHash();
+        final var expires = tester.getPasswordResetTokenExpires();
+
+        service.requestReset(tester.getEmail());
+
+        assertThat(tester.getPasswordResetTokenHash()).isEqualTo(hash);
+        assertThat(tester.getPasswordResetTokenExpires()).isEqualTo(expires);
+        verify(repository).save(tester);
+        verify(mailSender).send(any(SimpleMailMessage.class));
     }
 
     @Test
