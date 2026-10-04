@@ -70,7 +70,7 @@ public class PasswordResetService implements IPasswordResetService {
     public void requestReset(final String email) {
         log.info("Password reset requested for email: {}", email);
         repository.findByEmailIgnoreCase(email).ifPresentOrElse(
-                this::generateToken,
+                user -> sendResetEmail(user.getEmail(), issueToken(user)),
                 () -> log.info("No user with email '{}', password reset skipped.", email));
     }
 
@@ -95,7 +95,7 @@ public class PasswordResetService implements IPasswordResetService {
         log.info("Successfully reset password for user '{}'", user.getUserName());
     }
 
-    private void generateToken(final User user) {
+    private String issueToken(final User user) {
         final var tokenBytes = new byte[TOKEN_BYTES];
         secureRandom.nextBytes(tokenBytes);
         final var token = Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
@@ -103,7 +103,7 @@ public class PasswordResetService implements IPasswordResetService {
                 .setPasswordResetTokenExpires(LocalDateTime.now().plus(tokenValidity));
         repository.save(user);
         log.debug("Password reset token issued for user '{}'", user.getUserName());
-        sendResetEmail(user.getEmail(), token);
+        return token;
     }
 
     private void sendResetEmail(final String email, final String token) {
