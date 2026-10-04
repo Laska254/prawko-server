@@ -69,7 +69,7 @@ The application has two profiles:
     + `CORS_ALLOWED_ORIGIN_PATTERNS` comma-separated, e.g. `https://prawko.pl`
     + `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` SMTP server (with auth and STARTTLS)
     + `MAIL_FROM` sender address, e.g. `no-reply@prawko.pl`
-    + `PASSWORD_RESET_URL` frontend page the reset link points to, e.g. `https://prawko.pl/reset-password`
+    + `PASSWORD_RESET_URL` frontend page the reset link points to, e.g. `https://prawko.pl/auth/password/reset`
 
   `data.sql` is not run in `prod` - seed categories and languages once manually.
 
