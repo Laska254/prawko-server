@@ -4,7 +4,7 @@ import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.model.User;
 
 /**
- * Service interface for resetting forgotten {@link User} passwords via email and changing current one.
+ * Service interface for resetting forgotten {@link User} passwords via email.
  */
 public interface IPasswordResetService {
 
