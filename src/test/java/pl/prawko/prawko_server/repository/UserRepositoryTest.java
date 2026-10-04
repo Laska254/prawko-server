@@ -14,7 +14,7 @@ class UserRepositoryTest {
 
     private final String wrongUserName = "nonExistingUserName";
     private final String wrongEmail = "nonExistingEmail";
-    private final String tokenHash = "a".repeat(63);
+    private final String tokenHash = "a".repeat(64);
 
     @Autowired
     private UserRepository repository;
