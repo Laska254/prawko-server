@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.mapper.UserMapper;
@@ -205,6 +206,39 @@ class UserServiceTest {
         verify(repository).existsByEmailIgnoreCase(updateUserRequest.email());
         verify(mapper).toDto(user);
         verifyNoMoreInteractions(repository, mapper);
+    }
+
+    @Test
+    void updateUser_clearResetToken_whenEmailChanged() {
+        final var givenId = 44L;
+        final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
+        tester.setPasswordResetTokenHash("pendingTokenHash")
+                .setPasswordResetTokenExpires(LocalDateTime.now().plusMinutes(30));
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(repository.save(tester)).thenReturn(tester);
+
+        service.updateUser(givenId, updateUserRequest);
+
+        assertThat(tester.getEmail()).isEqualTo(updateUserRequest.email());
+        assertThat(tester.getPasswordResetTokenHash()).isNull();
+        assertThat(tester.getPasswordResetTokenExpires()).isNull();
+    }
+
+    @Test
+    void updateUser_keepResetToken_whenEmailNotProvided() {
+        final var givenId = 44L;
+        final var updateUserRequest = new UserUpdateRequest("UpdatedFirstName", null, null, null);
+        final var hash = "pendingTokenHash";
+        final var expires = LocalDateTime.now().plusMinutes(30);
+        tester.setPasswordResetTokenHash(hash)
+                .setPasswordResetTokenExpires(expires);
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(repository.save(tester)).thenReturn(tester);
+
+        service.updateUser(givenId, updateUserRequest);
+
+        assertThat(tester.getPasswordResetTokenHash()).isEqualTo(hash);
+        assertThat(tester.getPasswordResetTokenExpires()).isEqualTo(expires);
     }
 
     @Test
