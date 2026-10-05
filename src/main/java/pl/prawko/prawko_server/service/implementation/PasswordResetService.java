@@ -75,13 +75,7 @@ public class PasswordResetService implements IPasswordResetService {
     public void requestReset(final String email) {
         log.info("Password reset requested for email: {}", email);
         repository.findByEmailIgnoreCase(email).ifPresentOrElse(
-                user -> {
-                    if (hasRecentToken(user)) {
-                        log.info("Password reset for user '{}' requested within cooldown, skipped.", user.getUserName());
-                        return;
-                    }
-                    sendResetEmail(user.getEmail(), issueToken(user));
-                },
+                this::requestResetEmail,
                 () -> log.info("No user with email '{}', password reset skipped.", email));
     }
 
@@ -149,6 +143,14 @@ public class PasswordResetService implements IPasswordResetService {
         } catch (final NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 is not available.", exception);
         }
+    }
+
+    private void requestResetEmail(final User user) {
+        if (hasRecentToken(user)) {
+            log.info("Password reset for user '{}' requested within cooldown, skipped.", user.getUserName());
+            return;
+        }
+        sendResetEmail(user.getEmail(), issueToken(user));
     }
 
 }
