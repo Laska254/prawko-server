@@ -20,6 +20,7 @@ import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
@@ -240,6 +241,49 @@ public class UserControllerTest {
                     .expectStatus().isBadRequest()
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(expectedMessage);
+        }
+
+    }
+
+    @Nested
+    class GetCurrentUser {
+
+        @Test
+        void returnUserDto_whenAuthenticatedAsUser() {
+            final var id = registerUser();
+            final var expectedUserDto = UserTestData.createUserDto(id);
+
+            restClient.get()
+                    .uri(ApiConstants.ME)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserDto.class).isEqualTo(expectedUserDto);
+        }
+
+        @Test
+        void returnAdminRole_whenAuthenticatedAsAdmin() {
+            final var admin = userRepository.save(UserTestData
+                    .createTestUser("Gimli", "Gloinson", TestUtils.ADMIN_NAME, "gimli@erebor.me")
+                    .setRole(Role.ADMIN));
+
+            restClient.get()
+                    .uri(ApiConstants.ME)
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.id").isEqualTo(admin.getId())
+                    .jsonPath("$.userName").isEqualTo(admin.getUserName())
+                    .jsonPath("$.role").isEqualTo(Role.ADMIN.name());
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.get()
+                    .uri(ApiConstants.ME)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
         }
 
     }
