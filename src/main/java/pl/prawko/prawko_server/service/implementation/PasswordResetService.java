@@ -37,11 +37,11 @@ public class PasswordResetService implements IPasswordResetService {
     private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
     private static final int TOKEN_BYTES = 32;
     private static final String INVALID_TOKEN = "Password reset token is invalid or expired.";
+    private static final SecureRandom secureRandom = new SecureRandom();
 
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final MailSender mailSender;
-    private final SecureRandom secureRandom = new SecureRandom();
     private final String resetUrl;
     private final Duration tokenValidity;
     private final Duration cooldown;
