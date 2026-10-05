@@ -167,7 +167,7 @@ class UserServiceTest {
         final var tester2 = UserTestData.createMerry();
         final var users = List.of(tester, tester2);
         final var pippinDto = UserTestData.createUserDto(4L);
-        final var merryDto = new UserDto(45L, tester2.getFirstName(), tester2.getLastName(), tester2.getUserName(), tester2.getEmail());
+        final var merryDto = new UserDto(45L, tester2.getFirstName(), tester2.getLastName(), tester2.getUserName(), tester2.getEmail(), tester2.getRole());
         final var expected = List.of(pippinDto, merryDto);
         final var pageable = PageRequest.of(1, 2);
         when(repository.findAll(pageable)).thenReturn(new PageImpl<>(users, pageable, 4));

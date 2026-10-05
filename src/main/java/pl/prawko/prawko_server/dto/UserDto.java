@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import pl.prawko.prawko_server.model.Role;
 
 /**
  * DTO for user responses.
@@ -24,7 +25,10 @@ public record UserDto(
         String userName,
 
         @Schema(description = "User's email address")
-        String email
+        String email,
+
+        @Schema(description = "User's role")
+        Role role
 
 ) {
 }

@@ -66,7 +66,8 @@ public class UserTestData {
                 "Peregrin",
                 "Tuk",
                 "pippin",
-                "pippin@shire.me");
+                "pippin@shire.me",
+                Role.USER);
     }
 
     public static UserDto createUpdatedUserDto(long id) {
@@ -75,7 +76,8 @@ public class UserTestData {
                 "UpdatedFirstName",
                 "UpdatedLastName",
                 "UpdatedUserName",
-                "UpdatedEmail@shire.me"
+                "UpdatedEmail@shire.me",
+                Role.USER
         );
     }
 
