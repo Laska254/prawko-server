@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -23,10 +24,12 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
+import java.time.Duration;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -44,6 +47,9 @@ public class AuthControllerTest {
 
     @Autowired
     private MailSender mailSender;
+
+    @Value("${password-reset.cooldown}")
+    private Duration cooldown;
 
     @LocalServerPort
     private int port;
@@ -169,6 +175,27 @@ public class AuthControllerTest {
 
         verify(mailSender).send(any(SimpleMailMessage.class));
         resetPassword(UserTestData.createValidResetPasswordRequest(token))
+                .expectStatus().isNoContent();
+    }
+
+    @Test
+    void forgotPassword_emailNewTokenAndInvalidateOldOne_whenCooldownHasPassed() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+        final var oldToken = requestResetToken(tester.getEmail());
+        final var pending = userRepository.findById(tester.getId()).orElseThrow();
+        userRepository.save(pending.setPasswordResetTokenExpires(pending.getPasswordResetTokenExpires().minus(cooldown)));
+
+        forgotPassword(tester.getEmail());
+
+        final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender, times(2)).send(captor.capture());
+        final var newToken = UserTestData.extractResetToken(captor.getValue());
+        assertThat(newToken).isNotEqualTo(oldToken);
+        resetPassword(UserTestData.createValidResetPasswordRequest(oldToken))
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(UserTestData.INVALID_RESET_TOKEN);
+        resetPassword(UserTestData.createValidResetPasswordRequest(newToken))
                 .expectStatus().isNoContent();
     }
 
