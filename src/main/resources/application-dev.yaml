@@ -12,3 +12,13 @@ spring:
     hibernate:
       ddl-auto: create-drop
     defer-datasource-initialization: true
+
+  mail:
+    host: localhost
+    port: 1025
+
+mail:
+  from: no-reply@prawko.local
+
+password-reset:
+  url: http://localhost:5173/auth/password/reset

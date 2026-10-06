@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.mapper.UserMapper;
@@ -24,6 +25,7 @@ import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.UserService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -207,6 +209,39 @@ class UserServiceTest {
     }
 
     @Test
+    void updateUser_clearResetToken_whenEmailChanged() {
+        final var givenId = 44L;
+        final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
+        tester.setPasswordResetTokenHash("pendingTokenHash")
+                .setPasswordResetTokenExpires(LocalDateTime.now().plusMinutes(30));
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(repository.save(tester)).thenReturn(tester);
+
+        service.updateUser(givenId, updateUserRequest);
+
+        assertThat(tester.getEmail()).isEqualTo(updateUserRequest.email());
+        assertThat(tester.getPasswordResetTokenHash()).isNull();
+        assertThat(tester.getPasswordResetTokenExpires()).isNull();
+    }
+
+    @Test
+    void updateUser_keepResetToken_whenEmailNotProvided() {
+        final var givenId = 44L;
+        final var updateUserRequest = new UserUpdateRequest("UpdatedFirstName", null, null, null);
+        final var hash = "pendingTokenHash";
+        final var expires = LocalDateTime.now().plusMinutes(30);
+        tester.setPasswordResetTokenHash(hash)
+                .setPasswordResetTokenExpires(expires);
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(repository.save(tester)).thenReturn(tester);
+
+        service.updateUser(givenId, updateUserRequest);
+
+        assertThat(tester.getPasswordResetTokenHash()).isEqualTo(hash);
+        assertThat(tester.getPasswordResetTokenExpires()).isEqualTo(expires);
+    }
+
+    @Test
     void updateUser_throwException_whenUserNameAlreadyExists() {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createInvalidUserUpdateRequest();
@@ -255,6 +290,22 @@ class UserServiceTest {
         verify(repository).save(tester);
         verifyNoMoreInteractions(repository);
         verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void changePassword_clearResetToken_whenResetTokenPending() {
+        final var givenId = 44L;
+        final var request = UserTestData.createValidChangePasswordRequest();
+        tester.setPasswordResetTokenHash("pendingTokenHash")
+                .setPasswordResetTokenExpires(LocalDateTime.now().plusMinutes(30));
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(passwordEncoder.matches(request.currentPassword(), tester.getPassword())).thenReturn(true);
+
+        service.changePassword(givenId, request);
+
+        assertThat(tester.getPasswordResetTokenHash()).isNull();
+        assertThat(tester.getPasswordResetTokenExpires()).isNull();
+        verify(repository).save(tester);
     }
 
     @Test

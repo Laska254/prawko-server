@@ -62,6 +62,7 @@ public interface IUserService {
      * <p>
      * Modifies user information such as firstname, lastname, username, and email address.
      * Validation ensures no conflicts with other users' data.
+     * Changing the email invalidates any pending password reset token.
      * </p>
      *
      * @param userId        the ID of the user to update
@@ -74,6 +75,7 @@ public interface IUserService {
      * Changes a user's password.
      * <p>
      * Verifies the current password before encoding and persisting the new one.
+     * Invalidates any pending password reset token.
      * </p>
      *
      * @param userId  the ID of the user whose password should be changed

@@ -146,7 +146,10 @@ public class UserService implements IUserService, UserDetailsService {
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
         Optional.ofNullable(updateRequest.userName()).ifPresent(user::setUserName);
-        Optional.ofNullable(updateRequest.email()).ifPresent(user::setEmail);
+        Optional.ofNullable(updateRequest.email())
+                .ifPresent(email -> user.setEmail(email)
+                        .setPasswordResetTokenHash(null)
+                        .setPasswordResetTokenExpires(null));
         final var updated = repository.save(user);
         log.info("Successfully updated user '{}'", user.getUserName());
         return mapper.toDto(updated);
@@ -173,7 +176,9 @@ public class UserService implements IUserService, UserDetailsService {
             log.warn("{} User id: {}", message, userId);
             throw new InvalidPasswordException(message);
         }
-        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        user.setPassword(passwordEncoder.encode(request.newPassword()))
+                .setPasswordResetTokenHash(null)
+                .setPasswordResetTokenExpires(null);
         repository.save(user);
         log.info("Successfully changed password for user '{}'", user.getUserName());
     }

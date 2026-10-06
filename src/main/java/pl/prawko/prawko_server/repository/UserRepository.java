@@ -35,8 +35,24 @@ public interface UserRepository extends JpaRepository<User, Long> {
      *
      * @param userName provided name to look for
      * @param email    provided email to look for
-     * @return An {@code user} when found
+     * @return a {@code user} when found
      */
     Optional<User> findByUserNameOrEmailIgnoreCase(final String userName, final String email);
+
+    /**
+     * Retrieves {@code user} by its email, ignoring case.
+     *
+     * @param email provided email to look for
+     * @return a {@code user} when found
+     */
+    Optional<User> findByEmailIgnoreCase(final String email);
+
+    /**
+     * Retrieves {@code user} by the hash of its pending password reset token.
+     *
+     * @param passwordResetTokenHash SHA-256 hash of the password reset token
+     * @return a {@code user} when found
+     */
+    Optional<User> findByPasswordResetTokenHash(final String passwordResetTokenHash);
 
 }

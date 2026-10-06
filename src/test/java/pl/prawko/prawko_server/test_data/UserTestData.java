@@ -1,9 +1,11 @@
 package pl.prawko.prawko_server.test_data;
 
 import org.springframework.lang.NonNull;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.Role;
@@ -12,6 +14,7 @@ import pl.prawko.prawko_server.model.User;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class UserTestData {
 
@@ -20,6 +23,10 @@ public class UserTestData {
     public static final Map<String, String> PIPPIN_CONFLICT_DETAILS = Map.ofEntries(
             Map.entry("userName", "User with username 'pippin' already exists."),
             Map.entry("email", "User with email 'pippin@shire.me' already exists."));
+
+    public static final String INVALID_RESET_TOKEN = "Password reset token is invalid or expired.";
+
+    private static final Pattern RESET_TOKEN = Pattern.compile("token=([\\w-]+)");
 
     private UserTestData() {
     }
@@ -94,6 +101,18 @@ public class UserTestData {
 
     public static ChangePasswordRequest createSameAsCurrentPasswordRequest() {
         return new ChangePasswordRequest("lembasy", "lembasy");
+    }
+
+    public static ResetPasswordRequest createValidResetPasswordRequest(final String token) {
+        return new ResetPasswordRequest(token, "racuchy");
+    }
+
+    public static String extractResetToken(final SimpleMailMessage message) {
+        return RESET_TOKEN.matcher(message.getText())
+                .results()
+                .map(r -> r.group(1))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("No reset token in: " + message.getText()));
     }
 
     public static RegisterDto createValidRegisterDto() {
