@@ -1,10 +1,10 @@
 # Prawko Server
 
 [![codecov](https://codecov.io/gh/Laska254/prawko-server/graph/badge.svg)](https://codecov.io/gh/Laska254/prawko-server)
-[![Release](https://img.shields.io/github/v/release/Laska254/prawko-server)](https://github.com/Laska254/prawko-server/releases/latest)
-[![Javadoc](https://img.shields.io/badge/docs-Javadoc-blue)](https://laska254.github.io/prawko-server/)
-![Java 21](https://img.shields.io/badge/Java-21-orange)
-![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4-brightgreen)
+[![Release](https://img.shields.io/github/v/tag/Laska254/prawko-server?sort=semver&filter=v%2A&label=Release)](https://github.com/Laska254/prawko-server/releases/latest)
+[![Javadoc](https://img.shields.io/github/v/release/Laska254/prawko-server?label=Javadoc&color=blue)](https://laska254.github.io/prawko-server/)
+![Java](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fraw.githubusercontent.com%2FLaska254%2Fprawko-server%2Fmain%2Fpom.xml&query=%2F%2F*%5Blocal-name%28%29%3D'java.version'%5D&label=Java&color=orange)
+![Spring Boot](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fraw.githubusercontent.com%2FLaska254%2Fprawko-server%2Fmain%2Fpom.xml&query=%2F*%5Blocal-name%28%29%3D'project'%5D%2F*%5Blocal-name%28%29%3D'parent'%5D%2F*%5Blocal-name%28%29%3D'version'%5D&label=Spring%20Boot&color=brightgreen)
 
 ## Table of Contents
 
