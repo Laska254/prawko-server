@@ -54,5 +54,6 @@ jobs:
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          slug: ${{ github.repository }}
           files: target/site/jacoco/jacoco.xml
           disable_search: true
