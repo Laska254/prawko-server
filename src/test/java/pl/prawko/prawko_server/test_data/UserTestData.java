@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.test_data;
 import org.springframework.lang.NonNull;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
@@ -60,6 +61,11 @@ public class UserTestData {
         return createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me");
     }
 
+    public static User createGimli() {
+        return createTestUser("Gimli", "Gloinson", TestUtils.ADMIN_NAME, "gimli@erebor.me")
+                .setRole(Role.ADMIN);
+    }
+
     public static UserDto createUserDto(long id) {
         return new UserDto(
                 id,
@@ -68,6 +74,16 @@ public class UserTestData {
                 "pippin",
                 "pippin@shire.me",
                 Role.USER);
+    }
+
+    public static UserDto createAdminUserDto(long id) {
+        return new UserDto(
+                id,
+                "Gimli",
+                "Gloinson",
+                TestUtils.ADMIN_NAME,
+                "gimli@erebor.me",
+                Role.ADMIN);
     }
 
     public static UserDto createUpdatedUserDto(long id) {
