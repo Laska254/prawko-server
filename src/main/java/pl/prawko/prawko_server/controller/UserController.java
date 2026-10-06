@@ -87,6 +87,24 @@ public class UserController {
     }
 
     /**
+     * Retrieves the currently authenticated user.
+     *
+     * <p>Lets clients find out the ID and role of the account whose credentials they hold.
+     *
+     * @param userId the ID of the currently authenticated user
+     * @return a {@link ResponseEntity} containing the {@link UserDto}
+     */
+    @Operation(summary = "Get current user", description = "Retrieves profile information of the authenticated user.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Current user"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated")
+    })
+    @GetMapping(ApiConstants.ME)
+    public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal(expression = "id") final long userId) {
+        return ResponseEntity.ok(userService.getUserDtoById(userId));
+    }
+
+    /**
      * Retrieves a page of users in the system.
      *
      * <p>Sorted by ID ascending unless specified otherwise.

@@ -245,6 +245,45 @@ public class UserControllerTest {
     }
 
     @Nested
+    class GetCurrentUser {
+
+        @Test
+        void returnUserDto_whenAuthenticatedAsUser() {
+            final var id = registerUser();
+            final var expectedUserDto = UserTestData.createUserDto(id);
+
+            restClient.get()
+                    .uri(ApiConstants.ME)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserDto.class).isEqualTo(expectedUserDto);
+        }
+
+        @Test
+        void returnAdminRole_whenAuthenticatedAsAdmin() {
+            final var id = userRepository.save(UserTestData.createGimli()).getId();
+            final var expectedUserDto = UserTestData.createAdminUserDto(id);
+
+            restClient.get()
+                    .uri(ApiConstants.ME)
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserDto.class).isEqualTo(expectedUserDto);
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.get()
+                    .uri(ApiConstants.ME)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+    }
+
+    @Nested
     class GetAllUsers {
 
         @Test
