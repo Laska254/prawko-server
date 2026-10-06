@@ -100,7 +100,7 @@ public class PasswordResetService implements IPasswordResetService {
         log.info("Successfully reset password for user '{}'", user.getUserName());
     }
 
-    private boolean hasRecentToken(final User user) {
+    private boolean isCoolingDown(final User user) {
         final var expires = user.getPasswordResetTokenExpires();
         return expires != null && expires.minus(tokenValidity).plus(cooldown).isAfter(LocalDateTime.now());
     }
@@ -146,7 +146,7 @@ public class PasswordResetService implements IPasswordResetService {
     }
 
     private void requestResetEmail(final User user) {
-        if (hasRecentToken(user)) {
+        if (isCoolingDown(user)) {
             log.info("Password reset for user '{}' requested within cooldown, skipped.", user.getUserName());
             return;
         }
