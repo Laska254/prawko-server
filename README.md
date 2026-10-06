@@ -1,5 +1,11 @@
 # Prawko Server
 
+[![codecov](https://codecov.io/gh/Laska254/prawko-server/graph/badge.svg)](https://codecov.io/gh/Laska254/prawko-server)
+[![Release](https://img.shields.io/github/v/release/Laska254/prawko-server)](https://github.com/Laska254/prawko-server/releases/latest)
+[![Javadoc](https://img.shields.io/badge/docs-Javadoc-blue)](https://laska254.github.io/prawko-server/)
+![Java 21](https://img.shields.io/badge/Java-21-orange)
+![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4-brightgreen)
+
 ## Table of Contents
 
 * [Table of Contents](#table-of-contents)
