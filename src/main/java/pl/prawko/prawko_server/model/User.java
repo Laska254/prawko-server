@@ -39,6 +39,7 @@ import java.util.List;
  * </ul>
  * The entity is mapped to the database table {@code user} and uses automatic timestamp handling.
  * All setters are returning {@code User} itself, enabling method chaining.
+ * {@link #toString()} leaves out personal data and credentials, so it's safe to log.
  */
 @Entity
 @Table(name = "`user`")
@@ -220,10 +221,6 @@ public class User {
     public String toString() {
         return "User{" +
                 "id=" + id +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", userName='" + userName + '\'' +
-                ", email='" + email + '\'' +
                 ", role=" + role +
                 ", enabled=" + enabled +
                 ", created=" + created +

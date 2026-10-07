@@ -7,6 +7,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.GrantedAuthority;
@@ -40,7 +42,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class UserServiceTest {
 
     @Mock
@@ -120,6 +122,16 @@ class UserServiceTest {
         verify(repository, never()).save(any());
         verifyNoInteractions(mapper);
         verifyNoMoreInteractions(repository);
+    }
+
+    @Test
+    void register_notLogEmail_whenEmailExists(final CapturedOutput output) {
+        when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(true);
+
+        assertThatThrownBy(() -> service.register(registerDto)).isInstanceOf(AlreadyExistsException.class);
+
+        assertThat(output).contains("Conflicting fields: [email]")
+                .doesNotContain(registerDto.email());
     }
 
     @Test
@@ -240,6 +252,20 @@ class UserServiceTest {
 
         assertThat(tester.getPasswordResetTokenHash()).isEqualTo(hash);
         assertThat(tester.getPasswordResetTokenExpires()).isEqualTo(expires);
+    }
+
+    @Test
+    void updateUser_notLogPersonalData_whenUpdated(final CapturedOutput output) {
+        final var givenId = 44L;
+        final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(repository.save(tester)).thenReturn(tester);
+
+        service.updateUser(givenId, updateUserRequest);
+
+        assertThat(output).contains("Successfully updated user with id '" + givenId + "'")
+                .doesNotContain(updateUserRequest.firstName(), updateUserRequest.lastName(),
+                        updateUserRequest.userName(), updateUserRequest.email());
     }
 
     @Test
@@ -412,6 +438,28 @@ class UserServiceTest {
         assertThatThrownBy(executable)
                 .isInstanceOf(UsernameNotFoundException.class)
                 .hasMessage(TestUtils.INVALID_CREDENTIALS);
+    }
+
+    @Test
+    void loadUserByUsername_logUserIdOnly_whenLoggingInByEmail(final CapturedOutput output) {
+        when(repository.findByUserNameOrEmailIgnoreCase(tester.getEmail(), tester.getEmail()))
+                .thenReturn(Optional.of(tester.setId(7L).setRole(Role.USER)));
+
+        service.loadUserByUsername(tester.getEmail());
+
+        assertThat(output).contains("User with id '7' loaded successfully.")
+                .doesNotContain(tester.getEmail(), tester.getUserName());
+    }
+
+    @Test
+    void loadUserByUsername_notLogAttemptedLogin_whenUserNotExists(final CapturedOutput output) {
+        when(repository.findByUserNameOrEmailIgnoreCase(tester.getEmail(), tester.getEmail())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.loadUserByUsername(tester.getEmail()))
+                .isInstanceOf(UsernameNotFoundException.class);
+
+        assertThat(output).contains("User not found by username or email.")
+                .doesNotContain(tester.getEmail());
     }
 
 }

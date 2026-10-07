@@ -65,7 +65,7 @@ public class ExamService implements IExamService {
                 .setUserAnswers(Collections.emptyList());
         user.getExams().add(exam);
         repository.save(exam);
-        log.info("Created exam for user '{}'", user.getUserName());
+        log.info("Created exam for user with id '{}'", userId);
         return exam.getId();
     }
 

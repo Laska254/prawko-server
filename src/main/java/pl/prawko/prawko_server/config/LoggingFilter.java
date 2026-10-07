@@ -17,9 +17,12 @@ import java.util.Optional;
 /**
  * HTTP request/response logging filter.
  *
- * <p>Intercepts all HTTP requests and responses to log request details (method, URI, client IP,
- * authenticated user) and response details (status code, duration). This provides comprehensive
+ * <p>Intercepts all HTTP requests and responses to log request details (method, URI, client IP)
+ * and response details (status code, duration, authenticated user). This provides comprehensive
  * audit trails for debugging and monitoring API usage.
+ *
+ * <p>Users are identified by ID only, {@code anonymous} when not authenticated, so no personal data ends up in logs.
+ * The filter runs before HTTP Basic authentication, so the user is resolved only once the request has been handled.
  *
  * <p>The filter is executed once per request, capturing both incoming requests and outgoing responses
  * with precise timing information.
@@ -35,8 +38,8 @@ public class LoggingFilter extends OncePerRequestFilter {
      *
      * <p>Logs the following details:
      * <ul>
-     *   <li>Request: method, URI, client IP, authenticated user</li>
-     *   <li>Response: HTTP status code, processing duration in milliseconds</li>
+     *   <li>Request: method, URI, client IP</li>
+     *   <li>Response: HTTP status code, processing duration in milliseconds, authenticated user's ID</li>
      * </ul>
      *
      * @param request     the HTTP request
@@ -54,17 +57,17 @@ public class LoggingFilter extends OncePerRequestFilter {
         final var method = request.getMethod();
         final var uri = request.getRequestURI();
         final var client = request.getRemoteAddr();
-        final var auth = SecurityContextHolder.getContext().getAuthentication();
-        final var user = Optional.ofNullable(auth)
-                .filter(Authentication::isAuthenticated)
-                .map(Authentication::getName)
-                .orElse("anonymous");
-        log.info("Request: method={} uri={} client={} user={}", method, uri, client, user);
+        log.info("Request: method={} uri={} client={}", method, uri, client);
         try {
             filterChain.doFilter(request, response);
         } finally {
             final var duration = System.currentTimeMillis() - start;
             final var status = response.getStatus();
+            final var user = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                    .map(Authentication::getPrincipal)
+                    .filter(AuthenticatedUser.class::isInstance)
+                    .map(principal -> String.valueOf(((AuthenticatedUser) principal).getId()))
+                    .orElse("anonymous");
             log.info("Response: method={} uri={} status={} durationMs={} client={} user={}",
                     method, uri, status, duration, client, user);
         }

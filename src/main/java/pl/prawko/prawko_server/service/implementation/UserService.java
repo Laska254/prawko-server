@@ -60,7 +60,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Override
     @Transactional
     public long register(final RegisterDto dto) {
-        log.info("Attempting to register new user: {}", dto.userName());
+        log.info("Attempting to register new user.");
         validateNoConflict(dto.userName(), dto.email());
         log.debug("No conflicts");
         final var user = mapper.fromDto(dto);
@@ -70,7 +70,7 @@ public class UserService implements IUserService, UserDetailsService {
         user.setRole(Role.USER);
         log.debug("User role set");
         repository.save(user);
-        log.info("User {} registered successfully.", user.getUserName());
+        log.info("User with id '{}' registered successfully.", user.getId());
         return user.getId();
     }
 
@@ -83,13 +83,12 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Override
     public UserDetails loadUserByUsername(final String userNameOrEmail) throws UsernameNotFoundException {
-        log.info("Loading user by username or email: {}", userNameOrEmail);
         final var user = repository.findByUserNameOrEmailIgnoreCase(userNameOrEmail, userNameOrEmail)
                 .orElseThrow(() -> {
-                    log.warn("User '{}' not found.", userNameOrEmail);
+                    log.warn("User not found by username or email.");
                     return new UsernameNotFoundException("Invalid login or password.");
                 });
-        log.info("User {} loaded successfully.", userNameOrEmail);
+        log.info("User with id '{}' loaded successfully.", user.getId());
         return new AuthenticatedUser(
                 user.getId(),
                 user.getUserName(),
@@ -140,7 +139,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Transactional
     @Override
     public UserDto updateUser(long userId, final UserUpdateRequest updateRequest) {
-        log.info("Updating user with id '{}' using: {}", userId, updateRequest);
+        log.info("Updating user with id: {}", userId);
         final var user = getById(userId);
         validateNoConflict(updateRequest.userName(), updateRequest.email());
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
@@ -151,7 +150,7 @@ public class UserService implements IUserService, UserDetailsService {
                         .setPasswordResetTokenHash(null)
                         .setPasswordResetTokenExpires(null));
         final var updated = repository.save(user);
-        log.info("Successfully updated user '{}'", user.getUserName());
+        log.info("Successfully updated user with id '{}'", userId);
         return mapper.toDto(updated);
     }
 
@@ -180,7 +179,7 @@ public class UserService implements IUserService, UserDetailsService {
                 .setPasswordResetTokenHash(null)
                 .setPasswordResetTokenExpires(null);
         repository.save(user);
-        log.info("Successfully changed password for user '{}'", user.getUserName());
+        log.info("Successfully changed password for user with id '{}'", userId);
     }
 
     /**
@@ -194,11 +193,10 @@ public class UserService implements IUserService, UserDetailsService {
         log.info("Deleting user with id: {}", userId);
         final var user = getById(userId);
         repository.delete(user);
-        log.info("Successfully deleted user '{}'", user.getUserName());
+        log.info("Successfully deleted user with id '{}'", userId);
     }
 
     private void validateNoConflict(@Nullable final String userName, @Nullable final String email) {
-        log.debug("Checking if there is no other user with username '{}' or email '{}'", userName, email);
         Map<String, String> errorDetails = new HashMap<>();
         if (userName != null && repository.existsByUserName(userName)) {
             errorDetails.put("userName", "User with username '" + userName + "' already exists.");
@@ -208,7 +206,7 @@ public class UserService implements IUserService, UserDetailsService {
         }
         if (!errorDetails.isEmpty()) {
             final var message = "User already exists.";
-            log.warn(message + "{}", errorDetails);
+            log.warn("{} Conflicting fields: {}", message, errorDetails.keySet());
             throw new AlreadyExistsException(message, errorDetails);
         }
     }
