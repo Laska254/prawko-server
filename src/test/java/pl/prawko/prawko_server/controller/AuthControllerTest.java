@@ -127,7 +127,7 @@ public class AuthControllerTest {
     @Test
     void login_returnUnauthorized_whenCredentialsAreInvalid() {
         final var request = new LoginDto("nonExistentUser", "wrongPassword");
-        final var expectedMessage = "Bad credentials";
+        final var expectedMessage = TestUtils.INVALID_CREDENTIALS;
 
         restClient.post()
                 .body(request)

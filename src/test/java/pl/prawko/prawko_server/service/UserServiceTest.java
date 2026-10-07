@@ -13,6 +13,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.prawko.prawko_server.config.AuthenticatedUser;
+import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
@@ -410,7 +411,7 @@ class UserServiceTest {
 
         assertThatThrownBy(executable)
                 .isInstanceOf(UsernameNotFoundException.class)
-                .hasMessage("Invalid login or password.");
+                .hasMessage(TestUtils.INVALID_CREDENTIALS);
     }
 
 }

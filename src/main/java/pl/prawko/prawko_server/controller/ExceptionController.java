@@ -81,8 +81,8 @@ public class ExceptionController {
 
     @ApiResponse(responseCode = "401", description = "Authentication failed")
     @ExceptionHandler(AuthenticationException.class)
-    public ProblemDetail handleInvalidLoginRequest(final AuthenticationException exception) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
+    public ProblemDetail handleInvalidLoginRequest() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Invalid login or password.");
     }
 
     @ApiResponse(responseCode = "403", description = "Access denied")

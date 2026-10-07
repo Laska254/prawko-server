@@ -13,6 +13,7 @@ public class TestUtils {
     public static final String ADMIN_PASSWORD = "krasnoludka";
 
     public static final String ACCESS_DENIED = "Access denied.";
+    public static final String INVALID_CREDENTIALS = "Invalid login or password.";
     public static final String VALIDATION_FAILED = "Validation for request failed.";
     public static final String BODY_MISSING = "Request body is missing.";
     public static final String ID_NOT_POSITIVE = "ID must be greater than 0.";
