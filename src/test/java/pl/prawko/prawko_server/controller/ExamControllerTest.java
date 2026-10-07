@@ -17,13 +17,17 @@ import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.CreateExamDto;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
+import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.CategoryVariant;
+import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.ExamTestData;
+import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -150,6 +154,47 @@ public class ExamControllerTest {
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(ExamDto.class).isEqualTo(expected);
+        }
+
+        @Test
+        void returnExamWithoutCorrectAnswers_whenExamIsActive() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var question = questionRepository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
+            final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(tester)
+                    .setQuestions(List.of(question))
+                    .setUserAnswers(List.of(question.getAnswers().getFirst())));
+
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, exam.getId())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.questions[0].answers.length()").isEqualTo(question.getAnswers().size())
+                    .jsonPath("$.questions[0].answers[*].correct").doesNotExist()
+                    .jsonPath("$.userAnswers.length()").isEqualTo(1)
+                    .jsonPath("$.userAnswers[*].correct").doesNotExist();
+        }
+
+        @Test
+        void returnExamWithCorrectAnswers_whenExamIsFinished() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var question = questionRepository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
+            final var userAnswer = question.getAnswers().getFirst();
+            final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(tester)
+                    .setActive(false)
+                    .setQuestions(List.of(question))
+                    .setUserAnswers(List.of(userAnswer)));
+
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, exam.getId())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.questions[0].answers[*].correct")
+                    .isEqualTo(question.getAnswers().stream().map(Answer::isCorrect).toList())
+                    .jsonPath("$.userAnswers[0].correct").isEqualTo(userAnswer.isCorrect());
         }
 
         @Test

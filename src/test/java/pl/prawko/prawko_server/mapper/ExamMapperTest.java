@@ -2,6 +2,8 @@ package pl.prawko.prawko_server.mapper;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,8 +33,9 @@ class ExamMapperTest {
     @InjectMocks
     private ExamMapperImpl examMapper;
 
-    @Test
-    void toDto_mapFieldsAndDelegateToNestedMappers_whenAllFieldsAreSet() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void toDto_mapFieldsAndDelegateToNestedMappers_whenAllFieldsAreSet(boolean revealCorrect) {
         final var now = LocalDateTime.now();
         final var question = new Question().setId(10L);
         final var answer = new Answer().setId(20L);
@@ -47,7 +50,7 @@ class ExamMapperTest {
                 .setQuestions(List.of(question))
                 .setUserAnswers(List.of(answer));
 
-        final var result = examMapper.toDto(expected);
+        final var result = examMapper.toDto(expected, revealCorrect);
 
         assertThat(result.id()).isEqualTo(1L);
         assertThat(result.userId()).isEqualTo(42L);
@@ -55,8 +58,8 @@ class ExamMapperTest {
         assertThat(result.score()).isEqualTo(67);
         assertThat(result.created()).isEqualTo(now);
         assertThat(result.updated()).isEqualTo(now);
-        verify(questionMapper).toDto(question);
-        verify(answerMapper).toDto(answer);
+        verify(questionMapper).toDto(question, revealCorrect);
+        verify(answerMapper).toDto(answer, revealCorrect);
     }
 
     @Test

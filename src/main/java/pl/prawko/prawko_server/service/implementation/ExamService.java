@@ -85,7 +85,7 @@ public class ExamService implements IExamService {
                     log.warn(message);
                     return new EntityNotFoundException(message);
                 });
-        return examMapper.toDto(exam);
+        return examMapper.toDto(exam, !exam.isActive());
     }
 
     /**

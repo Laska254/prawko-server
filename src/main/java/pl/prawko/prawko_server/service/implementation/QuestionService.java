@@ -70,10 +70,10 @@ public class QuestionService implements IQuestionService {
      */
     @Override
     @Transactional(readOnly = true)
-    public QuestionDto getById(long id) {
+    public QuestionDto getById(final long id, final boolean revealCorrect) {
         log.info("Fetching question with id '{}'", id);
         return repository.findById(id)
-                .map(mapper::toDto)
+                .map(question -> mapper.toDto(question, revealCorrect))
                 .orElseThrow(() -> {
                     final var message = "Question with id '" + id + "' not found.";
                     log.warn(message);
@@ -85,7 +85,7 @@ public class QuestionService implements IQuestionService {
     @Transactional(readOnly = true)
     public Page<QuestionDto> getAll(final Pageable pageable) {
         return repository.findAll(pageable)
-                .map(mapper::toDto);
+                .map(question -> mapper.toDto(question, true));
     }
 
 }

@@ -33,6 +33,7 @@ public interface IExamService {
      * Retrieves an {@link Exam} by its ID and maps it to {@link ExamDto}.
      * <p>
      * Returns exam details including user answers and score information in a data transfer object format.
+     * Which answers are correct is revealed only once the exam is no longer active.
      * </p>
      *
      * @param examId the ID of the exam to retrieve

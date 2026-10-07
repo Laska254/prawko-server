@@ -115,13 +115,28 @@ public class QuestionControllerTest {
     class GetQuestionById {
 
         @Test
-        void returnQuestion_whenFound() {
+        void returnQuestionWithoutCorrectAnswers_whenFoundByUser() {
+            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
+
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, question.getId())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.id").isEqualTo(question.getId())
+                    .jsonPath("$.answers.length()").isEqualTo(question.getAnswers().size())
+                    .jsonPath("$.answers[*].correct").doesNotExist();
+        }
+
+        @Test
+        void returnQuestionWithCorrectAnswers_whenFoundByAdmin() {
             final var question = repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
             final var expected = QuestionTestData.createQuestionDto(question);
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, expected.id())
-                    .headers(TestUtils::authUser)
+                    .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(QuestionDto.class).isEqualTo(expected);
@@ -130,7 +145,7 @@ public class QuestionControllerTest {
         @Test
         void returnNotFound_whenNotFound() {
             final var nonExistentId = 666L;
-            final var expected = "Question with id '" + nonExistentId + "' not found.";
+            final var expected = QuestionTestData.questionNotFoundMessage(nonExistentId);
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, nonExistentId)

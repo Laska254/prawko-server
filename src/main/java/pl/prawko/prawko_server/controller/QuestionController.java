@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Positive;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.QuestionDto;
+import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.service.implementation.QuestionService;
 
 /**
@@ -71,18 +73,24 @@ public class QuestionController {
     /**
      * Retrieves a question by its ID.
      *
-     * @param id the unique identifier of the question (must be positive)
+     * <p>Which answers are correct is revealed only to admins, so users can't look up answers to their active exams.
+     * {@link HttpServletRequest#isUserInRole(String)} ignores the role hierarchy, which is fine for the top role.
+     *
+     * @param id      the unique identifier of the question (must be positive)
+     * @param request the current request, used to check whether the caller is an admin
      * @return a {@link ResponseEntity} containing the {@link QuestionDto}
      */
-    @Operation(summary = "Get question by ID", description = "Retrieves a question with all its associated translations and answers.")
+    @Operation(summary = "Get question by ID",
+            description = "Retrieves a question with all its associated translations and answers. Correct answers are shown only to admins.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Question found"),
             @ApiResponse(responseCode = "404", description = "Question not found"),
             @ApiResponse(responseCode = "400", description = "ID is negative or zero")
     })
     @GetMapping(ApiConstants.BY_ID)
-    public ResponseEntity<QuestionDto> getQuestion(@PathVariable @Positive final long id) {
-        return ResponseEntity.ok(questionService.getById(id));
+    public ResponseEntity<QuestionDto> getQuestion(@PathVariable @Positive final long id,
+                                                   final HttpServletRequest request) {
+        return ResponseEntity.ok(questionService.getById(id, request.isUserInRole(Role.ADMIN.name())));
     }
 
     /**

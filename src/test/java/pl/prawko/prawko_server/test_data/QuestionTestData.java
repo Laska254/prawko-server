@@ -60,6 +60,10 @@ public class QuestionTestData {
         };
     }
 
+    public static String questionNotFoundMessage(final long id) {
+        return "Question with id '" + id + "' not found.";
+    }
+
     private static QuestionDto createQuestionDto_Basic(final Question question) {
         final var answers = AnswerTestData.createAnswerDtos(question.getAnswers(), question.getType());
         final var categories = List.of(CategoryTestData.CATEGORY_A.getName(), CategoryTestData.CATEGORY_B.getName());

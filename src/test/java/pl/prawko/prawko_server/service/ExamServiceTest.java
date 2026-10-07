@@ -134,7 +134,7 @@ public class ExamServiceTest {
             final var expectedDto = ExamTestData.createExamDto(exam);
 
             when(repository.findById(exam.getId())).thenReturn(Optional.of(exam));
-            when(examMapper.toDto(exam)).thenReturn(expectedDto);
+            when(examMapper.toDto(exam, false)).thenReturn(expectedDto);
 
             final var result = service.getById(exam.getId());
 
@@ -152,15 +152,23 @@ public class ExamServiceTest {
         }
 
         @Test
-        void mapFoundExam_whenExamExists() {
-            final var user = UserTestData.createTestUserPippin();
-            final var exam = ExamTestData.createExam(user);
+        void hideCorrectAnswers_whenExamIsActive() {
+            final var exam = ExamTestData.createExam(UserTestData.createTestUserPippin());
             when(repository.findById(exam.getId())).thenReturn(Optional.of(exam));
-            when(examMapper.toDto(exam)).thenReturn(ExamTestData.createExamDto(exam));
 
             service.getById(exam.getId());
 
-            verify(examMapper).toDto(exam);
+            verify(examMapper).toDto(exam, false);
+        }
+
+        @Test
+        void revealCorrectAnswers_whenExamIsFinished() {
+            final var exam = ExamTestData.createExam(UserTestData.createTestUserPippin()).setActive(false);
+            when(repository.findById(exam.getId())).thenReturn(Optional.of(exam));
+
+            service.getById(exam.getId());
+
+            verify(examMapper).toDto(exam, true);
         }
 
     }

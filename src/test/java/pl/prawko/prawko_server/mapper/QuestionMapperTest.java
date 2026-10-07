@@ -4,6 +4,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -15,6 +16,7 @@ import pl.prawko.prawko_server.test_data.QuestionTranslationsTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -33,13 +35,23 @@ class QuestionMapperTest {
         final var given = QuestionTestData.createQuestion(type);
         final var expected = QuestionTestData.createQuestionDto(given);
 
-        final var result = questionMapper.toDto(given);
+        final var result = questionMapper.toDto(given, true);
 
         assertThat(result)
                 .usingRecursiveComparison()
                 .ignoringFields("answers")
                 .isEqualTo(expected);
-        verify(answerMapper, times(given.getAnswers().size())).toDto(any());
+        verify(answerMapper, times(given.getAnswers().size())).toDto(any(), eq(true));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void toDto_passRevealCorrectToAnswerMapper_whenMappingAnswers(boolean revealCorrect) {
+        final var given = QuestionTestData.createQuestion(QuestionType.SPECIAL);
+
+        questionMapper.toDto(given, revealCorrect);
+
+        given.getAnswers().forEach(answer -> verify(answerMapper).toDto(answer, revealCorrect));
     }
 
     @ParameterizedTest

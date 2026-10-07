@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.mapper;
 
+import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -18,6 +19,7 @@ import pl.prawko.prawko_server.service.implementation.CategoryService;
  * This class is responsible for mapping {@link QuestionCSV} models into {@link Question} entities.
  * It's using {@link AnswerMapper} to delegate mapping of {@link Answer} entities linked to {@link Question}.
  * Categories are mapped using {@link CategoryService#findAllFromString(String)}.
+ * {@code revealCorrect} is passed to {@link AnswerMapper} to decide whether answers show which one is correct.
  * <p>
  * The mapper is registered as a Spring {@link Component}, so it can be injected into services or other components that require question mapping
  * functionality.
@@ -28,7 +30,7 @@ import pl.prawko.prawko_server.service.implementation.CategoryService;
 public interface QuestionMapper {
 
     @Mapping(target = "value", source = "points")
-    QuestionDto toDto(Question question);
+    QuestionDto toDto(Question question, @Context boolean revealCorrect);
 
     @Mapping(target = "languageCode", source = "language.code")
     QuestionTranslationDto toTranslationDto(QuestionTranslation translation);

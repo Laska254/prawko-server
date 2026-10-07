@@ -6,6 +6,7 @@ import pl.prawko.prawko_server.dto.AnswerTranslationDto;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.AnswerTranslation;
 import pl.prawko.prawko_server.model.Question;
+import pl.prawko.prawko_server.test_data.AnswerTestData;
 import pl.prawko.prawko_server.test_data.AnswerTranslationsTestData;
 import pl.prawko.prawko_server.test_data.AnswerVariant;
 
@@ -17,7 +18,7 @@ class AnswerMapperTest {
     private final AnswerMapper mapper = new AnswerMapperImpl();
 
     @Test
-    void toDto_mapAllFields_whenAllFieldsAreSet() {
+    void toDto_mapAllFields_whenCorrectIsRevealed() {
         final var translations = AnswerTranslationsTestData.createAnswerTranslations(AnswerVariant.A);
         final var translationDtos = AnswerTranslationsTestData.createAnswerTranslationsDtos(AnswerVariant.A);
         final var given = new Answer()
@@ -27,9 +28,20 @@ class AnswerMapperTest {
                 .setTranslations(translations);
         final var expected = new AnswerDto(7L, 2143L, false, translationDtos);
 
-        final var result = mapper.toDto(given);
+        final var result = mapper.toDto(given, true);
 
         assertThat(result).isEqualTo(expected);
+    }
+
+    @Test
+    void toDto_mapCorrectToNull_whenCorrectIsNotRevealed() {
+        final var given = AnswerTestData.answerB().setQuestion(new Question().setId(2143L));
+
+        final var result = mapper.toDto(given, false);
+
+        assertThat(result.correct()).isNull();
+        assertThat(result.questionId()).isEqualTo(given.getQuestion().getId());
+        assertThat(result.translations()).hasSameSizeAs(given.getTranslations());
     }
 
     @Test

@@ -47,13 +47,14 @@ public interface IQuestionService {
     /**
      * Retrieves a question by its ID.
      *
-     * @param id the ID of the question to retrieve
+     * @param id            the ID of the question to retrieve
+     * @param revealCorrect whether the answers should show which one is correct
      * @return the question as a {@link QuestionDto}
      */
-    QuestionDto getById(long id);
+    QuestionDto getById(long id, boolean revealCorrect);
 
     /**
-     * Returns a page of questions converted to DTO.
+     * Returns a page of questions converted to DTO, revealing which answers are correct.
      *
      * @param pageable the pagination and sorting information
      * @return a page of {@link QuestionDto}

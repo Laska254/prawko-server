@@ -136,19 +136,19 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/questions`
 
-  | Method | Path              | Access | Description                                                       |
-  |--------|-------------------|--------|-------------------------------------------------------------------|
-  | `POST` | `/questions`      | admin  | upload a CSV file (`file` multipart part, max 5MB) with questions |
-  | `GET`  | `/questions`      | admin  | get a page of questions                                           |
-  | `GET`  | `/questions/{id}` | user   | get a question                                                    |
+  | Method | Path              | Access | Description                                                                |
+  |--------|-------------------|--------|----------------------------------------------------------------------------|
+  | `POST` | `/questions`      | admin  | upload a CSV file (`file` multipart part, max 5MB) with questions          |
+  | `GET`  | `/questions`      | admin  | get a page of questions                                                    |
+  | `GET`  | `/questions/{id}` | user   | get a question; answers' `correct` flag is included only for admins        |
 
 * `/exams`
 
-  | Method | Path                 | Access | Description                                              |
-  |--------|----------------------|--------|----------------------------------------------------------|
-  | `POST` | `/exams`             | self   | create a new exam for the `userId` from the request body |
-  | `GET`  | `/exams?userId={id}` | self   | get a page of the user's exams history, newest first     |
-  | `GET`  | `/exams/{id}`        | self   | get an exam (only its owner or an admin)                 |
+  | Method | Path                 | Access | Description                                                                         |
+  |--------|----------------------|--------|-------------------------------------------------------------------------------------|
+  | `POST` | `/exams`             | self   | create a new exam for the `userId` from the request body                            |
+  | `GET`  | `/exams?userId={id}` | self   | get a page of the user's exams history, newest first                                |
+  | `GET`  | `/exams/{id}`        | self   | get an exam; answers' `correct` flag is included only once the exam is not `active` |
 
 `POST` endpoints creating a resource return `201 Created` with its URL in the `Location` header.
 
