@@ -3,12 +3,15 @@ package pl.prawko.prawko_server.controller;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -25,11 +28,16 @@ import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -38,6 +46,8 @@ public class AuthControllerTest {
 
     private static final String USERNAME_SIZE_MSG = "Username or email must not be blank and between 3 and 63 characters.";
     private static final String PASSWORD_SIZE_MSG = "Password must not be blank and between 7 and 63 characters.";
+    private static final long MAIL_TIMEOUT_MS = 5_000;
+    private static final long MAIL_SETTLE_MS = 500;
 
     @Autowired
     private UserRepository userRepository;
@@ -125,6 +135,20 @@ public class AuthControllerTest {
     }
 
     @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void login_notLogAttemptedLogin_whenCredentialsAreInvalid(final CapturedOutput output) {
+        final var login = UserTestData.createMerry().getEmail();
+
+        restClient.post()
+                .body(new LoginDto(login, "wrongPassword"))
+                .exchange()
+                .expectStatus().isUnauthorized();
+
+        assertThat(output).contains("Authentication failed.")
+                .doesNotContain(login);
+    }
+
+    @Test
     void login_returnUnauthorized_whenCredentialsAreInvalid() {
         final var request = new LoginDto("nonExistentUser", "wrongPassword");
         final var expectedMessage = TestUtils.INVALID_CREDENTIALS;
@@ -160,10 +184,28 @@ public class AuthControllerTest {
     }
 
     @Test
+    void forgotPassword_returnAcceptedWithoutWaitingForEmail_whenEmailExists() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+        final var release = new CountDownLatch(1);
+        final var sent = new AtomicBoolean();
+        doAnswer(invocation -> {
+            release.await(MAIL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            sent.set(true);
+            return null;
+        }).when(mailSender).send(any(SimpleMailMessage.class));
+
+        forgotPassword(tester.getEmail());
+
+        assertThat(sent).isFalse();
+        release.countDown();
+        verify(mailSender, timeout(MAIL_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
+    }
+
+    @Test
     void forgotPassword_returnAcceptedWithoutEmail_whenEmailDoesNotExist() {
         forgotPassword(UserTestData.createTestUserPippin().getEmail());
 
-        verifyNoInteractions(mailSender);
+        verify(mailSender, after(MAIL_SETTLE_MS).never()).send(any(SimpleMailMessage.class));
     }
 
     @Test
@@ -173,7 +215,7 @@ public class AuthControllerTest {
 
         forgotPassword(tester.getEmail());
 
-        verify(mailSender).send(any(SimpleMailMessage.class));
+        verify(mailSender, after(MAIL_SETTLE_MS)).send(any(SimpleMailMessage.class));
         resetPassword(UserTestData.createValidResetPasswordRequest(token))
                 .expectStatus().isNoContent();
     }
@@ -188,7 +230,7 @@ public class AuthControllerTest {
         forgotPassword(tester.getEmail());
 
         final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender, times(2)).send(captor.capture());
+        verify(mailSender, timeout(MAIL_TIMEOUT_MS).times(2)).send(captor.capture());
         final var newToken = UserTestData.extractResetToken(captor.getValue());
         assertThat(newToken).isNotEqualTo(oldToken);
         resetPassword(UserTestData.createValidResetPasswordRequest(oldToken))
@@ -279,7 +321,7 @@ public class AuthControllerTest {
 
     private SimpleMailMessage captureSentMessage() {
         final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender).send(captor.capture());
+        verify(mailSender, timeout(MAIL_TIMEOUT_MS)).send(captor.capture());
         return captor.getValue();
     }
 

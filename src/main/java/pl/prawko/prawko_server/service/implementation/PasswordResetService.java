@@ -66,11 +66,15 @@ public class PasswordResetService implements IPasswordResetService {
     /**
      * {@inheritDoc}
      * <p>
+     * Runs asynchronously, as issuing a token and sending the email would otherwise make the response noticeably
+     * slower for existing accounts.
+     * <p>
      * Not transactional, so the token is committed before the email goes out. A failure to send the email is only
      * logged, as reporting it would reveal that the account exists.
      * <p>
      * The issue time isn't stored, it's derived from the expiry and the current token validity.
      */
+    @Async
     @Override
     public void requestReset(final String email) {
         log.info("Password reset requested for email: {}", email);
