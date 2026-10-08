@@ -6,13 +6,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Optional;
 
 /**
  * HTTP request/response logging filter.
@@ -63,10 +61,8 @@ public class LoggingFilter extends OncePerRequestFilter {
         } finally {
             final var duration = System.currentTimeMillis() - start;
             final var status = response.getStatus();
-            final var user = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
-                    .map(Authentication::getPrincipal)
-                    .filter(AuthenticatedUser.class::isInstance)
-                    .map(principal -> String.valueOf(((AuthenticatedUser) principal).getId()))
+            final var user = AuthenticatedUser.idOf(SecurityContextHolder.getContext().getAuthentication())
+                    .map(String::valueOf)
                     .orElse("anonymous");
             log.info("Response: method={} uri={} status={} durationMs={} client={} user={}",
                     method, uri, status, duration, client, user);

@@ -1,11 +1,14 @@
 package pl.prawko.prawko_server.config;
 
+import org.jspecify.annotations.Nullable;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import pl.prawko.prawko_server.model.Role;
 
 import java.io.Serial;
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Authenticated principal carrying the ID of the corresponding {@link pl.prawko.prawko_server.model.User}.
@@ -27,6 +30,12 @@ public class AuthenticatedUser extends User {
                              final Collection<? extends GrantedAuthority> authorities) {
         super(username, password, authorities);
         this.id = id;
+    }
+
+    public static Optional<Long> idOf(@Nullable final Authentication authentication) {
+        return authentication != null && authentication.getPrincipal() instanceof AuthenticatedUser user
+                ? Optional.of(user.getId())
+                : Optional.empty();
     }
 
     public long getId() {

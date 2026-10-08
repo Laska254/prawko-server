@@ -24,9 +24,9 @@ public class AuthenticationEvents {
      */
     @EventListener
     public void onSuccess(AuthenticationSuccessEvent success) {
-        final var userId = success.getAuthentication().getPrincipal() instanceof AuthenticatedUser user
-                ? String.valueOf(user.getId())
-                : "unknown";
+        final var userId = AuthenticatedUser.idOf(success.getAuthentication())
+                .map(String::valueOf)
+                .orElse("unknown");
         log.info("User with id '{}' logged successfully.", userId);
     }
 
