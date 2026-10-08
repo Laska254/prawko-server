@@ -24,14 +24,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Write CI properties
-        env:
-          APPLICATION_CI_PROPERTIES: ${{ vars.APPLICATION_CI_PROPERTIES }}
-        run: printf '%s\n' "$APPLICATION_CI_PROPERTIES" > src/test/resources/application-ci.yaml
-
       - name: Compile & run tests
-        env:
-          SPRING_PROFILES_ACTIVE: ci
         run: mvn --batch-mode clean verify
 
       - name: Upload test reports
