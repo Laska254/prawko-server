@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Authentication event listener for logging security events.
+ *
+ * <p>Users are identified by ID only, so no personal data ends up in logs.
  */
 @Component
 public class AuthenticationEvents {
@@ -21,18 +23,24 @@ public class AuthenticationEvents {
      * @param success the {@link AuthenticationSuccessEvent} containing authentication details
      */
     @EventListener
-    public void onSuccess(AuthenticationSuccessEvent success) {
-        log.info("User {} logged successfully.", success.getAuthentication().getName());
+    public void onSuccess(final AuthenticationSuccessEvent success) {
+        final var userId = AuthenticatedUser.idOf(success.getAuthentication())
+                .map(String::valueOf)
+                .orElse("unknown");
+        log.info("User with id '{}' logged successfully.", userId);
     }
 
     /**
      * Logs failed authentication events.
      *
+     * <p>The attempted login isn't logged, as it may be an email or a password typed into the wrong field.
+     * Failed attempts can still be traced by client IP logged by {@link LoggingFilter}.
+     *
      * @param failure the {@link AbstractAuthenticationFailureEvent} containing failure details
      */
     @EventListener
-    public void onFailure(AbstractAuthenticationFailureEvent failure) {
-        log.warn("User {} failed to authenticate. {}", failure.getAuthentication().getName(), failure.getException().getMessage());
+    public void onFailure(final AbstractAuthenticationFailureEvent failure) {
+        log.warn("Authentication failed. {}", failure.getException().getMessage());
     }
 
 }

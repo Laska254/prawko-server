@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,17 +67,21 @@ public class PasswordResetService implements IPasswordResetService {
     /**
      * {@inheritDoc}
      * <p>
+     * Runs asynchronously, as issuing a token and sending the email would otherwise make the response noticeably
+     * slower for existing accounts.
+     * <p>
      * Not transactional, so the token is committed before the email goes out. A failure to send the email is only
      * logged, as reporting it would reveal that the account exists.
      * <p>
      * The issue time isn't stored, it's derived from the expiry and the current token validity.
      */
+    @Async
     @Override
     public void requestReset(final String email) {
-        log.info("Password reset requested for email: {}", email);
+        log.info("Password reset requested.");
         repository.findByEmailIgnoreCase(email).ifPresentOrElse(
                 this::requestResetEmail,
-                () -> log.info("No user with email '{}', password reset skipped.", email));
+                () -> log.info("No user with the requested email, password reset skipped."));
     }
 
     /**
@@ -97,7 +102,7 @@ public class PasswordResetService implements IPasswordResetService {
                 .setPasswordResetTokenHash(null)
                 .setPasswordResetTokenExpires(null);
         repository.save(user);
-        log.info("Successfully reset password for user '{}'", user.getUserName());
+        log.info("Successfully reset password for user with id '{}'", user.getId());
     }
 
     private boolean isCoolingDown(final User user) {
@@ -112,17 +117,17 @@ public class PasswordResetService implements IPasswordResetService {
         user.setPasswordResetTokenHash(hash(token))
                 .setPasswordResetTokenExpires(LocalDateTime.now().plus(tokenValidity));
         repository.save(user);
-        log.debug("Password reset token issued for user '{}'", user.getUserName());
+        log.debug("Password reset token issued for user with id '{}'", user.getId());
         return token;
     }
 
-    private void sendResetEmail(final String email, final String token) {
+    private void sendResetEmail(final User user, final String token) {
         final var link = UriComponentsBuilder.fromUriString(resetUrl)
                 .queryParam("token", token)
                 .toUriString();
         final var message = new SimpleMailMessage();
         message.setFrom(mailFrom);
-        message.setTo(email);
+        message.setTo(user.getEmail());
         message.setSubject("Password reset");
         message.setText("To reset your password, open the link below. It expires in "
                 + tokenValidity.toMinutes() + " minutes.\n\n"
@@ -130,9 +135,9 @@ public class PasswordResetService implements IPasswordResetService {
                 + "If you didn't request a password reset, ignore this email.");
         try {
             mailSender.send(message);
-            log.info("Password reset email sent to '{}'", email);
+            log.info("Password reset email sent to user with id '{}'", user.getId());
         } catch (final MailException exception) {
-            log.error("Failed to send password reset email to '{}'", email, exception);
+            log.error("Failed to send password reset email to user with id '{}'", user.getId(), exception);
         }
     }
 
@@ -147,10 +152,10 @@ public class PasswordResetService implements IPasswordResetService {
 
     private void requestResetEmail(final User user) {
         if (isCoolingDown(user)) {
-            log.info("Password reset for user '{}' requested within cooldown, skipped.", user.getUserName());
+            log.info("Password reset for user with id '{}' requested within cooldown, skipped.", user.getId());
             return;
         }
-        sendResetEmail(user.getEmail(), issueToken(user));
+        sendResetEmail(user, issueToken(user));
     }
 
 }

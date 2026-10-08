@@ -6,6 +6,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -32,7 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class PasswordResetServiceTest {
 
     private static final String RESET_URL = "http://localhost:5173/auth/password/reset";
@@ -114,6 +116,37 @@ class PasswordResetServiceTest {
 
         verify(repository, never()).save(any());
         verifyNoInteractions(mailSender);
+    }
+
+    @Test
+    void requestReset_logUserIdOnly_whenEmailExists(final CapturedOutput output) {
+        when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
+
+        service.requestReset(tester.getEmail());
+
+        assertThat(output).contains("Password reset email sent to user with id '" + tester.getId() + "'")
+                .doesNotContain(tester.getEmail(), tester.getUserName());
+    }
+
+    @Test
+    void requestReset_notLogEmail_whenEmailDoesNotExist(final CapturedOutput output) {
+        when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.empty());
+
+        service.requestReset(tester.getEmail());
+
+        assertThat(output).contains("password reset skipped")
+                .doesNotContain(tester.getEmail());
+    }
+
+    @Test
+    void requestReset_logUserIdOnly_whenSendingEmailFails(final CapturedOutput output) {
+        when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
+        doThrow(new MailSendException("SMTP down")).when(mailSender).send(any(SimpleMailMessage.class));
+
+        service.requestReset(tester.getEmail());
+
+        assertThat(output).contains("Failed to send password reset email to user with id '" + tester.getId() + "'")
+                .doesNotContain(tester.getEmail(), tester.getUserName());
     }
 
     @Test

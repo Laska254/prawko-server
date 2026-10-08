@@ -66,7 +66,7 @@ public class UserTestData {
                 .setRole(Role.ADMIN);
     }
 
-    public static UserDto createUserDto(long id) {
+    public static UserDto createUserDto(final long id) {
         return new UserDto(
                 id,
                 "Peregrin",
@@ -76,7 +76,7 @@ public class UserTestData {
                 Role.USER);
     }
 
-    public static UserDto createAdminUserDto(long id) {
+    public static UserDto createAdminUserDto(final long id) {
         return new UserDto(
                 id,
                 "Gimli",
@@ -86,7 +86,7 @@ public class UserTestData {
                 Role.ADMIN);
     }
 
-    public static UserDto createUpdatedUserDto(long id) {
+    public static UserDto createUpdatedUserDto(final long id) {
         return new UserDto(
                 id,
                 "UpdatedFirstName",

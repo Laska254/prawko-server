@@ -127,7 +127,7 @@ public class Language {
         return exams;
     }
 
-    public Language setExams(List<Exam> exams) {
+    public Language setExams(final List<Exam> exams) {
         this.exams = exams;
         return this;
     }

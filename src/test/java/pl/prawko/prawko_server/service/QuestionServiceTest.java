@@ -1,8 +1,11 @@
 package pl.prawko.prawko_server.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -20,10 +23,13 @@ import pl.prawko.prawko_server.util.CSVParser;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -107,6 +113,35 @@ public class QuestionServiceTest {
     }
 
     @Nested
+    class GetById {
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void returnDtoMappedWithRevealCorrect_whenQuestionExists(final boolean revealCorrect) {
+            final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
+            final var dto = QuestionTestData.createQuestionDto(question);
+            when(repository.findById(question.getId())).thenReturn(Optional.of(question));
+            when(mapper.toDto(question, revealCorrect)).thenReturn(dto);
+
+            final var result = questionService.getById(question.getId(), revealCorrect);
+
+            assertThat(result).isEqualTo(dto);
+        }
+
+        @Test
+        void throwEntityNotFound_whenQuestionDoesNotExist() {
+            final var nonExistentId = 666L;
+            when(repository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> questionService.getById(nonExistentId, false))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage(QuestionTestData.questionNotFoundMessage(nonExistentId));
+            verifyNoInteractions(mapper);
+        }
+
+    }
+
+    @Nested
     class GetAll {
 
         @Test
@@ -115,7 +150,7 @@ public class QuestionServiceTest {
             final var dto = QuestionTestData.createQuestionDto(question);
             final var pageable = PageRequest.of(2, 1);
             when(repository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(question), pageable, 3));
-            when(mapper.toDto(question)).thenReturn(dto);
+            when(mapper.toDto(question, true)).thenReturn(dto);
 
             final var result = questionService.getAll(pageable);
 

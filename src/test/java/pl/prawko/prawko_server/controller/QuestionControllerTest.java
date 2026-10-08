@@ -95,6 +95,21 @@ public class QuestionControllerTest {
         }
 
         @Test
+        void returnBadRequest_whenCsvIsMalformed() {
+            final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.MALFORMED_CSV_FILE);
+
+            restClient.post()
+                    .headers(TestUtils::authAdmin)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(multipart)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(QuestionCSVTestData.MALFORMED_CSV_MESSAGE);
+            assertThat(repository.count()).isZero();
+        }
+
+        @Test
         void returnForbidden_whenNotAdmin() {
             restClient.post()
                     .headers(TestUtils::authUser)
@@ -115,13 +130,28 @@ public class QuestionControllerTest {
     class GetQuestionById {
 
         @Test
-        void returnQuestion_whenFound() {
+        void returnQuestionWithoutCorrectAnswers_whenFoundByUser() {
+            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
+
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, question.getId())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.id").isEqualTo(question.getId())
+                    .jsonPath("$.answers.length()").isEqualTo(question.getAnswers().size())
+                    .jsonPath("$.answers[*].correct").doesNotExist();
+        }
+
+        @Test
+        void returnQuestionWithCorrectAnswers_whenFoundByAdmin() {
             final var question = repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
             final var expected = QuestionTestData.createQuestionDto(question);
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, expected.id())
-                    .headers(TestUtils::authUser)
+                    .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(QuestionDto.class).isEqualTo(expected);
@@ -130,7 +160,7 @@ public class QuestionControllerTest {
         @Test
         void returnNotFound_whenNotFound() {
             final var nonExistentId = 666L;
-            final var expected = "Question with id '" + nonExistentId + "' not found.";
+            final var expected = QuestionTestData.questionNotFoundMessage(nonExistentId);
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, nonExistentId)
@@ -143,7 +173,7 @@ public class QuestionControllerTest {
 
         @ParameterizedTest
         @ValueSource(longs = {-1L, 0L})
-        void returnBadRequest_whenIdIsNotPositive(long invalidId) {
+        void returnBadRequest_whenIdIsNotPositive(final long invalidId) {
             final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
             restClient.get()

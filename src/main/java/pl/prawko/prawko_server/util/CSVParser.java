@@ -5,8 +5,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
+import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.MappingIterator;
 import tools.jackson.dataformat.csv.CsvMapper;
@@ -40,7 +42,7 @@ public class CSVParser {
 
     public List<Question> parse(final MultipartFile file) {
         validate(file);
-        try (var reader = new BufferedReader(
+        try (final var reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
             final MappingIterator<QuestionCSV> csvRows = csvMapper
                     .readerFor(QuestionCSV.class)
@@ -53,7 +55,11 @@ public class CSVParser {
                     .toList();
             log.info("Successfully mapped {} questions from file '{}'", questions.size(), file.getOriginalFilename());
             return questions;
-        } catch (IOException exception) {
+        } catch (final JacksonException exception) {
+            final var message = describe(exception);
+            log.warn("{} File: '{}'", message, file.getOriginalFilename());
+            throw new InvalidCsvException(message);
+        } catch (final IOException exception) {
             final var message = "CSV file failed to parse: ";
             log.error("{} '{}': {}", message, file.getOriginalFilename(), exception.getMessage(), exception);
             throw new RuntimeException(message + exception.getMessage());
@@ -67,6 +73,14 @@ public class CSVParser {
             log.warn("{} '{}'", message, file.getContentType());
             throw new MultipartException(message);
         }
+    }
+
+    private static String describe(final JacksonException exception) {
+        final var location = exception.getLocation();
+        final var line = location == null ? "" : " at line " + location.getLineNr();
+        final var path = exception.getPath();
+        final var column = path.isEmpty() ? "" : " in column '" + path.getLast().getPropertyName() + "'";
+        return "Invalid CSV file" + line + column + ": " + exception.getOriginalMessage();
     }
 
 }

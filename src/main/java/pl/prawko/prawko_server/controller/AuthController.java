@@ -66,7 +66,8 @@ public class AuthController {
     /**
      * Requests a password reset link to be emailed.
      *
-     * <p>Responds the same whether or not an account with the email exists, so it can't be used to discover accounts.
+     * <p>Responds the same and without waiting for the email to be sent, whether or not an account with the email
+     * exists, so it can't be used to discover accounts.
      *
      * @param request the {@link ForgotPasswordRequest} containing the account's email
      * @return a {@link ResponseEntity} with HTTP 202 Accepted
@@ -75,6 +76,7 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "202", description = "Request accepted"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
+            @ApiResponse(responseCode = "503", description = "Too many reset requests pending"),
     })
     @PostMapping(ApiConstants.FORGOT_PASSWORD)
     public ResponseEntity<Void> forgotPassword(@Valid @RequestBody final ForgotPasswordRequest request) {

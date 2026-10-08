@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.mapper;
 
+import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -13,13 +14,15 @@ import pl.prawko.prawko_server.model.Exam;
  * <p>
  * The mapper is registered as a Spring {@link Component}, so it can be injected into services or other components that require answer mapping
  * functionality.
+ * <p>
+ * {@code revealCorrect} is passed to {@link AnswerMapper} to decide whether answers show which one is correct.
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
         uses = {QuestionMapper.class, AnswerMapper.class})
 public interface ExamMapper {
 
     @Mapping(target = "userId", source = "user.id")
-    ExamDto toDto(Exam entity);
+    ExamDto toDto(Exam entity, @Context boolean revealCorrect);
 
     @Mapping(target = "category", source = "category.name")
     ExamSummaryDto toSummaryDto(Exam entity);

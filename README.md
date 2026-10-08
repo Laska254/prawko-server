@@ -12,6 +12,7 @@
 * [Overview](#overview)
 * [Prerequisites](#prerequisites)
 * [Installation](#installation)
+    + [Local configuration](#local-configuration)
 * [Usage](#usage)
     + [Authentication](#authentication)
     + [Endpoints](#endpoints)
@@ -58,11 +59,16 @@ Clone repository
 
 `cd prawko-server`
 
-The application has two profiles:
+Configuration files in `src/main/resources` (except `application-test.yaml`):
 
-* `dev` (default) - in-memory H2 database recreated and seeded with `data.sql` (categories and languages) on every
-  start, CORS allowed from `localhost`, emails sent to SMTP on `localhost:1025` (see [Emails (Mailpit)](#emails-mailpit)).
-* `prod` - MariaDB, schema updated by Hibernate, Swagger disabled. Requires environment variables:
+* `application.yaml` - defaults shared by all profiles, no passwords or URLs.
+* `src/test/resources/application-test.yaml` - `test` profile, used by local and CI tests (activated with
+  `@ActiveProfiles("test")`). On the test classpath only, so it is not packaged into the JAR. In-memory H2 database
+  recreated and seeded with `data.sql` (categories and languages).
+* `application-dev.yaml` - `dev` profile (default), not in the repository - your local connection details for
+  development and manual verification, see [Local configuration](#local-configuration).
+* `application-prod.yaml` - `prod` profile: MariaDB, schema updated by Hibernate, Swagger disabled. Holds no
+  credentials - all connection details come from environment variables:
     + `DB_URL` e.g. `jdbc:mariadb://localhost:3306/prawko`
     + `DB_USERNAME`
     + `DB_PASSWORD`
@@ -73,7 +79,7 @@ The application has two profiles:
 
   `data.sql` is not run in `prod` - seed categories and languages once manually.
 
-Select the profile with `SPRING_PROFILES_ACTIVE=prod` or `--spring.profiles.active=prod`.
+Select the profile with `SPRING_PROFILES_ACTIVE=<profile>` or `--spring.profiles.active=<profile>`.
 
 Test (unit and integration tests, coverage check, javadoc)
 
@@ -83,7 +89,7 @@ Build with Maven
 
 `./mvnw package`
 
-Run
+Run (requires `application-dev.yaml`, see [Local configuration](#local-configuration))
 
 `./mvnw spring-boot:run`
 
@@ -92,6 +98,43 @@ Run with Docker (after `./mvnw package`)
 `docker build -t prawko-server .`
 
 `docker run -p 8080:8080 prawko-server`
+
+### Local configuration
+
+Create `src/main/resources/application-dev.yaml` (ignored by Git) before running the application locally. The
+example below uses an in-memory H2 database recreated and seeded with `data.sql` on every start, allows CORS from
+`localhost` and sends emails to SMTP on `localhost:1025` (see [Emails (Mailpit)](#emails-mailpit)):
+
+```yaml
+cors:
+  allowed-origin-patterns: "http://localhost:[*],http://127.0.0.1:[*]"
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:prawko
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    defer-datasource-initialization: true
+
+  mail:
+    host: localhost
+    port: 1025
+
+mail:
+  from: no-reply@prawko.local
+
+password-reset:
+  url: http://localhost:5173/auth/password/reset
+```
+
+To use a local MariaDB instead, replace the datasource, e.g. `url: jdbc:mariadb://localhost:3306/prawko` with your
+username and password, and set `spring.jpa.hibernate.ddl-auto` to `update` (`data.sql` is then not run - seed
+categories and languages once manually).
 
 ---
 
@@ -136,19 +179,19 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/questions`
 
-  | Method | Path              | Access | Description                                                       |
-  |--------|-------------------|--------|-------------------------------------------------------------------|
-  | `POST` | `/questions`      | admin  | upload a CSV file (`file` multipart part, max 5MB) with questions |
-  | `GET`  | `/questions`      | admin  | get a page of questions                                           |
-  | `GET`  | `/questions/{id}` | user   | get a question                                                    |
+  | Method | Path              | Access | Description                                                                |
+  |--------|-------------------|--------|----------------------------------------------------------------------------|
+  | `POST` | `/questions`      | admin  | upload a CSV file (`file` multipart part, max 5MB) with questions          |
+  | `GET`  | `/questions`      | admin  | get a page of questions                                                    |
+  | `GET`  | `/questions/{id}` | user   | get a question; answers' `correct` flag is included only for admins        |
 
 * `/exams`
 
-  | Method | Path                 | Access | Description                                              |
-  |--------|----------------------|--------|----------------------------------------------------------|
-  | `POST` | `/exams`             | self   | create a new exam for the `userId` from the request body |
-  | `GET`  | `/exams?userId={id}` | self   | get a page of the user's exams history, newest first     |
-  | `GET`  | `/exams/{id}`        | self   | get an exam (only its owner or an admin)                 |
+  | Method | Path                 | Access | Description                                                                         |
+  |--------|----------------------|--------|-------------------------------------------------------------------------------------|
+  | `POST` | `/exams`             | self   | create a new exam for the `userId` from the request body                            |
+  | `GET`  | `/exams?userId={id}` | self   | get a page of the user's exams history, newest first                                |
+  | `GET`  | `/exams/{id}`        | self   | get an exam; answers' `correct` flag is included only once the exam is not `active` |
 
 `POST` endpoints creating a resource return `201 Created` with its URL in the `Location` header.
 
@@ -180,3 +223,6 @@ Mailpit also has a REST API, e.g. `GET http://localhost:8025/api/v1/message/late
 
 Password reset links are valid for 15 minutes; another reset email for the same account can be requested after
 1 minute.
+
+Reset requests are processed in the background on a bounded pool (`spring.task.execution.pool.*`: 8 threads, 100
+queued). When it's full, `/auth/password/forgot` answers `503`.

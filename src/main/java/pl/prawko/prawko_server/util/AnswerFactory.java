@@ -36,7 +36,7 @@ public class AnswerFactory {
     }
 
     private List<Answer> special(final QuestionCSV questionCSV, final Question question) {
-        var languages = languageService.findAll();
+        final var languages = languageService.findAll();
         return Stream.of('A', 'B', 'C')
                 .map(label -> build(questionCSV, question, languages, label))
                 .toList();

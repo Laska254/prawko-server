@@ -45,7 +45,7 @@ public class ExamController {
 
     private final ExamService service;
 
-    public ExamController(ExamService service) {
+    public ExamController(final ExamService service) {
         this.service = service;
     }
 
@@ -80,12 +80,13 @@ public class ExamController {
     /**
      * Retrieves an exam by its ID.
      *
-     * <p>Allowed only for the owner of the exam or an admin.
+     * <p>Allowed only for the owner of the exam or an admin. Which answers are correct is revealed only once the exam
+     * is no longer active.
      *
      * @param id the unique identifier of the exam
      * @return a {@link ResponseEntity} containing the {@link ExamDto}
      */
-    @Operation(summary = "Get exam by ID", description = "Retrieves an exam with all its associated questions")
+    @Operation(summary = "Get exam by ID", description = "Retrieves an exam with all its associated questions. Correct answers are shown only once the exam is finished.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Exam found"),
             @ApiResponse(responseCode = "403", description = "Exam belongs to another user"),

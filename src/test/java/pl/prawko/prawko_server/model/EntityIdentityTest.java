@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.util.HashSet;
 import java.util.List;
@@ -85,7 +86,7 @@ class EntityIdentityTest {
         user.setExams(List.of(exam));
 
         assertThat(user.toString())
-                .contains("id=1", "userName='pippin'")
+                .contains("id=1")
                 .doesNotContain("secret-hash", "password");
         assertThat(exam.toString()).contains("user=1", "category=B");
         assertThat(category.toString()).contains("name='B'");
@@ -109,6 +110,15 @@ class EntityIdentityTest {
         assertThat(answer.toString()).contains("question=10");
         assertThat(answerTranslation.toString()).contains("answer=12", "language=pl");
         assertThat(exam.toString()).contains("id=14");
+    }
+
+    @Test
+    void toString_excludePersonalData_whenUserHasIt() {
+        final var user = UserTestData.createTestUserPippin().setId(1);
+
+        assertThat(user.toString())
+                .contains("id=1")
+                .doesNotContain(user.getFirstName(), user.getLastName(), user.getUserName(), user.getEmail());
     }
 
     @Test

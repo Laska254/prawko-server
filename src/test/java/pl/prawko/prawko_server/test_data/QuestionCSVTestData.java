@@ -6,11 +6,14 @@ import pl.prawko.prawko_server.model.QuestionType;
 public class QuestionCSVTestData {
 
     public static final String CSV_FILE = "test_question.csv";
+    public static final String MALFORMED_CSV_FILE = "malformed_question.csv";
+    public static final String MALFORMED_CSV_MESSAGE = "Invalid CSV file at line 2 in column 'Liczba punktów': "
+            + "Cannot deserialize value of type `int` from String \"three\": not a valid `int` value";
 
     private QuestionCSVTestData() {
     }
 
-    public static QuestionCSV createQuestionCSV(QuestionType type) {
+    public static QuestionCSV createQuestionCSV(final QuestionType type) {
         return switch (type) {
             case BASIC -> createBasicQuestionCSV();
             case SPECIAL -> createSpecialQuestionCSV();

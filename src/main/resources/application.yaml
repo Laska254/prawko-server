@@ -1,8 +1,5 @@
 server:
   port: 8080
-  error:
-    whitelabel:
-      enabled: false
 
 spring:
   application:
@@ -24,11 +21,22 @@ spring:
   jpa:
     open-in-view: false
 
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 8
+        queue-capacity: 100
+
   mail:
     properties:
       "[mail.smtp.connectiontimeout]": 5000
       "[mail.smtp.timeout]": 10000
       "[mail.smtp.writetimeout]": 10000
+  web:
+    error:
+      whitelabel:
+        enabled: false
 
 password-reset:
   token-validity: 15m

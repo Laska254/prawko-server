@@ -65,7 +65,7 @@ public class AnswerTestData {
         };
     }
 
-    private static AnswerDto toDto_BASIC(Answer answer) {
+    private static AnswerDto toDto_BASIC(final Answer answer) {
         return new AnswerDto(
                 answer.getId(),
                 answer.getQuestion().getId(),
@@ -73,7 +73,7 @@ public class AnswerTestData {
                 Collections.emptyList());
     }
 
-    private static AnswerDto toDto_SPECIAL(Answer answer) {
+    private static AnswerDto toDto_SPECIAL(final Answer answer) {
         return new AnswerDto(
                 answer.getId(),
                 answer.getQuestion().getId(),

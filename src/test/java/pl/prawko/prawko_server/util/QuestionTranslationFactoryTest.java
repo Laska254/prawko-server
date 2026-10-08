@@ -27,7 +27,7 @@ class QuestionTranslationFactoryTest {
 
     @ParameterizedTest
     @EnumSource(QuestionType.class)
-    void createTranslations_returnTranslations_whenCsvIsValid(QuestionType type) {
+    void createTranslations_returnTranslations_whenCsvIsValid(final QuestionType type) {
         final var questionCSV = QuestionCSVTestData.createQuestionCSV(type);
         final var question = QuestionTestData.createQuestion(type);
         final var expected = QuestionTranslationsTestData.createTranslations(type);

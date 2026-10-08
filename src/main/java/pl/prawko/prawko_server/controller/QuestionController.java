@@ -11,6 +11,7 @@ import org.springframework.data.web.PagedModel;
 import org.springframework.data.web.SortDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,7 +40,7 @@ public class QuestionController {
 
     private final QuestionService questionService;
 
-    public QuestionController(QuestionService questionService) {
+    public QuestionController(final QuestionService questionService) {
         this.questionService = questionService;
     }
 
@@ -71,18 +72,23 @@ public class QuestionController {
     /**
      * Retrieves a question by its ID.
      *
-     * @param id the unique identifier of the question (must be positive)
+     * <p>Which answers are correct is revealed only to admins, so users can't look up answers to their active exams.
+     *
+     * @param id    the unique identifier of the question (must be positive)
+     * @param admin whether the currently authenticated user is an admin
      * @return a {@link ResponseEntity} containing the {@link QuestionDto}
      */
-    @Operation(summary = "Get question by ID", description = "Retrieves a question with all its associated translations and answers.")
+    @Operation(summary = "Get question by ID",
+            description = "Retrieves a question with all its associated translations and answers. Correct answers are shown only to admins.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Question found"),
             @ApiResponse(responseCode = "404", description = "Question not found"),
             @ApiResponse(responseCode = "400", description = "ID is negative or zero")
     })
     @GetMapping(ApiConstants.BY_ID)
-    public ResponseEntity<QuestionDto> getQuestion(@PathVariable @Positive final long id) {
-        return ResponseEntity.ok(questionService.getById(id));
+    public ResponseEntity<QuestionDto> getQuestion(@PathVariable @Positive final long id,
+                                                   @AuthenticationPrincipal(expression = "isAdmin()") final boolean admin) {
+        return ResponseEntity.ok(questionService.getById(id, admin));
     }
 
     /**

@@ -65,7 +65,7 @@ public class ExamService implements IExamService {
                 .setUserAnswers(Collections.emptyList());
         user.getExams().add(exam);
         repository.save(exam);
-        log.info("Created exam for user '{}'", user.getUserName());
+        log.info("Created exam for user with id '{}'", userId);
         return exam.getId();
     }
 
@@ -77,7 +77,7 @@ public class ExamService implements IExamService {
     @Nullable
     @Override
     @Transactional
-    public ExamDto getById(long examId) {
+    public ExamDto getById(final long examId) {
         log.info("Fetching exam by id: {}", examId);
         final var exam = repository.findById(examId)
                 .orElseThrow(() -> {
@@ -85,7 +85,7 @@ public class ExamService implements IExamService {
                     log.warn(message);
                     return new EntityNotFoundException(message);
                 });
-        return examMapper.toDto(exam);
+        return examMapper.toDto(exam, !exam.isActive());
     }
 
     /**

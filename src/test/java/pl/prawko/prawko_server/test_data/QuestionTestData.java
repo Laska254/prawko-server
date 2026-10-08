@@ -60,6 +60,10 @@ public class QuestionTestData {
         };
     }
 
+    public static String questionNotFoundMessage(final long id) {
+        return "Question with id '" + id + "' not found.";
+    }
+
     private static QuestionDto createQuestionDto_Basic(final Question question) {
         final var answers = AnswerTestData.createAnswerDtos(question.getAnswers(), question.getType());
         final var categories = List.of(CategoryTestData.CATEGORY_A.getName(), CategoryTestData.CATEGORY_B.getName());
@@ -92,7 +96,7 @@ public class QuestionTestData {
         );
     }
 
-    public static List<Question> createQuestionsByTypeAndValue(QuestionType type, int points, int count) {
+    public static List<Question> createQuestionsByTypeAndValue(final QuestionType type, final int points, final int count) {
         return IntStream.range(0, count)
                 .mapToObj(question -> new Question().setType(type).setPoints(points))
                 .toList();

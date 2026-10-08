@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
+import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 
@@ -39,6 +41,12 @@ public class ExceptionController {
     @ExceptionHandler(MultipartException.class)
     public ProblemDetail handleWrongFileType(final MultipartException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNSUPPORTED_MEDIA_TYPE, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "400", description = "Malformed CSV file")
+    @ExceptionHandler(InvalidCsvException.class)
+    public ProblemDetail handleInvalidCsv(final InvalidCsvException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
     @ApiResponse(responseCode = "409", description = "Entity already exists")
@@ -81,8 +89,8 @@ public class ExceptionController {
 
     @ApiResponse(responseCode = "401", description = "Authentication failed")
     @ExceptionHandler(AuthenticationException.class)
-    public ProblemDetail handleInvalidLoginRequest(final AuthenticationException exception) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
+    public ProblemDetail handleInvalidLoginRequest() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Invalid login or password.");
     }
 
     @ApiResponse(responseCode = "403", description = "Access denied")
@@ -115,6 +123,12 @@ public class ExceptionController {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail handleMissingBody() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Request body is missing.");
+    }
+
+    @ApiResponse(responseCode = "503", description = "Too many background tasks pending")
+    @ExceptionHandler(TaskRejectedException.class)
+    public ProblemDetail handleTaskRejected() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Server is busy, try again later.");
     }
 
 }

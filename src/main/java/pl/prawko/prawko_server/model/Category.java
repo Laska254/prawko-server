@@ -77,7 +77,7 @@ public class Category {
         return exams;
     }
 
-    public Category setExams(List<Exam> exams) {
+    public Category setExams(final List<Exam> exams) {
         this.exams = exams;
         return this;
     }
