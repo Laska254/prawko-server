@@ -2,6 +2,7 @@ package pl.prawko.prawko_server.config;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
+import pl.prawko.prawko_server.model.Role;
 
 import java.io.Serial;
 import java.util.Collection;
@@ -34,6 +35,11 @@ public class AuthenticatedUser extends User {
     
     public boolean isSelf(final long userId) {
         return id == userId;
+    }
+
+    public boolean isAdmin() {
+        return getAuthorities().stream()
+                .anyMatch(authority -> Role.ADMIN.getAuthority().equals(authority.getAuthority()));
     }
 
 }

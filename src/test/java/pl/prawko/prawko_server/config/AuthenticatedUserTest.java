@@ -21,4 +21,17 @@ class AuthenticatedUserTest {
         assertThat(principal.isSelf(8L)).isFalse();
     }
 
+    @Test
+    void isAdmin_returnFalse_whenRoleIsUser() {
+        assertThat(principal.isAdmin()).isFalse();
+    }
+
+    @Test
+    void isAdmin_returnTrue_whenRoleIsAdmin() {
+        final var admin =
+                new AuthenticatedUser(1L, TestUtils.ADMIN_NAME, TestUtils.ADMIN_PASSWORD, AuthorityUtils.createAuthorityList(Role.ADMIN.getAuthority()));
+
+        assertThat(admin.isAdmin()).isTrue();
+    }
+
 }
