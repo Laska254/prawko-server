@@ -33,22 +33,25 @@ public class AuthenticatedUser extends User {
     }
 
     public static Optional<Long> idOf(@Nullable final Authentication authentication) {
-        return authentication != null && authentication.getPrincipal() instanceof AuthenticatedUser user
-                ? Optional.of(user.getId())
-                : Optional.empty();
+        return Optional.ofNullable(authentication)
+                .map(Authentication::getPrincipal)
+                .filter(AuthenticatedUser.class::isInstance)
+                .map(AuthenticatedUser.class::cast)
+                .map(AuthenticatedUser::getId);
     }
 
     public long getId() {
         return id;
     }
-    
+
     public boolean isSelf(final long userId) {
         return id == userId;
     }
 
     public boolean isAdmin() {
         return getAuthorities().stream()
-                .anyMatch(authority -> Role.ADMIN.getAuthority().equals(authority.getAuthority()));
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(Role.ADMIN.getAuthority()::equals);
     }
 
 }
