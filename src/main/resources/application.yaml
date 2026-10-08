@@ -1,8 +1,5 @@
 server:
   port: 8080
-  error:
-    whitelabel:
-      enabled: false
 
 spring:
   application:
@@ -36,6 +33,10 @@ spring:
       "[mail.smtp.connectiontimeout]": 5000
       "[mail.smtp.timeout]": 10000
       "[mail.smtp.writetimeout]": 10000
+  web:
+    error:
+      whitelabel:
+        enabled: false
 
 password-reset:
   token-validity: 15m
