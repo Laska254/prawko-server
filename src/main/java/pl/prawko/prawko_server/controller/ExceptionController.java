@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
+import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 
@@ -40,6 +41,12 @@ public class ExceptionController {
     @ExceptionHandler(MultipartException.class)
     public ProblemDetail handleWrongFileType(final MultipartException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNSUPPORTED_MEDIA_TYPE, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "400", description = "Malformed CSV file")
+    @ExceptionHandler(InvalidCsvException.class)
+    public ProblemDetail handleInvalidCsv(final InvalidCsvException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
     @ApiResponse(responseCode = "409", description = "Entity already exists")

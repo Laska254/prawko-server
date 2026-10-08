@@ -95,6 +95,21 @@ public class QuestionControllerTest {
         }
 
         @Test
+        void returnBadRequest_whenCsvIsMalformed() {
+            final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.MALFORMED_CSV_FILE);
+
+            restClient.post()
+                    .headers(TestUtils::authAdmin)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(multipart)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(QuestionCSVTestData.MALFORMED_CSV_MESSAGE);
+            assertThat(repository.count()).isZero();
+        }
+
+        @Test
         void returnForbidden_whenNotAdmin() {
             restClient.post()
                     .headers(TestUtils::authUser)
