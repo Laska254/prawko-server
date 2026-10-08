@@ -117,7 +117,7 @@ public class QuestionServiceTest {
 
         @ParameterizedTest
         @ValueSource(booleans = {true, false})
-        void returnDtoMappedWithRevealCorrect_whenQuestionExists(boolean revealCorrect) {
+        void returnDtoMappedWithRevealCorrect_whenQuestionExists(final boolean revealCorrect) {
             final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
             final var dto = QuestionTestData.createQuestionDto(question);
             when(repository.findById(question.getId())).thenReturn(Optional.of(question));

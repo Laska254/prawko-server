@@ -184,7 +184,7 @@ public class SpringSecurity {
                 .build();
     }
 
-    private void configureEndpoint_Auth(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
+    private void configureEndpoint_Auth(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST,
                         ApiConstants.AUTH_BASE_URL,
@@ -192,7 +192,7 @@ public class SpringSecurity {
                         ApiConstants.AUTH_BASE_URL + ApiConstants.RESET_PASSWORD).permitAll();
     }
 
-    private void configureEndpoint_Users(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
+    private void configureEndpoint_Users(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.USERS_BASE_URL).permitAll()
                 .requestMatchers(HttpMethod.GET, ApiConstants.USERS_BASE_URL + ApiConstants.ME).hasRole("USER")
@@ -201,14 +201,14 @@ public class SpringSecurity {
                 .requestMatchers(HttpMethod.DELETE, ApiConstants.USERS_BASE_URL_ALL).hasRole("ADMIN");
     }
 
-    private void configureEndpoint_Questions(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
+    private void configureEndpoint_Questions(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL_ALL).hasRole("USER");
     }
 
-    private void configureEndpoint_Exams(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
+    private void configureEndpoint_Exams(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.EXAMS_BASE_URL).hasRole("USER")
                 .requestMatchers(HttpMethod.GET, ApiConstants.EXAMS_BASE_URL_ALL).hasRole("USER");

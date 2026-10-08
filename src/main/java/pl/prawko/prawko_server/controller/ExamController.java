@@ -45,7 +45,7 @@ public class ExamController {
 
     private final ExamService service;
 
-    public ExamController(ExamService service) {
+    public ExamController(final ExamService service) {
         this.service = service;
     }
 

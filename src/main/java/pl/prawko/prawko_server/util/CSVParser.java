@@ -40,7 +40,7 @@ public class CSVParser {
 
     public List<Question> parse(final MultipartFile file) {
         validate(file);
-        try (var reader = new BufferedReader(
+        try (final var reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
             final MappingIterator<QuestionCSV> csvRows = csvMapper
                     .readerFor(QuestionCSV.class)
@@ -53,7 +53,7 @@ public class CSVParser {
                     .toList();
             log.info("Successfully mapped {} questions from file '{}'", questions.size(), file.getOriginalFilename());
             return questions;
-        } catch (IOException exception) {
+        } catch (final IOException exception) {
             final var message = "CSV file failed to parse: ";
             log.error("{} '{}': {}", message, file.getOriginalFilename(), exception.getMessage(), exception);
             throw new RuntimeException(message + exception.getMessage());

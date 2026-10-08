@@ -138,7 +138,7 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Transactional
     @Override
-    public UserDto updateUser(long userId, final UserUpdateRequest updateRequest) {
+    public UserDto updateUser(final long userId, final UserUpdateRequest updateRequest) {
         log.info("Updating user with id: {}", userId);
         final var user = getById(userId);
         validateNoConflict(updateRequest.userName(), updateRequest.email());
@@ -197,7 +197,7 @@ public class UserService implements IUserService, UserDetailsService {
     }
 
     private void validateNoConflict(@Nullable final String userName, @Nullable final String email) {
-        Map<String, String> errorDetails = new HashMap<>();
+        final Map<String, String> errorDetails = new HashMap<>();
         if (userName != null && repository.existsByUserName(userName)) {
             errorDetails.put("userName", "User with username '" + userName + "' already exists.");
         }

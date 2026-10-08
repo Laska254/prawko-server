@@ -23,7 +23,7 @@ public class AuthenticationEvents {
      * @param success the {@link AuthenticationSuccessEvent} containing authentication details
      */
     @EventListener
-    public void onSuccess(AuthenticationSuccessEvent success) {
+    public void onSuccess(final AuthenticationSuccessEvent success) {
         final var userId = AuthenticatedUser.idOf(success.getAuthentication())
                 .map(String::valueOf)
                 .orElse("unknown");
@@ -39,7 +39,7 @@ public class AuthenticationEvents {
      * @param failure the {@link AbstractAuthenticationFailureEvent} containing failure details
      */
     @EventListener
-    public void onFailure(AbstractAuthenticationFailureEvent failure) {
+    public void onFailure(final AbstractAuthenticationFailureEvent failure) {
         log.warn("Authentication failed. {}", failure.getException().getMessage());
     }
 

@@ -35,7 +35,7 @@ class ExamMapperTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void toDto_mapFieldsAndDelegateToNestedMappers_whenAllFieldsAreSet(boolean revealCorrect) {
+    void toDto_mapFieldsAndDelegateToNestedMappers_whenAllFieldsAreSet(final boolean revealCorrect) {
         final var now = LocalDateTime.now();
         final var question = new Question().setId(10L);
         final var answer = new Answer().setId(20L);

@@ -43,7 +43,7 @@ class CsvFacadeTest {
 
     @ParameterizedTest
     @EnumSource(QuestionType.class)
-    void mapSingleRow_returnQuestionWithAssociations_whenCsvIsValid(QuestionType type) {
+    void mapSingleRow_returnQuestionWithAssociations_whenCsvIsValid(final QuestionType type) {
         final var questionCsv = mock(QuestionCSV.class);
         final var question = new Question();
         final var translations = List.of(new QuestionTranslation());

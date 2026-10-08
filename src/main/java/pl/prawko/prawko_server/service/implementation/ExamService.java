@@ -77,7 +77,7 @@ public class ExamService implements IExamService {
     @Nullable
     @Override
     @Transactional
-    public ExamDto getById(long examId) {
+    public ExamDto getById(final long examId) {
         log.info("Fetching exam by id: {}", examId);
         final var exam = repository.findById(examId)
                 .orElseThrow(() -> {

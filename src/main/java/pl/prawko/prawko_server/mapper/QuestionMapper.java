@@ -44,7 +44,7 @@ public interface QuestionMapper {
     @Mapping(target = "type", expression = "java(QuestionType.ofType(questionCSV.type()))")
     Question toEntity(QuestionCSV questionCSV);
 
-    default String categoryToName(Category category) {
+    default String categoryToName(final Category category) {
         return category.getName();
     }
 

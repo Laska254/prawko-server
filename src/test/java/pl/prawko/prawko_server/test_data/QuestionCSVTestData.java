@@ -10,7 +10,7 @@ public class QuestionCSVTestData {
     private QuestionCSVTestData() {
     }
 
-    public static QuestionCSV createQuestionCSV(QuestionType type) {
+    public static QuestionCSV createQuestionCSV(final QuestionType type) {
         return switch (type) {
             case BASIC -> createBasicQuestionCSV();
             case SPECIAL -> createSpecialQuestionCSV();

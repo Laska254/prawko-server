@@ -458,7 +458,7 @@ public class UserControllerTest {
 
         @ParameterizedTest
         @ValueSource(longs = {-1L, 0L})
-        void returnBadRequest_whenIdIsNotPositive(long invalidId) {
+        void returnBadRequest_whenIdIsNotPositive(final long invalidId) {
             final var validDto = UserTestData.createValidUserUpdateRequest();
             final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
@@ -657,7 +657,7 @@ public class UserControllerTest {
 
         @ParameterizedTest
         @ValueSource(longs = {-1L, 0L})
-        void returnBadRequest_whenIdIsNotPositive(long invalidId) {
+        void returnBadRequest_whenIdIsNotPositive(final long invalidId) {
             final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
             restClient.delete()

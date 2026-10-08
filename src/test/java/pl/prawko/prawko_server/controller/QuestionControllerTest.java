@@ -158,7 +158,7 @@ public class QuestionControllerTest {
 
         @ParameterizedTest
         @ValueSource(longs = {-1L, 0L})
-        void returnBadRequest_whenIdIsNotPositive(long invalidId) {
+        void returnBadRequest_whenIdIsNotPositive(final long invalidId) {
             final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
             restClient.get()

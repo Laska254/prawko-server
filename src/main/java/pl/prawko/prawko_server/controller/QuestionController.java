@@ -40,7 +40,7 @@ public class QuestionController {
 
     private final QuestionService questionService;
 
-    public QuestionController(QuestionService questionService) {
+    public QuestionController(final QuestionService questionService) {
         this.questionService = questionService;
     }
 

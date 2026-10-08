@@ -31,7 +31,7 @@ class QuestionMapperTest {
 
     @ParameterizedTest
     @EnumSource(value = QuestionType.class)
-    void toDto_mapAllFields_whenQuestionIsOfAnyType(QuestionType type) {
+    void toDto_mapAllFields_whenQuestionIsOfAnyType(final QuestionType type) {
         final var given = QuestionTestData.createQuestion(type);
         final var expected = QuestionTestData.createQuestionDto(given);
 
@@ -46,7 +46,7 @@ class QuestionMapperTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void toDto_passRevealCorrectToAnswerMapper_whenMappingAnswers(boolean revealCorrect) {
+    void toDto_passRevealCorrectToAnswerMapper_whenMappingAnswers(final boolean revealCorrect) {
         final var given = QuestionTestData.createQuestion(QuestionType.SPECIAL);
 
         questionMapper.toDto(given, revealCorrect);
@@ -56,7 +56,7 @@ class QuestionMapperTest {
 
     @ParameterizedTest
     @MethodSource("pl.prawko.prawko_server.test_data.QuestionTranslationsTestData#translations")
-    void toTranslationDto_mapContentAndLanguageCode_whenTranslationIsInAnyLanguage(Language language, String content) {
+    void toTranslationDto_mapContentAndLanguageCode_whenTranslationIsInAnyLanguage(final Language language, final String content) {
         final var given = QuestionTranslationsTestData.createTranslation(language, content);
 
         final var result = questionMapper.toTranslationDto(given);
@@ -67,7 +67,7 @@ class QuestionMapperTest {
 
     @ParameterizedTest
     @EnumSource(value = QuestionType.class)
-    void toEntity_mapFieldsWithoutAssociations_whenCsvIsOfAnyType(QuestionType type) {
+    void toEntity_mapFieldsWithoutAssociations_whenCsvIsOfAnyType(final QuestionType type) {
         final var given = QuestionCSVTestData.createQuestionCSV(type);
         final var expected = QuestionTestData.createQuestion(type);
 

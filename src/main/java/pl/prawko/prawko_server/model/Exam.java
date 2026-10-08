@@ -85,7 +85,7 @@ public class Exam {
         return id;
     }
 
-    public Exam setId(long id) {
+    public Exam setId(final long id) {
         this.id = id;
         return this;
     }
