@@ -76,6 +76,7 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "202", description = "Request accepted"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
+            @ApiResponse(responseCode = "503", description = "Too many reset requests pending"),
     })
     @PostMapping(ApiConstants.FORGOT_PASSWORD)
     public ResponseEntity<Void> forgotPassword(@Valid @RequestBody final ForgotPasswordRequest request) {

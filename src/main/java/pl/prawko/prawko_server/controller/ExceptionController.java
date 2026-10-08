@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -115,6 +116,12 @@ public class ExceptionController {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail handleMissingBody() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Request body is missing.");
+    }
+
+    @ApiResponse(responseCode = "503", description = "Too many background tasks pending")
+    @ExceptionHandler(TaskRejectedException.class)
+    public ProblemDetail handleTaskRejected() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Server is busy, try again later.");
     }
 
 }
