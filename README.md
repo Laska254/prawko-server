@@ -180,3 +180,6 @@ Mailpit also has a REST API, e.g. `GET http://localhost:8025/api/v1/message/late
 
 Password reset links are valid for 15 minutes; another reset email for the same account can be requested after
 1 minute.
+
+Reset requests are processed in the background on a bounded pool (`spring.task.execution.pool.*`: 8 threads, 100
+queued). When it's full, `/auth/password/forgot` answers `503`.

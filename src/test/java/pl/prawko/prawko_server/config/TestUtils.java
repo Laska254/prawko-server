@@ -20,6 +20,7 @@ public class TestUtils {
     public static final String INVALID_SORT = "Cannot sort by 'nonExisting'.";
     public static final String USERNAME_REQUIRED = "Username is required.";
     public static final String PASSWORD_REQUIRED = "Password is required.";
+    public static final String SERVER_BUSY = "Server is busy, try again later.";
 
     public static void authUser(final HttpHeaders headers) {
         headers.setBasicAuth(USER_NAME, USER_PASSWORD);

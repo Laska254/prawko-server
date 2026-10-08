@@ -13,8 +13,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
@@ -57,6 +59,9 @@ public class AuthControllerTest {
 
     @Autowired
     private MailSender mailSender;
+
+    @Autowired
+    private ThreadPoolTaskExecutor taskExecutor;
 
     @Value("${password-reset.cooldown}")
     private Duration cooldown;
@@ -254,12 +259,24 @@ public class AuthControllerTest {
         verifyNoInteractions(mailSender);
     }
 
-    private void forgotPassword(final String email) {
-        restClient.post()
-                .uri(ApiConstants.FORGOT_PASSWORD)
-                .body(new ForgotPasswordRequest(email))
-                .exchange()
-                .expectStatus().isAccepted();
+    @Test
+    void forgotPassword_returnServiceUnavailable_whenTaskQueueIsFull() {
+        final var release = new CountDownLatch(1);
+        try {
+            for (int i = 0; i < taskExecutor.getMaxPoolSize() + taskExecutor.getQueueCapacity(); i++) {
+                taskExecutor.execute(() -> awaitRelease(release));
+            }
+
+            restClient.post()
+                    .uri(ApiConstants.FORGOT_PASSWORD)
+                    .body(new ForgotPasswordRequest(UserTestData.createTestUserPippin().getEmail()))
+                    .exchange()
+                    .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.SERVER_BUSY);
+        } finally {
+            release.countDown();
+        }
     }
 
     @Test
@@ -323,6 +340,22 @@ public class AuthControllerTest {
         final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender, timeout(MAIL_TIMEOUT_MS)).send(captor.capture());
         return captor.getValue();
+    }
+
+    private static void awaitRelease(final CountDownLatch release) {
+        try {
+            release.await(MAIL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (final InterruptedException exception) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void forgotPassword(final String email) {
+        restClient.post()
+                .uri(ApiConstants.FORGOT_PASSWORD)
+                .body(new ForgotPasswordRequest(email))
+                .exchange()
+                .expectStatus().isAccepted();
     }
 
 }
