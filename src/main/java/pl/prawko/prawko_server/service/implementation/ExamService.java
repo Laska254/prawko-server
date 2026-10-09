@@ -79,12 +79,7 @@ public class ExamService implements IExamService {
     @Transactional
     public ExamDto getById(final long examId) {
         log.info("Fetching exam by id: {}", examId);
-        final var exam = repository.findById(examId)
-                .orElseThrow(() -> {
-                    final var message = "Exam with '" + examId + "' not found.";
-                    log.warn(message);
-                    return new EntityNotFoundException(message);
-                });
+        final var exam = findById(examId);
         return examMapper.toDto(exam, !exam.isActive());
     }
 
