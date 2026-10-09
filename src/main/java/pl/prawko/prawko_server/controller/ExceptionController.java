@@ -69,6 +69,12 @@ public class ExceptionController {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
+    @ApiResponse(responseCode = "409", description = "Exam is already finished")
+    @ExceptionHandler(ExamFinishedException.class)
+    public ProblemDetail handleExamFinished(final ExamFinishedException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
     @ApiResponse(responseCode = "404", description = "Entity not found")
     @ExceptionHandler(EntityNotFoundException.class)
     public ProblemDetail handleEntityNotFound(final EntityNotFoundException exception) {
