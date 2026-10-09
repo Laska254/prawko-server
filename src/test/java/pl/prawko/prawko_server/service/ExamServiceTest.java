@@ -334,6 +334,12 @@ public class ExamServiceTest {
 
     }
 
+    private Exam stubExam(final Exam exam) {
+        exam.setId(1L);
+        when(repository.findById(exam.getId())).thenReturn(Optional.of(exam));
+        return exam;
+    }
+
     private static Question createQuestionWithAnswerIds(final QuestionType type) {
         final var question = QuestionTestData.createQuestion(type);
         final var answers = question.getAnswers();
