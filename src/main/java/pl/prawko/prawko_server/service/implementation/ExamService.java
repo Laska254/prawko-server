@@ -99,4 +99,27 @@ public class ExamService implements IExamService {
         return exams;
     }
 
+    private Exam findById(final long examId) {
+        return repository.findById(examId)
+                .orElseThrow(() -> {
+                    final var message = "Exam with '" + examId + "' not found.";
+                    log.warn(message);
+                    return new EntityNotFoundException(message);
+                });
+    }
+
+    private Exam findActiveExamOfUser(final long examId, final long userId) {
+        final var exam = findById(examId);
+        if (exam.getUser().getId() != userId) {
+            log.warn("User '{}' tried to modify exam '{}' of another user", userId, examId);
+            throw new AccessDeniedException("Exam '" + examId + "' belongs to another user.");
+        }
+        if (!exam.isActive()) {
+            final var message = "Exam with '" + examId + "' is already finished.";
+            log.warn(message);
+            throw new ExamFinishedException(message);
+        }
+        return exam;
+    }
+
 }
