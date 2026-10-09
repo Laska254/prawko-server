@@ -10,25 +10,35 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
+import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.mapper.ExamMapper;
 import pl.prawko.prawko_server.model.Exam;
+import pl.prawko.prawko_server.model.Question;
+import pl.prawko.prawko_server.model.QuestionType;
+import pl.prawko.prawko_server.repository.AnswerRepository;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.service.implementation.CategoryService;
 import pl.prawko.prawko_server.service.implementation.ExamService;
 import pl.prawko.prawko_server.service.implementation.QuestionService;
 import pl.prawko.prawko_server.service.implementation.UserService;
+import pl.prawko.prawko_server.test_data.AnswerTestData;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
 import pl.prawko.prawko_server.test_data.ExamTestData;
+import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -53,6 +63,9 @@ public class ExamServiceTest {
 
     @Mock
     private ExamGenerator examGenerator;
+
+    @Mock
+    private AnswerRepository answerRepository;
 
     @InjectMocks
     private ExamService service;
@@ -223,6 +236,109 @@ public class ExamServiceTest {
             verifyNoInteractions(repository, examMapper);
         }
 
+    }
+
+    @Nested
+    class SubmitAnswer {
+
+        @Test
+        void addAnswer_whenQuestionIsNotAnswered() {
+            final var user = UserTestData.createTestUserPippin();
+            final var question = createQuestionWithAnswerIds(QuestionType.SPECIAL);
+            final var exam = stubExam(ExamTestData.createExamWithoutQuestions(user).setQuestions(List.of(question)));
+            final var answer = question.getAnswers().getFirst();
+            when(answerRepository.findById(answer.getId())).thenReturn(Optional.of(answer));
+
+            service.submitAnswer(exam.getId(), user.getId(), answer.getId());
+
+            assertThat(exam.getUserAnswers()).containsExactly(answer);
+        }
+
+        @Test
+        void replacePreviousAnswer_whenQuestionIsAlreadyAnswered() {
+            final var user = UserTestData.createTestUserPippin();
+            final var special = createQuestionWithAnswerIds(QuestionType.SPECIAL);
+            final var basic = createQuestionWithAnswerIds(QuestionType.BASIC);
+            final var otherQuestionAnswer = basic.getAnswers().getFirst();
+            final var exam = stubExam(ExamTestData.createExamWithoutQuestions(user).setQuestions(List.of(special, basic)));
+            exam.getUserAnswers().addAll(List.of(special.getAnswers().getFirst(), otherQuestionAnswer));
+            final var newAnswer = special.getAnswers().getLast();
+            when(answerRepository.findById(newAnswer.getId())).thenReturn(Optional.of(newAnswer));
+
+            service.submitAnswer(exam.getId(), user.getId(), newAnswer.getId());
+
+            assertThat(exam.getUserAnswers()).containsExactlyInAnyOrder(otherQuestionAnswer, newAnswer);
+        }
+
+        @Test
+        void throwEntityNotFound_whenAnswerBelongsToQuestionOutsideExam() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.createExamWithoutQuestions(user)
+                    .setQuestions(List.of(createQuestionWithAnswerIds(QuestionType.SPECIAL))));
+            final var foreignAnswer = createQuestionWithAnswerIds(QuestionType.BASIC).getAnswers().getFirst();
+            when(answerRepository.findById(foreignAnswer.getId())).thenReturn(Optional.of(foreignAnswer));
+
+            assertThatThrownBy(() -> service.submitAnswer(exam.getId(), user.getId(), foreignAnswer.getId()))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage(ExamTestData.answerNotFoundMessage(foreignAnswer.getId(), exam.getId()));
+
+            assertThat(exam.getUserAnswers()).isEmpty();
+        }
+
+        @Test
+        void throwEntityNotFound_whenAnswerDoesNotExist() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.createExam(user));
+            final var nonExistentId = 666L;
+            when(answerRepository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.submitAnswer(exam.getId(), user.getId(), nonExistentId))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage(ExamTestData.answerNotFoundMessage(nonExistentId, exam.getId()));
+        }
+
+        @Test
+        void throwEntityNotFound_whenExamDoesNotExist() {
+            final var nonExistentId = 666L;
+            when(repository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.submitAnswer(nonExistentId, 1L, 1L))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage(ExamTestData.examNotFoundMessage(nonExistentId));
+
+            verifyNoInteractions(answerRepository);
+        }
+
+        @Test
+        void throwAccessDenied_whenExamBelongsToAnotherUser() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.createExam(user));
+
+            assertThatThrownBy(() -> service.submitAnswer(exam.getId(), user.getId() + 1, 1L))
+                    .isInstanceOf(AccessDeniedException.class);
+
+            verifyNoInteractions(answerRepository);
+        }
+
+        @Test
+        void throwExamFinished_whenExamIsNotActive() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.createExam(user).setActive(false));
+
+            assertThatThrownBy(() -> service.submitAnswer(exam.getId(), user.getId(), 1L))
+                    .isInstanceOf(ExamFinishedException.class)
+                    .hasMessage(ExamTestData.examFinishedMessage(exam.getId()));
+
+            verifyNoInteractions(answerRepository);
+        }
+
+    }
+
+    private static Question createQuestionWithAnswerIds(final QuestionType type) {
+        final var question = QuestionTestData.createQuestion(type);
+        final var answers = question.getAnswers();
+        IntStream.range(0, answers.size()).forEach(index -> answers.get(index).setId(question.getId() * 10 + index));
+        return question;
     }
 
 }
