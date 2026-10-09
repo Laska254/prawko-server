@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.core.task.TaskRejectedException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
+import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
@@ -67,6 +69,18 @@ public class ExceptionController {
     @ExceptionHandler(InvalidTokenException.class)
     public ProblemDetail handleInvalidToken(final InvalidTokenException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "409", description = "Exam is already finished")
+    @ExceptionHandler(ExamFinishedException.class)
+    public ProblemDetail handleExamFinished(final ExamFinishedException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "409", description = "Entity was modified concurrently")
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ProblemDetail handleConcurrentModification() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Resource was modified concurrently, try again.");
     }
 
     @ApiResponse(responseCode = "404", description = "Entity not found")
