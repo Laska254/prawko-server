@@ -1,7 +1,12 @@
 package pl.prawko.prawko_server.config;
 
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.http.HttpHeaders;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.web.servlet.client.RestTestClient;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class TestUtils {
 
@@ -22,6 +27,8 @@ public class TestUtils {
     public static final String PASSWORD_REQUIRED = "Password is required.";
     public static final String SERVER_BUSY = "Server is busy, try again later.";
 
+    public static final long MAIL_TIMEOUT_MS = 5_000;
+
     public static void authUser(final HttpHeaders headers) {
         headers.setBasicAuth(USER_NAME, USER_PASSWORD);
     }
@@ -35,6 +42,29 @@ public class TestUtils {
                 .bindToServer()
                 .baseUrl(TestUtils.BASE_URL + port + controllerBasePath)
                 .build();
+    }
+
+    public static CountDownLatch blockTaskExecutor(final ThreadPoolTaskExecutor taskExecutor) {
+        final var release = new CountDownLatch(1);
+        do {
+            try {
+                while (true) {
+                    taskExecutor.execute(() -> awaitRelease(release));
+                }
+            } catch (final TaskRejectedException full) {
+                Thread.onSpinWait();
+            }
+        } while (taskExecutor.getActiveCount() < taskExecutor.getMaxPoolSize()
+                || taskExecutor.getQueueSize() < taskExecutor.getQueueCapacity());
+        return release;
+    }
+
+    private static void awaitRelease(final CountDownLatch release) {
+        try {
+            release.await(MAIL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (final InterruptedException exception) {
+            Thread.currentThread().interrupt();
+        }
     }
 
 }
