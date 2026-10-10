@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.PageResponse;
@@ -524,7 +525,7 @@ public class ExamControllerTest {
                     .headers(TestUtils::authUser)
                     .body(new SubmitAnswerRequest(question.getAnswers().getFirst().getId()))
                     .exchange()
-                    .expectStatus().isEqualTo(409)
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(ExamTestData.examFinishedMessage(exam.getId()));
 
