@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Version;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -24,6 +25,7 @@ import java.util.List;
  *     <li>{@code score} - sum of correct answers in exam by user</li>
  *     <li>{@code created} - timestamp of creation</li>
  *     <li>{@code updated} - timestamp of last update</li>
+ *     <li>{@code version} - optimistic lock, so concurrent changes (e.g. to user answers) fail instead of overwriting each other</li>
  * </ul>
  * <p>
  * Relationships:
@@ -52,6 +54,9 @@ public class Exam {
 
     @UpdateTimestamp
     private LocalDateTime updated;
+
+    @Version
+    private long version;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

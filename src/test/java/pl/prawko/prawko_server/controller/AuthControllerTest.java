@@ -48,7 +48,6 @@ public class AuthControllerTest {
 
     private static final String USERNAME_SIZE_MSG = "Username or email must not be blank and between 3 and 63 characters.";
     private static final String PASSWORD_SIZE_MSG = "Password must not be blank and between 7 and 63 characters.";
-    private static final long MAIL_TIMEOUT_MS = 5_000;
     private static final long MAIL_SETTLE_MS = 500;
 
     @Autowired
@@ -194,7 +193,7 @@ public class AuthControllerTest {
         final var release = new CountDownLatch(1);
         final var sent = new AtomicBoolean();
         doAnswer(invocation -> {
-            release.await(MAIL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            release.await(TestUtils.MAIL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             sent.set(true);
             return null;
         }).when(mailSender).send(any(SimpleMailMessage.class));
@@ -203,7 +202,7 @@ public class AuthControllerTest {
 
         assertThat(sent).isFalse();
         release.countDown();
-        verify(mailSender, timeout(MAIL_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
+        verify(mailSender, timeout(TestUtils.MAIL_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
     }
 
     @Test
@@ -235,7 +234,7 @@ public class AuthControllerTest {
         forgotPassword(tester.getEmail());
 
         final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender, timeout(MAIL_TIMEOUT_MS).times(2)).send(captor.capture());
+        verify(mailSender, timeout(TestUtils.MAIL_TIMEOUT_MS).times(2)).send(captor.capture());
         final var newToken = UserTestData.extractResetToken(captor.getValue());
         assertThat(newToken).isNotEqualTo(oldToken);
         resetPassword(UserTestData.createValidResetPasswordRequest(oldToken))
@@ -261,12 +260,8 @@ public class AuthControllerTest {
 
     @Test
     void forgotPassword_returnServiceUnavailable_whenTaskQueueIsFull() {
-        final var release = new CountDownLatch(1);
+        final var release = TestUtils.blockTaskExecutor(taskExecutor);
         try {
-            for (int i = 0; i < taskExecutor.getMaxPoolSize() + taskExecutor.getQueueCapacity(); i++) {
-                taskExecutor.execute(() -> awaitRelease(release));
-            }
-
             restClient.post()
                     .uri(ApiConstants.FORGOT_PASSWORD)
                     .body(new ForgotPasswordRequest(UserTestData.createTestUserPippin().getEmail()))
@@ -338,16 +333,8 @@ public class AuthControllerTest {
 
     private SimpleMailMessage captureSentMessage() {
         final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender, timeout(MAIL_TIMEOUT_MS)).send(captor.capture());
+        verify(mailSender, timeout(TestUtils.MAIL_TIMEOUT_MS)).send(captor.capture());
         return captor.getValue();
-    }
-
-    private static void awaitRelease(final CountDownLatch release) {
-        try {
-            release.await(MAIL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        } catch (final InterruptedException exception) {
-            Thread.currentThread().interrupt();
-        }
     }
 
     private void forgotPassword(final String email) {

@@ -7,12 +7,6 @@ import pl.prawko.prawko_server.model.QuestionType;
 
 import java.util.List;
 
-/**
- * Repository for {@link Question} entities.
- * <p>
- * Provides standard CRUD operations through {@link JpaRepository} and custom methods.
- * </p>
- */
 @Repository
 public interface QuestionRepository extends JpaRepository<Question, Long> {
 

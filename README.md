@@ -187,13 +187,27 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/exams`
 
-  | Method | Path                 | Access | Description                                                                         |
-  |--------|----------------------|--------|-------------------------------------------------------------------------------------|
-  | `POST` | `/exams`             | self   | create a new exam for the `userId` from the request body                            |
-  | `GET`  | `/exams?userId={id}` | self   | get a page of the user's exams history, newest first                                |
-  | `GET`  | `/exams/{id}`        | self   | get an exam; answers' `correct` flag is included only once the exam is not `active` |
+  | Method | Path                  | Access | Description                                                                         |
+  |--------|-----------------------|--------|-------------------------------------------------------------------------------------|
+  | `POST` | `/exams`              | self   | create a new exam for the `userId` from the request body                            |
+  | `GET`  | `/exams?userId={id}`  | self   | get a page of the user's exams history, newest first                                |
+  | `GET`  | `/exams/{id}`         | self   | get an exam; answers' `correct` flag is included only once the exam is not `active` |
+  | `POST` | `/exams/{id}/answers` | owner  | answer a question of an active exam, see [Solving an exam](#solving-an-exam)        |
 
 `POST` endpoints creating a resource return `201 Created` with its URL in the `Location` header.
+
+### Solving an exam
+
+Submit the ID of the chosen answer, e.g. `POST /exams/7/answers` with `{"answerId": 42}`; it returns `204 No Content`.
+The question is determined by the answer, so answering the same question again replaces the previous answer. The
+submitted answers are returned in `userAnswers` of `GET /exams/{id}`.
+
+| Status | When                                                                                  |
+|--------|---------------------------------------------------------------------------------------|
+| `400`  | `answerId` or the body is missing, or the exam ID is not positive                     |
+| `403`  | the exam belongs to another user                                                      |
+| `404`  | the exam doesn't exist, or the answer doesn't belong to any of its questions          |
+| `409`  | the exam is no longer `active`, or it was modified by a concurrent request - retry it |
 
 ### Pagination
 

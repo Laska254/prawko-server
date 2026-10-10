@@ -54,4 +54,18 @@ public interface IExamService {
      */
     Page<ExamSummaryDto> getAllByUserId(long userId, Pageable pageable);
 
+    /**
+     * Saves the user's answer to a question of their active {@link Exam}.
+     * <p>
+     * The question is determined by the answer, so a previous answer to the same question is replaced.
+     * Concurrent changes to the same exam are detected by its version, so the later commit fails with
+     * {@code OptimisticLockingFailureException} instead of overwriting the other one.
+     * </p>
+     *
+     * @param examId   the ID of the exam
+     * @param userId   the ID of the user answering, must be the owner of the exam
+     * @param answerId the ID of the chosen answer, must belong to one of the exam's questions
+     */
+    void submitAnswer(long examId, long userId, long answerId);
+
 }

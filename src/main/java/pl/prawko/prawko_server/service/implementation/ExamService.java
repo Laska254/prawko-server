@@ -6,17 +6,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
+import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.mapper.ExamMapper;
 import pl.prawko.prawko_server.model.Exam;
+import pl.prawko.prawko_server.repository.AnswerRepository;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.service.IExamService;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
-import java.util.Collections;
+import java.util.ArrayList;
 
 /**
  * Implementation of {@link IExamService} that manages {@link Exam} entities.
@@ -31,17 +34,20 @@ public class ExamService implements IExamService {
     private final ExamGenerator examGenerator;
     private final CategoryService categoryService;
     private final ExamMapper examMapper;
+    private final AnswerRepository answerRepository;
 
     public ExamService(final ExamRepository repository,
                        final UserService userService,
                        final ExamGenerator examGenerator,
                        final CategoryService categoryService,
-                       final ExamMapper examMapper) {
+                       final ExamMapper examMapper,
+                       final AnswerRepository answerRepository) {
         this.repository = repository;
         this.userService = userService;
         this.examGenerator = examGenerator;
         this.categoryService = categoryService;
         this.examMapper = examMapper;
+        this.answerRepository = answerRepository;
     }
 
     /**
@@ -62,7 +68,7 @@ public class ExamService implements IExamService {
                 .setCategory(category)
                 .setScore(0)
                 .setActive(true)
-                .setUserAnswers(Collections.emptyList());
+                .setUserAnswers(new ArrayList<>());
         user.getExams().add(exam);
         repository.save(exam);
         log.info("Created exam for user with id '{}'", userId);
@@ -79,12 +85,7 @@ public class ExamService implements IExamService {
     @Transactional
     public ExamDto getById(final long examId) {
         log.info("Fetching exam by id: {}", examId);
-        final var exam = repository.findById(examId)
-                .orElseThrow(() -> {
-                    final var message = "Exam with '" + examId + "' not found.";
-                    log.warn(message);
-                    return new EntityNotFoundException(message);
-                });
+        final var exam = findById(examId);
         return examMapper.toDto(exam, !exam.isActive());
     }
 
@@ -102,6 +103,52 @@ public class ExamService implements IExamService {
                 .map(examMapper::toSummaryDto);
         log.info("Found {} exam(s) for user with id: {}", exams.getTotalElements(), userId);
         return exams;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException if the exam is not found, or the answer doesn't belong to any of its questions
+     * @throws AccessDeniedException   if the exam belongs to another user
+     * @throws ExamFinishedException   if the exam is no longer active
+     */
+    @Override
+    @Transactional
+    public void submitAnswer(final long examId, final long userId, final long answerId) {
+        log.info("Submitting answer '{}' to exam '{}' by user '{}'", answerId, examId, userId);
+        final var exam = findActiveExamOfUser(examId, userId);
+        final var answer = answerRepository.findById(answerId)
+                .filter(found -> exam.getQuestions().contains(found.getQuestion()))
+                .orElseThrow(() -> {
+                    final var message = "Answer with '" + answerId + "' not found in exam '" + examId + "'.";
+                    log.warn(message);
+                    return new EntityNotFoundException(message);
+                });
+        exam.getUserAnswers().removeIf(previous -> previous.getQuestion().equals(answer.getQuestion()));
+        exam.getUserAnswers().add(answer);
+    }
+
+    private Exam findById(final long examId) {
+        return repository.findById(examId)
+                .orElseThrow(() -> {
+                    final var message = "Exam with '" + examId + "' not found.";
+                    log.warn(message);
+                    return new EntityNotFoundException(message);
+                });
+    }
+
+    private Exam findActiveExamOfUser(final long examId, final long userId) {
+        final var exam = findById(examId);
+        if (exam.getUser().getId() != userId) {
+            log.warn("User '{}' tried to modify exam '{}' of another user", userId, examId);
+            throw new AccessDeniedException("Exam '" + examId + "' belongs to another user.");
+        }
+        if (!exam.isActive()) {
+            final var message = "Exam with '" + examId + "' is already finished.";
+            log.warn(message);
+            throw new ExamFinishedException(message);
+        }
+        return exam;
     }
 
 }

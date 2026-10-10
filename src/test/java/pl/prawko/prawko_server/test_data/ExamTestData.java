@@ -9,6 +9,7 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.model.User;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.stream.Stream;
@@ -28,7 +29,7 @@ public class ExamTestData {
                         .toList())
                 .setScore(0)
                 .setActive(true)
-                .setUserAnswers(Collections.emptyList());
+                .setUserAnswers(new ArrayList<>());
         user.getExams().add(exam);
         return exam;
     }
@@ -70,6 +71,18 @@ public class ExamTestData {
                 Collections.emptyList(),
                 exam.getScore(),
                 exam.isActive());
+    }
+
+    public static String examNotFoundMessage(final long id) {
+        return "Exam with '" + id + "' not found.";
+    }
+
+    public static String examFinishedMessage(final long id) {
+        return "Exam with '" + id + "' is already finished.";
+    }
+
+    public static String answerNotFoundMessage(final long answerId, final long examId) {
+        return "Answer with '" + answerId + "' not found in exam '" + examId + "'.";
     }
 
 }

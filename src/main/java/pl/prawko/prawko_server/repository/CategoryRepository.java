@@ -6,12 +6,6 @@ import pl.prawko.prawko_server.model.Category;
 
 import java.util.Optional;
 
-/**
- * Repository for {@link Category} entities.
- * <p>
- * Provides standard CRUD operations through {@link JpaRepository} and custom methods.
- * </p>
- */
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
 
