@@ -13,7 +13,6 @@ import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.mapper.ExamMapper;
-import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.repository.AnswerRepository;
 import pl.prawko.prawko_server.repository.ExamRepository;
@@ -127,7 +126,6 @@ public class ExamService implements IExamService {
                 });
         exam.getUserAnswers().removeIf(previous -> previous.getQuestion().equals(answer.getQuestion()));
         exam.getUserAnswers().add(answer);
-        log.info("Saved answer '{}' to exam '{}'", answerId, examId);
     }
 
     private Exam findById(final long examId) {
