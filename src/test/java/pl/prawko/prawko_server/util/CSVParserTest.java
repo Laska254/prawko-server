@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
+import tools.jackson.databind.DatabindException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -103,6 +104,19 @@ class CSVParserTest {
                     .isInstanceOf(InvalidCsvException.class)
                     .hasMessage(expectedMessage);
             verifyNoInteractions(csvFacade);
+        }
+
+        @Test
+        void throwInvalidCsvException_whenRowMappingFailsWithoutLocation() throws IOException {
+            final var resource = new ClassPathResource(QuestionCSVTestData.CSV_FILE);
+            final var file = new MockMultipartFile(
+                    "file", QuestionCSVTestData.CSV_FILE, "text/csv", resource.getInputStream());
+            when(csvFacade.mapSingleRow(any())).thenThrow(new DatabindException("Unknown category") {
+            });
+
+            assertThatThrownBy(() -> csvParser.parse(file))
+                    .isInstanceOf(InvalidCsvException.class)
+                    .hasMessage("Invalid CSV file: Unknown category");
         }
 
         @Test

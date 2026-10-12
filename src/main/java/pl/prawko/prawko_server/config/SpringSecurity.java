@@ -51,7 +51,7 @@ import java.util.List;
  *     <li>Public: {@code POST /auth} (login), {@code POST /auth/password/forgot} and {@code POST /auth/password/reset}
  *     (password reset), {@code POST /users} (registration)</li>
  *     <li>ADMIN only: {@code POST /questions} (upload), {@code GET /questions} (list all)</li>
- *     <li>USER+ required: {@code GET /users/me}, {@code GET /questions/**}, {@code POST/GET /exams}</li>
+ *     <li>USER+ required: {@code GET /users/me}, {@code GET /questions/**}, {@code POST/GET /exams/**}</li>
  *     <li>ADMIN only: User management endpoints, delete operations</li>
  *     <li>Public: Swagger UI and OpenAPI docs</li>
  *     <li>Any other request is denied</li>
@@ -210,7 +210,7 @@ public class SpringSecurity {
 
     private void configureEndpoint_Exams(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
-                .requestMatchers(HttpMethod.POST, ApiConstants.EXAMS_BASE_URL).hasRole("USER")
+                .requestMatchers(HttpMethod.POST, ApiConstants.EXAMS_BASE_URL_ALL).hasRole("USER")
                 .requestMatchers(HttpMethod.GET, ApiConstants.EXAMS_BASE_URL_ALL).hasRole("USER");
     }
 

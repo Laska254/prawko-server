@@ -101,6 +101,15 @@ public final class ApiConstants {
      */
     public static final String RESET_PASSWORD = "/password/reset";
 
+    /**
+     * Path segment for submitting answers to questions of an exam.
+     *
+     * <p>Example: {@code /exams/{id}/answers}
+     *
+     * @see pl.prawko.prawko_server.controller.ExamController
+     */
+    public static final String ANSWERS = BY_ID + "/answers";
+
     private ApiConstants() {
     }
 

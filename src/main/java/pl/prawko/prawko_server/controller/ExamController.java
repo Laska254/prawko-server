@@ -13,6 +13,7 @@ import org.springframework.data.web.PagedModel;
 import org.springframework.data.web.SortDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,12 +28,13 @@ import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.CreateExamDto;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
+import pl.prawko.prawko_server.dto.SubmitAnswerRequest;
 import pl.prawko.prawko_server.service.implementation.ExamService;
 
 /**
  * REST controller for exam management operations.
  *
- * <p>Provides endpoints for creating and retrieving exams. Exams are generated
+ * <p>Provides endpoints for creating, solving and retrieving exams. Exams are generated
  * for users based on specified categories and contain randomized questions
  * for assessment purposes.
  *
@@ -123,6 +125,32 @@ public class ExamController {
             @ParameterObject
             @SortDefault(sort = {"created", "id"}, direction = Sort.Direction.DESC) final Pageable pageable) {
         return ResponseEntity.ok(new PagedModel<>(service.getAllByUserId(userId, pageable)));
+    }
+
+    /**
+     * Saves the user's answer to a question of their active exam.
+     *
+     * <p>A previous answer to the same question is replaced. Allowed only for the owner of the exam.
+     *
+     * @param id      the unique identifier of the exam
+     * @param userId  the ID of the currently authenticated user
+     * @param request the {@link SubmitAnswerRequest} with the ID of the chosen answer
+     * @return a {@link ResponseEntity} with HTTP 204 No Content
+     */
+    @Operation(summary = "Submit answer", description = "Saves the answer to a question of an active exam, replacing the previous answer to that question")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Answer saved"),
+            @ApiResponse(responseCode = "400", description = "Invalid argument or ID is negative or zero"),
+            @ApiResponse(responseCode = "403", description = "Exam belongs to another user"),
+            @ApiResponse(responseCode = "404", description = "Exam not found or answer doesn't belong to the exam"),
+            @ApiResponse(responseCode = "409", description = "Exam is already finished or was modified concurrently")
+    })
+    @PostMapping(ApiConstants.ANSWERS)
+    public ResponseEntity<Void> submitAnswer(@PathVariable @Positive final long id,
+                                             @AuthenticationPrincipal(expression = "id") final long userId,
+                                             @RequestBody @Valid final SubmitAnswerRequest request) {
+        service.submitAnswer(id, userId, request.answerId());
+        return ResponseEntity.noContent().build();
     }
 
 }
