@@ -13,6 +13,7 @@ import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.mapper.ExamMapper;
+import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.repository.AnswerRepository;
 import pl.prawko.prawko_server.repository.ExamRepository;
@@ -126,6 +127,28 @@ public class ExamService implements IExamService {
                 });
         exam.getUserAnswers().removeIf(previous -> previous.getQuestion().equals(answer.getQuestion()));
         exam.getUserAnswers().add(answer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException if the exam is not found
+     * @throws AccessDeniedException   if the exam belongs to another user
+     * @throws ExamFinishedException   if the exam is already finished
+     */
+    @Override
+    @Transactional
+    public ExamDto finishExam(final long examId, final long userId) {
+        log.info("Finishing exam '{}' by user '{}'", examId, userId);
+        final var exam = findActiveExamOfUser(examId, userId);
+        final var score = exam.getUserAnswers().stream()
+                .filter(Answer::isCorrect)
+                .mapToInt(answer -> answer.getQuestion().getPoints())
+                .sum();
+        exam.setActive(false).setScore(score);
+        repository.flush();
+        log.info("Finished exam '{}' with score {}", examId, score);
+        return examMapper.toDto(exam, true);
     }
 
     private Exam findById(final long examId) {

@@ -68,4 +68,18 @@ public interface IExamService {
      */
     void submitAnswer(long examId, long userId, long answerId);
 
+    /**
+     * Finishes the user's active {@link Exam}, so no more answers can be submitted.
+     * <p>
+     * The score is the sum of points of questions answered correctly; unanswered questions give no points.
+     * Concurrent changes to the same exam are detected by its version, so the later commit fails with
+     * {@code OptimisticLockingFailureException}.
+     * </p>
+     *
+     * @param examId the ID of the exam
+     * @param userId the ID of the user finishing the exam, must be the owner of the exam
+     * @return {@link ExamDto} of the finished exam, revealing which answers are correct
+     */
+    ExamDto finishExam(long examId, long userId);
+
 }
