@@ -141,7 +141,7 @@ public class ExamService implements IExamService {
         final var exam = findById(examId);
         if (exam.getUser().getId() != userId) {
             log.warn("User '{}' tried to modify exam '{}' of another user", userId, examId);
-            throw new AccessDeniedException("Exam '" + examId + "' belongs to another user.");
+            throw new AccessDeniedException("Access denied.");
         }
         if (!exam.isActive()) {
             final var message = "Exam with '" + examId + "' is already finished.";
