@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.mapper.ExamMapper;
+import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
@@ -331,10 +332,96 @@ public class ExamServiceTest {
 
     }
 
+    @Nested
+    class FinishExam {
+
+        @Test
+        void deactivateExam_andSumPointsOfCorrectAnswers_whenExamIsActive() {
+            final var user = UserTestData.createTestUserPippin();
+            final var special = createQuestionWithAnswerIds(QuestionType.SPECIAL);
+            final var basic = createQuestionWithAnswerIds(QuestionType.BASIC);
+            final var exam = stubExam(ExamTestData.createExamWithoutQuestions(user).setQuestions(List.of(special, basic)));
+            exam.getUserAnswers().addAll(List.of(correctAnswer(special), incorrectAnswer(basic)));
+
+            service.finishExam(exam.getId(), user.getId());
+
+            assertThat(exam.isActive()).isFalse();
+            assertThat(exam.getScore()).isEqualTo(special.getPoints());
+            verify(repository).flush();
+        }
+
+        @Test
+        void setZeroScore_whenNoQuestionIsAnswered() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.createExam(user));
+
+            service.finishExam(exam.getId(), user.getId());
+
+            assertThat(exam.isActive()).isFalse();
+            assertThat(exam.getScore()).isZero();
+        }
+
+        @Test
+        void returnDtoWithCorrectAnswersRevealed_whenExamIsFinished() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.createExam(user));
+            final var expectedDto = ExamTestData.createExamDto(exam);
+            when(examMapper.toDto(exam, true)).thenReturn(expectedDto);
+
+            final var result = service.finishExam(exam.getId(), user.getId());
+
+            assertThat(result).isEqualTo(expectedDto);
+        }
+
+        @Test
+        void throwEntityNotFound_whenExamDoesNotExist() {
+            final var nonExistentId = 666L;
+            when(repository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.finishExam(nonExistentId, 1L))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage(ExamTestData.examNotFoundMessage(nonExistentId));
+        }
+
+        @Test
+        void throwAccessDenied_whenExamBelongsToAnotherUser() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.createExam(user));
+
+            assertThatThrownBy(() -> service.finishExam(exam.getId(), user.getId() + 1))
+                    .isInstanceOf(AccessDeniedException.class);
+
+            assertThat(exam.isActive()).isTrue();
+            verifyNoInteractions(examMapper);
+        }
+
+        @Test
+        void throwExamFinished_whenExamIsNotActive() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.createExam(user).setActive(false).setScore(5));
+
+            assertThatThrownBy(() -> service.finishExam(exam.getId(), user.getId()))
+                    .isInstanceOf(ExamFinishedException.class)
+                    .hasMessage(ExamTestData.examFinishedMessage(exam.getId()));
+
+            assertThat(exam.getScore()).isEqualTo(5);
+            verifyNoInteractions(examMapper);
+        }
+
+    }
+
     private Exam stubExam(final Exam exam) {
         exam.setId(1L);
         when(repository.findById(exam.getId())).thenReturn(Optional.of(exam));
         return exam;
+    }
+
+    private static Answer correctAnswer(final Question question) {
+        return question.getAnswers().stream().filter(Answer::isCorrect).findFirst().orElseThrow();
+    }
+
+    private static Answer incorrectAnswer(final Question question) {
+        return question.getAnswers().stream().filter(answer -> !answer.isCorrect()).findFirst().orElseThrow();
     }
 
     private static Question createQuestionWithAnswerIds(final QuestionType type) {
