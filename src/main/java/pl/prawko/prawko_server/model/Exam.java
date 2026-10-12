@@ -32,7 +32,7 @@ import java.util.List;
  * <ul>
  *     <li>{@link User}: Each {@code User} can have multiple exams</li>
  *     <li>{@link Question}: Each exam contains 20 basic questions and  12 specialized questions</li>
- *     <li>{@link Answer} Each exam contains 32 user answers</li>
+ *     <li>{@link Answer}: Answers submitted so far, at most one per question; a new one replaces the previous answer to that question</li>
  *     <li>{@link Language}: Each exam have single language</li>
  *     <li>{@link Category}: Each exam have single category or multiple categories</li>
  * </ul>
