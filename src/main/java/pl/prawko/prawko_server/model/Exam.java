@@ -22,7 +22,7 @@ import java.util.List;
  *  <ul>
  *     <li>{@code id} - unique generated identifier</li>
  *     <li>{@code active} - status of exam, representing if user is solving it</li>
- *     <li>{@code score} - sum of correct answers in exam by user</li>
+ *     <li>{@code score} - sum of points of questions answered correctly, set when the exam is finished</li>
  *     <li>{@code created} - timestamp of creation</li>
  *     <li>{@code updated} - timestamp of last update</li>
  *     <li>{@code version} - optimistic lock, so concurrent changes (e.g. to user answers) fail instead of overwriting each other</li>
