@@ -644,6 +644,118 @@ public class ExamControllerTest {
 
     }
 
+    @Nested
+    class FinishExam {
+
+        @Test
+        void returnFinishedExamWithScore_whenExamIsActive() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var special = questionRepository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
+            final var basic = questionRepository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
+            final var correct = special.getAnswers().stream().filter(Answer::isCorrect).findFirst().orElseThrow();
+            final var incorrect = basic.getAnswers().stream().filter(answer -> !answer.isCorrect()).findFirst().orElseThrow();
+            final var exam = saveExam(tester, special, basic);
+            exam.getUserAnswers().addAll(List.of(correct, incorrect));
+            examRepository.save(exam);
+
+            restClient.post()
+                    .uri(ApiConstants.FINISH, exam.getId())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.id").isEqualTo(exam.getId())
+                    .jsonPath("$.active").isEqualTo(false)
+                    .jsonPath("$.score").isEqualTo(special.getPoints())
+                    .jsonPath("$.questions[*].answers[*].correct").exists()
+                    .jsonPath("$.userAnswers.length()").isEqualTo(2);
+
+            assertThat(examRepository.findById(exam.getId())).hasValueSatisfying(finished -> {
+                assertThat(finished.isActive()).isFalse();
+                assertThat(finished.getScore()).isEqualTo(special.getPoints());
+            });
+        }
+
+        @Test
+        void returnConflict_whenExamIsFinished() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(tester).setActive(false));
+
+            restClient.post()
+                    .uri(ApiConstants.FINISH, exam.getId())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(ExamTestData.examFinishedMessage(exam.getId()));
+        }
+
+        @Test
+        void returnForbidden_whenExamBelongsToAnotherUser() {
+            userRepository.save(UserTestData.createTestUserPippin());
+            final var other = userRepository.save(UserTestData.createMerry());
+            final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(other));
+
+            restClient.post()
+                    .uri(ApiConstants.FINISH, exam.getId())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isForbidden()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.ACCESS_DENIED);
+
+            assertThat(examRepository.findById(exam.getId())).hasValueSatisfying(found -> assertThat(found.isActive()).isTrue());
+        }
+
+        @Test
+        void returnForbidden_whenAdminFinishesExamOfAnotherUser() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+
+            restClient.post()
+                    .uri(ApiConstants.FINISH, exam.getId())
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isForbidden()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.ACCESS_DENIED);
+        }
+
+        @Test
+        void returnNotFound_whenExamIsNotFound() {
+            final var nonExistingId = 666L;
+
+            restClient.post()
+                    .uri(ApiConstants.FINISH, nonExistingId)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isNotFound()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(ExamTestData.examNotFoundMessage(nonExistingId));
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = {-1L, 0L})
+        void returnBadRequest_whenIdIsNotPositive(final long invalidId) {
+            restClient.post()
+                    .uri(ApiConstants.FINISH, invalidId)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.ID_NOT_POSITIVE);
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.post()
+                    .uri(ApiConstants.FINISH, 1L)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+    }
+
     private Exam saveExam(final User user, final Question... questions) {
         return examRepository.save(ExamTestData.createExamWithoutQuestions(user).setQuestions(List.of(questions)));
     }

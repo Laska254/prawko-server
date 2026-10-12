@@ -153,4 +153,27 @@ public class ExamController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Finishes the user's active exam and calculates its score.
+     *
+     * <p>No more answers can be submitted afterward. Allowed only for the owner of the exam.
+     *
+     * @param id     the unique identifier of the exam
+     * @param userId the ID of the currently authenticated user
+     * @return a {@link ResponseEntity} containing the finished {@link ExamDto}, revealing which answers are correct
+     */
+    @Operation(summary = "Finish exam", description = "Finishes an active exam, calculates its score and reveals correct answers")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exam finished"),
+            @ApiResponse(responseCode = "400", description = "ID is negative or zero"),
+            @ApiResponse(responseCode = "403", description = "Exam belongs to another user"),
+            @ApiResponse(responseCode = "404", description = "Exam not found"),
+            @ApiResponse(responseCode = "409", description = "Exam is already finished or was modified concurrently")
+    })
+    @PostMapping(ApiConstants.FINISH)
+    public ResponseEntity<ExamDto> finishExam(@PathVariable @Positive final long id,
+                                              @AuthenticationPrincipal(expression = "id") final long userId) {
+        return ResponseEntity.ok(service.finishExam(id, userId));
+    }
+
 }
