@@ -27,7 +27,7 @@ public class TestUtils {
     public static final String PASSWORD_REQUIRED = "Password is required.";
     public static final String SERVER_BUSY = "Server is busy, try again later.";
 
-    public static final long MAIL_TIMEOUT_MS = 5_000;
+    public static final long ASYNC_TIMEOUT_MS = 5_000;
 
     public static void authUser(final HttpHeaders headers) {
         headers.setBasicAuth(USER_NAME, USER_PASSWORD);
@@ -61,7 +61,7 @@ public class TestUtils {
 
     private static void awaitRelease(final CountDownLatch release) {
         try {
-            release.await(MAIL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            release.await(ASYNC_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         } catch (final InterruptedException exception) {
             Thread.currentThread().interrupt();
         }

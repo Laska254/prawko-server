@@ -193,7 +193,7 @@ public class AuthControllerTest {
         final var release = new CountDownLatch(1);
         final var sent = new AtomicBoolean();
         doAnswer(invocation -> {
-            release.await(TestUtils.MAIL_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            release.await(TestUtils.ASYNC_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             sent.set(true);
             return null;
         }).when(mailSender).send(any(SimpleMailMessage.class));
@@ -202,7 +202,7 @@ public class AuthControllerTest {
 
         assertThat(sent).isFalse();
         release.countDown();
-        verify(mailSender, timeout(TestUtils.MAIL_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
+        verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
     }
 
     @Test
@@ -234,7 +234,7 @@ public class AuthControllerTest {
         forgotPassword(tester.getEmail());
 
         final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender, timeout(TestUtils.MAIL_TIMEOUT_MS).times(2)).send(captor.capture());
+        verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
         final var newToken = UserTestData.extractResetToken(captor.getValue());
         assertThat(newToken).isNotEqualTo(oldToken);
         resetPassword(UserTestData.createValidResetPasswordRequest(oldToken))
@@ -333,7 +333,7 @@ public class AuthControllerTest {
 
     private SimpleMailMessage captureSentMessage() {
         final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender, timeout(TestUtils.MAIL_TIMEOUT_MS)).send(captor.capture());
+        verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());
         return captor.getValue();
     }
 
