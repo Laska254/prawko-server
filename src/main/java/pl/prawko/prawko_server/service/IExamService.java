@@ -83,4 +83,14 @@ public interface IExamService {
      */
     ExamDto finishExam(long examId, long userId);
 
+    /**
+     * Finishes all active exams that have expired, scoring them as in
+     * {@link #finishExam(long, long)}.
+     * <p>
+     * Runs periodically, every {@code exam.expiry-check-interval}. If one of the exams is modified concurrently,
+     * none is finished, and they are picked up again by the next run.
+     * </p>
+     */
+    void finishExpiredExams();
+
 }

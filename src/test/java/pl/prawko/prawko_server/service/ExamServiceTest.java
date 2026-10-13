@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -435,6 +436,32 @@ public class ExamServiceTest {
 
             assertThat(exam.getScore()).isEqualTo(5);
             verifyNoInteractions(examMapper);
+        }
+
+    }
+
+    @Nested
+    class FinishExpiredExams {
+
+        @Test
+        void deactivateExams_andSumPointsOfCorrectAnswers_whenExamsHaveExpired() {
+            final var user = UserTestData.createTestUserPippin();
+            final var special = createQuestionWithAnswerIds(QuestionType.SPECIAL);
+            final var basic = createQuestionWithAnswerIds(QuestionType.BASIC);
+            final var answered = ExamTestData.expire(ExamTestData.createExamWithoutQuestions(user)
+                    .setQuestions(List.of(special, basic)));
+            answered.getUserAnswers().addAll(QuestionTestData.getUserAnswers(special, basic));
+            final var unanswered = ExamTestData.expire(ExamTestData.createExam(user).setScore(5));
+            final var time = ArgumentCaptor.forClass(LocalDateTime.class);
+            when(repository.findAllByActiveTrueAndExpiresBefore(time.capture())).thenReturn(List.of(answered, unanswered));
+
+            service.finishExpiredExams();
+
+            assertThat(time.getValue()).isCloseTo(LocalDateTime.now(), within(Duration.ofSeconds(5)));
+            assertThat(answered.isActive()).isFalse();
+            assertThat(answered.getScore()).isEqualTo(special.getPoints());
+            assertThat(unanswered.isActive()).isFalse();
+            assertThat(unanswered.getScore()).isZero();
         }
 
     }

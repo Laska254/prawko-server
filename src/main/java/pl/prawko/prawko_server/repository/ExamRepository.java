@@ -6,6 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import pl.prawko.prawko_server.model.Exam;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Repository
 public interface ExamRepository extends JpaRepository<Exam, Long> {
 
@@ -17,5 +20,7 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
      * @return a page of user's exams
      */
     Page<Exam> findAllByUser_Id(final long userId, final Pageable pageable);
+    
+    List<Exam> findAllByActiveTrueAndExpiresBefore(final LocalDateTime time);
 
 }

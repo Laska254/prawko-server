@@ -38,6 +38,9 @@ spring:
       whitelabel:
         enabled: false
 
+exam:
+  expiry-check-interval: 30s
+
 password-reset:
   token-validity: 15m
   cooldown: 1m

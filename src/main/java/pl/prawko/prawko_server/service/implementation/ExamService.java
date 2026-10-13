@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -154,7 +155,18 @@ public class ExamService implements IExamService {
         return examMapper.toDto(exam, true);
     }
 
-    private void finish(final Exam exam) {
+    @Override
+    @Transactional
+    @Scheduled(fixedDelayString = "${exam.expiry-check-interval}", initialDelayString = "${exam.expiry-check-interval}")
+    public void finishExpiredExams() {
+        final var expired = repository.findAllByActiveTrueAndExpiresBefore(LocalDateTime.now());
+        expired.forEach(ExamService::finish);
+        if (!expired.isEmpty()) {
+            log.info("Finished {} expired exam(s)", expired.size());
+        }
+    }
+
+    private static void finish(final Exam exam) {
         final var score = exam.getUserAnswers().stream()
                 .filter(Answer::isCorrect)
                 .mapToInt(answer -> answer.getQuestion().getPoints())
