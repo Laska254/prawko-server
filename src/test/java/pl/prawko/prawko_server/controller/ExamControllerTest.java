@@ -533,6 +533,25 @@ public class ExamControllerTest {
         }
 
         @Test
+        void returnConflict_whenExamHasExpired() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var question = questionRepository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
+            final var exam = examRepository.save(ExamTestData.expire(ExamTestData.createExamWithoutQuestions(tester)
+                    .setQuestions(List.of(question))));
+
+            restClient.post()
+                    .uri(ApiConstants.ANSWERS, exam.getId())
+                    .headers(TestUtils::authUser)
+                    .body(new SubmitAnswerRequest(question.getAnswers().getFirst().getId()))
+                    .exchange()
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(ExamTestData.examExpiredMessage(exam.getId()));
+
+            expectUserAnswerIds(exam);
+        }
+
+        @Test
         void returnForbidden_whenExamBelongsToAnotherUser() {
             userRepository.save(UserTestData.createTestUserPippin());
             final var other = userRepository.save(UserTestData.createMerry());

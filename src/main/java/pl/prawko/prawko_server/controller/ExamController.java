@@ -143,7 +143,7 @@ public class ExamController {
             @ApiResponse(responseCode = "400", description = "Invalid argument or ID is negative or zero"),
             @ApiResponse(responseCode = "403", description = "Exam belongs to another user"),
             @ApiResponse(responseCode = "404", description = "Exam not found or answer doesn't belong to the exam"),
-            @ApiResponse(responseCode = "409", description = "Exam is already finished or was modified concurrently")
+            @ApiResponse(responseCode = "409", description = "Exam is already finished, its time has expired or it was modified concurrently")
     })
     @PostMapping(ApiConstants.ANSWERS)
     public ResponseEntity<Void> submitAnswer(@PathVariable @Positive final long id,
