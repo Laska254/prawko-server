@@ -666,7 +666,10 @@ public class ExamControllerTest {
                     .jsonPath("$.id").isEqualTo(exam.getId())
                     .jsonPath("$.active").isEqualTo(false)
                     .jsonPath("$.score").isEqualTo(special.getPoints())
-                    .jsonPath("$.questions[*].answers[*].correct").exists()
+                    .jsonPath("$.questions[0].answers[*].correct")
+                    .isEqualTo(special.getAnswers().stream().map(Answer::isCorrect).toList())
+                    .jsonPath("$.questions[1].answers[*].correct")
+                    .isEqualTo(basic.getAnswers().stream().map(Answer::isCorrect).toList())
                     .jsonPath("$.userAnswers.length()").isEqualTo(2);
 
             assertThat(examRepository.findById(exam.getId())).hasValueSatisfying(finished -> {
