@@ -12,6 +12,7 @@ import jakarta.persistence.Version;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,6 +25,7 @@ import java.util.List;
  *     <li>{@code active} - status of exam, representing if user is solving it</li>
  *     <li>{@code score} - sum of points of questions answered correctly, set when the exam is finished</li>
  *     <li>{@code created} - timestamp of creation</li>
+ *     <li>{@code expires} - deadline for answers, {@link #DURATION} after creation; the exam is finished automatically afterward</li>
  *     <li>{@code updated} - timestamp of last update</li>
  *     <li>{@code version} - optimistic lock, so concurrent changes (e.g. to user answers) fail instead of overwriting each other</li>
  * </ul>
@@ -42,6 +44,8 @@ import java.util.List;
 @Entity
 public class Exam {
 
+    public static final Duration DURATION = Duration.ofMinutes(25);
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -54,6 +58,8 @@ public class Exam {
 
     @UpdateTimestamp
     private LocalDateTime updated;
+
+    private LocalDateTime expires;
 
     @Version
     private long version;
@@ -167,6 +173,15 @@ public class Exam {
         return this;
     }
 
+    public LocalDateTime getExpires() {
+        return expires;
+    }
+
+    public Exam setExpires(final LocalDateTime expires) {
+        this.expires = expires;
+        return this;
+    }
+
     public LocalDateTime getUpdated() {
         return updated;
     }
@@ -200,6 +215,7 @@ public class Exam {
                 ", score=" + score +
                 ", created=" + created +
                 ", updated=" + updated +
+                ", expires=" + expires +
                 ", user=" + (user == null ? null : user.getId()) +
                 ", language=" + (language == null ? null : language.getCode()) +
                 ", category=" + (category == null ? null : category.getName()) +
