@@ -353,7 +353,7 @@ public class ExamServiceTest {
         @Test
         void setZeroScore_whenNoQuestionIsAnswered() {
             final var user = UserTestData.createTestUserPippin();
-            final var exam = stubExam(ExamTestData.createExam(user));
+            final var exam = stubExam(ExamTestData.createExam(user).setScore(5));
 
             service.finishExam(exam.getId(), user.getId());
 
