@@ -28,6 +28,8 @@ import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +37,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -101,6 +104,19 @@ public class ExamServiceTest {
             service.createExam(user.getId(), category.getName());
 
             assertThat(user.getExams()).hasSize(1);
+        }
+
+        @Test
+        void setExpiresAfterExamDuration_whenSuccess() {
+            final var user = UserTestData.createTestUserPippin();
+            final var category = CategoryTestData.CATEGORY_PT;
+            when(userService.getById(user.getId())).thenReturn(user);
+            when(categoryService.findByName(category.getName())).thenReturn(category);
+
+            service.createExam(user.getId(), category.getName());
+
+            assertThat(user.getExams().getFirst().getExpires())
+                    .isCloseTo(LocalDateTime.now().plus(Exam.DURATION), within(Duration.ofSeconds(5)));
         }
 
         @Test
@@ -326,6 +342,19 @@ public class ExamServiceTest {
                     .isInstanceOf(ExamFinishedException.class)
                     .hasMessage(ExamTestData.examFinishedMessage(exam.getId()));
 
+            verifyNoInteractions(answerRepository);
+        }
+
+        @Test
+        void throwExamFinished_whenExamHasExpired() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.expire(ExamTestData.createExam(user)));
+
+            assertThatThrownBy(() -> service.submitAnswer(exam.getId(), user.getId(), 1L))
+                    .isInstanceOf(ExamFinishedException.class)
+                    .hasMessage(ExamTestData.examExpiredMessage(exam.getId()));
+
+            assertThat(exam.isActive()).isTrue();
             verifyNoInteractions(answerRepository);
         }
 

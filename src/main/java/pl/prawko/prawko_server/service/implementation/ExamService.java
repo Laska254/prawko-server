@@ -20,6 +20,7 @@ import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.service.IExamService;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 /**
@@ -67,6 +68,7 @@ public class ExamService implements IExamService {
                 .setUser(user)
                 .setQuestions(questions)
                 .setCategory(category)
+                .setExpires(LocalDateTime.now().plus(Exam.DURATION))
                 .setScore(0)
                 .setActive(true)
                 .setUserAnswers(new ArrayList<>());
@@ -111,13 +113,18 @@ public class ExamService implements IExamService {
      *
      * @throws EntityNotFoundException if the exam is not found, or the answer doesn't belong to any of its questions
      * @throws AccessDeniedException   if the exam belongs to another user
-     * @throws ExamFinishedException   if the exam is no longer active
+     * @throws ExamFinishedException   if the exam is no longer active or its time has expired
      */
     @Override
     @Transactional
     public void submitAnswer(final long examId, final long userId, final long answerId) {
         log.info("Submitting answer '{}' to exam '{}' by user '{}'", answerId, examId, userId);
         final var exam = findActiveExamOfUser(examId, userId);
+        if (exam.getExpires().isBefore(LocalDateTime.now())) {
+            final var message = "Time for exam with '" + examId + "' has expired.";
+            log.warn(message);
+            throw new ExamFinishedException(message);
+        }
         final var answer = answerRepository.findById(answerId)
                 .filter(found -> exam.getQuestions().contains(found.getQuestion()))
                 .orElseThrow(() -> {
@@ -141,14 +148,18 @@ public class ExamService implements IExamService {
     public ExamDto finishExam(final long examId, final long userId) {
         log.info("Finishing exam '{}' by user '{}'", examId, userId);
         final var exam = findActiveExamOfUser(examId, userId);
+        finish(exam);
+        repository.flush();
+        log.info("Finished exam '{}' with score {}", examId, exam.getScore());
+        return examMapper.toDto(exam, true);
+    }
+
+    private void finish(final Exam exam) {
         final var score = exam.getUserAnswers().stream()
                 .filter(Answer::isCorrect)
                 .mapToInt(answer -> answer.getQuestion().getPoints())
                 .sum();
         exam.setActive(false).setScore(score);
-        repository.flush();
-        log.info("Finished exam '{}' with score {}", examId, score);
-        return examMapper.toDto(exam, true);
     }
 
     private Exam findById(final long examId) {
