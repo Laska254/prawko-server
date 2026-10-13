@@ -652,10 +652,9 @@ public class ExamControllerTest {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var special = questionRepository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
             final var basic = questionRepository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
-            final var correct = special.getAnswers().stream().filter(Answer::isCorrect).findFirst().orElseThrow();
-            final var incorrect = basic.getAnswers().stream().filter(answer -> !answer.isCorrect()).findFirst().orElseThrow();
             final var exam = saveExam(tester, special, basic);
-            exam.getUserAnswers().addAll(List.of(correct, incorrect));
+            final var answers = QuestionTestData.getUserAnswers(special, basic);
+            exam.getUserAnswers().addAll(answers);
             examRepository.save(exam);
 
             restClient.post()

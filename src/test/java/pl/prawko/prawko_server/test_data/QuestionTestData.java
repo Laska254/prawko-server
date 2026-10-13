@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.test_data;
 
 import pl.prawko.prawko_server.dto.QuestionDto;
+import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 
@@ -62,6 +63,17 @@ public class QuestionTestData {
 
     public static String questionNotFoundMessage(final long id) {
         return "Question with id '" + id + "' not found.";
+    }
+
+    public static List<Answer> getUserAnswers(final Question correct, final Question incorrect) {
+        return List.of(findAnswer(correct, true), findAnswer(incorrect, false));
+    }
+
+    private static Answer findAnswer(final Question question, final boolean isCorrect) {
+        return question.getAnswers().stream()
+                .filter(answer -> answer.isCorrect() == isCorrect)
+                .findFirst()
+                .orElseThrow();
     }
 
     private static QuestionDto createQuestionDto_Basic(final Question question) {

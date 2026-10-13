@@ -13,7 +13,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.mapper.ExamMapper;
-import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
@@ -341,7 +340,8 @@ public class ExamServiceTest {
             final var special = createQuestionWithAnswerIds(QuestionType.SPECIAL);
             final var basic = createQuestionWithAnswerIds(QuestionType.BASIC);
             final var exam = stubExam(ExamTestData.createExamWithoutQuestions(user).setQuestions(List.of(special, basic)));
-            exam.getUserAnswers().addAll(List.of(correctAnswer(special), incorrectAnswer(basic)));
+            final var answers = QuestionTestData.getUserAnswers(special, basic);
+            exam.getUserAnswers().addAll(answers);
 
             service.finishExam(exam.getId(), user.getId());
 
@@ -414,14 +414,6 @@ public class ExamServiceTest {
         exam.setId(1L);
         when(repository.findById(exam.getId())).thenReturn(Optional.of(exam));
         return exam;
-    }
-
-    private static Answer correctAnswer(final Question question) {
-        return question.getAnswers().stream().filter(Answer::isCorrect).findFirst().orElseThrow();
-    }
-
-    private static Answer incorrectAnswer(final Question question) {
-        return question.getAnswers().stream().filter(answer -> !answer.isCorrect()).findFirst().orElseThrow();
     }
 
     private static Question createQuestionWithAnswerIds(final QuestionType type) {
