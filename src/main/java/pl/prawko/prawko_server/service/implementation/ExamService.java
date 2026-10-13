@@ -160,10 +160,10 @@ public class ExamService implements IExamService {
     @Scheduled(fixedDelayString = "${exam.expiry-check-interval}", initialDelayString = "${exam.expiry-check-interval}")
     public void finishExpiredExams() {
         final var expired = repository.findAllByActiveTrueAndExpiresBefore(LocalDateTime.now());
-        expired.forEach(ExamService::finish);
-        if (!expired.isEmpty()) {
-            log.info("Finished {} expired exam(s)", expired.size());
-        }
+        expired.forEach(exam -> {
+            finish(exam);
+            log.info("Finished expired exam '{}' with score {}", exam.getId(), exam.getScore());
+        });
     }
 
     private static void finish(final Exam exam) {
