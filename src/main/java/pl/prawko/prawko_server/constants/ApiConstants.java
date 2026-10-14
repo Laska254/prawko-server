@@ -110,6 +110,15 @@ public final class ApiConstants {
      */
     public static final String ANSWERS = BY_ID + "/answers";
 
+    /**
+     * Path segment for finishing an exam.
+     *
+     * <p>Example: {@code /exams/{id}/finish}
+     *
+     * @see pl.prawko.prawko_server.controller.ExamController
+     */
+    public static final String FINISH = BY_ID + "/finish";
+
     private ApiConstants() {
     }
 

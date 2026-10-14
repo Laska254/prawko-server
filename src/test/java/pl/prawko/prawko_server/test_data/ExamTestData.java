@@ -9,6 +9,7 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.model.User;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -23,6 +24,7 @@ public class ExamTestData {
         final var exam = new Exam()
                 .setUser(user)
                 .setCategory(CategoryTestData.CATEGORY_B)
+                .setExpires(LocalDateTime.now().plus(Exam.DURATION))
                 .setQuestions(Stream.concat(
                                 QuestionTestData.createQuestions(QuestionType.BASIC).stream(),
                                 QuestionTestData.createQuestions(QuestionType.SPECIAL).stream())
@@ -79,6 +81,14 @@ public class ExamTestData {
 
     public static String examFinishedMessage(final long id) {
         return "Exam with '" + id + "' is already finished.";
+    }
+
+    public static String examExpiredMessage(final long id) {
+        return "Time for exam with '" + id + "' has expired.";
+    }
+
+    public static Exam expire(final Exam exam) {
+        return exam.setExpires(LocalDateTime.now().minusMinutes(1));
     }
 
     public static String answerNotFoundMessage(final long answerId, final long examId) {

@@ -187,12 +187,13 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/exams`
 
-  | Method | Path                  | Access | Description                                                                         |
-  |--------|-----------------------|--------|-------------------------------------------------------------------------------------|
-  | `POST` | `/exams`              | self   | create a new exam for the `userId` from the request body                            |
-  | `GET`  | `/exams?userId={id}`  | self   | get a page of the user's exams history, newest first                                |
-  | `GET`  | `/exams/{id}`         | self   | get an exam; answers' `correct` flag is included only once the exam is not `active` |
-  | `POST` | `/exams/{id}/answers` | owner  | answer a question of an active exam, see [Solving an exam](#solving-an-exam)        |
+  | Method | Path                  | Access | Description                                                                            |
+  |--------|-----------------------|--------|----------------------------------------------------------------------------------------|
+  | `POST` | `/exams`              | self   | create a new exam for the `userId` from the request body                               |
+  | `GET`  | `/exams?userId={id}`  | self   | get a page of the user's exams history, newest first                                   |
+  | `GET`  | `/exams/{id}`         | self   | get an exam; answers' `correct` flag is included only once the exam is not `active`    |
+  | `POST` | `/exams/{id}/answers` | owner  | answer a question of an active exam, see [Solving an exam](#solving-an-exam)           |
+  | `POST` | `/exams/{id}/finish`  | owner  | finish an active exam and calculate its score, see [Solving an exam](#solving-an-exam) |
 
 `POST` endpoints creating a resource return `201 Created` with its URL in the `Location` header.
 
@@ -202,9 +203,13 @@ Submit the ID of the chosen answer, e.g. `POST /exams/7/answers` with `{"answerI
 The question is determined by the answer, so answering the same question again replaces the previous answer. The
 submitted answers are returned in `userAnswers` of `GET /exams/{id}`.
 
+When done, finish the exam with `POST /exams/7/finish` (no body); it returns `200 OK` with the finished exam. The exam
+is no longer `active`, so no more answers can be submitted, its `score` is the sum of `points` of the correctly
+answered questions (unanswered questions give no points) and answers' `correct` flag is included.
+
 | Status | When                                                                                  |
 |--------|---------------------------------------------------------------------------------------|
-| `400`  | `answerId` or the body is missing, or the exam ID is not positive                     |
+| `400`  | `answerId` or the body is missing (answers only), or the exam ID is not positive      |
 | `403`  | the exam belongs to another user                                                      |
 | `404`  | the exam doesn't exist, or the answer doesn't belong to any of its questions          |
 | `409`  | the exam is no longer `active`, or it was modified by a concurrent request - retry it |

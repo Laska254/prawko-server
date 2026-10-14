@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,6 +29,8 @@ import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +38,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -101,6 +105,19 @@ public class ExamServiceTest {
             service.createExam(user.getId(), category.getName());
 
             assertThat(user.getExams()).hasSize(1);
+        }
+
+        @Test
+        void setExpiresAfterExamDuration_whenSuccess() {
+            final var user = UserTestData.createTestUserPippin();
+            final var category = CategoryTestData.CATEGORY_PT;
+            when(userService.getById(user.getId())).thenReturn(user);
+            when(categoryService.findByName(category.getName())).thenReturn(category);
+
+            service.createExam(user.getId(), category.getName());
+
+            assertThat(user.getExams().getFirst().getExpires())
+                    .isCloseTo(LocalDateTime.now().plus(Exam.DURATION), within(Duration.ofSeconds(5)));
         }
 
         @Test
@@ -327,6 +344,124 @@ public class ExamServiceTest {
                     .hasMessage(ExamTestData.examFinishedMessage(exam.getId()));
 
             verifyNoInteractions(answerRepository);
+        }
+
+        @Test
+        void throwExamFinished_whenExamHasExpired() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.expire(ExamTestData.createExam(user)));
+
+            assertThatThrownBy(() -> service.submitAnswer(exam.getId(), user.getId(), 1L))
+                    .isInstanceOf(ExamFinishedException.class)
+                    .hasMessage(ExamTestData.examExpiredMessage(exam.getId()));
+
+            assertThat(exam.isActive()).isTrue();
+            verifyNoInteractions(answerRepository);
+        }
+
+    }
+
+    @Nested
+    class FinishExam {
+
+        @Test
+        void deactivateExam_andSumPointsOfCorrectAnswers_whenExamIsActive() {
+            final var user = UserTestData.createTestUserPippin();
+            final var special = createQuestionWithAnswerIds(QuestionType.SPECIAL);
+            final var basic = createQuestionWithAnswerIds(QuestionType.BASIC);
+            final var exam = stubExam(ExamTestData.createExamWithoutQuestions(user).setQuestions(List.of(special, basic)));
+            final var answers = QuestionTestData.getUserAnswers(special, basic);
+            exam.getUserAnswers().addAll(answers);
+
+            service.finishExam(exam.getId(), user.getId());
+
+            assertThat(exam.isActive()).isFalse();
+            assertThat(exam.getScore()).isEqualTo(special.getPoints());
+            verify(repository).flush();
+        }
+
+        @Test
+        void setZeroScore_whenNoQuestionIsAnswered() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.createExam(user).setScore(5));
+
+            service.finishExam(exam.getId(), user.getId());
+
+            assertThat(exam.isActive()).isFalse();
+            assertThat(exam.getScore()).isZero();
+        }
+
+        @Test
+        void returnDtoWithCorrectAnswersRevealed_whenExamIsFinished() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.createExam(user));
+            final var expectedDto = ExamTestData.createExamDto(exam);
+            when(examMapper.toDto(exam, true)).thenReturn(expectedDto);
+
+            final var result = service.finishExam(exam.getId(), user.getId());
+
+            assertThat(result).isEqualTo(expectedDto);
+        }
+
+        @Test
+        void throwEntityNotFound_whenExamDoesNotExist() {
+            final var nonExistentId = 666L;
+            when(repository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.finishExam(nonExistentId, 1L))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage(ExamTestData.examNotFoundMessage(nonExistentId));
+        }
+
+        @Test
+        void throwAccessDenied_whenExamBelongsToAnotherUser() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.createExam(user));
+
+            assertThatThrownBy(() -> service.finishExam(exam.getId(), user.getId() + 1))
+                    .isInstanceOf(AccessDeniedException.class);
+
+            assertThat(exam.isActive()).isTrue();
+            verifyNoInteractions(examMapper);
+        }
+
+        @Test
+        void throwExamFinished_whenExamIsNotActive() {
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = stubExam(ExamTestData.createExam(user).setActive(false).setScore(5));
+
+            assertThatThrownBy(() -> service.finishExam(exam.getId(), user.getId()))
+                    .isInstanceOf(ExamFinishedException.class)
+                    .hasMessage(ExamTestData.examFinishedMessage(exam.getId()));
+
+            assertThat(exam.getScore()).isEqualTo(5);
+            verifyNoInteractions(examMapper);
+        }
+
+    }
+
+    @Nested
+    class FinishExpiredExams {
+
+        @Test
+        void deactivateExams_andSumPointsOfCorrectAnswers_whenExamsHaveExpired() {
+            final var user = UserTestData.createTestUserPippin();
+            final var special = createQuestionWithAnswerIds(QuestionType.SPECIAL);
+            final var basic = createQuestionWithAnswerIds(QuestionType.BASIC);
+            final var answered = ExamTestData.expire(ExamTestData.createExamWithoutQuestions(user)
+                    .setQuestions(List.of(special, basic)));
+            answered.getUserAnswers().addAll(QuestionTestData.getUserAnswers(special, basic));
+            final var unanswered = ExamTestData.expire(ExamTestData.createExam(user).setScore(5));
+            final var time = ArgumentCaptor.forClass(LocalDateTime.class);
+            when(repository.findAllByActiveTrueAndExpiresBefore(time.capture())).thenReturn(List.of(answered, unanswered));
+
+            service.finishExpiredExams();
+
+            assertThat(time.getValue()).isCloseTo(LocalDateTime.now(), within(Duration.ofSeconds(5)));
+            assertThat(answered.isActive()).isFalse();
+            assertThat(answered.getScore()).isEqualTo(special.getPoints());
+            assertThat(unanswered.isActive()).isFalse();
+            assertThat(unanswered.getScore()).isZero();
         }
 
     }

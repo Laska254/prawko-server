@@ -58,6 +58,7 @@ public interface IExamService {
      * Saves the user's answer to a question of their active {@link Exam}.
      * <p>
      * The question is determined by the answer, so a previous answer to the same question is replaced.
+     * Answers are accepted only until the exam expires, {@link Exam#DURATION} after its creation.
      * Concurrent changes to the same exam are detected by its version, so the later commit fails with
      * {@code OptimisticLockingFailureException} instead of overwriting the other one.
      * </p>
@@ -67,5 +68,29 @@ public interface IExamService {
      * @param answerId the ID of the chosen answer, must belong to one of the exam's questions
      */
     void submitAnswer(long examId, long userId, long answerId);
+
+    /**
+     * Finishes the user's active {@link Exam}, so no more answers can be submitted.
+     * <p>
+     * The score is the sum of points of questions answered correctly; unanswered questions give no points.
+     * Concurrent changes to the same exam are detected by its version, so the later commit fails with
+     * {@code OptimisticLockingFailureException}.
+     * </p>
+     *
+     * @param examId the ID of the exam
+     * @param userId the ID of the user finishing the exam, must be the owner of the exam
+     * @return {@link ExamDto} of the finished exam, revealing which answers are correct
+     */
+    ExamDto finishExam(long examId, long userId);
+
+    /**
+     * Finishes all active exams that have expired, scoring them as in
+     * {@link #finishExam(long, long)}.
+     * <p>
+     * Runs periodically, every {@code exam.expiry-check-interval}. If one of the exams is modified concurrently,
+     * none is finished, and they are picked up again by the next run.
+     * </p>
+     */
+    void finishExpiredExams();
 
 }

@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,12 +14,14 @@ import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.mapper.ExamMapper;
+import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.repository.AnswerRepository;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.service.IExamService;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 /**
@@ -66,6 +69,7 @@ public class ExamService implements IExamService {
                 .setUser(user)
                 .setQuestions(questions)
                 .setCategory(category)
+                .setExpires(LocalDateTime.now().plus(Exam.DURATION))
                 .setScore(0)
                 .setActive(true)
                 .setUserAnswers(new ArrayList<>());
@@ -110,13 +114,18 @@ public class ExamService implements IExamService {
      *
      * @throws EntityNotFoundException if the exam is not found, or the answer doesn't belong to any of its questions
      * @throws AccessDeniedException   if the exam belongs to another user
-     * @throws ExamFinishedException   if the exam is no longer active
+     * @throws ExamFinishedException   if the exam is no longer active or its time has expired
      */
     @Override
     @Transactional
     public void submitAnswer(final long examId, final long userId, final long answerId) {
         log.info("Submitting answer '{}' to exam '{}' by user '{}'", answerId, examId, userId);
         final var exam = findActiveExamOfUser(examId, userId);
+        if (exam.getExpires().isBefore(LocalDateTime.now())) {
+            final var message = "Time for exam with '" + examId + "' has expired.";
+            log.warn(message);
+            throw new ExamFinishedException(message);
+        }
         final var answer = answerRepository.findById(answerId)
                 .filter(found -> exam.getQuestions().contains(found.getQuestion()))
                 .orElseThrow(() -> {
@@ -126,6 +135,43 @@ public class ExamService implements IExamService {
                 });
         exam.getUserAnswers().removeIf(previous -> previous.getQuestion().equals(answer.getQuestion()));
         exam.getUserAnswers().add(answer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException if the exam is not found
+     * @throws AccessDeniedException   if the exam belongs to another user
+     * @throws ExamFinishedException   if the exam is already finished
+     */
+    @Override
+    @Transactional
+    public ExamDto finishExam(final long examId, final long userId) {
+        log.info("Finishing exam '{}' by user '{}'", examId, userId);
+        final var exam = findActiveExamOfUser(examId, userId);
+        finish(exam);
+        repository.flush();
+        log.info("Finished exam '{}' with score {}", examId, exam.getScore());
+        return examMapper.toDto(exam, true);
+    }
+
+    @Override
+    @Transactional
+    @Scheduled(fixedDelayString = "${exam.expiry-check-interval}", initialDelayString = "${exam.expiry-check-interval}")
+    public void finishExpiredExams() {
+        final var expired = repository.findAllByActiveTrueAndExpiresBefore(LocalDateTime.now());
+        expired.forEach(exam -> {
+            finish(exam);
+            log.info("Finished expired exam '{}' with score {}", exam.getId(), exam.getScore());
+        });
+    }
+
+    private static void finish(final Exam exam) {
+        final var score = exam.getUserAnswers().stream()
+                .filter(Answer::isCorrect)
+                .mapToInt(answer -> answer.getQuestion().getPoints())
+                .sum();
+        exam.setActive(false).setScore(score);
     }
 
     private Exam findById(final long examId) {

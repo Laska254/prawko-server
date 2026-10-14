@@ -13,6 +13,7 @@ import pl.prawko.prawko_server.test_data.ExamTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,6 +51,22 @@ class ExamRepositoryTest {
         assertThat(repository.findById(saved.getId()).orElseThrow().getUserAnswers())
                 .extracting(Answer::getId)
                 .containsExactly(question.getAnswers().getFirst().getId());
+    }
+
+    @Test
+    void findAllByActiveTrueAndExpiresBefore_returnOnlyActiveExpiredExams() {
+        final var user = UserTestData.createTestUserPippin();
+        entityManager.persist(user);
+        final var expired = repository.save(ExamTestData.expire(ExamTestData.createExamWithoutQuestions(user)));
+        repository.save(ExamTestData.expire(ExamTestData.createExamWithoutQuestions(user)).setActive(false));
+        repository.save(ExamTestData.createExamWithoutQuestions(user));
+        entityManager.clear();
+
+        final var result = repository.findAllByActiveTrueAndExpiresBefore(LocalDateTime.now());
+
+        assertThat(result)
+                .extracting(Exam::getId)
+                .containsExactly(expired.getId());
     }
 
     private Exam loadDetached(final long id) {
