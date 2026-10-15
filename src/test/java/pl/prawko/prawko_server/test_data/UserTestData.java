@@ -26,6 +26,7 @@ public class UserTestData {
             Map.entry("email", "User with email 'pippin@shire.me' already exists."));
 
     public static final String INVALID_RESET_TOKEN = "Password reset token is invalid or expired.";
+    public static final String INVALID_VERIFICATION_TOKEN = "Email verification token is invalid or expired.";
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 

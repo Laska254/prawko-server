@@ -34,4 +34,14 @@ public interface IEmailVerificationService {
      */
     void sendVerificationEmail(long userId, String email, String token);
 
+    /**
+     * Enables the user owning a valid email verification token.
+     * <p>
+     * The token is invalidated afterward.
+     * </p>
+     *
+     * @param token the token from the verification link
+     */
+    void verify(String token);
+
 }

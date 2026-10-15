@@ -105,6 +105,47 @@ class EmailVerificationServiceTest {
 
     }
 
+    @Nested
+    class Verify {
+
+        @Test
+        void enableUserAndClearToken_whenTokenIsValid() {
+            final var token = service.issueToken(tester);
+            when(repository.findByVerificationTokenHash(tester.getVerificationTokenHash())).thenReturn(Optional.of(tester));
+
+            service.verify(token);
+
+            assertThat(tester.isEnabled()).isTrue();
+            assertThat(tester.getVerificationTokenHash()).isNull();
+            assertThat(tester.getVerificationTokenExpires()).isNull();
+            verify(repository).save(tester);
+        }
+
+        @Test
+        void throwInvalidToken_whenTokenIsUnknown() {
+            when(repository.findByVerificationTokenHash(anyString())).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.verify("unknownToken"))
+                    .isInstanceOf(InvalidTokenException.class)
+                    .hasMessage(UserTestData.INVALID_VERIFICATION_TOKEN);
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        void throwInvalidToken_whenTokenIsExpired() {
+            final var token = service.issueToken(tester);
+            tester.setVerificationTokenExpires(LocalDateTime.now().minusSeconds(1));
+            when(repository.findByVerificationTokenHash(tester.getVerificationTokenHash())).thenReturn(Optional.of(tester));
+
+            assertThatThrownBy(() -> service.verify(token))
+                    .isInstanceOf(InvalidTokenException.class)
+                    .hasMessage(UserTestData.INVALID_VERIFICATION_TOKEN);
+            assertThat(tester.isEnabled()).isFalse();
+            verify(repository, never()).save(any());
+        }
+
+    }
+
     private SimpleMailMessage captureSentMessage() {
         final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());

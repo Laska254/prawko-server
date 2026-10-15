@@ -16,12 +16,14 @@ import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
+import pl.prawko.prawko_server.dto.VerifyEmailRequest;
+import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
 import pl.prawko.prawko_server.service.implementation.PasswordResetService;
 
 /**
  * REST controller for authentication operations.
  *
- * <p>Provides endpoints for user login and resetting forgotten passwords.
+ * <p>Provides endpoints for user login, verifying email addresses of new accounts and resetting forgotten passwords.
  * Authentication is performed using Spring Security's authentication manager.
  * The API is stateless, so nothing is stored between requests.
  */
@@ -32,11 +34,14 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final PasswordResetService passwordResetService;
+    private final EmailVerificationService emailVerificationService;
 
     public AuthController(final AuthenticationManager authenticationManager,
-                          final PasswordResetService passwordResetService) {
+                          final PasswordResetService passwordResetService,
+                          final EmailVerificationService emailVerificationService) {
         this.authenticationManager = authenticationManager;
         this.passwordResetService = passwordResetService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     /**
@@ -98,6 +103,23 @@ public class AuthController {
     @PostMapping(ApiConstants.RESET_PASSWORD)
     public ResponseEntity<Void> resetPassword(@Valid @RequestBody final ResetPasswordRequest request) {
         passwordResetService.resetPassword(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Verifies the email address of a new account using the token from a verification link, enabling the account.
+     *
+     * @param request the {@link VerifyEmailRequest} containing the token
+     * @return a {@link ResponseEntity} with HTTP 204 No Content
+     */
+    @Operation(summary = "Verify email", description = "Activates an account using an email verification token.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Email verified successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid argument or invalid/expired token"),
+    })
+    @PostMapping(ApiConstants.VERIFY_EMAIL)
+    public ResponseEntity<Void> verifyEmail(@Valid @RequestBody final VerifyEmailRequest request) {
+        emailVerificationService.verify(request.token());
         return ResponseEntity.noContent().build();
     }
 

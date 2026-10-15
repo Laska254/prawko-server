@@ -12,7 +12,9 @@ import org.springframework.security.crypto.keygen.Base64StringKeyGenerator;
 import org.springframework.security.crypto.keygen.StringKeyGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
+import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IEmailVerificationService;
 
 import java.time.Duration;
@@ -27,18 +29,22 @@ public class EmailVerificationService implements IEmailVerificationService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailVerificationService.class);
     private static final int TOKEN_BYTES = 32;
+    private static final String INVALID_TOKEN = "Email verification token is invalid or expired.";
     private static final StringKeyGenerator TOKEN_GENERATOR =
             new Base64StringKeyGenerator(Base64.getUrlEncoder().withoutPadding(), TOKEN_BYTES);
 
+    private final UserRepository repository;
     private final MailSender mailSender;
     private final String verificationUrl;
     private final Duration tokenValidity;
     private final String mailFrom;
 
-    public EmailVerificationService(final MailSender mailSender,
+    public EmailVerificationService(final UserRepository repository,
+                                    final MailSender mailSender,
                                     @Value("${email-verification.url}") final String verificationUrl,
                                     @Value("${email-verification.token-validity}") final Duration tokenValidity,
                                     @Value("${mail.from}") final String mailFrom) {
+        this.repository = repository;
         this.mailSender = mailSender;
         this.verificationUrl = verificationUrl;
         this.tokenValidity = tokenValidity;
@@ -62,6 +68,27 @@ public class EmailVerificationService implements IEmailVerificationService {
     @Override
     public void sendVerificationEmail(final long userId, final String email, final String token) {
         send(userId, email, token);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws InvalidTokenException if the token is unknown or expired
+     */
+    @Override
+    @Transactional
+    public void verify(final String token) {
+        final var user = repository.findByVerificationTokenHash(hash(token))
+                .filter(found -> found.getVerificationTokenExpires().isAfter(LocalDateTime.now()))
+                .orElseThrow(() -> {
+                    log.warn(INVALID_TOKEN);
+                    return new InvalidTokenException(INVALID_TOKEN);
+                });
+        user.setEnabled(true)
+                .setVerificationTokenHash(null)
+                .setVerificationTokenExpires(null);
+        repository.save(user);
+        log.info("Successfully verified email of user with id '{}'", user.getId());
     }
 
     private void send(final long userId, final String email, final String token) {

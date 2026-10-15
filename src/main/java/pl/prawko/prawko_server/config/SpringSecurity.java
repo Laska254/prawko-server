@@ -189,7 +189,9 @@ public class SpringSecurity {
                 .requestMatchers(HttpMethod.POST,
                         ApiConstants.AUTH_BASE_URL,
                         ApiConstants.AUTH_BASE_URL + ApiConstants.FORGOT_PASSWORD,
-                        ApiConstants.AUTH_BASE_URL + ApiConstants.RESET_PASSWORD).permitAll();
+                        ApiConstants.AUTH_BASE_URL + ApiConstants.RESET_PASSWORD,
+                        ApiConstants.AUTH_BASE_URL + ApiConstants.VERIFY_EMAIL,
+                        ApiConstants.AUTH_BASE_URL + ApiConstants.RESEND_VERIFICATION).permitAll();
     }
 
     private void configureEndpoint_Users(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {

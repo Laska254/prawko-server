@@ -25,6 +25,7 @@ import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
+import pl.prawko.prawko_server.dto.VerifyEmailRequest;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.UserTestData;
@@ -317,6 +318,61 @@ public class AuthControllerTest {
                 .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
                 .jsonPath("$.details.token").isEqualTo("Token is required.")
                 .jsonPath("$.details.newPassword").isEqualTo("Password must be at least 7 characters.");
+    }
+
+    @Test
+    void verifyEmail_returnNoContentAndEnableUser_whenTokenIsValid() {
+        final var tester = userRepository.save(UserTestData.createUnverifiedPippin());
+
+        verifyEmail(requestVerificationToken(tester.getEmail()))
+                .expectStatus().isNoContent();
+
+        final var verified = userRepository.findById(tester.getId()).orElseThrow();
+        assertThat(verified.isEnabled()).isTrue();
+        assertThat(verified.getVerificationTokenHash()).isNull();
+        assertThat(verified.getVerificationTokenExpires()).isNull();
+    }
+
+    @Test
+    void verifyEmail_returnBadRequest_whenTokenIsAlreadyUsed() {
+        final var tester = userRepository.save(UserTestData.createUnverifiedPippin());
+        final var token = requestVerificationToken(tester.getEmail());
+        verifyEmail(token)
+                .expectStatus().isNoContent();
+
+        verifyEmail(token)
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(UserTestData.INVALID_VERIFICATION_TOKEN);
+    }
+
+    @Test
+    void verifyEmail_returnBadRequest_whenTokenIsUnknown() {
+        verifyEmail("unknownToken")
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(UserTestData.INVALID_VERIFICATION_TOKEN);
+    }
+
+    @Test
+    void verifyEmail_returnBadRequest_whenTokenIsBlank() {
+        verifyEmail(" ")
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
+                .jsonPath("$.details.token").isEqualTo("Token is required.");
+    }
+
+    private String requestVerificationToken(final String email) {
+        resendVerification(email);
+        return UserTestData.extractToken(captureSentMessage());
+    }
+
+    private RestTestClient.ResponseSpec verifyEmail(final String token) {
+        return restClient.post()
+                .uri(ApiConstants.VERIFY_EMAIL)
+                .body(new VerifyEmailRequest(token))
+                .exchange();
     }
 
     private String requestResetToken(final String email) {
