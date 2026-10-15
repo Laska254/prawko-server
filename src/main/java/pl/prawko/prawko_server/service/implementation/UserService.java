@@ -78,7 +78,8 @@ public class UserService implements IUserService, UserDetailsService {
      * Load user-specific data during authentication.
      *
      * @param userNameOrEmail the userName or email identifying the user
-     * @return {@link AuthenticatedUser} carrying the user's ID, with granted authority based on user's role
+     * @return {@link AuthenticatedUser} carrying the user's ID, with granted authority based on user's role,
+     * disabled until the user's email is verified
      * @throws UsernameNotFoundException if user have not been found with the provided details
      */
     @Override
@@ -93,6 +94,7 @@ public class UserService implements IUserService, UserDetailsService {
                 user.getId(),
                 user.getUserName(),
                 user.getPassword(),
+                user.isEnabled(),
                 AuthorityUtils.createAuthorityList(user.getRole().getAuthority()));
     }
 
