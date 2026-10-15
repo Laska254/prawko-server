@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.service.implementation;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -7,6 +8,8 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.crypto.keygen.Base64StringKeyGenerator;
+import org.springframework.security.crypto.keygen.StringKeyGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,14 +20,9 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IPasswordResetService;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.HexFormat;
 
 /**
  * Implementation of {@link IPasswordResetService} sending reset links with {@link MailSender}.
@@ -38,7 +36,8 @@ public class PasswordResetService implements IPasswordResetService {
     private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
     private static final int TOKEN_BYTES = 32;
     private static final String INVALID_TOKEN = "Password reset token is invalid or expired.";
-    private static final SecureRandom secureRandom = new SecureRandom();
+    private static final StringKeyGenerator TOKEN_GENERATOR =
+            new Base64StringKeyGenerator(Base64.getUrlEncoder().withoutPadding(), TOKEN_BYTES);
 
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
@@ -111,9 +110,7 @@ public class PasswordResetService implements IPasswordResetService {
     }
 
     private String issueToken(final User user) {
-        final var tokenBytes = new byte[TOKEN_BYTES];
-        secureRandom.nextBytes(tokenBytes);
-        final var token = Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
+        final var token = TOKEN_GENERATOR.generateKey();
         user.setPasswordResetTokenHash(hash(token))
                 .setPasswordResetTokenExpires(LocalDateTime.now().plus(tokenValidity));
         repository.save(user);
@@ -142,12 +139,7 @@ public class PasswordResetService implements IPasswordResetService {
     }
 
     private static String hash(final String token) {
-        try {
-            final var digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(token.getBytes(StandardCharsets.UTF_8)));
-        } catch (final NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 is not available.", exception);
-        }
+        return DigestUtils.sha256Hex(token);
     }
 
     private void requestResetEmail(final User user) {
