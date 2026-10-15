@@ -61,6 +61,10 @@ public class UserTestData {
         return createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me");
     }
 
+    public static User createUnverifiedPippin() {
+        return createTestUserPippin().setEnabled(false);
+    }
+
     public static User createGimli() {
         return createTestUser("Gimli", "Gloinson", TestUtils.ADMIN_NAME, "gimli@erebor.me")
                 .setRole(Role.ADMIN);
