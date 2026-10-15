@@ -13,19 +13,26 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
+import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class EmailVerificationServiceTest {
@@ -33,6 +40,9 @@ class EmailVerificationServiceTest {
     private static final String VERIFICATION_URL = "http://localhost:5173/auth/verify";
     private static final Duration TOKEN_VALIDITY = Duration.ofHours(24);
     private static final String MAIL_FROM = "no-reply@prawko.local";
+
+    @Mock
+    private UserRepository repository;
 
     @Mock
     private MailSender mailSender;
@@ -43,7 +53,7 @@ class EmailVerificationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new EmailVerificationService(mailSender, VERIFICATION_URL, TOKEN_VALIDITY, MAIL_FROM);
+        service = new EmailVerificationService(repository, mailSender, VERIFICATION_URL, TOKEN_VALIDITY, MAIL_FROM);
     }
 
     @Nested
@@ -59,7 +69,7 @@ class EmailVerificationServiceTest {
                     .isNotEqualTo(token);
             assertThat(tester.getVerificationTokenExpires())
                     .isCloseTo(LocalDateTime.now().plus(TOKEN_VALIDITY), within(Duration.ofSeconds(5)));
-            verifyNoInteractions(mailSender);
+            verifyNoInteractions(repository, mailSender);
         }
 
         @Test
