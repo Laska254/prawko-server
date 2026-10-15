@@ -424,9 +424,20 @@ class UserServiceTest {
                 principal -> assertThat(principal.getId()).isEqualTo(7L));
         assertThat(result.getUsername()).isEqualTo("pippin");
         assertThat(result.getPassword()).isEqualTo(user.getPassword());
+        assertThat(result.isEnabled()).isTrue();
         assertThat(result.getAuthorities())
                 .extracting(GrantedAuthority::getAuthority)
                 .containsExactly(Role.USER.getAuthority());
+    }
+
+    @Test
+    void loadUserByUsername_returnDisabledUserDetails_whenEmailIsNotVerified() {
+        final var user = UserTestData.createUnverifiedPippin().setId(7L);
+        when(repository.findByUserNameOrEmailIgnoreCase(user.getUserName(), user.getUserName())).thenReturn(Optional.of(user));
+
+        final var result = service.loadUserByUsername(user.getUserName());
+
+        assertThat(result.isEnabled()).isFalse();
     }
 
     @Test
