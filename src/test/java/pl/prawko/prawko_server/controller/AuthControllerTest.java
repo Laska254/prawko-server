@@ -235,7 +235,7 @@ public class AuthControllerTest {
 
         final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
-        final var newToken = UserTestData.extractResetToken(captor.getValue());
+        final var newToken = UserTestData.extractToken(captor.getValue());
         assertThat(newToken).isNotEqualTo(oldToken);
         resetPassword(UserTestData.createValidResetPasswordRequest(oldToken))
                 .expectStatus().isBadRequest()
@@ -321,7 +321,7 @@ public class AuthControllerTest {
 
     private String requestResetToken(final String email) {
         forgotPassword(email);
-        return UserTestData.extractResetToken(captureSentMessage());
+        return UserTestData.extractToken(captureSentMessage());
     }
 
     private RestTestClient.ResponseSpec resetPassword(final ResetPasswordRequest request) {
