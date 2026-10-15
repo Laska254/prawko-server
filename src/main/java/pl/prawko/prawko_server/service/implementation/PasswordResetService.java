@@ -20,7 +20,6 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IPasswordResetService;
 
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -37,7 +36,6 @@ public class PasswordResetService implements IPasswordResetService {
     private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
     private static final int TOKEN_BYTES = 32;
     private static final String INVALID_TOKEN = "Password reset token is invalid or expired.";
-    private static final SecureRandom secureRandom = new SecureRandom();
     private static final StringKeyGenerator TOKEN_GENERATOR =
             new Base64StringKeyGenerator(Base64.getUrlEncoder().withoutPadding(), TOKEN_BYTES);
 
@@ -112,8 +110,8 @@ public class PasswordResetService implements IPasswordResetService {
     }
 
     private String issueToken(final User user) {
-        final var token = hash(TOKEN_GENERATOR.generateKey());
-        user.setPasswordResetTokenHash(token)
+        final var token = TOKEN_GENERATOR.generateKey();
+        user.setPasswordResetTokenHash(hash(token))
                 .setPasswordResetTokenExpires(LocalDateTime.now().plus(tokenValidity));
         repository.save(user);
         log.debug("Password reset token issued for user with id '{}'", user.getId());
