@@ -16,6 +16,8 @@ import java.util.Optional;
  * <p>Lets ownership checks compare IDs directly against the principal, without querying the database.
  * Used by {@link IsSelfOrAdmin} and other method security expressions as {@code principal.isSelf(...)},
  * and injectable into controllers via {@link org.springframework.security.core.annotation.AuthenticationPrincipal}.
+ *
+ * <p>Disabled until the user verifies their email address, which blocks authentication.
  */
 public class AuthenticatedUser extends User {
 
@@ -27,8 +29,9 @@ public class AuthenticatedUser extends User {
     public AuthenticatedUser(final long id,
                              final String username,
                              final String password,
+                             final boolean enabled,
                              final Collection<? extends GrantedAuthority> authorities) {
-        super(username, password, authorities);
+        super(username, password, enabled, true, true, true, authorities);
         this.id = id;
     }
 
