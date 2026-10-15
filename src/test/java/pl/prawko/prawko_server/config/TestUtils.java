@@ -16,6 +16,8 @@ public class TestUtils {
     public static final String USER_PASSWORD = "lembasy";
     public static final String ADMIN_NAME = "gimli";
     public static final String ADMIN_PASSWORD = "krasnoludka";
+    public static final String UNVERIFIED_NAME = "frodo";
+    public static final String UNVERIFIED_PASSWORD = "myprecious";
 
     public static final String ACCESS_DENIED = "Access denied.";
     public static final String INVALID_CREDENTIALS = "Invalid login or password.";
@@ -35,6 +37,10 @@ public class TestUtils {
 
     public static void authAdmin(final HttpHeaders headers) {
         headers.setBasicAuth(ADMIN_NAME, ADMIN_PASSWORD);
+    }
+
+    public static void authUnverified(final HttpHeaders headers) {
+        headers.setBasicAuth(UNVERIFIED_NAME, UNVERIFIED_PASSWORD);
     }
 
     public static RestTestClient createRestTestClient(final int port, final String controllerBasePath) {

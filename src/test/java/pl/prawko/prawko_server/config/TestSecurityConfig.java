@@ -16,6 +16,7 @@ public class TestSecurityConfig {
     /**
      * Fixed test accounts, authenticated as {@link AuthenticatedUser}. The ID is resolved on every authentication
      * from a persisted user with the same username (0 if none), so ownership checks work against users saved by tests.
+     * {@code frodo} hasn't verified his email, so he's disabled.
      */
     @Bean
     @Primary
@@ -28,13 +29,19 @@ public class TestSecurityConfig {
                 User.withUsername(TestUtils.ADMIN_NAME)
                         .password(passwordEncoder.encode(TestUtils.ADMIN_PASSWORD))
                         .authorities(Role.ADMIN.getAuthority())
+                        .build(),
+                User.withUsername(TestUtils.UNVERIFIED_NAME)
+                        .password(passwordEncoder.encode(TestUtils.UNVERIFIED_PASSWORD))
+                        .authorities(Role.USER.getAuthority())
+                        .disabled(true)
                         .build());
         return username -> {
             final var account = accounts.loadUserByUsername(username);
             final var id = userRepository.findByUserNameOrEmailIgnoreCase(username, username)
                     .map(pl.prawko.prawko_server.model.User::getId)
                     .orElse(0L);
-            return new AuthenticatedUser(id, account.getUsername(), account.getPassword(), account.getAuthorities());
+            return new AuthenticatedUser(
+                    id, account.getUsername(), account.getPassword(), account.isEnabled(), account.getAuthorities());
         };
     }
 
