@@ -17,6 +17,7 @@ public interface IUserService {
      * Registers a new {@link User} with the provided registration details.
      * <p>
      * Creates a new user account from registration data and persists it to the database.
+     * The account is disabled until the user verifies their email with the link sent to it.
      * </p>
      *
      * @param dto the registration data containing username, email, password, and personal info

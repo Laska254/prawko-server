@@ -25,6 +25,7 @@ import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
+import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
 import pl.prawko.prawko_server.service.implementation.UserService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
@@ -36,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -53,6 +55,9 @@ class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private EmailVerificationService emailVerificationService;
 
     @InjectMocks
     private UserService service;
@@ -73,6 +78,30 @@ class UserServiceTest {
         verify(repository).save(user);
         verify(mapper).fromDto(registerDto);
         verifyNoMoreInteractions(repository, mapper);
+    }
+
+    @Test
+    void register_issueTokenBeforeSaveAndSendItAfter_whenUserNotExists() {
+        final var user = UserTestData.createUnverifiedPippin();
+        final var token = "verificationToken";
+        when(mapper.fromDto(registerDto)).thenReturn(user);
+        when(emailVerificationService.issueToken(user)).thenReturn(token);
+
+        service.register(registerDto);
+
+        final var order = inOrder(emailVerificationService, repository);
+        order.verify(emailVerificationService).issueToken(user);
+        order.verify(repository).save(user);
+        order.verify(emailVerificationService).sendVerificationEmail(user.getId(), user.getEmail(), token);
+    }
+
+    @Test
+    void register_notSendVerificationEmail_whenUserAlreadyExists() {
+        when(repository.existsByUserName(registerDto.userName())).thenReturn(true);
+
+        assertThatThrownBy(() -> service.register(registerDto)).isInstanceOf(AlreadyExistsException.class);
+
+        verifyNoInteractions(emailVerificationService);
     }
 
     @Test
