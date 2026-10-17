@@ -48,6 +48,15 @@ class SpringSecurityTest {
     }
 
     @Test
+    void filterChain_returnUnauthorized_whenEmailIsNotVerified() {
+        restClient.get()
+                .uri(ApiConstants.USERS_BASE_URL + ApiConstants.ME)
+                .headers(TestUtils::authUnverified)
+                .exchange()
+                .expectStatus().isUnauthorized();
+    }
+
+    @Test
     void filterChain_denyRequest_whenNoAuthorizationRuleMatches() {
         restClient.get()
                 .uri("/unmapped")

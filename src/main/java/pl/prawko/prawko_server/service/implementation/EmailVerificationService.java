@@ -8,6 +8,7 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.keygen.Base64StringKeyGenerator;
 import org.springframework.security.crypto.keygen.StringKeyGenerator;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,9 @@ import java.util.Base64;
 
 /**
  * Implementation of {@link IEmailVerificationService} sending verification links with {@link MailSender}.
+ * <p>
+ * Tokens are 256-bit random values. Only their SHA-256 hash is stored, so a database leak doesn't allow verifying
+ * accounts. A fast hash is sufficient, since the tokens can't be guessed.
  */
 @Service
 public class EmailVerificationService implements IEmailVerificationService {
@@ -38,17 +42,20 @@ public class EmailVerificationService implements IEmailVerificationService {
     private final MailSender mailSender;
     private final String verificationUrl;
     private final Duration tokenValidity;
+    private final Duration cooldown;
     private final String mailFrom;
 
     public EmailVerificationService(final UserRepository repository,
                                     final MailSender mailSender,
                                     @Value("${email-verification.url}") final String verificationUrl,
                                     @Value("${email-verification.token-validity}") final Duration tokenValidity,
+                                    @Value("${email-verification.cooldown}") final Duration cooldown,
                                     @Value("${mail.from}") final String mailFrom) {
         this.repository = repository;
         this.mailSender = mailSender;
         this.verificationUrl = verificationUrl;
         this.tokenValidity = tokenValidity;
+        this.cooldown = cooldown;
         this.mailFrom = mailFrom;
     }
 
@@ -73,6 +80,24 @@ public class EmailVerificationService implements IEmailVerificationService {
 
     /**
      * {@inheritDoc}
+     * <p>
+     * Not transactional, so the token is committed before the email goes out.
+     * <p>
+     * The issue time isn't stored, it's derived from the expiry and the current token validity.
+     */
+    @Async
+    @Override
+    public void resendVerification(final String email) {
+        log.info("Verification email requested.");
+        repository.findByEmailIgnoreCase(email)
+                .filter(user -> !user.isEnabled())
+                .ifPresentOrElse(
+                        this::resendVerificationEmail,
+                        () -> log.info("No unverified user with the requested email, verification email skipped."));
+    }
+
+    /**
+     * {@inheritDoc}
      *
      * @throws InvalidTokenException if the token is unknown or expired
      */
@@ -90,6 +115,32 @@ public class EmailVerificationService implements IEmailVerificationService {
                 .setVerificationTokenExpires(null);
         repository.save(user);
         log.info("Successfully verified email of user with id '{}'", user.getId());
+    }
+
+    @Override
+    @Transactional
+    @Scheduled(fixedDelayString = "${email-verification.cleanup-interval}",
+            initialDelayString = "${email-verification.cleanup-interval}")
+    public void deleteExpiredUnverifiedUsers() {
+        final var deleted = repository.deleteByEnabledFalseAndVerificationTokenExpiresBefore(LocalDateTime.now());
+        if (deleted > 0) {
+            log.info("Deleted {} unverified users with expired verification tokens.", deleted);
+        }
+    }
+
+    private void resendVerificationEmail(final User user) {
+        if (isCoolingDown(user)) {
+            log.info("Verification email for user with id '{}' requested within cooldown, skipped.", user.getId());
+            return;
+        }
+        final var token = issueToken(user);
+        repository.save(user);
+        send(user.getId(), user.getEmail(), token);
+    }
+
+    private boolean isCoolingDown(final User user) {
+        final var expires = user.getVerificationTokenExpires();
+        return expires != null && expires.minus(tokenValidity).plus(cooldown).isAfter(LocalDateTime.now());
     }
 
     private void send(final long userId, final String email, final String token) {

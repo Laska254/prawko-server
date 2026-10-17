@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
+import pl.prawko.prawko_server.dto.ResendVerificationRequest;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.VerifyEmailRequest;
 import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
@@ -48,7 +49,8 @@ public class AuthController {
      * Authenticates a user with provided credentials.
      *
      * <p>Only verifies the credentials. The API is stateless, so no session is created and
-     * every subsequent request must carry its own HTTP Basic credentials.
+     * every subsequent request must carry its own HTTP Basic credentials. Accounts whose email isn't verified yet
+     * are rejected.
      *
      * @param request the {@link LoginDto} containing username and password
      * @return a {@link ResponseEntity} with HTTP 200 Ok and success message
@@ -57,6 +59,7 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User signed-in successfully"),
             @ApiResponse(responseCode = "401", description = "Authentication failed"),
+            @ApiResponse(responseCode = "403", description = "Email address is not verified"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
     })
     @PostMapping
@@ -121,6 +124,28 @@ public class AuthController {
     public ResponseEntity<Void> verifyEmail(@Valid @RequestBody final VerifyEmailRequest request) {
         emailVerificationService.verify(request.token());
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Requests another email verification link to be emailed.
+     *
+     * <p>Responds the same and without waiting for the email to be sent, whether or not an unverified account with
+     * the email exists.
+     *
+     * @param request the {@link ResendVerificationRequest} containing the account's email
+     * @return a {@link ResponseEntity} with HTTP 202 Accepted
+     */
+    @Operation(summary = "Resend verification email",
+            description = "Emails a new verification link if an unverified account with the email exists.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "202", description = "Request accepted"),
+            @ApiResponse(responseCode = "400", description = "Invalid argument"),
+            @ApiResponse(responseCode = "503", description = "Too many requests pending"),
+    })
+    @PostMapping(ApiConstants.RESEND_VERIFICATION)
+    public ResponseEntity<Void> resendVerification(@Valid @RequestBody final ResendVerificationRequest request) {
+        emailVerificationService.resendVerification(request.email());
+        return ResponseEntity.accepted().build();
     }
 
 }

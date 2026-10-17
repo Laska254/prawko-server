@@ -47,3 +47,5 @@ password-reset:
 
 email-verification:
   token-validity: 24h
+  cooldown: 1m
+  cleanup-interval: 1h

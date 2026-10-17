@@ -8,8 +8,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.mockito.ArgumentCaptor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
+import org.springframework.mail.MailSender;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
@@ -27,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 @IntegrationTest
 public class UserControllerTest {
@@ -38,6 +44,12 @@ public class UserControllerTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private MailSender mailSender;
+
+    @Autowired
+    private ThreadPoolTaskExecutor taskExecutor;
 
     @LocalServerPort
     private int port;
@@ -70,6 +82,35 @@ public class UserControllerTest {
                         final var expectedLocation = ApiConstants.USERS_BASE_URL + "/" + createdUser.getId();
                         assertThat(location).endsWith(expectedLocation);
                     });
+        }
+
+        @Test
+        void storeUnverifiedUserAndEmailVerificationLink_whenDtoIsValid() {
+            final var id = registerUser();
+
+            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());
+            final var user = userRepository.findById(id).orElseThrow();
+            assertThat(captor.getValue().getTo()).containsExactly(registerDto.email());
+            assertThat(UserTestData.extractToken(captor.getValue())).isNotBlank();
+            assertThat(user.isEnabled()).isFalse();
+            assertThat(user.getVerificationTokenHash()).isNotNull();
+        }
+
+        @Test
+        void returnServiceUnavailableAndNotStoreUser_whenTaskQueueIsFull() {
+            final var release = TestUtils.blockTaskExecutor(taskExecutor);
+            try {
+                restClient.post()
+                        .body(registerDto)
+                        .exchange()
+                        .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                        .expectBody()
+                        .jsonPath("$.detail").isEqualTo(TestUtils.SERVER_BUSY);
+            } finally {
+                release.countDown();
+            }
+            assertThat(userRepository.count()).isZero();
         }
 
         @Test

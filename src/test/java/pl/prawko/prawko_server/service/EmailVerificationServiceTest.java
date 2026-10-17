@@ -39,6 +39,7 @@ class EmailVerificationServiceTest {
 
     private static final String VERIFICATION_URL = "http://localhost:5173/auth/verify";
     private static final Duration TOKEN_VALIDITY = Duration.ofHours(24);
+    private static final Duration COOLDOWN = Duration.ofMinutes(1);
     private static final String MAIL_FROM = "no-reply@prawko.local";
 
     @Mock
@@ -53,7 +54,7 @@ class EmailVerificationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new EmailVerificationService(repository, mailSender, VERIFICATION_URL, TOKEN_VALIDITY, MAIL_FROM);
+        service = new EmailVerificationService(repository, mailSender, VERIFICATION_URL, TOKEN_VALIDITY, COOLDOWN, MAIL_FROM);
     }
 
     @Nested
@@ -116,6 +117,69 @@ class EmailVerificationServiceTest {
     }
 
     @Nested
+    class ResendVerification {
+
+        @Test
+        void storeNewTokenAndSendLink_whenUserIsUnverified() {
+            when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
+
+            service.resendVerification(tester.getEmail());
+
+            final var token = UserTestData.extractToken(captureSentMessage());
+            assertThat(tester.getVerificationTokenHash()).isEqualTo(DigestUtils.sha256Hex(token));
+            verify(repository).save(tester);
+        }
+
+        @Test
+        void issueNewToken_whenCooldownHasPassed() {
+            final var oldHash = issueTokenIssuedAgo(COOLDOWN.plusSeconds(1));
+            when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
+
+            service.resendVerification(tester.getEmail());
+
+            assertThat(tester.getVerificationTokenHash()).isNotEqualTo(oldHash);
+            verify(mailSender).send(any(SimpleMailMessage.class));
+        }
+
+        @Test
+        void keepTokenAndSkipEmail_whenRequestedWithinCooldown() {
+            final var hash = issueTokenIssuedAgo(Duration.ZERO);
+            when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
+
+            service.resendVerification(tester.getEmail());
+
+            assertThat(tester.getVerificationTokenHash()).isEqualTo(hash);
+            verify(repository, never()).save(any());
+            verifyNoInteractions(mailSender);
+        }
+
+        @Test
+        void doNothing_whenUserIsAlreadyVerified() {
+            tester.setEnabled(true);
+            when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
+
+            service.resendVerification(tester.getEmail());
+
+            assertThat(tester.getVerificationTokenHash()).isNull();
+            verify(repository, never()).save(any());
+            verifyNoInteractions(mailSender);
+        }
+
+        @Test
+        void doNothingAndNotLogEmail_whenEmailDoesNotExist(final CapturedOutput output) {
+            when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.empty());
+
+            service.resendVerification(tester.getEmail());
+
+            verify(repository, never()).save(any());
+            verifyNoInteractions(mailSender);
+            assertThat(output).contains("verification email skipped")
+                    .doesNotContain(tester.getEmail());
+        }
+
+    }
+
+    @Nested
     class Verify {
 
         @Test
@@ -154,6 +218,39 @@ class EmailVerificationServiceTest {
             verify(repository, never()).save(any());
         }
 
+    }
+
+    @Nested
+    class DeleteExpiredUnverifiedUsers {
+
+        @Test
+        void deleteUnverifiedUsersExpiredBeforeNow_whenCalled() {
+            final var captor = ArgumentCaptor.forClass(LocalDateTime.class);
+
+            service.deleteExpiredUnverifiedUsers();
+
+            verify(repository).deleteByEnabledFalseAndVerificationTokenExpiresBefore(captor.capture());
+            assertThat(captor.getValue()).isCloseTo(LocalDateTime.now(), within(Duration.ofSeconds(5)));
+        }
+
+        @Test
+        void logCount_whenUsersDeleted(final CapturedOutput output) {
+            when(repository.deleteByEnabledFalseAndVerificationTokenExpiresBefore(any())).thenReturn(2L);
+
+            service.deleteExpiredUnverifiedUsers();
+
+            assertThat(output).contains("Deleted 2 unverified users");
+        }
+
+    }
+
+    /**
+     * Sets a token on the tester as if it was issued the given time ago.
+     */
+    private String issueTokenIssuedAgo(final Duration ago) {
+        service.issueToken(tester);
+        tester.setVerificationTokenExpires(tester.getVerificationTokenExpires().minus(ago));
+        return tester.getVerificationTokenHash();
     }
 
     private SimpleMailMessage captureSentMessage() {

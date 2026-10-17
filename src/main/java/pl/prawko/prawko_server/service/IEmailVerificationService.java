@@ -35,6 +35,17 @@ public interface IEmailVerificationService {
     void sendVerificationEmail(long userId, String email, String token);
 
     /**
+     * Issues a new verification token and emails a verification link to the unverified user with the given email.
+     * <p>
+     * Does nothing if no unverified user has the email. Returns without waiting for the outcome.
+     * Requests made within a cooldown after issuing a token are ignored, so the user can't be flooded with emails.
+     * </p>
+     *
+     * @param email the email address of the account, case-insensitive
+     */
+    void resendVerification(String email);
+
+    /**
      * Enables the user owning a valid email verification token.
      * <p>
      * The token is invalidated afterward.
@@ -43,5 +54,14 @@ public interface IEmailVerificationService {
      * @param token the token from the verification link
      */
     void verify(String token);
+
+    /**
+     * Deletes users who didn't verify their email address before their verification token expired,
+     * so they don't hold their username and email forever.
+     * <p>
+     * Runs periodically, every {@code email-verification.cleanup-interval}.
+     * </p>
+     */
+    void deleteExpiredUnverifiedUsers();
 
 }

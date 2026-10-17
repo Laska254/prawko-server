@@ -8,8 +8,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -44,12 +47,16 @@ import java.util.List;
  *
  * <p>Roles are hierarchical: ADMIN implies USER, so an admin passes every USER rule.
  *
+ * <p>Users can't authenticate until they verify their email address, so only verified users can access
+ * non-public endpoints.
+ *
  * <p>Cross-origin requests are allowed from origins matching {@code cors.allowed-origin-patterns}.
  *
  * <p>Authorization rules:
  * <ul>
  *     <li>Public: {@code POST /auth} (login), {@code POST /auth/password/forgot} and {@code POST /auth/password/reset}
- *     (password reset), {@code POST /users} (registration)</li>
+ *     (password reset), {@code POST /auth/verify} and {@code POST /auth/verify/resend} (email verification),
+ *     {@code POST /users} (registration)</li>
  *     <li>ADMIN only: {@code POST /questions} (upload), {@code GET /questions} (list all)</li>
  *     <li>USER+ required: {@code GET /users/me}, {@code GET /questions/**}, {@code POST/GET /exams/**}</li>
  *     <li>ADMIN only: User management endpoints, delete operations</li>
@@ -139,6 +146,10 @@ public class SpringSecurity {
      * Configures global authentication by registering the {@link UserDetailsService} and {@link PasswordEncoder} with the
      * {@link AuthenticationManagerBuilder}.
      *
+     * <p>The {@link DaoAuthenticationProvider} checks account status (e.g. whether the email is verified) after the
+     * password instead of before, so a wrong password always fails the same way and only the account's owner learns
+     * that it isn't verified yet.
+     *
      * @param auth               the {@link AuthenticationManagerBuilder} to configure
      * @param userDetailsService the {@link UserDetailsService} loading users during authentication
      * @param passwordEncoder    the {@link PasswordEncoder} verifying passwords
@@ -149,7 +160,16 @@ public class SpringSecurity {
                                 final PasswordEncoder passwordEncoder) {
         auth
                 .userDetailsService(userDetailsService)
-                .passwordEncoder(passwordEncoder);
+                .passwordEncoder(passwordEncoder)
+                .withObjectPostProcessor(new ObjectPostProcessor<DaoAuthenticationProvider>() {
+                    @Override
+                    public <O extends DaoAuthenticationProvider> O postProcess(final O provider) {
+                        provider.setPreAuthenticationChecks(user -> {
+                        });
+                        provider.setPostAuthenticationChecks(new AccountStatusUserDetailsChecker());
+                        return provider;
+                    }
+                });
     }
 
     /**
