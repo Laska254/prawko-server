@@ -8,6 +8,8 @@ import org.springframework.test.context.ActiveProfiles;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
+import java.time.LocalDateTime;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
@@ -107,6 +109,39 @@ class UserRepositoryTest {
     void findByPasswordResetTokenHash_returnEmpty_whenNoTokenIssued() {
         final var result = repository.findByPasswordResetTokenHash(tokenHash);
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findByVerificationTokenHash_returnUser_whenHashMatches() {
+        repository.save(tester.setVerificationTokenHash(tokenHash));
+
+        final var result = repository.findByVerificationTokenHash(tokenHash);
+
+        assertThat(result).get().extracting(User::getId).isEqualTo(tester.getId());
+    }
+
+    @Test
+    void findByVerificationTokenHash_returnEmpty_whenNoTokenIssued() {
+        final var result = repository.findByVerificationTokenHash(tokenHash);
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void deleteByEnabledFalseAndVerificationTokenExpiresBefore_deleteOnlyUnverifiedUsers_whenTokenExpired() {
+        final var now = LocalDateTime.now();
+        final var expired = repository.save(UserTestData.createUnverifiedPippin()
+                .setVerificationTokenExpires(now.minusMinutes(1)));
+        final var pending = repository.save(UserTestData.createMerry()
+                .setEnabled(false)
+                .setVerificationTokenExpires(now.plusMinutes(1)));
+
+        final var deleted = repository.deleteByEnabledFalseAndVerificationTokenExpiresBefore(now);
+
+        assertThat(deleted).isOne();
+        assertThat(repository.findAll())
+                .extracting(User::getId)
+                .containsExactlyInAnyOrder(tester.getId(), pending.getId())
+                .doesNotContain(expired.getId());
     }
 
     @Test

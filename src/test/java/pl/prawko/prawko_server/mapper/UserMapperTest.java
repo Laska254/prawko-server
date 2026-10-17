@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class UserMapperTest {
 
-    private static final String[] IGNORED_FIELDS = {"id", "created", "updated", "exams", "password", "role"};
+    private static final String[] IGNORED_FIELDS = {"id", "created", "updated", "exams", "password", "role", "enabled"};
 
     private final UserMapper mapper = new UserMapperImpl();
 
@@ -24,6 +24,15 @@ class UserMapperTest {
                 .usingRecursiveComparison()
                 .ignoringFields(IGNORED_FIELDS)
                 .isEqualTo(tester);
+    }
+
+    @Test
+    void fromDto_returnDisabledUser_whenDtoIsValid() {
+        final var result = mapper.fromDto(UserTestData.createValidRegisterDto());
+
+        assertThat(result.isEnabled()).isFalse();
+        assertThat(result.getVerificationTokenHash()).isNull();
+        assertThat(result.getVerificationTokenExpires()).isNull();
     }
 
     @Test

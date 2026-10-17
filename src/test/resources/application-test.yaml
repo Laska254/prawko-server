@@ -22,3 +22,6 @@ mail:
 
 password-reset:
   url: http://localhost:5173/auth/password/reset
+
+email-verification:
+  url: http://localhost:5173/auth/verify

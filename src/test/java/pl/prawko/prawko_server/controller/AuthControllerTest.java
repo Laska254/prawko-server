@@ -24,7 +24,9 @@ import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
+import pl.prawko.prawko_server.dto.ResendVerificationRequest;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
+import pl.prawko.prawko_server.dto.VerifyEmailRequest;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.UserTestData;
@@ -103,6 +105,26 @@ public class AuthControllerTest {
                 .expectStatus().isOk()
                 .expectBody(String.class)
                 .isEqualTo(expectedMessage);
+    }
+
+    @Test
+    void login_returnForbidden_whenEmailIsNotVerified() {
+        restClient.post()
+                .body(new LoginDto(TestUtils.UNVERIFIED_NAME, TestUtils.UNVERIFIED_PASSWORD))
+                .exchange()
+                .expectStatus().isForbidden()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(UserTestData.EMAIL_NOT_VERIFIED);
+    }
+
+    @Test
+    void login_returnUnauthorized_whenEmailIsNotVerifiedAndPasswordIsWrong() {
+        restClient.post()
+                .body(new LoginDto(TestUtils.UNVERIFIED_NAME, "wrongPassword"))
+                .exchange()
+                .expectStatus().isUnauthorized()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.INVALID_CREDENTIALS);
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
@@ -235,7 +257,7 @@ public class AuthControllerTest {
 
         final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
-        final var newToken = UserTestData.extractResetToken(captor.getValue());
+        final var newToken = UserTestData.extractToken(captor.getValue());
         assertThat(newToken).isNotEqualTo(oldToken);
         resetPassword(UserTestData.createValidResetPasswordRequest(oldToken))
                 .expectStatus().isBadRequest()
@@ -319,9 +341,112 @@ public class AuthControllerTest {
                 .jsonPath("$.details.newPassword").isEqualTo("Password must be at least 7 characters.");
     }
 
+    @Test
+    void verifyEmail_returnNoContentAndEnableUser_whenTokenIsValid() {
+        final var tester = userRepository.save(UserTestData.createUnverifiedPippin());
+
+        verifyEmail(requestVerificationToken(tester.getEmail()))
+                .expectStatus().isNoContent();
+
+        final var verified = userRepository.findById(tester.getId()).orElseThrow();
+        assertThat(verified.isEnabled()).isTrue();
+        assertThat(verified.getVerificationTokenHash()).isNull();
+        assertThat(verified.getVerificationTokenExpires()).isNull();
+    }
+
+    @Test
+    void verifyEmail_returnBadRequest_whenTokenIsAlreadyUsed() {
+        final var tester = userRepository.save(UserTestData.createUnverifiedPippin());
+        final var token = requestVerificationToken(tester.getEmail());
+        verifyEmail(token)
+                .expectStatus().isNoContent();
+
+        verifyEmail(token)
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(UserTestData.INVALID_VERIFICATION_TOKEN);
+    }
+
+    @Test
+    void verifyEmail_returnBadRequest_whenTokenIsUnknown() {
+        verifyEmail("unknownToken")
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(UserTestData.INVALID_VERIFICATION_TOKEN);
+    }
+
+    @Test
+    void verifyEmail_returnBadRequest_whenTokenIsBlank() {
+        verifyEmail(" ")
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
+                .jsonPath("$.details.token").isEqualTo("Token is required.");
+    }
+
+    @Test
+    void resendVerification_returnAcceptedAndEmailLink_whenUserIsUnverified() {
+        final var tester = userRepository.save(UserTestData.createUnverifiedPippin());
+
+        resendVerification(tester.getEmail().toUpperCase());
+
+        assertThat(captureSentMessage().getTo()).containsExactly(tester.getEmail());
+        assertThat(userRepository.findById(tester.getId()))
+                .get().extracting(User::getVerificationTokenHash).isNotNull();
+    }
+
+    @Test
+    void resendVerification_returnAcceptedWithoutEmail_whenUserIsVerified() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+
+        resendVerification(tester.getEmail());
+
+        verify(mailSender, after(MAIL_SETTLE_MS).never()).send(any(SimpleMailMessage.class));
+    }
+
+    @Test
+    void resendVerification_returnAcceptedWithoutEmail_whenEmailDoesNotExist() {
+        resendVerification(UserTestData.createTestUserPippin().getEmail());
+
+        verify(mailSender, after(MAIL_SETTLE_MS).never()).send(any(SimpleMailMessage.class));
+    }
+
+    @Test
+    void resendVerification_returnBadRequest_whenEmailIsInvalid() {
+        restClient.post()
+                .uri(ApiConstants.RESEND_VERIFICATION)
+                .body(new ResendVerificationRequest("pippin.shire.me"))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
+                .jsonPath("$.details.email").isEqualTo("Email format is not valid.");
+        verifyNoInteractions(mailSender);
+    }
+
+    private String requestVerificationToken(final String email) {
+        resendVerification(email);
+        return UserTestData.extractToken(captureSentMessage());
+    }
+
+    private void resendVerification(final String email) {
+        restClient.post()
+                .uri(ApiConstants.RESEND_VERIFICATION)
+                .body(new ResendVerificationRequest(email))
+                .exchange()
+                .expectStatus().isAccepted();
+    }
+
+    private RestTestClient.ResponseSpec verifyEmail(final String token) {
+        return restClient.post()
+                .uri(ApiConstants.VERIFY_EMAIL)
+                .body(new VerifyEmailRequest(token))
+                .exchange();
+    }
+
     private String requestResetToken(final String email) {
         forgotPassword(email);
-        return UserTestData.extractResetToken(captureSentMessage());
+        return UserTestData.extractToken(captureSentMessage());
     }
 
     private RestTestClient.ResponseSpec resetPassword(final ResetPasswordRequest request) {

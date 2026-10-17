@@ -102,6 +102,24 @@ public final class ApiConstants {
     public static final String RESET_PASSWORD = "/password/reset";
 
     /**
+     * Path segment for verifying an email address with the token from a verification link.
+     *
+     * <p>Example: {@code /auth/verify}
+     *
+     * @see pl.prawko.prawko_server.controller.AuthController
+     */
+    public static final String VERIFY_EMAIL = "/verify";
+
+    /**
+     * Path segment for requesting another email verification link.
+     *
+     * <p>Example: {@code /auth/verify/resend}
+     *
+     * @see pl.prawko.prawko_server.controller.AuthController
+     */
+    public static final String RESEND_VERIFICATION = VERIFY_EMAIL + "/resend";
+
+    /**
      * Path segment for submitting answers to questions of an exam.
      *
      * <p>Example: {@code /exams/{id}/answers}

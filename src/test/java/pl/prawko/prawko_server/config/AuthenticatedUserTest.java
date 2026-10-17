@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AuthenticatedUserTest {
 
     private final AuthenticatedUser principal =
-            new AuthenticatedUser(7L, "pippin", "lembasy", AuthorityUtils.createAuthorityList(Role.USER.getAuthority()));
+            new AuthenticatedUser(7L, "pippin", "lembasy", true, AuthorityUtils.createAuthorityList(Role.USER.getAuthority()));
 
     @Test
     void isSelf_returnTrue_whenIdMatches() {
@@ -30,7 +30,7 @@ class AuthenticatedUserTest {
     @Test
     void isAdmin_returnTrue_whenRoleIsAdmin() {
         final var admin =
-                new AuthenticatedUser(1L, TestUtils.ADMIN_NAME, TestUtils.ADMIN_PASSWORD, AuthorityUtils.createAuthorityList(Role.ADMIN.getAuthority()));
+                new AuthenticatedUser(1L, TestUtils.ADMIN_NAME, TestUtils.ADMIN_PASSWORD, true, AuthorityUtils.createAuthorityList(Role.ADMIN.getAuthority()));
 
         assertThat(admin.isAdmin()).isTrue();
     }

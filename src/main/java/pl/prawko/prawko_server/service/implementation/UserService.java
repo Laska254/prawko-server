@@ -43,17 +43,23 @@ public class UserService implements IUserService, UserDetailsService {
     private final UserRepository repository;
     private final UserMapper mapper;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService emailVerificationService;
 
     public UserService(final UserRepository repository,
                        final UserMapper mapper,
-                       final PasswordEncoder passwordEncoder) {
+                       final PasswordEncoder passwordEncoder,
+                       final EmailVerificationService emailVerificationService) {
         this.repository = repository;
         this.mapper = mapper;
         this.passwordEncoder = passwordEncoder;
+        this.emailVerificationService = emailVerificationService;
     }
 
     /**
      * {@inheritDoc}
+     * <p>
+     * The verification email is dispatched inside the transaction, so the registration is rolled back if it can't
+     * be queued.
      *
      * @throws AlreadyExistsException if a user with the same username or email already exists
      */
@@ -69,8 +75,10 @@ public class UserService implements IUserService, UserDetailsService {
         log.debug("Password encoded");
         user.setRole(Role.USER);
         log.debug("User role set");
+        final var token = emailVerificationService.issueToken(user);
         repository.save(user);
-        log.info("User with id '{}' registered successfully.", user.getId());
+        emailVerificationService.sendVerificationEmail(user.getId(), user.getEmail(), token);
+        log.info("User with id '{}' registered successfully, awaiting email verification.", user.getId());
         return user.getId();
     }
 
@@ -78,7 +86,8 @@ public class UserService implements IUserService, UserDetailsService {
      * Load user-specific data during authentication.
      *
      * @param userNameOrEmail the userName or email identifying the user
-     * @return {@link AuthenticatedUser} carrying the user's ID, with granted authority based on user's role
+     * @return {@link AuthenticatedUser} carrying the user's ID, with granted authority based on user's role,
+     * disabled until the user's email is verified
      * @throws UsernameNotFoundException if user have not been found with the provided details
      */
     @Override
@@ -93,6 +102,7 @@ public class UserService implements IUserService, UserDetailsService {
                 user.getId(),
                 user.getUserName(),
                 user.getPassword(),
+                user.isEnabled(),
                 AuthorityUtils.createAuthorityList(user.getRole().getAuthority()));
     }
 

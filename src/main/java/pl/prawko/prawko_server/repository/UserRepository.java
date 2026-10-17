@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import pl.prawko.prawko_server.model.User;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -54,5 +55,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return a {@code user} when found
      */
     Optional<User> findByPasswordResetTokenHash(final String passwordResetTokenHash);
+
+    /**
+     * Retrieves {@code user} by the hash of its pending email verification token.
+     *
+     * @param verificationTokenHash SHA-256 hash of the email verification token
+     * @return a {@code user} when found
+     */
+    Optional<User> findByVerificationTokenHash(final String verificationTokenHash);
+
+    /**
+     * Deletes unverified users whose email verification token expired before the given time.
+     *
+     * @param expiredBefore the time the tokens must have expired before
+     * @return the number of deleted users
+     */
+    long deleteByEnabledFalseAndVerificationTokenExpiresBefore(final LocalDateTime expiredBefore);
 
 }

@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -105,6 +106,12 @@ public class ExceptionController {
     @ExceptionHandler(AuthenticationException.class)
     public ProblemDetail handleInvalidLoginRequest() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Invalid login or password.");
+    }
+
+    @ApiResponse(responseCode = "403", description = "Email address is not verified")
+    @ExceptionHandler(DisabledException.class)
+    public ProblemDetail handleNotVerified() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Email address is not verified.");
     }
 
     @ApiResponse(responseCode = "403", description = "Access denied")

@@ -26,8 +26,10 @@ public class UserTestData {
             Map.entry("email", "User with email 'pippin@shire.me' already exists."));
 
     public static final String INVALID_RESET_TOKEN = "Password reset token is invalid or expired.";
+    public static final String INVALID_VERIFICATION_TOKEN = "Email verification token is invalid or expired.";
+    public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";
 
-    private static final Pattern RESET_TOKEN = Pattern.compile("token=([\\w-]+)");
+    private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 
     private UserTestData() {
     }
@@ -59,6 +61,10 @@ public class UserTestData {
 
     public static User createMerry() {
         return createTestUser("Meriadok", "Brandybuck", "merry", "merry@shire.me");
+    }
+
+    public static User createUnverifiedPippin() {
+        return createTestUserPippin().setEnabled(false);
     }
 
     public static User createGimli() {
@@ -125,12 +131,12 @@ public class UserTestData {
         return new ResetPasswordRequest(token, "racuchy");
     }
 
-    public static String extractResetToken(final SimpleMailMessage message) {
-        return RESET_TOKEN.matcher(message.getText())
+    public static String extractToken(final SimpleMailMessage message) {
+        return TOKEN.matcher(message.getText())
                 .results()
                 .map(r -> r.group(1))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("No reset token in: " + message.getText()));
+                .orElseThrow(() -> new AssertionError("No token in: " + message.getText()));
     }
 
     public static RegisterDto createValidRegisterDto() {
