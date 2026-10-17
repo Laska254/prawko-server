@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.service.implementation;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,8 +8,6 @@ import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.crypto.keygen.Base64StringKeyGenerator;
-import org.springframework.security.crypto.keygen.StringKeyGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -18,25 +15,21 @@ import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IEmailVerificationService;
+import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Base64;
 
 /**
  * Implementation of {@link IEmailVerificationService} sending verification links with {@link MailSender}.
  * <p>
- * Tokens are 256-bit random values. Only their SHA-256 hash is stored, so a database leak doesn't allow verifying
- * accounts. A fast hash is sufficient, since the tokens can't be guessed.
+ * Tokens come from {@link SecureTokens}, only their hash is stored.
  */
 @Service
 public class EmailVerificationService implements IEmailVerificationService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailVerificationService.class);
-    private static final int TOKEN_BYTES = 32;
     private static final String INVALID_TOKEN = "Email verification token is invalid or expired.";
-    private static final StringKeyGenerator TOKEN_GENERATOR =
-            new Base64StringKeyGenerator(Base64.getUrlEncoder().withoutPadding(), TOKEN_BYTES);
 
     private final UserRepository repository;
     private final MailSender mailSender;
@@ -61,8 +54,8 @@ public class EmailVerificationService implements IEmailVerificationService {
 
     @Override
     public String issueToken(final User user) {
-        final var token = hash(TOKEN_GENERATOR.generateKey());
-        user.setVerificationTokenHash(hash(token))
+        final var token = SecureTokens.generate();
+        user.setVerificationTokenHash(SecureTokens.hash(token))
                 .setVerificationTokenExpires(LocalDateTime.now().plus(tokenValidity));
         return token;
     }
@@ -104,7 +97,7 @@ public class EmailVerificationService implements IEmailVerificationService {
     @Override
     @Transactional
     public void verify(final String token) {
-        final var user = repository.findByVerificationTokenHash(hash(token))
+        final var user = repository.findByVerificationTokenHash(SecureTokens.hash(token))
                 .filter(found -> found.getVerificationTokenExpires().isAfter(LocalDateTime.now()))
                 .orElseThrow(() -> {
                     log.warn(INVALID_TOKEN);
@@ -161,10 +154,6 @@ public class EmailVerificationService implements IEmailVerificationService {
         } catch (final MailException exception) {
             log.error("Failed to send verification email to user with id '{}'", userId, exception);
         }
-    }
-
-    private static String hash(final String token) {
-        return DigestUtils.sha256Hex(token);
     }
 
 }

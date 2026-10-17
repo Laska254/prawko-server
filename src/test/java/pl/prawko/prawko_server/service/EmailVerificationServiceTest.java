@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.service;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,6 +17,7 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
 import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -64,9 +64,9 @@ class EmailVerificationServiceTest {
         void setTokenHashAndExpiry_whenCalled() {
             final var token = service.issueToken(tester);
 
-            assertThat(token).matches("[0-9a-f]{64}");
+            assertThat(token).matches("[\\w-]{43}");
             assertThat(tester.getVerificationTokenHash())
-                    .isEqualTo(DigestUtils.sha256Hex(token))
+                    .isEqualTo(SecureTokens.hash(token))
                     .isNotEqualTo(token);
             assertThat(tester.getVerificationTokenExpires())
                     .isCloseTo(LocalDateTime.now().plus(TOKEN_VALIDITY), within(Duration.ofSeconds(5)));
@@ -126,7 +126,7 @@ class EmailVerificationServiceTest {
             service.resendVerification(tester.getEmail());
 
             final var token = UserTestData.extractToken(captureSentMessage());
-            assertThat(tester.getVerificationTokenHash()).isEqualTo(DigestUtils.sha256Hex(token));
+            assertThat(tester.getVerificationTokenHash()).isEqualTo(SecureTokens.hash(token));
             verify(repository).save(tester);
         }
 
