@@ -16,6 +16,7 @@
 * [Usage](#usage)
     + [Authentication](#authentication)
     + [Endpoints](#endpoints)
+    + [Solving an exam](#solving-an-exam)
     + [Pagination](#pagination)
 * [Emails (Mailpit)](#emails-mailpit)
 
