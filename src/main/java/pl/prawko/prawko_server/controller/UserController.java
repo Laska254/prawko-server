@@ -140,11 +140,12 @@ public class UserController {
     @Operation(summary = "Update user details", description = "Updates specified fields of an existing user. "
             + "A new email takes effect only after it's verified with the link emailed to it.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User updated successfully, email change pending"),
+            @ApiResponse(responseCode = "200", description = "User updated successfully; a new email stays pending (`pendingEmail`) until verified"),
             @ApiResponse(responseCode = "403", description = "Updating another user is not allowed"),
             @ApiResponse(responseCode = "404", description = "User not found"),
             @ApiResponse(responseCode = "400", description = "Invalid update data or ID is negative or zero"),
             @ApiResponse(responseCode = "409", description = "Username or email already exists"),
+            @ApiResponse(responseCode = "429", description = "Email changed again within the verification email cooldown"),
             @ApiResponse(responseCode = "503", description = "Too many requests pending")
     })
     @IsSelfOrAdmin(userId = "#id")
