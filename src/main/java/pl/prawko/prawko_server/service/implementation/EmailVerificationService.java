@@ -3,6 +3,8 @@ package pl.prawko.prawko_server.service.implementation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.format.annotation.DurationFormat;
+import org.springframework.format.datetime.standard.DurationFormatterUtils;
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -145,7 +147,7 @@ public class EmailVerificationService implements IEmailVerificationService {
         message.setTo(email);
         message.setSubject("Verify your email address");
         message.setText("To activate your account, open the link below. It expires in "
-                + tokenValidity.toHours() + " hours.\n\n"
+                + DurationFormatterUtils.print(tokenValidity, DurationFormat.Style.COMPOSITE) + ".\n\n"
                 + link + "\n\n"
                 + "If you didn't create an account, ignore this email.");
         try {

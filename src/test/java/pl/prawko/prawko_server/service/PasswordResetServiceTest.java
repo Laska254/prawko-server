@@ -70,7 +70,9 @@ class PasswordResetServiceTest {
         final var token = UserTestData.extractToken(message);
         assertThat(message.getFrom()).isEqualTo(MAIL_FROM);
         assertThat(message.getTo()).containsExactly(tester.getEmail());
-        assertThat(message.getText()).contains(RESET_URL + "?token=" + token);
+        assertThat(message.getText())
+                .contains(RESET_URL + "?token=" + token)
+                .contains("expires in 15m.");
         assertThat(tester.getPasswordResetTokenHash())
                 .hasSize(64)
                 .isNotEqualTo(token);

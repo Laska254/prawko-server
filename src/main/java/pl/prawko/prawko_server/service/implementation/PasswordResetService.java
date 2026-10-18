@@ -3,6 +3,8 @@ package pl.prawko.prawko_server.service.implementation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.format.annotation.DurationFormat;
+import org.springframework.format.datetime.standard.DurationFormatterUtils;
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -120,7 +122,7 @@ public class PasswordResetService implements IPasswordResetService {
         message.setTo(user.getEmail());
         message.setSubject("Password reset");
         message.setText("To reset your password, open the link below. It expires in "
-                + tokenValidity.toMinutes() + " minutes.\n\n"
+                + DurationFormatterUtils.print(tokenValidity, DurationFormat.Style.COMPOSITE) + ".\n\n"
                 + link + "\n\n"
                 + "If you didn't request a password reset, ignore this email.");
         try {

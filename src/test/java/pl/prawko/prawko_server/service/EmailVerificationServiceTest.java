@@ -92,7 +92,9 @@ class EmailVerificationServiceTest {
             final var message = captureSentMessage();
             assertThat(message.getFrom()).isEqualTo(MAIL_FROM);
             assertThat(message.getTo()).containsExactly(tester.getEmail());
-            assertThat(message.getText()).contains(VERIFICATION_URL + "?token=someToken");
+            assertThat(message.getText())
+                    .contains(VERIFICATION_URL + "?token=someToken")
+                    .contains("expires in 1d.");
             assertThat(UserTestData.extractToken(message)).isEqualTo("someToken");
         }
 
