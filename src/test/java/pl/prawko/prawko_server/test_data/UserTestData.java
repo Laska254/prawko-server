@@ -67,6 +67,10 @@ public class UserTestData {
         return createTestUserPippin().setEnabled(false);
     }
 
+    public static User createPippinChangingEmail() {
+        return createTestUserPippin().setPendingEmail(createValidUserUpdateRequest().email());
+    }
+
     public static User createGimli() {
         return createTestUser("Gimli", "Gloinson", TestUtils.ADMIN_NAME, "gimli@erebor.me")
                 .setRole(Role.ADMIN);
@@ -98,7 +102,7 @@ public class UserTestData {
                 "UpdatedFirstName",
                 "UpdatedLastName",
                 "UpdatedUserName",
-                "UpdatedEmail@shire.me",
+                "pippin@shire.me",
                 Role.USER
         );
     }

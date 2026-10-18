@@ -22,6 +22,7 @@ public interface UserMapper {
     @Mapping(target = "exams", ignore = true)
     @Mapping(target = "created", ignore = true)
     @Mapping(target = "password", ignore = true)
+    @Mapping(target = "pendingEmail", ignore = true)
     @Mapping(target = "passwordResetTokenHash", ignore = true)
     @Mapping(target = "passwordResetTokenExpires", ignore = true)
     @Mapping(target = "verificationTokenHash", ignore = true)

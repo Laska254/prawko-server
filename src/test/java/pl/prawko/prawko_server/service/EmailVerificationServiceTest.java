@@ -12,6 +12,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
+import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
@@ -21,6 +22,7 @@ import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -133,6 +135,17 @@ class EmailVerificationServiceTest {
         }
 
         @Test
+        void sendLinkToPendingEmail_whenUnverifiedUserHasPendingEmail() {
+            final var pendingEmail = UserTestData.createMerry().getEmail();
+            tester.setPendingEmail(pendingEmail);
+            when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
+
+            service.resendVerification(tester.getEmail());
+
+            assertThat(captureSentMessage().getTo()).containsExactly(pendingEmail);
+        }
+
+        @Test
         void issueNewToken_whenCooldownHasPassed() {
             final var oldHash = issueTokenIssuedAgo(COOLDOWN.plusSeconds(1));
             when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
@@ -195,6 +208,49 @@ class EmailVerificationServiceTest {
             assertThat(tester.getVerificationTokenHash()).isNull();
             assertThat(tester.getVerificationTokenExpires()).isNull();
             verify(repository).save(tester);
+            verify(repository, never()).existsByEmailIgnoreCase(any());
+        }
+
+        @Test
+        void changeEmailAndClearResetToken_whenEmailChangeIsPending() {
+            final var changing = UserTestData.createPippinChangingEmail()
+                    .setPasswordResetTokenHash("pendingTokenHash")
+                    .setPasswordResetTokenExpires(LocalDateTime.now().plusMinutes(15));
+            final var newEmail = changing.getPendingEmail();
+            final var token = service.issueToken(changing);
+            when(repository.findByVerificationTokenHash(changing.getVerificationTokenHash())).thenReturn(Optional.of(changing));
+            when(repository.existsByEmailIgnoreCase(newEmail)).thenReturn(false);
+
+            service.verify(token);
+
+            assertThat(changing.getEmail()).isEqualTo(newEmail);
+            assertThat(changing.getPendingEmail()).isNull();
+            assertThat(changing.isEnabled()).isTrue();
+            assertThat(changing.getVerificationTokenHash()).isNull();
+            assertThat(changing.getPasswordResetTokenHash()).isNull();
+            assertThat(changing.getPasswordResetTokenExpires()).isNull();
+            verify(repository).save(changing);
+        }
+
+        @Test
+        void throwAlreadyExistsAndKeepEmail_whenPendingEmailWasTakenMeanwhile(final CapturedOutput output) {
+            final var changing = UserTestData.createPippinChangingEmail().setId(1L);
+            final var email = changing.getEmail();
+            final var newEmail = changing.getPendingEmail();
+            final var token = service.issueToken(changing);
+            when(repository.findByVerificationTokenHash(changing.getVerificationTokenHash())).thenReturn(Optional.of(changing));
+            when(repository.existsByEmailIgnoreCase(newEmail)).thenReturn(true);
+
+            assertThatThrownBy(() -> service.verify(token))
+                    .isInstanceOf(AlreadyExistsException.class)
+                    .hasMessage(UserTestData.USER_ALREADY_EXISTS)
+                    .extracting(exception -> ((AlreadyExistsException) exception).getDetails())
+                    .isEqualTo(Map.ofEntries(Map.entry("email", "User with email '" + newEmail + "' already exists.")));
+            assertThat(changing.getEmail()).isEqualTo(email);
+            assertThat(changing.getPendingEmail()).isEqualTo(newEmail);
+            verify(repository, never()).save(any());
+            assertThat(output).contains("user with id '1'")
+                    .doesNotContain(newEmail);
         }
 
         @Test

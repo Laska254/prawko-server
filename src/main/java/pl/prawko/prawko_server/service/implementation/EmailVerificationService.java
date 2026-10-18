@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
+import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
@@ -21,6 +22,8 @@ import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Implementation of {@link IEmailVerificationService} sending verification links with {@link MailSender}.
@@ -93,8 +96,11 @@ public class EmailVerificationService implements IEmailVerificationService {
 
     /**
      * {@inheritDoc}
+     * <p>
+     * The pending email is checked for conflicts again, since another user may have taken it in the meantime.
      *
-     * @throws InvalidTokenException if the token is unknown or expired
+     * @throws InvalidTokenException  if the token is unknown or expired
+     * @throws AlreadyExistsException if the pending email already belongs to another user
      */
     @Override
     @Transactional
@@ -105,6 +111,10 @@ public class EmailVerificationService implements IEmailVerificationService {
                     log.warn(INVALID_TOKEN);
                     return new InvalidTokenException(INVALID_TOKEN);
                 });
+        final var pendingEmail = user.getPendingEmail();
+        if (pendingEmail != null) {
+            changeEmail(user, pendingEmail);
+        }
         user.setEnabled(true)
                 .setVerificationTokenHash(null)
                 .setVerificationTokenExpires(null);
@@ -123,6 +133,20 @@ public class EmailVerificationService implements IEmailVerificationService {
         }
     }
 
+    private void changeEmail(final User user, final String pendingEmail) {
+        if (repository.existsByEmailIgnoreCase(pendingEmail)) {
+            final var message = "User already exists.";
+            log.warn("{} Pending email of user with id '{}' was taken meanwhile.", message, user.getId());
+            throw new AlreadyExistsException(message, Map.ofEntries(
+                    Map.entry("email", "User with email '" + pendingEmail + "' already exists.")));
+        }
+        user.setEmail(pendingEmail)
+                .setPendingEmail(null)
+                .setPasswordResetTokenHash(null)
+                .setPasswordResetTokenExpires(null);
+        log.info("Email of user with id '{}' changed.", user.getId());
+    }
+
     private void resendVerificationEmail(final User user) {
         if (isCoolingDown(user)) {
             log.info("Verification email for user with id '{}' requested within cooldown, skipped.", user.getId());
@@ -130,7 +154,7 @@ public class EmailVerificationService implements IEmailVerificationService {
         }
         final var token = issueToken(user);
         repository.save(user);
-        send(user.getId(), user.getEmail(), token);
+        send(user.getId(), Objects.requireNonNullElse(user.getPendingEmail(), user.getEmail()), token);
     }
 
     private boolean isCoolingDown(final User user) {
@@ -146,10 +170,10 @@ public class EmailVerificationService implements IEmailVerificationService {
         message.setFrom(mailFrom);
         message.setTo(email);
         message.setSubject("Verify your email address");
-        message.setText("To activate your account, open the link below. It expires in "
+        message.setText("To verify your email address, open the link below. It expires in "
                 + DurationFormatterUtils.print(tokenValidity, DurationFormat.Style.COMPOSITE) + ".\n\n"
                 + link + "\n\n"
-                + "If you didn't create an account, ignore this email.");
+                + "If you didn't request this, ignore this email.");
         try {
             mailSender.send(message);
             log.info("Verification email sent to user with id '{}'", userId);

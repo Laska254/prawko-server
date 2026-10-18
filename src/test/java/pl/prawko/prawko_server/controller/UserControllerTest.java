@@ -26,6 +26,7 @@ import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.util.List;
 import java.util.Map;
@@ -443,6 +444,51 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserDto.class).isEqualTo(expected);
+        }
+
+        @Test
+        void keepEmailAndSendVerificationToNewEmail_whenEmailChanged() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var newEmail = UserTestData.createValidUserUpdateRequest().email();
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(TestUtils::authUser)
+                    .body(new UserUpdateRequest(null, null, null, newEmail))
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.email").isEqualTo(tester.getEmail());
+
+            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());
+            assertThat(captor.getValue().getTo()).containsExactly(newEmail);
+            final var updated = userRepository.findById(tester.getId()).orElseThrow();
+            assertThat(updated.getEmail()).isEqualTo(tester.getEmail());
+            assertThat(updated.getPendingEmail()).isEqualTo(newEmail);
+            assertThat(updated.getVerificationTokenHash())
+                    .isEqualTo(SecureTokens.hash(UserTestData.extractToken(captor.getValue())));
+        }
+
+        @Test
+        void returnServiceUnavailableAndNotChangeUser_whenEmailChangedAndTaskQueueIsFull() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var release = TestUtils.blockTaskExecutor(taskExecutor);
+            try {
+                restClient.patch()
+                        .uri(ApiConstants.BY_ID, tester.getId())
+                        .headers(TestUtils::authUser)
+                        .body(UserTestData.createValidUserUpdateRequest())
+                        .exchange()
+                        .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                        .expectBody()
+                        .jsonPath("$.detail").isEqualTo(TestUtils.SERVER_BUSY);
+            } finally {
+                release.countDown();
+            }
+            final var unchanged = userRepository.findById(tester.getId()).orElseThrow();
+            assertThat(unchanged.getUserName()).isEqualTo(tester.getUserName());
+            assertThat(unchanged.getPendingEmail()).isNull();
         }
 
         @Test

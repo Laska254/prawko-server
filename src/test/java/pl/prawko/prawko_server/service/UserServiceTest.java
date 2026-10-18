@@ -251,36 +251,39 @@ class UserServiceTest {
     }
 
     @Test
-    void updateUser_clearResetToken_whenEmailChanged() {
+    void updateUser_keepEmailAndSendVerificationToPendingEmail_whenEmailChanged() {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
-        tester.setPasswordResetTokenHash("pendingTokenHash")
-                .setPasswordResetTokenExpires(LocalDateTime.now().plusMinutes(30));
+        final var email = tester.getEmail();
+        final var resetHash = "pendingTokenHash";
+        final var token = "someToken";
+        tester.setPasswordResetTokenHash(resetHash);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(emailVerificationService.issueToken(tester)).thenReturn(token);
         when(repository.save(tester)).thenReturn(tester);
 
         service.updateUser(givenId, updateUserRequest);
 
-        assertThat(tester.getEmail()).isEqualTo(updateUserRequest.email());
-        assertThat(tester.getPasswordResetTokenHash()).isNull();
-        assertThat(tester.getPasswordResetTokenExpires()).isNull();
+        assertThat(tester.getEmail()).isEqualTo(email);
+        assertThat(tester.getPendingEmail()).isEqualTo(updateUserRequest.email());
+        assertThat(tester.getPasswordResetTokenHash()).isEqualTo(resetHash);
+        final var order = inOrder(emailVerificationService, repository);
+        order.verify(emailVerificationService).issueToken(tester);
+        order.verify(repository).save(tester);
+        order.verify(emailVerificationService).sendVerificationEmail(givenId, updateUserRequest.email(), token);
     }
 
     @Test
-    void updateUser_keepResetToken_whenEmailNotProvided() {
+    void updateUser_notRequestVerification_whenEmailNotProvided() {
         final var givenId = 44L;
         final var updateUserRequest = new UserUpdateRequest("UpdatedFirstName", null, null, null);
-        final var hash = "pendingTokenHash";
-        final var expires = LocalDateTime.now().plusMinutes(30);
-        tester.setPasswordResetTokenHash(hash)
-                .setPasswordResetTokenExpires(expires);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
         service.updateUser(givenId, updateUserRequest);
 
-        assertThat(tester.getPasswordResetTokenHash()).isEqualTo(hash);
-        assertThat(tester.getPasswordResetTokenExpires()).isEqualTo(expires);
+        assertThat(tester.getPendingEmail()).isNull();
+        verifyNoInteractions(emailVerificationService);
     }
 
     @Test

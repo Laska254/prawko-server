@@ -142,6 +142,9 @@ public class UserService implements IUserService, UserDetailsService {
 
     /**
      * {@inheritDoc}
+     * <p>
+     * Like in {@link #register}, the verification email is dispatched inside the transaction, so the update is rolled
+     * back if it can't be queued.
      *
      * @throws EntityNotFoundException if user with the given ID have not been found
      * @throws AlreadyExistsException  if the new username or email conflicts with another user
@@ -155,11 +158,13 @@ public class UserService implements IUserService, UserDetailsService {
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
         Optional.ofNullable(updateRequest.userName()).ifPresent(user::setUserName);
-        Optional.ofNullable(updateRequest.email())
-                .ifPresent(email -> user.setEmail(email)
-                        .setPasswordResetTokenHash(null)
-                        .setPasswordResetTokenExpires(null));
+        final var verificationToken = Optional.ofNullable(updateRequest.email())
+                .map(email -> emailVerificationService.issueToken(user.setPendingEmail(email)));
         final var updated = repository.save(user);
+        verificationToken.ifPresent(token -> {
+            emailVerificationService.sendVerificationEmail(userId, user.getPendingEmail(), token);
+            log.info("Email change of user with id '{}' awaiting verification.", userId);
+        });
         log.info("Successfully updated user with id '{}'", userId);
         return mapper.toDto(updated);
     }
