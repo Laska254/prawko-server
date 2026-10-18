@@ -44,3 +44,8 @@ exam:
 password-reset:
   token-validity: 15m
   cooldown: 1m
+
+email-verification:
+  token-validity: 24h
+  cooldown: 1m
+  cleanup-interval: 1h

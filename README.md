@@ -16,6 +16,7 @@
 * [Usage](#usage)
     + [Authentication](#authentication)
     + [Endpoints](#endpoints)
+    + [Solving an exam](#solving-an-exam)
     + [Pagination](#pagination)
 * [Emails (Mailpit)](#emails-mailpit)
 
@@ -76,6 +77,7 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
     + `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` SMTP server (with auth and STARTTLS)
     + `MAIL_FROM` sender address, e.g. `no-reply@prawko.pl`
     + `PASSWORD_RESET_URL` frontend page the reset link points to, e.g. `https://prawko.pl/auth/password/reset`
+    + `EMAIL_VERIFICATION_URL` frontend page the email verification link points to, e.g. `https://prawko.pl/auth/verify`
 
   `data.sql` is not run in `prod` - seed categories and languages once manually.
 
@@ -130,6 +132,9 @@ mail:
 
 password-reset:
   url: http://localhost:5173/auth/password/reset
+
+email-verification:
+  url: http://localhost:5173/auth/verify
 ```
 
 To use a local MariaDB instead, replace the datasource, e.g. `url: jdbc:mariadb://localhost:3306/prawko` with your
@@ -152,6 +157,12 @@ The API is stateless and uses HTTP Basic - every request that requires authentic
 
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 
+A new account must verify its email address before signing in. Registration emails a link to the frontend page
+(`email-verification.url`) with a `token` query parameter, which the page sends to `POST /auth/verify` as
+`{"token": "..."}`. Until then `POST /auth` answers `403` (only with the correct password, otherwise `401`) and every
+other authenticated request `401`. Another link can be requested with `POST /auth/verify/resend`. Accounts not
+verified before their link expires are deleted, so the username and email can be registered again.
+
 ### Endpoints
 
 Access: **public** - no authentication, **user** - any signed-in user, **self** - the signed-in user acting on their
@@ -164,12 +175,14 @@ own data (admins may act on any user), **admin** - admins only.
   | `POST` | `/auth`                 | public | verify credentials (sign-in)                                                 |
   | `POST` | `/auth/password/forgot` | public | email a password reset link, returns `202` whether the account exists or not |
   | `POST` | `/auth/password/reset`  | public | set a new password with the token from the reset link                        |
+  | `POST` | `/auth/verify`          | public | verify the email of a new account with the token from the verification link  |
+  | `POST` | `/auth/verify/resend`   | public | email a new verification link, returns `202` whatever the account's state    |
 
 * `/users`
 
   | Method   | Path                 | Access | Description                                     |
   |----------|----------------------|--------|-------------------------------------------------|
-  | `POST`   | `/users`             | public | register a new user                             |
+  | `POST`   | `/users`             | public | register a new user, emails a verification link |
   | `GET`    | `/users/me`          | user   | get the signed-in user (e.g. their ID and role) |
   | `PATCH`  | `/users/me/password` | user   | change own password (requires current password) |
   | `GET`    | `/users`             | admin  | get a page of users                             |
@@ -226,7 +239,7 @@ List endpoints (`GET /users`, `GET /questions`, `GET /exams`) are paginated with
 
 ## Emails (Mailpit)
 
-In the `dev` profile emails (e.g. password reset links) are sent to SMTP on `localhost:1025`. Run
+In the `dev` profile emails (e.g. email verification and password reset links) are sent to SMTP on `localhost:1025`. Run
 [Mailpit](https://mailpit.axllent.org/) to catch them - nothing is delivered to real inboxes.
 
 Run Mailpit (SMTP on port 1025, web UI on port 8025)
@@ -238,10 +251,13 @@ Then start the application and open the inbox at `http://localhost:8025`.
 Without Mailpit running the application still works, but emails are not sent - the failure is only logged.
 
 Mailpit also has a REST API, e.g. `GET http://localhost:8025/api/v1/message/latest` returns the latest email
-(its body is in the `Text` field), so an API client can read the reset token from it.
+(its body is in the `Text` field), so an API client can read the verification or reset token from it.
 
 Password reset links are valid for 15 minutes; another reset email for the same account can be requested after
 1 minute.
 
-Reset requests are processed in the background on a bounded pool (`spring.task.execution.pool.*`: 8 threads, 100
-queued). When it's full, `/auth/password/forgot` answers `503`.
+Email verification links are valid for 24 hours; another one can be requested after 1 minute. Unverified accounts
+with expired links are deleted every hour.
+
+Reset and verification emails are processed in the background on a bounded pool (`spring.task.execution.pool.*`: 8 threads, 100
+queued). When it's full, `/auth/password/forgot`, `/auth/verify/resend` and `/users` (registration) answer `503`.

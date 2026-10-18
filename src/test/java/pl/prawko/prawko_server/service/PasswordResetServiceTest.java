@@ -67,10 +67,12 @@ class PasswordResetServiceTest {
         service.requestReset(tester.getEmail());
 
         final var message = captureSentMessage();
-        final var token = UserTestData.extractResetToken(message);
+        final var token = UserTestData.extractToken(message);
         assertThat(message.getFrom()).isEqualTo(MAIL_FROM);
         assertThat(message.getTo()).containsExactly(tester.getEmail());
-        assertThat(message.getText()).contains(RESET_URL + "?token=" + token);
+        assertThat(message.getText())
+                .contains(RESET_URL + "?token=" + token)
+                .contains("expires in 15m.");
         assertThat(tester.getPasswordResetTokenHash())
                 .hasSize(64)
                 .isNotEqualTo(token);
@@ -207,7 +209,7 @@ class PasswordResetServiceTest {
     private String issueToken() {
         when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
         service.requestReset(tester.getEmail());
-        return UserTestData.extractResetToken(captureSentMessage());
+        return UserTestData.extractToken(captureSentMessage());
     }
 
     private SimpleMailMessage captureSentMessage() {

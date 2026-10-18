@@ -1,15 +1,14 @@
 package pl.prawko.prawko_server.service.implementation;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.format.annotation.DurationFormat;
+import org.springframework.format.datetime.standard.DurationFormatterUtils;
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.crypto.keygen.Base64StringKeyGenerator;
-import org.springframework.security.crypto.keygen.StringKeyGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,25 +18,21 @@ import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IPasswordResetService;
+import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Base64;
 
 /**
  * Implementation of {@link IPasswordResetService} sending reset links with {@link MailSender}.
  * <p>
- * Tokens are 256-bit random values. Only their SHA-256 hash is stored, so a database leak doesn't allow resetting
- * passwords. A fast hash is sufficient, since the tokens can't be guessed.
+ * Tokens come from {@link SecureTokens}, only their hash is stored.
  */
 @Service
 public class PasswordResetService implements IPasswordResetService {
 
     private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
-    private static final int TOKEN_BYTES = 32;
     private static final String INVALID_TOKEN = "Password reset token is invalid or expired.";
-    private static final StringKeyGenerator TOKEN_GENERATOR =
-            new Base64StringKeyGenerator(Base64.getUrlEncoder().withoutPadding(), TOKEN_BYTES);
 
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
@@ -91,7 +86,7 @@ public class PasswordResetService implements IPasswordResetService {
     @Override
     @Transactional
     public void resetPassword(final ResetPasswordRequest request) {
-        final var user = repository.findByPasswordResetTokenHash(hash(request.token()))
+        final var user = repository.findByPasswordResetTokenHash(SecureTokens.hash(request.token()))
                 .filter(found -> found.getPasswordResetTokenExpires().isAfter(LocalDateTime.now()))
                 .orElseThrow(() -> {
                     log.warn(INVALID_TOKEN);
@@ -110,8 +105,8 @@ public class PasswordResetService implements IPasswordResetService {
     }
 
     private String issueToken(final User user) {
-        final var token = TOKEN_GENERATOR.generateKey();
-        user.setPasswordResetTokenHash(hash(token))
+        final var token = SecureTokens.generate();
+        user.setPasswordResetTokenHash(SecureTokens.hash(token))
                 .setPasswordResetTokenExpires(LocalDateTime.now().plus(tokenValidity));
         repository.save(user);
         log.debug("Password reset token issued for user with id '{}'", user.getId());
@@ -127,7 +122,7 @@ public class PasswordResetService implements IPasswordResetService {
         message.setTo(user.getEmail());
         message.setSubject("Password reset");
         message.setText("To reset your password, open the link below. It expires in "
-                + tokenValidity.toMinutes() + " minutes.\n\n"
+                + DurationFormatterUtils.print(tokenValidity, DurationFormat.Style.COMPOSITE) + ".\n\n"
                 + link + "\n\n"
                 + "If you didn't request a password reset, ignore this email.");
         try {
@@ -136,10 +131,6 @@ public class PasswordResetService implements IPasswordResetService {
         } catch (final MailException exception) {
             log.error("Failed to send password reset email to user with id '{}'", user.getId(), exception);
         }
-    }
-
-    private static String hash(final String token) {
-        return DigestUtils.sha256Hex(token);
     }
 
     private void requestResetEmail(final User user) {

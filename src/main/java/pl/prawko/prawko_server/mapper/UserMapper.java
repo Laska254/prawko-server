@@ -24,7 +24,9 @@ public interface UserMapper {
     @Mapping(target = "password", ignore = true)
     @Mapping(target = "passwordResetTokenHash", ignore = true)
     @Mapping(target = "passwordResetTokenExpires", ignore = true)
-    @Mapping(target = "enabled", constant = "true")
+    @Mapping(target = "verificationTokenHash", ignore = true)
+    @Mapping(target = "verificationTokenExpires", ignore = true)
+    @Mapping(target = "enabled", constant = "false")
     User fromDto(RegisterDto registerDto);
 
     UserDto toDto(User user);

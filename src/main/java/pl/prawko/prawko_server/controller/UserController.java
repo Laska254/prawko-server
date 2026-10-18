@@ -50,15 +50,19 @@ public class UserController {
     /**
      * Registers a new user in the system.
      *
+     * <p>The account can't be used until its email address is verified with the link emailed to it.
+     *
      * @param dto the {@link RegisterDto} containing registration data
      * @return a {@link ResponseEntity} with HTTP 201 Created and Location header pointing
      * to the newly created user
      */
-    @Operation(summary = "Register a new user", description = "Creates a new user account with the provided information data.")
+    @Operation(summary = "Register a new user",
+            description = "Creates a new user account with the provided information data and emails a verification link.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "User registered successfully"),
+            @ApiResponse(responseCode = "201", description = "User registered successfully, email verification pending"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
-            @ApiResponse(responseCode = "409", description = "User already exists")
+            @ApiResponse(responseCode = "409", description = "User already exists"),
+            @ApiResponse(responseCode = "503", description = "Too many requests pending")
     })
     @PostMapping
     public ResponseEntity<Void> registerUser(@Valid @RequestBody final RegisterDto dto) {
