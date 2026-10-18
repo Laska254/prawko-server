@@ -84,6 +84,7 @@ public class UserTestData {
                 "Tuk",
                 "pippin",
                 "pippin@shire.me",
+                null,
                 Role.USER);
     }
 
@@ -94,6 +95,7 @@ public class UserTestData {
                 "Gloinson",
                 TestUtils.ADMIN_NAME,
                 "gimli@erebor.me",
+                null,
                 Role.ADMIN);
     }
 
@@ -104,6 +106,7 @@ public class UserTestData {
                 "UpdatedLastName",
                 "UpdatedUserName",
                 "pippin@shire.me",
+                createValidUserUpdateRequest().email(),
                 Role.USER
         );
     }

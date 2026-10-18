@@ -460,7 +460,8 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
-                    .jsonPath("$.email").isEqualTo(tester.getEmail());
+                    .jsonPath("$.email").isEqualTo(tester.getEmail())
+                    .jsonPath("$.pendingEmail").isEqualTo(newEmail);
 
             final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());

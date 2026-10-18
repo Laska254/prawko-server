@@ -45,4 +45,14 @@ class UserMapperTest {
         assertThat(result).isEqualTo(expected);
     }
 
+    @Test
+    void toDto_mapPendingEmail_whenEmailChangeIsPending() {
+        final var user = UserTestData.createPippinChangingEmail();
+
+        final var result = mapper.toDto(user);
+
+        assertThat(result.email()).isEqualTo(user.getEmail());
+        assertThat(result.pendingEmail()).isEqualTo(user.getPendingEmail());
+    }
+
 }

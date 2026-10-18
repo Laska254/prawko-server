@@ -164,7 +164,7 @@ other authenticated request `401`. Another link can be requested with `POST /aut
 verified before their link expires are deleted, so the username and email can be registered again.
 
 Changing the email with `PATCH /users/{id}` works the same way: the new address is only stored as pending and a link
-is emailed to it. The current email stays in use (sign-in, password reset) until the link is used with
+is emailed to it (`pendingEmail` in the user response). The current email stays in use (sign-in, password reset) until the link is used with
 `POST /auth/verify`; for another link send the `PATCH` again after the cooldown - within it the `PATCH` answers `429`
 and changes nothing.
 
