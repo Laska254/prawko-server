@@ -3,9 +3,10 @@ package pl.prawko.prawko_server.service;
 import pl.prawko.prawko_server.model.User;
 
 /**
- * Service interface for verifying email addresses of newly registered {@link User}s.
+ * Service interface for verifying email addresses of {@link User}s.
  * <p>
  * A new account is disabled, so it can't sign in or use the API, until the link emailed to its address is opened.
+ * A changed email address is pending until the link emailed to the new address is opened.
  */
 public interface IEmailVerificationService {
 
@@ -16,7 +17,7 @@ public interface IEmailVerificationService {
      * {@link #sendVerificationEmail}.
      * </p>
      *
-     * @param user the unverified user
+     * @param user the user with an unverified email address
      * @return the issued token
      */
     String issueToken(User user);
@@ -37,6 +38,9 @@ public interface IEmailVerificationService {
     /**
      * Issues a new verification token and emails a verification link to the unverified user with the given email.
      * <p>
+     * The link goes to the user's pending email, if there is one.
+     * </p>
+     * <p>
      * Does nothing if no unverified user has the email. Returns without waiting for the outcome.
      * Requests made within a cooldown after issuing a token are ignored, so the user can't be flooded with emails.
      * </p>
@@ -46,9 +50,10 @@ public interface IEmailVerificationService {
     void resendVerification(String email);
 
     /**
-     * Enables the user owning a valid email verification token.
+     * Enables the user owning a valid email verification token and makes their pending email, if there is one,
+     * the user's email.
      * <p>
-     * The token is invalidated afterward.
+     * The token is invalidated afterward. A changed email invalidates any pending password reset token.
      * </p>
      *
      * @param token the token from the verification link

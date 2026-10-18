@@ -130,18 +130,22 @@ public class UserController {
     /**
      * Updates user details.
      *
-     * <p>Allowed only for the user themselves or an admin.
+     * <p>Allowed only for the user themselves or an admin. A new email is only stored as pending and a verification
+     * link is emailed to it.
      *
      * @param id            the unique identifier of the user to update (must be positive)
      * @param updateRequest the {@link UserUpdateRequest} containing fields to update
      * @return a {@link ResponseEntity} containing the updated {@link UserDto}
      */
-    @Operation(summary = "Update user details", description = "Updates specified fields of an existing user.")
+    @Operation(summary = "Update user details", description = "Updates specified fields of an existing user. "
+            + "A new email takes effect only after it's verified with the link emailed to it.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User updated successfully"),
+            @ApiResponse(responseCode = "200", description = "User updated successfully, email change pending"),
             @ApiResponse(responseCode = "403", description = "Updating another user is not allowed"),
             @ApiResponse(responseCode = "404", description = "User not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid update data or ID is negative or zero")
+            @ApiResponse(responseCode = "400", description = "Invalid update data or ID is negative or zero"),
+            @ApiResponse(responseCode = "409", description = "Username or email already exists"),
+            @ApiResponse(responseCode = "503", description = "Too many requests pending")
     })
     @IsSelfOrAdmin(userId = "#id")
     @PatchMapping(ApiConstants.BY_ID)
