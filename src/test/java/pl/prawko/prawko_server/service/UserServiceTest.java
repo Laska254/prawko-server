@@ -21,6 +21,7 @@ import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
+import pl.prawko.prawko_server.exception.TooManyRequestsException;
 import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -271,6 +273,23 @@ class UserServiceTest {
         order.verify(emailVerificationService).issueToken(tester);
         order.verify(repository).save(tester);
         order.verify(emailVerificationService).sendVerificationEmail(givenId, updateUserRequest.email(), token);
+    }
+
+    @Test
+    void updateUser_throwTooManyRequestsAndNotSave_whenEmailChangedWithinCooldown() {
+        final var givenId = 44L;
+        final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(emailVerificationService.isCoolingDown(tester)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.updateUser(givenId, updateUserRequest))
+                .isInstanceOf(TooManyRequestsException.class)
+                .hasMessage(UserTestData.VERIFICATION_COOLDOWN);
+
+        assertThat(tester.getPendingEmail()).isNull();
+        verify(repository, never()).save(any());
+        verify(emailVerificationService, never()).issueToken(any());
+        verify(emailVerificationService, never()).sendVerificationEmail(anyLong(), any(), any());
     }
 
     @Test

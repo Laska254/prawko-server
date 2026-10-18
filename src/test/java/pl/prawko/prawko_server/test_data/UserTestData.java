@@ -28,6 +28,7 @@ public class UserTestData {
     public static final String INVALID_RESET_TOKEN = "Password reset token is invalid or expired.";
     public static final String INVALID_VERIFICATION_TOKEN = "Email verification token is invalid or expired.";
     public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";
+    public static final String VERIFICATION_COOLDOWN = "Verification email was sent recently, try again later.";
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 

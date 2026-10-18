@@ -24,6 +24,7 @@ import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
+import pl.prawko.prawko_server.exception.TooManyRequestsException;
 
 import java.util.HashMap;
 
@@ -70,6 +71,12 @@ public class ExceptionController {
     @ExceptionHandler(InvalidTokenException.class)
     public ProblemDetail handleInvalidToken(final InvalidTokenException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "429", description = "Requested again within the cooldown")
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ProblemDetail handleTooManyRequests(final TooManyRequestsException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, exception.getMessage());
     }
 
     @ApiResponse(responseCode = "409", description = "Exam is already finished")

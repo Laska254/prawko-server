@@ -32,8 +32,10 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @IntegrationTest
 public class UserControllerTest {
@@ -418,7 +420,7 @@ public class UserControllerTest {
 
         @Test
         void success_whenDtoIsValid() {
-            final var id = registerUser();
+            final var id = userRepository.save(UserTestData.createTestUserPippin()).getId();
             final var validDto = UserTestData.createValidUserUpdateRequest();
             final var expected = UserTestData.createUpdatedUserDto(id);
 
@@ -433,7 +435,7 @@ public class UserControllerTest {
 
         @Test
         void success_whenUserUpdatesThemselves() {
-            final var id = registerUser();
+            final var id = userRepository.save(UserTestData.createTestUserPippin()).getId();
             final var validDto = UserTestData.createValidUserUpdateRequest();
             final var expected = UserTestData.createUpdatedUserDto(id);
 
@@ -468,6 +470,32 @@ public class UserControllerTest {
             assertThat(updated.getPendingEmail()).isEqualTo(newEmail);
             assertThat(updated.getVerificationTokenHash())
                     .isEqualTo(SecureTokens.hash(UserTestData.extractToken(captor.getValue())));
+        }
+
+        @Test
+        void returnTooManyRequestsAndKeepPendingEmail_whenEmailChangedAgainWithinCooldown() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var firstEmail = UserTestData.createValidUserUpdateRequest().email();
+            final var secondEmail = UserTestData.createMerry().getEmail();
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(TestUtils::authUser)
+                    .body(new UserUpdateRequest(null, null, null, firstEmail))
+                    .exchange()
+                    .expectStatus().isOk();
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(TestUtils::authUser)
+                    .body(new UserUpdateRequest(null, null, null, secondEmail))
+                    .exchange()
+                    .expectStatus().isEqualTo(HttpStatus.TOO_MANY_REQUESTS)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.VERIFICATION_COOLDOWN);
+
+            assertThat(userRepository.findById(tester.getId()).orElseThrow().getPendingEmail()).isEqualTo(firstEmail);
+            verifyNoMoreInteractions(mailSender);
         }
 
         @Test

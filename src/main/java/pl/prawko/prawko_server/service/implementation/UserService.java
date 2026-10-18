@@ -20,6 +20,7 @@ import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
+import pl.prawko.prawko_server.exception.TooManyRequestsException;
 import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
@@ -144,10 +145,11 @@ public class UserService implements IUserService, UserDetailsService {
      * {@inheritDoc}
      * <p>
      * Like in {@link #register}, the verification email is dispatched inside the transaction, so the update is rolled
-     * back if it can't be queued.
+     * back if it can't be queued. Email changes are subject to the verification email cooldown.
      *
-     * @throws EntityNotFoundException if user with the given ID have not been found
-     * @throws AlreadyExistsException  if the new username or email conflicts with another user
+     * @throws EntityNotFoundException  if user with the given ID have not been found
+     * @throws AlreadyExistsException   if the new username or email conflicts with another user
+     * @throws TooManyRequestsException if the email is changed within the cooldown of the previous verification email
      */
     @Transactional
     @Override
@@ -159,7 +161,7 @@ public class UserService implements IUserService, UserDetailsService {
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
         Optional.ofNullable(updateRequest.userName()).ifPresent(user::setUserName);
         final var verificationToken = Optional.ofNullable(updateRequest.email())
-                .map(email -> emailVerificationService.issueToken(user.setPendingEmail(email)));
+                .map(email -> requestEmailChange(email, user));
         final var updated = repository.save(user);
         verificationToken.ifPresent(token -> {
             emailVerificationService.sendVerificationEmail(userId, user.getPendingEmail(), token);
@@ -224,6 +226,15 @@ public class UserService implements IUserService, UserDetailsService {
             log.warn("{} Conflicting fields: {}", message, errorDetails.keySet());
             throw new AlreadyExistsException(message, errorDetails);
         }
+    }
+
+    private String requestEmailChange(final String email, final User user) {
+        if (emailVerificationService.isCoolingDown(user)) {
+            final var message = "Verification email was sent recently, try again later.";
+            log.warn("{} User id: {}", message, user.getId());
+            throw new TooManyRequestsException(message);
+        }
+        return emailVerificationService.issueToken(user.setPendingEmail(email));
     }
 
 }
