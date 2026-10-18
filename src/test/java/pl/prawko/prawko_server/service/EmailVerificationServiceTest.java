@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -265,10 +266,10 @@ class EmailVerificationServiceTest {
             when(repository.findByVerificationTokenHash(changing.getVerificationTokenHash())).thenReturn(Optional.of(changing));
             when(repository.existsByEmailIgnoreCase(newEmail)).thenReturn(true);
 
-            assertThatThrownBy(() -> service.verify(token))
-                    .isInstanceOf(AlreadyExistsException.class)
-                    .hasMessage(UserTestData.USER_ALREADY_EXISTS)
-                    .extracting(exception -> ((AlreadyExistsException) exception).getDetails())
+            final var exception = catchThrowableOfType(AlreadyExistsException.class, () -> service.verify(token));
+
+            assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
+            assertThat(exception.getDetails())
                     .isEqualTo(Map.ofEntries(Map.entry("email", "User with email '" + newEmail + "' already exists.")));
             assertThat(changing.getEmail()).isEqualTo(email);
             assertThat(changing.getPendingEmail()).isEqualTo(newEmail);
