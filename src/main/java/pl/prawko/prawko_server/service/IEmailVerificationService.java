@@ -36,6 +36,14 @@ public interface IEmailVerificationService {
     void sendVerificationEmail(long userId, String email, String token);
 
     /**
+     * Tells whether the user's verification token was issued within the cooldown, so no new one should be sent yet.
+     *
+     * @param user the user to check
+     * @return {@code true} if another verification email can't be sent yet
+     */
+    boolean isCoolingDown(User user);
+
+    /**
      * Issues a new verification token and emails a verification link to the unverified user with the given email.
      * <p>
      * The link goes to the user's pending email, if there is one.

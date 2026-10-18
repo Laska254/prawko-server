@@ -80,8 +80,6 @@ public class EmailVerificationService implements IEmailVerificationService {
      * {@inheritDoc}
      * <p>
      * Not transactional, so the token is committed before the email goes out.
-     * <p>
-     * The issue time isn't stored, it's derived from the expiry and the current token validity.
      */
     @Async
     @Override
@@ -157,7 +155,13 @@ public class EmailVerificationService implements IEmailVerificationService {
         send(user.getId(), Objects.requireNonNullElse(user.getPendingEmail(), user.getEmail()), token);
     }
 
-    private boolean isCoolingDown(final User user) {
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The issue time isn't stored, it's derived from the expiry and the current token validity.
+     */
+    @Override
+    public boolean isCoolingDown(final User user) {
         final var expires = user.getVerificationTokenExpires();
         return expires != null && expires.minus(tokenValidity).plus(cooldown).isAfter(LocalDateTime.now());
     }

@@ -121,6 +121,30 @@ class EmailVerificationServiceTest {
     }
 
     @Nested
+    class IsCoolingDown {
+
+        @Test
+        void returnTrue_whenTokenIssuedWithinCooldown() {
+            issueTokenIssuedAgo(Duration.ZERO);
+
+            assertThat(service.isCoolingDown(tester)).isTrue();
+        }
+
+        @Test
+        void returnFalse_whenCooldownHasPassed() {
+            issueTokenIssuedAgo(COOLDOWN.plusSeconds(1));
+
+            assertThat(service.isCoolingDown(tester)).isFalse();
+        }
+
+        @Test
+        void returnFalse_whenNoTokenIssued() {
+            assertThat(service.isCoolingDown(tester)).isFalse();
+        }
+
+    }
+
+    @Nested
     class ResendVerification {
 
         @Test
