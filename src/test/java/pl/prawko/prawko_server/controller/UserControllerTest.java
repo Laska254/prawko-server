@@ -500,6 +500,34 @@ public class UserControllerTest {
         }
 
         @Test
+        void cancelEmailChangeWithinCooldown_whenCurrentEmailSent() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var newEmail = UserTestData.createValidUserUpdateRequest().email();
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(TestUtils::authUser)
+                    .body(new UserUpdateRequest(null, null, null, newEmail))
+                    .exchange()
+                    .expectStatus().isOk();
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(TestUtils::authUser)
+                    .body(new UserUpdateRequest(null, null, null, tester.getEmail()))
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.email").isEqualTo(tester.getEmail())
+                    .jsonPath("$.pendingEmail").isEmpty();
+
+            final var cancelled = userRepository.findById(tester.getId()).orElseThrow();
+            assertThat(cancelled.getPendingEmail()).isNull();
+            assertThat(cancelled.getVerificationTokenHash()).isNull();
+            verifyNoMoreInteractions(mailSender);
+        }
+
+        @Test
         void returnServiceUnavailableAndNotChangeUser_whenEmailChangedAndTaskQueueIsFull() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var release = TestUtils.blockTaskExecutor(taskExecutor);

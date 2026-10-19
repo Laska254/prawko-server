@@ -145,7 +145,8 @@ public class UserService implements IUserService, UserDetailsService {
      * {@inheritDoc}
      * <p>
      * Like in {@link #register}, the verification email is dispatched inside the transaction, so the update is rolled
-     * back if it can't be queued. Email changes are subject to the verification email cooldown.
+     * back if it can't be queued. Email changes are subject to the verification email cooldown. Sending the current
+     * email cancels a pending change and invalidates its link, without a cooldown since no email is sent.
      *
      * @throws EntityNotFoundException  if user with the given ID have not been found
      * @throws AlreadyExistsException   if the new username or email conflicts with another user
@@ -156,12 +157,18 @@ public class UserService implements IUserService, UserDetailsService {
     public UserDto updateUser(final long userId, final UserUpdateRequest updateRequest) {
         log.info("Updating user with id: {}", userId);
         final var user = getById(userId);
-        validateNoConflict(updateRequest.userName(), updateRequest.email());
+        final var email = updateRequest.email();
+        final var cancelsEmailChange = email != null && email.equalsIgnoreCase(user.getEmail());
+        final var newEmail = cancelsEmailChange ? null : email;
+        validateNoConflict(updateRequest.userName(), newEmail);
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
         Optional.ofNullable(updateRequest.userName()).ifPresent(user::setUserName);
-        final var verificationToken = Optional.ofNullable(updateRequest.email())
-                .map(email -> requestEmailChange(email, user));
+        if (cancelsEmailChange) {
+            cancelEmailChange(user);
+        }
+        final var verificationToken = Optional.ofNullable(newEmail)
+                .map(pendingEmail -> requestEmailChange(pendingEmail, user));
         final var updated = repository.save(user);
         verificationToken.ifPresent(token -> {
             emailVerificationService.sendVerificationEmail(userId, user.getPendingEmail(), token);
@@ -235,6 +242,17 @@ public class UserService implements IUserService, UserDetailsService {
             throw new TooManyRequestsException(message);
         }
         return emailVerificationService.issueToken(user.setPendingEmail(email));
+    }
+
+    /**
+     * Keeps the token expiry, so the cooldown still applies and an unverified account is still cleaned up.
+     */
+    private void cancelEmailChange(final User user) {
+        if (user.getPendingEmail() != null) {
+            user.setPendingEmail(null)
+                    .setVerificationTokenHash(null);
+            log.info("Email change of user with id '{}' cancelled.", user.getId());
+        }
     }
 
 }

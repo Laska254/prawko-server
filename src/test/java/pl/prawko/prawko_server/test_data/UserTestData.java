@@ -69,7 +69,10 @@ public class UserTestData {
     }
 
     public static User createPippinChangingEmail() {
-        return createTestUserPippin().setPendingEmail(createValidUserUpdateRequest().email());
+        return createTestUserPippin()
+                .setPendingEmail(createValidUserUpdateRequest().email())
+                .setVerificationTokenHash("pendingTokenHash")
+                .setVerificationTokenExpires(LocalDateTime.now().plusHours(1));
     }
 
     public static User createGimli() {

@@ -293,6 +293,41 @@ class UserServiceTest {
     }
 
     @Test
+    void updateUser_cancelEmailChangeKeepingExpiry_whenCurrentEmailSent() {
+        final var givenId = 44L;
+        final var changing = UserTestData.createPippinChangingEmail();
+        final var expires = changing.getVerificationTokenExpires();
+        final var currentEmail = changing.getEmail().toUpperCase();
+        when(repository.findById(givenId)).thenReturn(Optional.of(changing));
+        when(repository.save(changing)).thenReturn(changing);
+
+        service.updateUser(givenId, new UserUpdateRequest(null, null, null, currentEmail));
+
+        assertThat(changing.getEmail()).isEqualTo(tester.getEmail());
+        assertThat(changing.getPendingEmail()).isNull();
+        assertThat(changing.getVerificationTokenHash()).isNull();
+        assertThat(changing.getVerificationTokenExpires()).isEqualTo(expires);
+        verify(repository, never()).existsByEmailIgnoreCase(any());
+        verifyNoInteractions(emailVerificationService);
+    }
+
+    @Test
+    void updateUser_keepUserUnchanged_whenCurrentEmailSentWithoutPendingChange() {
+        final var givenId = 44L;
+        final var unverified = UserTestData.createUnverifiedPippin();
+        final var token = "someToken";
+        unverified.setVerificationTokenHash(token);
+        when(repository.findById(givenId)).thenReturn(Optional.of(unverified));
+        when(repository.save(unverified)).thenReturn(unverified);
+
+        service.updateUser(givenId, new UserUpdateRequest(null, null, null, unverified.getEmail()));
+
+        assertThat(unverified.getVerificationTokenHash()).isEqualTo(token);
+        verify(repository, never()).existsByEmailIgnoreCase(any());
+        verifyNoInteractions(emailVerificationService);
+    }
+
+    @Test
     void updateUser_notRequestVerification_whenEmailNotProvided() {
         final var givenId = 44L;
         final var updateUserRequest = new UserUpdateRequest("UpdatedFirstName", null, null, null);

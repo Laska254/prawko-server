@@ -131,14 +131,15 @@ public class UserController {
      * Updates user details.
      *
      * <p>Allowed only for the user themselves or an admin. A new email is only stored as pending and a verification
-     * link is emailed to it.
+     * link is emailed to it. Sending the current email cancels a pending change.
      *
      * @param id            the unique identifier of the user to update (must be positive)
      * @param updateRequest the {@link UserUpdateRequest} containing fields to update
      * @return a {@link ResponseEntity} containing the updated {@link UserDto}
      */
     @Operation(summary = "Update user details", description = "Updates specified fields of an existing user. "
-            + "A new email takes effect only after it's verified with the link emailed to it.")
+            + "A new email takes effect only after it's verified with the link emailed to it. "
+            + "Sending the current email cancels a pending change and invalidates its link.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User updated successfully; a new email stays pending (`pendingEmail`) until verified"),
             @ApiResponse(responseCode = "403", description = "Updating another user is not allowed"),
