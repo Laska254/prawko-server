@@ -144,8 +144,8 @@ public class UserService implements IUserService, UserDetailsService {
     /**
      * {@inheritDoc}
      * <p>
-     * Like in {@link #register}, the verification email is dispatched inside the transaction, so the update is rolled
-     * back if it can't be queued. Email changes are subject to the verification email cooldown. Sending the current
+     * Like in {@link #register}, the verification email (and the notice to the current address) is dispatched inside
+     * the transaction, so the update is rolled back if it can't be queued. Email changes are subject to the verification email cooldown. Sending the current
      * email cancels a pending change and invalidates its link, without a cooldown since no email is sent.
      *
      * @throws EntityNotFoundException  if user with the given ID have not been found
@@ -164,14 +164,14 @@ public class UserService implements IUserService, UserDetailsService {
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
         Optional.ofNullable(updateRequest.userName()).ifPresent(user::setUserName);
-        if (cancelsEmailChange) {
-            cancelEmailChange(user);
+        if (cancelsEmailChange && user.cancelEmailChange()) {
+            log.info("Email change of user with id '{}' cancelled.", userId);
         }
         final var verificationToken = Optional.ofNullable(newEmail)
                 .map(pendingEmail -> requestEmailChange(pendingEmail, user));
         final var updated = repository.save(user);
         verificationToken.ifPresent(token -> {
-            emailVerificationService.sendVerificationEmail(userId, user.getPendingEmail(), token);
+            emailVerificationService.sendEmailChangeEmails(userId, user.getEmail(), user.getPendingEmail(), token);
             log.info("Email change of user with id '{}' awaiting verification.", userId);
         });
         log.info("Successfully updated user with id '{}'", userId);
@@ -202,6 +202,9 @@ public class UserService implements IUserService, UserDetailsService {
         user.setPassword(passwordEncoder.encode(request.newPassword()))
                 .setPasswordResetTokenHash(null)
                 .setPasswordResetTokenExpires(null);
+        if (user.cancelEmailChange()) {
+            log.info("Email change of user with id '{}' cancelled by the password change.", userId);
+        }
         repository.save(user);
         log.info("Successfully changed password for user with id '{}'", userId);
     }
@@ -242,17 +245,6 @@ public class UserService implements IUserService, UserDetailsService {
             throw new TooManyRequestsException(message);
         }
         return emailVerificationService.issueToken(user.setPendingEmail(email));
-    }
-
-    /**
-     * Keeps the token expiry, so the cooldown still applies and an unverified account is still cleaned up.
-     */
-    private void cancelEmailChange(final User user) {
-        if (user.getPendingEmail() != null) {
-            user.setPendingEmail(null)
-                    .setVerificationTokenHash(null);
-            log.info("Email change of user with id '{}' cancelled.", user.getId());
-        }
     }
 
 }

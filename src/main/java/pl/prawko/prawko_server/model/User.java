@@ -37,7 +37,7 @@ import java.util.List;
  * as the SHA-256 hash of its token with an expiry time, both {@code null} once the account is verified.
  * <p>
  * A changed email address is kept as the pending email until it's verified with the same kind of token, only then it
- * replaces the current email.
+ * replaces the current email. Changing or resetting the password cancels it.
  * <p>
  * Relationships:
  * <ul>
@@ -150,6 +150,22 @@ public class User {
     public User setPendingEmail(final String pendingEmail) {
         this.pendingEmail = pendingEmail;
         return this;
+    }
+
+    /**
+     * Drops a pending email change and invalidates its verification link.
+     * <p>
+     * The token expiry is kept, so the verification email cooldown still applies.
+     *
+     * @return {@code true} if a change was pending
+     */
+    public boolean cancelEmailChange() {
+        if (pendingEmail == null) {
+            return false;
+        }
+        pendingEmail = null;
+        verificationTokenHash = null;
+        return true;
     }
 
     public String getPassword() {

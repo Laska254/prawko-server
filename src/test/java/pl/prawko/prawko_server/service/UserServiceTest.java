@@ -272,7 +272,7 @@ class UserServiceTest {
         final var order = inOrder(emailVerificationService, repository);
         order.verify(emailVerificationService).issueToken(tester);
         order.verify(repository).save(tester);
-        order.verify(emailVerificationService).sendVerificationEmail(givenId, updateUserRequest.email(), token);
+        order.verify(emailVerificationService).sendEmailChangeEmails(givenId, email, updateUserRequest.email(), token);
     }
 
     @Test
@@ -289,7 +289,7 @@ class UserServiceTest {
         assertThat(tester.getPendingEmail()).isNull();
         verify(repository, never()).save(any());
         verify(emailVerificationService, never()).issueToken(any());
-        verify(emailVerificationService, never()).sendVerificationEmail(anyLong(), any(), any());
+        verify(emailVerificationService, never()).sendEmailChangeEmails(anyLong(), any(), any(), any());
     }
 
     @Test
@@ -419,6 +419,21 @@ class UserServiceTest {
         assertThat(tester.getPasswordResetTokenHash()).isNull();
         assertThat(tester.getPasswordResetTokenExpires()).isNull();
         verify(repository).save(tester);
+    }
+
+    @Test
+    void changePassword_cancelEmailChange_whenEmailChangeIsPending() {
+        final var givenId = 44L;
+        final var changing = UserTestData.createPippinChangingEmail();
+        final var request = UserTestData.createValidChangePasswordRequest();
+        when(repository.findById(givenId)).thenReturn(Optional.of(changing));
+        when(passwordEncoder.matches(request.currentPassword(), changing.getPassword())).thenReturn(true);
+
+        service.changePassword(givenId, request);
+
+        assertThat(changing.getPendingEmail()).isNull();
+        assertThat(changing.getVerificationTokenHash()).isNull();
+        verify(repository).save(changing);
     }
 
     @Test

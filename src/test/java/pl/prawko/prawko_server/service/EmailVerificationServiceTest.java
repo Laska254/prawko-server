@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -105,7 +106,7 @@ class EmailVerificationServiceTest {
         void logUserIdOnly_whenSent(final CapturedOutput output) {
             service.sendVerificationEmail(tester.getId(), tester.getEmail(), "someToken");
 
-            assertThat(output).contains("Verification email sent to user with id '" + tester.getId() + "'")
+            assertThat(output).contains("Sent verification email to user with id '" + tester.getId() + "'")
                     .doesNotContain(tester.getEmail(), "someToken");
         }
 
@@ -117,6 +118,46 @@ class EmailVerificationServiceTest {
 
             assertThat(output).contains("Failed to send verification email to user with id '" + tester.getId() + "'")
                     .doesNotContain(tester.getEmail());
+        }
+
+    }
+
+    @Nested
+    class SendEmailChangeEmails {
+
+        @Test
+        void sendLinkToNewEmailAndNoticeToCurrentEmail_whenCalled() {
+            final var newEmail = UserTestData.createMerry().getEmail();
+
+            service.sendEmailChangeEmails(tester.getId(), tester.getEmail(), newEmail, "someToken");
+
+            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+            verify(mailSender, times(2)).send(captor.capture());
+            final var link = captor.getAllValues().getFirst();
+            final var notice = captor.getAllValues().getLast();
+            assertThat(link.getTo()).containsExactly(newEmail);
+            assertThat(UserTestData.extractToken(link)).isEqualTo("someToken");
+            assertThat(notice.getFrom()).isEqualTo(MAIL_FROM);
+            assertThat(notice.getTo()).containsExactly(tester.getEmail());
+            assertThat(notice.getText())
+                    .contains(newEmail)
+                    .doesNotContain("someToken");
+        }
+
+        @Test
+        void sendNoticeAndLogUserIdOnly_whenSendingLinkFails(final CapturedOutput output) {
+            final var newEmail = UserTestData.createMerry().getEmail();
+            doThrow(new MailSendException("SMTP down"))
+                    .doNothing()
+                    .when(mailSender).send(any(SimpleMailMessage.class));
+
+            service.sendEmailChangeEmails(tester.getId(), tester.getEmail(), newEmail, "someToken");
+
+            verify(mailSender, times(2)).send(any(SimpleMailMessage.class));
+            assertThat(output)
+                    .contains("Failed to send verification email to user with id '" + tester.getId() + "'")
+                    .contains("Sent email change notice to user with id '" + tester.getId() + "'")
+                    .doesNotContain(tester.getEmail(), newEmail);
         }
 
     }

@@ -464,13 +464,15 @@ public class UserControllerTest {
                     .jsonPath("$.pendingEmail").isEqualTo(newEmail);
 
             final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());
-            assertThat(captor.getValue().getTo()).containsExactly(newEmail);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
+            final var link = captor.getAllValues().getFirst();
+            assertThat(link.getTo()).containsExactly(newEmail);
+            assertThat(captor.getAllValues().getLast().getTo()).containsExactly(tester.getEmail());
             final var updated = userRepository.findById(tester.getId()).orElseThrow();
             assertThat(updated.getEmail()).isEqualTo(tester.getEmail());
             assertThat(updated.getPendingEmail()).isEqualTo(newEmail);
             assertThat(updated.getVerificationTokenHash())
-                    .isEqualTo(SecureTokens.hash(UserTestData.extractToken(captor.getValue())));
+                    .isEqualTo(SecureTokens.hash(UserTestData.extractToken(link)));
         }
 
         @Test
@@ -484,7 +486,7 @@ public class UserControllerTest {
                     .body(new UserUpdateRequest(null, null, null, firstEmail))
                     .exchange()
                     .expectStatus().isOk();
-            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(any(SimpleMailMessage.class));
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
@@ -509,7 +511,7 @@ public class UserControllerTest {
                     .body(new UserUpdateRequest(null, null, null, newEmail))
                     .exchange()
                     .expectStatus().isOk();
-            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(any(SimpleMailMessage.class));
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
@@ -673,6 +675,23 @@ public class UserControllerTest {
 
             final var storedPassword = userRepository.findById(id).orElseThrow().getPassword();
             assertThat(passwordEncoder.matches(request.newPassword(), storedPassword)).isTrue();
+        }
+
+        @Test
+        void cancelEmailChange_whenEmailChangeIsPending() {
+            final var tester = userRepository.save(UserTestData.createPippinChangingEmail());
+
+            restClient.patch()
+                    .uri(ApiConstants.PASSWORD)
+                    .headers(TestUtils::authUser)
+                    .body(UserTestData.createValidChangePasswordRequest())
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            final var updated = userRepository.findById(tester.getId()).orElseThrow();
+            assertThat(updated.getEmail()).isEqualTo(tester.getEmail());
+            assertThat(updated.getPendingEmail()).isNull();
+            assertThat(updated.getVerificationTokenHash()).isNull();
         }
 
         @Test

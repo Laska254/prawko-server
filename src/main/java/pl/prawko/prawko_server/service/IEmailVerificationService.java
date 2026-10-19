@@ -36,6 +36,20 @@ public interface IEmailVerificationService {
     void sendVerificationEmail(long userId, String email, String token);
 
     /**
+     * Emails a verification link with the token to the new address and notifies the current address of the change,
+     * so the owner can stop a change they didn't request by changing or resetting their password.
+     * <p>
+     * Like {@link #sendVerificationEmail}, returns without waiting for the emails to be sent.
+     * </p>
+     *
+     * @param userId       the ID of the user, used for logging
+     * @param currentEmail the user's current email address
+     * @param newEmail     the requested email address to verify
+     * @param token        the token issued by {@link #issueToken}
+     */
+    void sendEmailChangeEmails(long userId, String currentEmail, String newEmail, String token);
+
+    /**
      * Tells whether the user's verification token was issued within the cooldown, so no new one should be sent yet.
      *
      * @param user the user to check

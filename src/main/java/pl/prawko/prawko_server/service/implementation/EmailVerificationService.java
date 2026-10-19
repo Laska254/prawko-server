@@ -79,6 +79,27 @@ public class EmailVerificationService implements IEmailVerificationService {
     /**
      * {@inheritDoc}
      * <p>
+     * The emails are sent independently, a failure of either is only logged.
+     */
+    @Async
+    @Override
+    public void sendEmailChangeEmails(final long userId,
+                                      final String currentEmail,
+                                      final String newEmail,
+                                      final String token) {
+        send(userId, newEmail, token);
+        final var notice = new SimpleMailMessage();
+        notice.setTo(currentEmail);
+        notice.setSubject("Email address change requested");
+        notice.setText("A change of your account's email address to " + newEmail + " was requested. "
+                + "It takes effect once confirmed with the link sent to the new address.\n\n"
+                + "If you didn't request this, change your password or reset it, which cancels the change.");
+        deliver(userId, notice, "email change notice");
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
      * Not transactional, so the token is committed before the email goes out.
      */
     @Async
@@ -171,18 +192,22 @@ public class EmailVerificationService implements IEmailVerificationService {
                 .queryParam("token", token)
                 .toUriString();
         final var message = new SimpleMailMessage();
-        message.setFrom(mailFrom);
         message.setTo(email);
         message.setSubject("Verify your email address");
         message.setText("To verify your email address, open the link below. It expires in "
                 + DurationFormatterUtils.print(tokenValidity, DurationFormat.Style.COMPOSITE) + ".\n\n"
                 + link + "\n\n"
                 + "If you didn't request this, ignore this email.");
+        deliver(userId, message, "verification email");
+    }
+
+    private void deliver(final long userId, final SimpleMailMessage message, final String kind) {
+        message.setFrom(mailFrom);
         try {
             mailSender.send(message);
-            log.info("Verification email sent to user with id '{}'", userId);
+            log.info("Sent {} to user with id '{}'", kind, userId);
         } catch (final MailException exception) {
-            log.error("Failed to send verification email to user with id '{}'", userId, exception);
+            log.error("Failed to send {} to user with id '{}'", kind, userId, exception);
         }
     }
 
