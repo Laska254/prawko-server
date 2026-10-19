@@ -29,6 +29,7 @@ import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.VerifyEmailRequest;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
+import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.time.Duration;
@@ -63,6 +64,9 @@ public class AuthControllerTest {
 
     @Autowired
     private ThreadPoolTaskExecutor taskExecutor;
+
+    @Autowired
+    private EmailVerificationService emailVerificationService;
 
     @Value("${password-reset.cooldown}")
     private Duration cooldown;
@@ -352,6 +356,42 @@ public class AuthControllerTest {
         assertThat(verified.isEnabled()).isTrue();
         assertThat(verified.getVerificationTokenHash()).isNull();
         assertThat(verified.getVerificationTokenExpires()).isNull();
+    }
+
+    @Test
+    void verifyEmail_returnNoContentAndChangeEmail_whenEmailChangeIsPending() {
+        final var tester = UserTestData.createPippinChangingEmail();
+        final var newEmail = tester.getPendingEmail();
+        final var token = emailVerificationService.issueToken(tester);
+        userRepository.save(tester);
+
+        verifyEmail(token)
+                .expectStatus().isNoContent();
+
+        final var changed = userRepository.findById(tester.getId()).orElseThrow();
+        assertThat(changed.getEmail()).isEqualTo(newEmail);
+        assertThat(changed.getPendingEmail()).isNull();
+        assertThat(changed.getVerificationTokenHash()).isNull();
+    }
+
+    @Test
+    void verifyEmail_returnConflictAndKeepEmail_whenPendingEmailWasTakenMeanwhile() {
+        final var tester = UserTestData.createPippinChangingEmail();
+        final var email = tester.getEmail();
+        final var newEmail = tester.getPendingEmail();
+        final var token = emailVerificationService.issueToken(tester);
+        userRepository.save(tester);
+        userRepository.save(UserTestData.createMerry().setEmail(newEmail));
+
+        verifyEmail(token)
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(UserTestData.USER_ALREADY_EXISTS)
+                .jsonPath("$.details.email").isEqualTo("User with email '" + newEmail + "' already exists.");
+
+        final var unchanged = userRepository.findById(tester.getId()).orElseThrow();
+        assertThat(unchanged.getEmail()).isEqualTo(email);
+        assertThat(unchanged.getPendingEmail()).isEqualTo(newEmail);
     }
 
     @Test

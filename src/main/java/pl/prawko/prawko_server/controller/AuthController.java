@@ -24,7 +24,7 @@ import pl.prawko.prawko_server.service.implementation.PasswordResetService;
 /**
  * REST controller for authentication operations.
  *
- * <p>Provides endpoints for user login, verifying email addresses of new accounts and resetting forgotten passwords.
+ * <p>Provides endpoints for user login, verifying email addresses and resetting forgotten passwords.
  * Authentication is performed using Spring Security's authentication manager.
  * The API is stateless, so nothing is stored between requests.
  */
@@ -110,15 +110,18 @@ public class AuthController {
     }
 
     /**
-     * Verifies the email address of a new account using the token from a verification link, enabling the account.
+     * Verifies an email address using the token from a verification link: enables a new account or applies
+     * a pending email change.
      *
      * @param request the {@link VerifyEmailRequest} containing the token
      * @return a {@link ResponseEntity} with HTTP 204 No Content
      */
-    @Operation(summary = "Verify email", description = "Activates an account using an email verification token.")
+    @Operation(summary = "Verify email",
+            description = "Activates an account or applies an email change using an email verification token.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Email verified successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid argument or invalid/expired token"),
+            @ApiResponse(responseCode = "409", description = "The new email was taken by another user meanwhile"),
     })
     @PostMapping(ApiConstants.VERIFY_EMAIL)
     public ResponseEntity<Void> verifyEmail(@Valid @RequestBody final VerifyEmailRequest request) {

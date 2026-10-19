@@ -21,6 +21,7 @@ import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
+import pl.prawko.prawko_server.exception.TooManyRequestsException;
 import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -209,7 +211,7 @@ class UserServiceTest {
         final var tester2 = UserTestData.createMerry();
         final var users = List.of(tester, tester2);
         final var pippinDto = UserTestData.createUserDto(4L);
-        final var merryDto = new UserDto(45L, tester2.getFirstName(), tester2.getLastName(), tester2.getUserName(), tester2.getEmail(), tester2.getRole());
+        final var merryDto = new UserDto(45L, tester2.getFirstName(), tester2.getLastName(), tester2.getUserName(), tester2.getEmail(), null, tester2.getRole());
         final var expected = List.of(pippinDto, merryDto);
         final var pageable = PageRequest.of(1, 2);
         when(repository.findAll(pageable)).thenReturn(new PageImpl<>(users, pageable, 4));
@@ -251,36 +253,91 @@ class UserServiceTest {
     }
 
     @Test
-    void updateUser_clearResetToken_whenEmailChanged() {
+    void updateUser_keepEmailAndSendVerificationToPendingEmail_whenEmailChanged() {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
-        tester.setPasswordResetTokenHash("pendingTokenHash")
-                .setPasswordResetTokenExpires(LocalDateTime.now().plusMinutes(30));
+        final var email = tester.getEmail();
+        final var resetHash = "pendingTokenHash";
+        final var token = "someToken";
+        tester.setPasswordResetTokenHash(resetHash);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(emailVerificationService.issueToken(tester)).thenReturn(token);
         when(repository.save(tester)).thenReturn(tester);
 
         service.updateUser(givenId, updateUserRequest);
 
-        assertThat(tester.getEmail()).isEqualTo(updateUserRequest.email());
-        assertThat(tester.getPasswordResetTokenHash()).isNull();
-        assertThat(tester.getPasswordResetTokenExpires()).isNull();
+        assertThat(tester.getEmail()).isEqualTo(email);
+        assertThat(tester.getPendingEmail()).isEqualTo(updateUserRequest.email());
+        assertThat(tester.getPasswordResetTokenHash()).isEqualTo(resetHash);
+        final var order = inOrder(emailVerificationService, repository);
+        order.verify(emailVerificationService).issueToken(tester);
+        order.verify(repository).save(tester);
+        order.verify(emailVerificationService).sendVerificationEmail(givenId, updateUserRequest.email(), token);
     }
 
     @Test
-    void updateUser_keepResetToken_whenEmailNotProvided() {
+    void updateUser_throwTooManyRequestsAndNotSave_whenEmailChangedWithinCooldown() {
+        final var givenId = 44L;
+        final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(emailVerificationService.isCoolingDown(tester)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.updateUser(givenId, updateUserRequest))
+                .isInstanceOf(TooManyRequestsException.class)
+                .hasMessage(UserTestData.VERIFICATION_COOLDOWN);
+
+        assertThat(tester.getPendingEmail()).isNull();
+        verify(repository, never()).save(any());
+        verify(emailVerificationService, never()).issueToken(any());
+        verify(emailVerificationService, never()).sendVerificationEmail(anyLong(), any(), any());
+    }
+
+    @Test
+    void updateUser_cancelEmailChangeKeepingExpiry_whenCurrentEmailSent() {
+        final var givenId = 44L;
+        final var changing = UserTestData.createPippinChangingEmail();
+        final var expires = changing.getVerificationTokenExpires();
+        final var currentEmail = changing.getEmail().toUpperCase();
+        when(repository.findById(givenId)).thenReturn(Optional.of(changing));
+        when(repository.save(changing)).thenReturn(changing);
+
+        service.updateUser(givenId, new UserUpdateRequest(null, null, null, currentEmail));
+
+        assertThat(changing.getEmail()).isEqualTo(tester.getEmail());
+        assertThat(changing.getPendingEmail()).isNull();
+        assertThat(changing.getVerificationTokenHash()).isNull();
+        assertThat(changing.getVerificationTokenExpires()).isEqualTo(expires);
+        verify(repository, never()).existsByEmailIgnoreCase(any());
+        verifyNoInteractions(emailVerificationService);
+    }
+
+    @Test
+    void updateUser_keepUserUnchanged_whenCurrentEmailSentWithoutPendingChange() {
+        final var givenId = 44L;
+        final var unverified = UserTestData.createUnverifiedPippin();
+        final var token = "someToken";
+        unverified.setVerificationTokenHash(token);
+        when(repository.findById(givenId)).thenReturn(Optional.of(unverified));
+        when(repository.save(unverified)).thenReturn(unverified);
+
+        service.updateUser(givenId, new UserUpdateRequest(null, null, null, unverified.getEmail()));
+
+        assertThat(unverified.getVerificationTokenHash()).isEqualTo(token);
+        verify(repository, never()).existsByEmailIgnoreCase(any());
+        verifyNoInteractions(emailVerificationService);
+    }
+
+    @Test
+    void updateUser_notRequestVerification_whenEmailNotProvided() {
         final var givenId = 44L;
         final var updateUserRequest = new UserUpdateRequest("UpdatedFirstName", null, null, null);
-        final var hash = "pendingTokenHash";
-        final var expires = LocalDateTime.now().plusMinutes(30);
-        tester.setPasswordResetTokenHash(hash)
-                .setPasswordResetTokenExpires(expires);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
         service.updateUser(givenId, updateUserRequest);
 
-        assertThat(tester.getPasswordResetTokenHash()).isEqualTo(hash);
-        assertThat(tester.getPasswordResetTokenExpires()).isEqualTo(expires);
+        assertThat(tester.getPendingEmail()).isNull();
+        verifyNoInteractions(emailVerificationService);
     }
 
     @Test

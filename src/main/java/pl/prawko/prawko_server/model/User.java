@@ -36,6 +36,9 @@ import java.util.List;
  * A new account is disabled until its email address is verified. The pending verification is stored the same way,
  * as the SHA-256 hash of its token with an expiry time, both {@code null} once the account is verified.
  * <p>
+ * A changed email address is kept as the pending email until it's verified with the same kind of token, only then it
+ * replaces the current email.
+ * <p>
  * Relationships:
  * <ul>
  *     <li>{@link Exam}: A user can be assigned to multiple exams.</li>
@@ -63,6 +66,9 @@ public class User {
 
     @Column(length = 63)
     private String email;
+
+    @Column(length = 63)
+    private String pendingEmail;
 
     @Column(length = 63)
     private String password;
@@ -134,6 +140,15 @@ public class User {
 
     public User setEmail(final String email) {
         this.email = email;
+        return this;
+    }
+
+    public String getPendingEmail() {
+        return pendingEmail;
+    }
+
+    public User setPendingEmail(final String pendingEmail) {
+        this.pendingEmail = pendingEmail;
         return this;
     }
 

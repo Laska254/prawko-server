@@ -28,6 +28,7 @@ public class UserTestData {
     public static final String INVALID_RESET_TOKEN = "Password reset token is invalid or expired.";
     public static final String INVALID_VERIFICATION_TOKEN = "Email verification token is invalid or expired.";
     public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";
+    public static final String VERIFICATION_COOLDOWN = "Verification email was sent recently, try again later.";
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 
@@ -67,6 +68,13 @@ public class UserTestData {
         return createTestUserPippin().setEnabled(false);
     }
 
+    public static User createPippinChangingEmail() {
+        return createTestUserPippin()
+                .setPendingEmail(createValidUserUpdateRequest().email())
+                .setVerificationTokenHash("pendingTokenHash")
+                .setVerificationTokenExpires(LocalDateTime.now().plusHours(1));
+    }
+
     public static User createGimli() {
         return createTestUser("Gimli", "Gloinson", TestUtils.ADMIN_NAME, "gimli@erebor.me")
                 .setRole(Role.ADMIN);
@@ -79,6 +87,7 @@ public class UserTestData {
                 "Tuk",
                 "pippin",
                 "pippin@shire.me",
+                null,
                 Role.USER);
     }
 
@@ -89,6 +98,7 @@ public class UserTestData {
                 "Gloinson",
                 TestUtils.ADMIN_NAME,
                 "gimli@erebor.me",
+                null,
                 Role.ADMIN);
     }
 
@@ -98,7 +108,8 @@ public class UserTestData {
                 "UpdatedFirstName",
                 "UpdatedLastName",
                 "UpdatedUserName",
-                "UpdatedEmail@shire.me",
+                "pippin@shire.me",
+                createValidUserUpdateRequest().email(),
                 Role.USER
         );
     }

@@ -163,6 +163,11 @@ A new account must verify its email address before signing in. Registration emai
 other authenticated request `401`. Another link can be requested with `POST /auth/verify/resend`. Accounts not
 verified before their link expires are deleted, so the username and email can be registered again.
 
+Changing the email with `PATCH /users/{id}` works the same way: the new address is only stored as pending and a link
+is emailed to it (`pendingEmail` in the user response). The current email stays in use (sign-in, password reset) until the link is used with
+`POST /auth/verify`; for another link send the `PATCH` again after the cooldown - within it the `PATCH` answers `429`
+and changes nothing.
+
 ### Endpoints
 
 Access: **public** - no authentication, **user** - any signed-in user, **self** - the signed-in user acting on their
@@ -175,7 +180,7 @@ own data (admins may act on any user), **admin** - admins only.
   | `POST` | `/auth`                 | public | verify credentials (sign-in)                                                 |
   | `POST` | `/auth/password/forgot` | public | email a password reset link, returns `202` whether the account exists or not |
   | `POST` | `/auth/password/reset`  | public | set a new password with the token from the reset link                        |
-  | `POST` | `/auth/verify`          | public | verify the email of a new account with the token from the verification link  |
+  | `POST` | `/auth/verify`          | public | verify a new account's or changed email with the token from the link         |
   | `POST` | `/auth/verify/resend`   | public | email a new verification link, returns `202` whatever the account's state    |
 
 * `/users`
@@ -260,4 +265,5 @@ Email verification links are valid for 24 hours; another one can be requested af
 with expired links are deleted every hour.
 
 Reset and verification emails are processed in the background on a bounded pool (`spring.task.execution.pool.*`: 8 threads, 100
-queued). When it's full, `/auth/password/forgot`, `/auth/verify/resend` and `/users` (registration) answer `503`.
+queued). When it's full, `/auth/password/forgot`, `/auth/verify/resend`, `/users` (registration) and email changes
+with `PATCH /users/{id}` answer `503`.

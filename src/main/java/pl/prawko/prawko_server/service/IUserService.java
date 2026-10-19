@@ -63,7 +63,9 @@ public interface IUserService {
      * <p>
      * Modifies user information such as firstname, lastname, username, and email address.
      * Validation ensures no conflicts with other users' data.
-     * Changing the email invalidates any pending password reset token.
+     * A new email doesn't replace the current one right away: it's stored as pending and a verification link is emailed
+     * to it. Only verifying it with {@link IEmailVerificationService#verify} makes it the user's email. Sending the
+     * current email cancels a pending change.
      * </p>
      *
      * @param userId        the ID of the user to update

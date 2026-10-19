@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
+import java.time.LocalDateTime;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class UserMapperTest {
@@ -43,6 +45,26 @@ class UserMapperTest {
         final var result = mapper.toDto(user);
 
         assertThat(result).isEqualTo(expected);
+    }
+
+    @Test
+    void toDto_mapPendingEmail_whenEmailChangeIsPending() {
+        final var user = UserTestData.createPippinChangingEmail();
+
+        final var result = mapper.toDto(user);
+
+        assertThat(result.email()).isEqualTo(user.getEmail());
+        assertThat(result.pendingEmail()).isEqualTo(user.getPendingEmail());
+    }
+
+    @Test
+    void toDto_omitPendingEmail_whenVerificationLinkExpired() {
+        final var user = UserTestData.createPippinChangingEmail()
+                .setVerificationTokenExpires(LocalDateTime.now().minusMinutes(1));
+
+        final var result = mapper.toDto(user);
+
+        assertThat(result.pendingEmail()).isNull();
     }
 
 }

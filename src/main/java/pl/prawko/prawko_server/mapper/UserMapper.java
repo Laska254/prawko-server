@@ -1,11 +1,15 @@
 package pl.prawko.prawko_server.mapper;
 
+import org.jspecify.annotations.Nullable;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
+import org.mapstruct.Named;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.model.User;
+
+import java.time.LocalDateTime;
 
 /**
  * This class is responsible for mapping {@link RegisterDto} to {@link User} entity.
@@ -22,6 +26,7 @@ public interface UserMapper {
     @Mapping(target = "exams", ignore = true)
     @Mapping(target = "created", ignore = true)
     @Mapping(target = "password", ignore = true)
+    @Mapping(target = "pendingEmail", ignore = true)
     @Mapping(target = "passwordResetTokenHash", ignore = true)
     @Mapping(target = "passwordResetTokenExpires", ignore = true)
     @Mapping(target = "verificationTokenHash", ignore = true)
@@ -29,6 +34,16 @@ public interface UserMapper {
     @Mapping(target = "enabled", constant = "false")
     User fromDto(RegisterDto registerDto);
 
+    @Mapping(target = "pendingEmail", source = "user", qualifiedByName = "activePendingEmail")
     UserDto toDto(User user);
+
+    /**
+     * The pending email is stale once its verification link expired, nothing clears it until the next change.
+     */
+    @Named("activePendingEmail")
+    default @Nullable String activePendingEmail(final User user) {
+        final var expires = user.getVerificationTokenExpires();
+        return expires != null && expires.isAfter(LocalDateTime.now()) ? user.getPendingEmail() : null;
+    }
 
 }
