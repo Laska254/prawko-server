@@ -71,10 +71,10 @@ public interface IUserService {
      *
      * @param userId        the ID of the user to update
      * @param updateRequest the request containing new user details
-     * @param self          whether the user updates themselves, rather than an admin updating them
+     * @param principalId   the ID of the user requesting the update, either the user themselves or an admin
      * @return the updated user as a {@link UserDto}
      */
-    UserDto updateUser(long userId, UserUpdateRequest updateRequest, boolean self);
+    UserDto updateUser(long userId, UserUpdateRequest updateRequest, long principalId);
 
     /**
      * Changes a user's password.

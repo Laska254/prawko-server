@@ -155,7 +155,7 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Transactional
     @Override
-    public UserDto updateUser(final long userId, final UserUpdateRequest updateRequest, final boolean self) {
+    public UserDto updateUser(final long userId, final UserUpdateRequest updateRequest, final long principalId) {
         log.info("Updating user with id: {}", userId);
         final var user = getById(userId);
         final var email = updateRequest.email();
@@ -171,7 +171,7 @@ public class UserService implements IUserService, UserDetailsService {
             }
         }
         if (newEmail != null) {
-            requestEmailChange(user, newEmail, self);
+            requestEmailChange(user, newEmail, principalId);
         }
         final var updated = repository.save(user);
         log.info("Successfully updated user with id '{}'", userId);
@@ -242,7 +242,7 @@ public class UserService implements IUserService, UserDetailsService {
      * Requests an email change. Only the user themselves must confirm it from the current address too, an admin may
      * skip that because the user may have lost access to it.
      */
-    private void requestEmailChange(final User user, final String email, final boolean self) {
+    private void requestEmailChange(final User user, final String email, final long principalId) {
         if (emailVerificationService.isCoolingDown(user)) {
             final var message = "Verification email was sent recently, try again later.";
             log.warn("{} User id: {}", message, user.getId());
@@ -250,7 +250,9 @@ public class UserService implements IUserService, UserDetailsService {
         }
         user.cancelEmailChange();
         final var token = emailVerificationService.issueToken(user.setPendingEmail(email));
-        final var currentEmailToken = self ? emailVerificationService.issueCurrentEmailToken(user) : null;
+        final var currentEmailToken = principalId == user.getId()
+                ? emailVerificationService.issueCurrentEmailToken(user)
+                : null;
         emailVerificationService.sendEmailChangeEmails(user.getId(), user.getEmail(), email, token, currentEmailToken);
         log.info("Email change of user with id '{}' awaiting verification.", user.getId());
     }

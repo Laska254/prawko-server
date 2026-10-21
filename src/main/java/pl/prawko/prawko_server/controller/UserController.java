@@ -157,7 +157,7 @@ public class UserController {
     public ResponseEntity<UserDto> updateUser(@PathVariable @Positive final long id,
                                               @Valid @RequestBody final UserUpdateRequest updateRequest,
                                               @AuthenticationPrincipal(expression = "id") final long principalId) {
-        return ResponseEntity.ok(userService.updateUser(id, updateRequest, principalId == id));
+        return ResponseEntity.ok(userService.updateUser(id, updateRequest, principalId));
     }
 
     /**
