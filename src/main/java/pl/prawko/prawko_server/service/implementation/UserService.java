@@ -248,11 +248,14 @@ public class UserService implements IUserService, UserDetailsService {
             log.warn("{} User id: {}", message, user.getId());
             throw new TooManyRequestsException(message);
         }
-        user.cancelEmailChange();
         final var token = emailVerificationService.issueToken(user.setPendingEmail(email));
-        final var currentEmailToken = principalId == user.getId()
-                ? emailVerificationService.issueCurrentEmailToken(user)
-                : null;
+        final String currentEmailToken;
+        if (principalId == user.getId()) {
+            currentEmailToken = emailVerificationService.issueCurrentEmailToken(user);
+        } else {
+            user.setCurrentEmailTokenHash(null);
+            currentEmailToken = null;
+        }
         emailVerificationService.sendEmailChangeEmails(user.getId(), user.getEmail(), email, token, currentEmailToken);
         log.info("Email change of user with id '{}' awaiting verification.", user.getId());
     }
