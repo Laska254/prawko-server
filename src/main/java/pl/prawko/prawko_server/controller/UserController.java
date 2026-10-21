@@ -131,14 +131,17 @@ public class UserController {
      * Updates user details.
      *
      * <p>Allowed only for the user themselves or an admin. A new email is only stored as pending and a verification
-     * link is emailed to it. Sending the current email cancels a pending change.
+     * link is emailed to it. When users change their own email, the current address must confirm it with a link
+     * too. Sending the current email cancels a pending change.
      *
      * @param id            the unique identifier of the user to update (must be positive)
      * @param updateRequest the {@link UserUpdateRequest} containing fields to update
+     * @param principalId   the ID of the currently authenticated user
      * @return a {@link ResponseEntity} containing the updated {@link UserDto}
      */
     @Operation(summary = "Update user details", description = "Updates specified fields of an existing user. "
-            + "A new email takes effect only after it's verified with the link emailed to it. "
+            + "A new email takes effect only after it's verified with the link emailed to it and, when users change "
+            + "their own email, confirmed with the link emailed to the current address. "
             + "Sending the current email cancels a pending change and invalidates its link.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User updated successfully; a new email stays pending (`pendingEmail`) until verified"),
@@ -152,8 +155,9 @@ public class UserController {
     @IsSelfOrAdmin(userId = "#id")
     @PatchMapping(ApiConstants.BY_ID)
     public ResponseEntity<UserDto> updateUser(@PathVariable @Positive final long id,
-                                              @Valid @RequestBody final UserUpdateRequest updateRequest) {
-        return ResponseEntity.ok(userService.updateUser(id, updateRequest));
+                                              @Valid @RequestBody final UserUpdateRequest updateRequest,
+                                              @AuthenticationPrincipal(expression = "id") final long principalId) {
+        return ResponseEntity.ok(userService.updateUser(id, updateRequest, principalId == id));
     }
 
     /**

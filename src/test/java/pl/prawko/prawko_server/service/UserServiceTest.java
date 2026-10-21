@@ -241,7 +241,7 @@ class UserServiceTest {
         when(repository.save(user)).thenReturn(user);
         when(mapper.toDto(user)).thenReturn(updatedUserDto);
 
-        final var result = service.updateUser(givenId, updateUserRequest);
+        final var result = service.updateUser(givenId, updateUserRequest, true);
 
         assertThat(result).isEqualTo(updatedUserDto);
         verify(repository).findById(givenId);
@@ -253,26 +253,52 @@ class UserServiceTest {
     }
 
     @Test
-    void updateUser_keepEmailAndSendVerificationToPendingEmail_whenEmailChanged() {
+    void updateUser_keepEmailAndSendLinksToPendingAndCurrentEmail_whenOwnEmailChanged() {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
         final var email = tester.getEmail();
         final var resetHash = "pendingTokenHash";
         final var token = "someToken";
-        tester.setPasswordResetTokenHash(resetHash);
+        final var currentEmailToken = "currentToken";
+        tester.setId(givenId).setPasswordResetTokenHash(resetHash);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(emailVerificationService.issueToken(tester)).thenReturn(token);
+        when(emailVerificationService.issueCurrentEmailToken(tester)).thenReturn(currentEmailToken);
         when(repository.save(tester)).thenReturn(tester);
 
-        service.updateUser(givenId, updateUserRequest);
+        service.updateUser(givenId, updateUserRequest, true);
 
         assertThat(tester.getEmail()).isEqualTo(email);
         assertThat(tester.getPendingEmail()).isEqualTo(updateUserRequest.email());
         assertThat(tester.getPasswordResetTokenHash()).isEqualTo(resetHash);
-        final var order = inOrder(emailVerificationService, repository);
+        final var order = inOrder(emailVerificationService);
         order.verify(emailVerificationService).issueToken(tester);
-        order.verify(repository).save(tester);
-        order.verify(emailVerificationService).sendEmailChangeEmails(givenId, email, updateUserRequest.email(), token);
+        order.verify(emailVerificationService).issueCurrentEmailToken(tester);
+        order.verify(emailVerificationService)
+                .sendEmailChangeEmails(givenId, email, updateUserRequest.email(), token, currentEmailToken);
+        verify(repository).save(tester);
+    }
+
+    @Test
+    void updateUser_requireOnlyPendingEmailLink_whenAdminChangesEmail() {
+        final var givenId = 44L;
+        final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
+        final var changing = UserTestData.createPippinChangingEmail()
+                .setId(givenId)
+                .setVerificationTokenExpires(LocalDateTime.now().minusMinutes(1))
+                .setCurrentEmailTokenHash("previousCurrentTokenHash");
+        final var token = "someToken";
+        when(repository.findById(givenId)).thenReturn(Optional.of(changing));
+        when(emailVerificationService.issueToken(changing)).thenReturn(token);
+        when(repository.save(changing)).thenReturn(changing);
+
+        service.updateUser(givenId, updateUserRequest, false);
+
+        assertThat(changing.getPendingEmail()).isEqualTo(updateUserRequest.email());
+        assertThat(changing.getCurrentEmailTokenHash()).isNull();
+        verify(emailVerificationService, never()).issueCurrentEmailToken(any());
+        verify(emailVerificationService)
+                .sendEmailChangeEmails(givenId, changing.getEmail(), updateUserRequest.email(), token, null);
     }
 
     @Test
@@ -282,30 +308,32 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(emailVerificationService.isCoolingDown(tester)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.updateUser(givenId, updateUserRequest))
+        assertThatThrownBy(() -> service.updateUser(givenId, updateUserRequest, true))
                 .isInstanceOf(TooManyRequestsException.class)
                 .hasMessage(UserTestData.VERIFICATION_COOLDOWN);
 
         assertThat(tester.getPendingEmail()).isNull();
         verify(repository, never()).save(any());
         verify(emailVerificationService, never()).issueToken(any());
-        verify(emailVerificationService, never()).sendEmailChangeEmails(anyLong(), any(), any(), any());
+        verify(emailVerificationService, never()).sendEmailChangeEmails(anyLong(), any(), any(), any(), any());
     }
 
     @Test
     void updateUser_cancelEmailChangeKeepingExpiry_whenCurrentEmailSent() {
         final var givenId = 44L;
-        final var changing = UserTestData.createPippinChangingEmail();
+        final var changing = UserTestData.createPippinChangingEmail()
+                .setCurrentEmailTokenHash("currentTokenHash");
         final var expires = changing.getVerificationTokenExpires();
         final var currentEmail = changing.getEmail().toUpperCase();
         when(repository.findById(givenId)).thenReturn(Optional.of(changing));
         when(repository.save(changing)).thenReturn(changing);
 
-        service.updateUser(givenId, new UserUpdateRequest(null, null, null, currentEmail));
+        service.updateUser(givenId, new UserUpdateRequest(null, null, null, currentEmail), true);
 
         assertThat(changing.getEmail()).isEqualTo(tester.getEmail());
         assertThat(changing.getPendingEmail()).isNull();
         assertThat(changing.getVerificationTokenHash()).isNull();
+        assertThat(changing.getCurrentEmailTokenHash()).isNull();
         assertThat(changing.getVerificationTokenExpires()).isEqualTo(expires);
         verify(repository, never()).existsByEmailIgnoreCase(any());
         verifyNoInteractions(emailVerificationService);
@@ -320,7 +348,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(unverified));
         when(repository.save(unverified)).thenReturn(unverified);
 
-        service.updateUser(givenId, new UserUpdateRequest(null, null, null, unverified.getEmail()));
+        service.updateUser(givenId, new UserUpdateRequest(null, null, null, unverified.getEmail()), true);
 
         assertThat(unverified.getVerificationTokenHash()).isEqualTo(token);
         verify(repository, never()).existsByEmailIgnoreCase(any());
@@ -334,7 +362,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
-        service.updateUser(givenId, updateUserRequest);
+        service.updateUser(givenId, updateUserRequest, true);
 
         assertThat(tester.getPendingEmail()).isNull();
         verifyNoInteractions(emailVerificationService);
@@ -347,7 +375,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
-        service.updateUser(givenId, updateUserRequest);
+        service.updateUser(givenId, updateUserRequest, true);
 
         assertThat(output).contains("Successfully updated user with id '" + givenId + "'")
                 .doesNotContain(updateUserRequest.firstName(), updateUserRequest.lastName(),
@@ -361,7 +389,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(true);
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest);
+        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest, true);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
@@ -377,7 +405,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.existsByEmailIgnoreCase(updateUserRequest.email())).thenReturn(true);
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest);
+        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest, true);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
@@ -429,10 +457,13 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(changing));
         when(passwordEncoder.matches(request.currentPassword(), changing.getPassword())).thenReturn(true);
 
+        changing.setCurrentEmailTokenHash("currentTokenHash");
+
         service.changePassword(givenId, request);
 
         assertThat(changing.getPendingEmail()).isNull();
         assertThat(changing.getVerificationTokenHash()).isNull();
+        assertThat(changing.getCurrentEmailTokenHash()).isNull();
         verify(repository).save(changing);
     }
 

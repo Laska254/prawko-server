@@ -183,13 +183,15 @@ class PasswordResetServiceTest {
     void resetPassword_cancelEmailChange_whenEmailChangeIsPending() {
         final var token = issueToken();
         tester.setPendingEmail(UserTestData.createMerry().getEmail())
-                .setVerificationTokenHash(SecureTokens.hash("verificationToken"));
+                .setVerificationTokenHash(SecureTokens.hash("verificationToken"))
+                .setCurrentEmailTokenHash(SecureTokens.hash("currentEmailToken"));
         when(repository.findByPasswordResetTokenHash(tester.getPasswordResetTokenHash())).thenReturn(Optional.of(tester));
 
         service.resetPassword(UserTestData.createValidResetPasswordRequest(token));
 
         assertThat(tester.getPendingEmail()).isNull();
         assertThat(tester.getVerificationTokenHash()).isNull();
+        assertThat(tester.getCurrentEmailTokenHash()).isNull();
     }
 
     @Test

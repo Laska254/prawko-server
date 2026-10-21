@@ -64,15 +64,17 @@ public interface IUserService {
      * Modifies user information such as firstname, lastname, username, and email address.
      * Validation ensures no conflicts with other users' data.
      * A new email doesn't replace the current one right away: it's stored as pending and a verification link is emailed
-     * to it. Only verifying it with {@link IEmailVerificationService#verify} makes it the user's email. Sending the
-     * current email cancels a pending change.
+     * to it. When users change it themselves, a confirmation link is emailed to the current address too. Only opening
+     * all the links ({@link IEmailVerificationService#verify}) makes it the user's email. Sending the current email
+     * cancels a pending change.
      * </p>
      *
      * @param userId        the ID of the user to update
      * @param updateRequest the request containing new user details
+     * @param self          whether the user updates themselves, rather than an admin updating them
      * @return the updated user as a {@link UserDto}
      */
-    UserDto updateUser(long userId, UserUpdateRequest updateRequest);
+    UserDto updateUser(long userId, UserUpdateRequest updateRequest, boolean self);
 
     /**
      * Changes a user's password.

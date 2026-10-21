@@ -87,6 +87,26 @@ class EmailVerificationServiceTest {
     }
 
     @Nested
+    class IssueCurrentEmailToken {
+
+        @Test
+        void setTokenHashAndKeepExpiry_whenCalled() {
+            service.issueToken(tester);
+            final var expires = tester.getVerificationTokenExpires();
+
+            final var token = service.issueCurrentEmailToken(tester);
+
+            assertThat(token).matches("[\\w-]{43}");
+            assertThat(tester.getCurrentEmailTokenHash())
+                    .isEqualTo(SecureTokens.hash(token))
+                    .isNotEqualTo(tester.getVerificationTokenHash());
+            assertThat(tester.getVerificationTokenExpires()).isEqualTo(expires);
+            verifyNoInteractions(repository, mailSender);
+        }
+
+    }
+
+    @Nested
     class SendVerificationEmail {
 
         @Test
@@ -126,22 +146,41 @@ class EmailVerificationServiceTest {
     class SendEmailChangeEmails {
 
         @Test
-        void sendLinkToNewEmailAndNoticeToCurrentEmail_whenCalled() {
+        void sendLinksToNewAndCurrentEmail_whenCurrentEmailTokenGiven() {
             final var newEmail = UserTestData.createMerry().getEmail();
 
-            service.sendEmailChangeEmails(tester.getId(), tester.getEmail(), newEmail, "someToken");
+            service.sendEmailChangeEmails(tester.getId(), tester.getEmail(), newEmail, "someToken", "currentToken");
 
             final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
             verify(mailSender, times(2)).send(captor.capture());
             final var link = captor.getAllValues().getFirst();
-            final var notice = captor.getAllValues().getLast();
+            final var confirmation = captor.getAllValues().getLast();
             assertThat(link.getTo()).containsExactly(newEmail);
             assertThat(UserTestData.extractToken(link)).isEqualTo("someToken");
+            assertThat(confirmation.getFrom()).isEqualTo(MAIL_FROM);
+            assertThat(confirmation.getTo()).containsExactly(tester.getEmail());
+            assertThat(confirmation.getText())
+                    .startsWith("A change of your account's email address to " + newEmail)
+                    .contains(VERIFICATION_URL, "expires in 1d.")
+                    .doesNotContain("someToken");
+            assertThat(UserTestData.extractToken(confirmation)).isEqualTo("currentToken");
+        }
+
+        @Test
+        void sendLinkToNewEmailAndNoticeToCurrentEmail_whenNoCurrentEmailToken() {
+            final var newEmail = UserTestData.createMerry().getEmail();
+
+            service.sendEmailChangeEmails(tester.getId(), tester.getEmail(), newEmail, "someToken", null);
+
+            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+            verify(mailSender, times(2)).send(captor.capture());
+            final var notice = captor.getAllValues().getLast();
+            assertThat(captor.getAllValues().getFirst().getTo()).containsExactly(newEmail);
             assertThat(notice.getFrom()).isEqualTo(MAIL_FROM);
             assertThat(notice.getTo()).containsExactly(tester.getEmail());
             assertThat(notice.getText())
-                    .contains(newEmail)
-                    .doesNotContain("someToken");
+                    .startsWith("An administrator requested a change of your account's email address to " + newEmail)
+                    .doesNotContain(VERIFICATION_URL);
         }
 
         @Test
@@ -151,7 +190,7 @@ class EmailVerificationServiceTest {
                     .doNothing()
                     .when(mailSender).send(any(SimpleMailMessage.class));
 
-            service.sendEmailChangeEmails(tester.getId(), tester.getEmail(), newEmail, "someToken");
+            service.sendEmailChangeEmails(tester.getId(), tester.getEmail(), newEmail, "someToken", null);
 
             verify(mailSender, times(2)).send(any(SimpleMailMessage.class));
             assertThat(output)
@@ -266,7 +305,7 @@ class EmailVerificationServiceTest {
         @Test
         void enableUserAndClearToken_whenTokenIsValid() {
             final var token = service.issueToken(tester);
-            when(repository.findByVerificationTokenHash(tester.getVerificationTokenHash())).thenReturn(Optional.of(tester));
+            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(tester.getVerificationTokenHash(), tester.getVerificationTokenHash())).thenReturn(Optional.of(tester));
 
             service.verify(token);
 
@@ -284,7 +323,7 @@ class EmailVerificationServiceTest {
                     .setPasswordResetTokenExpires(LocalDateTime.now().plusMinutes(15));
             final var newEmail = changing.getPendingEmail();
             final var token = service.issueToken(changing);
-            when(repository.findByVerificationTokenHash(changing.getVerificationTokenHash())).thenReturn(Optional.of(changing));
+            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(changing.getVerificationTokenHash(), changing.getVerificationTokenHash())).thenReturn(Optional.of(changing));
             when(repository.existsByEmailIgnoreCase(newEmail)).thenReturn(false);
 
             service.verify(token);
@@ -299,12 +338,70 @@ class EmailVerificationServiceTest {
         }
 
         @Test
+        void keepEmailAndAwaitCurrentEmail_whenNewEmailConfirmedFirst(final CapturedOutput output) {
+            final var changing = UserTestData.createPippinChangingEmail().setId(1L);
+            final var email = changing.getEmail();
+            final var token = service.issueToken(changing);
+            final var currentEmailHash = SecureTokens.hash(service.issueCurrentEmailToken(changing));
+            final var hash = changing.getVerificationTokenHash();
+            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash)).thenReturn(Optional.of(changing));
+
+            service.verify(token);
+
+            assertThat(changing.getEmail()).isEqualTo(email);
+            assertThat(changing.getPendingEmail()).isNotNull();
+            assertThat(changing.getVerificationTokenHash()).isNull();
+            assertThat(changing.getCurrentEmailTokenHash()).isEqualTo(currentEmailHash);
+            assertThat(changing.getVerificationTokenExpires()).isNotNull();
+            verify(repository).save(changing);
+            verify(repository, never()).existsByEmailIgnoreCase(any());
+            assertThat(output).contains("Email change of user with id '1' confirmed by one address, awaiting the other.");
+        }
+
+        @Test
+        void keepEmailAndAwaitNewEmail_whenCurrentEmailConfirmedFirst() {
+            final var changing = UserTestData.createPippinChangingEmail();
+            final var email = changing.getEmail();
+            service.issueToken(changing);
+            final var verificationHash = changing.getVerificationTokenHash();
+            final var currentEmailToken = service.issueCurrentEmailToken(changing);
+            final var hash = changing.getCurrentEmailTokenHash();
+            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash)).thenReturn(Optional.of(changing));
+
+            service.verify(currentEmailToken);
+
+            assertThat(changing.getEmail()).isEqualTo(email);
+            assertThat(changing.getCurrentEmailTokenHash()).isNull();
+            assertThat(changing.getVerificationTokenHash()).isEqualTo(verificationHash);
+            verify(repository).save(changing);
+        }
+
+        @Test
+        void changeEmail_whenCurrentEmailConfirmsAfterNewEmail() {
+            final var changing = UserTestData.createPippinChangingEmail()
+                    .setVerificationTokenHash(null);
+            final var newEmail = changing.getPendingEmail();
+            final var currentEmailToken = service.issueCurrentEmailToken(changing);
+            final var hash = changing.getCurrentEmailTokenHash();
+            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash)).thenReturn(Optional.of(changing));
+            when(repository.existsByEmailIgnoreCase(newEmail)).thenReturn(false);
+
+            service.verify(currentEmailToken);
+
+            assertThat(changing.getEmail()).isEqualTo(newEmail);
+            assertThat(changing.getPendingEmail()).isNull();
+            assertThat(changing.getCurrentEmailTokenHash()).isNull();
+            assertThat(changing.getVerificationTokenExpires()).isNull();
+            verify(repository).save(changing);
+        }
+
+        @Test
         void throwAlreadyExistsAndKeepEmail_whenPendingEmailWasTakenMeanwhile(final CapturedOutput output) {
             final var changing = UserTestData.createPippinChangingEmail().setId(1L);
             final var email = changing.getEmail();
             final var newEmail = changing.getPendingEmail();
             final var token = service.issueToken(changing);
-            when(repository.findByVerificationTokenHash(changing.getVerificationTokenHash())).thenReturn(Optional.of(changing));
+            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(changing.getVerificationTokenHash(), changing.getVerificationTokenHash())).thenReturn(Optional.of(changing));
             when(repository.existsByEmailIgnoreCase(newEmail)).thenReturn(true);
 
             final var exception = catchThrowableOfType(AlreadyExistsException.class, () -> service.verify(token));
@@ -321,7 +418,7 @@ class EmailVerificationServiceTest {
 
         @Test
         void throwInvalidToken_whenTokenIsUnknown() {
-            when(repository.findByVerificationTokenHash(anyString())).thenReturn(Optional.empty());
+            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(anyString(), anyString())).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.verify("unknownToken"))
                     .isInstanceOf(InvalidTokenException.class)
@@ -333,7 +430,7 @@ class EmailVerificationServiceTest {
         void throwInvalidToken_whenTokenIsExpired() {
             final var token = service.issueToken(tester);
             tester.setVerificationTokenExpires(LocalDateTime.now().minusSeconds(1));
-            when(repository.findByVerificationTokenHash(tester.getVerificationTokenHash())).thenReturn(Optional.of(tester));
+            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(tester.getVerificationTokenHash(), tester.getVerificationTokenHash())).thenReturn(Optional.of(tester));
 
             assertThatThrownBy(() -> service.verify(token))
                     .isInstanceOf(InvalidTokenException.class)

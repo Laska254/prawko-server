@@ -1,12 +1,15 @@
 package pl.prawko.prawko_server.service;
 
+import org.jspecify.annotations.Nullable;
 import pl.prawko.prawko_server.model.User;
 
 /**
  * Service interface for verifying email addresses of {@link User}s.
  * <p>
  * A new account is disabled, so it can't sign in or use the API, until the link emailed to its address is opened.
- * A changed email address is pending until the link emailed to the new address is opened.
+ * A changed email address is pending until the link emailed to the new address is opened. When users change it
+ * themselves, also the link emailed to the current address must be opened, so a stolen password alone isn't enough
+ * to take over the account by moving its email.
  */
 public interface IEmailVerificationService {
 
@@ -23,6 +26,20 @@ public interface IEmailVerificationService {
     String issueToken(User user);
 
     /**
+     * Issues a single-use token for the user's current address to confirm a pending email change, replacing any
+     * previous one.
+     * <p>
+     * It shares the expiry of the token issued by {@link #issueToken}, so it's meant to be issued along with it.
+     * Only the token's hash is set on the user, the caller persists it. The returned token is meant for
+     * {@link #sendEmailChangeEmails}.
+     * </p>
+     *
+     * @param user the user with a pending email
+     * @return the issued token
+     */
+    String issueCurrentEmailToken(User user);
+
+    /**
      * Emails a verification link with the token to the user.
      * <p>
      * Returns without waiting for the email to be sent, so it can be called inside the transaction that persists
@@ -36,18 +53,25 @@ public interface IEmailVerificationService {
     void sendVerificationEmail(long userId, String email, String token);
 
     /**
-     * Emails a verification link with the token to the new address and notifies the current address of the change,
-     * so the owner can stop a change they didn't request by changing or resetting their password.
+     * Emails a verification link with the token to the new address and a confirmation link to the current address,
+     * so a change the owner didn't request never takes effect. Without a current email token, the current address
+     * is only notified that an administrator requested the change.
      * <p>
      * Like {@link #sendVerificationEmail}, returns without waiting for the emails to be sent.
      * </p>
      *
-     * @param userId       the ID of the user, used for logging
-     * @param currentEmail the user's current email address
-     * @param newEmail     the requested email address to verify
-     * @param token        the token issued by {@link #issueToken}
+     * @param userId            the ID of the user, used for logging
+     * @param currentEmail      the user's current email address
+     * @param newEmail          the requested email address to verify
+     * @param token             the token issued by {@link #issueToken}
+     * @param currentEmailToken the token issued by {@link #issueCurrentEmailToken}, or {@code null} if the current
+     *                          address needn't confirm the change
      */
-    void sendEmailChangeEmails(long userId, String currentEmail, String newEmail, String token);
+    void sendEmailChangeEmails(long userId,
+                               String currentEmail,
+                               String newEmail,
+                               String token,
+                               @Nullable String currentEmailToken);
 
     /**
      * Tells whether the user's verification token was issued within the cooldown, so no new one should be sent yet.
@@ -74,6 +98,10 @@ public interface IEmailVerificationService {
     /**
      * Enables the user owning a valid email verification token and makes their pending email, if there is one,
      * the user's email.
+     * <p>
+     * Accepts the token sent to the current address to confirm an email change too. A pending email change takes
+     * effect only once all its tokens are used, until then each used token only counts as a confirmation.
+     * </p>
      * <p>
      * The token is invalidated afterward. A changed email invalidates any pending password reset token.
      * </p>

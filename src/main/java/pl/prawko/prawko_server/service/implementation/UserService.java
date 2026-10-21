@@ -144,10 +144,10 @@ public class UserService implements IUserService, UserDetailsService {
     /**
      * {@inheritDoc}
      * <p>
-     * Like in {@link #register}, the verification email (and the notice to the current address) is dispatched inside
-     * the transaction, so the update is rolled back if it can't be queued. Email changes are subject to the
-     * verification email cooldown. Sending the current email cancels a pending change and invalidates its link,
-     * without a cooldown since no email is sent.
+     * Like in {@link #register}, the emails to the new and current address are dispatched inside the transaction, so
+     * the update is rolled back if they can't be queued. Email changes are subject to the verification email cooldown.
+     * Sending the current email cancels a pending change and invalidates its links, without a cooldown since no email
+     * is sent.
      *
      * @throws EntityNotFoundException  if user with the given ID have not been found
      * @throws AlreadyExistsException   if the new username or email conflicts with another user
@@ -155,7 +155,7 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Transactional
     @Override
-    public UserDto updateUser(final long userId, final UserUpdateRequest updateRequest) {
+    public UserDto updateUser(final long userId, final UserUpdateRequest updateRequest, final boolean self) {
         log.info("Updating user with id: {}", userId);
         final var user = getById(userId);
         final var email = updateRequest.email();
@@ -170,13 +170,10 @@ public class UserService implements IUserService, UserDetailsService {
                 log.info("Email change of user with id '{}' canceled.", userId);
             }
         }
-        final var verificationToken = Optional.ofNullable(newEmail)
-                .map(pendingEmail -> requestEmailChange(pendingEmail, user));
+        if (newEmail != null) {
+            requestEmailChange(user, newEmail, self);
+        }
         final var updated = repository.save(user);
-        verificationToken.ifPresent(token -> {
-            emailVerificationService.sendEmailChangeEmails(userId, user.getEmail(), user.getPendingEmail(), token);
-            log.info("Email change of user with id '{}' awaiting verification.", userId);
-        });
         log.info("Successfully updated user with id '{}'", userId);
         return mapper.toDto(updated);
     }
@@ -241,13 +238,21 @@ public class UserService implements IUserService, UserDetailsService {
         }
     }
 
-    private String requestEmailChange(final String email, final User user) {
+    /**
+     * Only the user themselves must confirm the change from the current address, an admin changing it for them
+     * may do so because the user lost access to it.
+     */
+    private void requestEmailChange(final User user, final String email, final boolean self) {
         if (emailVerificationService.isCoolingDown(user)) {
             final var message = "Verification email was sent recently, try again later.";
             log.warn("{} User id: {}", message, user.getId());
             throw new TooManyRequestsException(message);
         }
-        return emailVerificationService.issueToken(user.setPendingEmail(email));
+        user.cancelEmailChange();
+        final var token = emailVerificationService.issueToken(user.setPendingEmail(email));
+        final var currentEmailToken = self ? emailVerificationService.issueCurrentEmailToken(user) : null;
+        emailVerificationService.sendEmailChangeEmails(user.getId(), user.getEmail(), email, token, currentEmailToken);
+        log.info("Email change of user with id '{}' awaiting verification.", user.getId());
     }
 
 }

@@ -37,7 +37,9 @@ import java.util.List;
  * as the SHA-256 hash of its token with an expiry time, both {@code null} once the account is verified.
  * <p>
  * A changed email address is kept as the pending email until it's verified with the same kind of token, only then it
- * replaces the current email. Changing or resetting the password cancels it.
+ * replaces the current email. When the user changes it themselves, the current address must confirm it too, with
+ * another token sharing the expiry. A {@code null} token hash means that address confirmed (or needn't confirm).
+ * Changing or resetting the password cancels the change.
  * <p>
  * Relationships:
  * <ul>
@@ -90,6 +92,9 @@ public class User {
     private String verificationTokenHash;
 
     private LocalDateTime verificationTokenExpires;
+
+    @Column(length = 64, unique = true)
+    private String currentEmailTokenHash;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 5)
@@ -153,7 +158,7 @@ public class User {
     }
 
     /**
-     * Drops a pending email change and invalidates its verification link.
+     * Drops a pending email change and invalidates its verification links.
      * <p>
      * The token expiry is kept, so the verification email cooldown still applies.
      *
@@ -165,6 +170,7 @@ public class User {
         }
         pendingEmail = null;
         verificationTokenHash = null;
+        currentEmailTokenHash = null;
         return true;
     }
 
@@ -237,6 +243,15 @@ public class User {
 
     public User setVerificationTokenExpires(final LocalDateTime verificationTokenExpires) {
         this.verificationTokenExpires = verificationTokenExpires;
+        return this;
+    }
+
+    public String getCurrentEmailTokenHash() {
+        return currentEmailTokenHash;
+    }
+
+    public User setCurrentEmailTokenHash(final String currentEmailTokenHash) {
+        this.currentEmailTokenHash = currentEmailTokenHash;
         return this;
     }
 

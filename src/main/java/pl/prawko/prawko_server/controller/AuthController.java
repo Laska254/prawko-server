@@ -110,14 +110,15 @@ public class AuthController {
     }
 
     /**
-     * Verifies an email address using the token from a verification link: enables a new account or applies
-     * a pending email change.
+     * Verifies an email address using the token from a verification link: enables a new account or confirms
+     * a pending email change, which takes effect once all its links are opened.
      *
      * @param request the {@link VerifyEmailRequest} containing the token
      * @return a {@link ResponseEntity} with HTTP 204 No Content
      */
     @Operation(summary = "Verify email",
-            description = "Activates an account or applies an email change using an email verification token.")
+            description = "Activates an account or confirms an email change using a token from a verification link. "
+                    + "An email change takes effect once confirmed by both the new and, if required, the current address.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Email verified successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid argument or invalid/expired token"),

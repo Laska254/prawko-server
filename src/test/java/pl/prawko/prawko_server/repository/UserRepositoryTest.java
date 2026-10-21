@@ -112,17 +112,26 @@ class UserRepositoryTest {
     }
 
     @Test
-    void findByVerificationTokenHash_returnUser_whenHashMatches() {
+    void findByVerificationTokenHashOrCurrentEmailTokenHash_returnUser_whenVerificationHashMatches() {
         repository.save(tester.setVerificationTokenHash(tokenHash));
 
-        final var result = repository.findByVerificationTokenHash(tokenHash);
+        final var result = repository.findByVerificationTokenHashOrCurrentEmailTokenHash(tokenHash, tokenHash);
 
         assertThat(result).get().extracting(User::getId).isEqualTo(tester.getId());
     }
 
     @Test
-    void findByVerificationTokenHash_returnEmpty_whenNoTokenIssued() {
-        final var result = repository.findByVerificationTokenHash(tokenHash);
+    void findByVerificationTokenHashOrCurrentEmailTokenHash_returnUser_whenCurrentEmailHashMatches() {
+        repository.save(tester.setCurrentEmailTokenHash(tokenHash));
+
+        final var result = repository.findByVerificationTokenHashOrCurrentEmailTokenHash(tokenHash, tokenHash);
+
+        assertThat(result).get().extracting(User::getId).isEqualTo(tester.getId());
+    }
+
+    @Test
+    void findByVerificationTokenHashOrCurrentEmailTokenHash_returnEmpty_whenNoTokenIssued() {
+        final var result = repository.findByVerificationTokenHashOrCurrentEmailTokenHash(tokenHash, tokenHash);
         assertThat(result).isEmpty();
     }
 

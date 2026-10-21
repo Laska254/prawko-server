@@ -449,7 +449,7 @@ public class UserControllerTest {
         }
 
         @Test
-        void keepEmailAndSendVerificationToNewEmail_whenEmailChanged() {
+        void keepEmailAndSendLinksToNewAndCurrentEmail_whenOwnEmailChanged() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var newEmail = UserTestData.createValidUserUpdateRequest().email();
 
@@ -466,14 +466,40 @@ public class UserControllerTest {
             final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
             final var link = captor.getAllValues().getFirst();
-            final var notice = captor.getAllValues().getLast();
+            final var confirmation = captor.getAllValues().getLast();
             assertThat(link.getTo()).containsExactly(newEmail);
-            assertThat(notice.getTo()).containsExactly(tester.getEmail());
+            assertThat(confirmation.getTo()).containsExactly(tester.getEmail());
             final var updated = userRepository.findById(tester.getId()).orElseThrow();
             assertThat(updated.getEmail()).isEqualTo(tester.getEmail());
             assertThat(updated.getPendingEmail()).isEqualTo(newEmail);
             assertThat(updated.getVerificationTokenHash())
                     .isEqualTo(SecureTokens.hash(UserTestData.extractToken(link)));
+            assertThat(updated.getCurrentEmailTokenHash())
+                    .isEqualTo(SecureTokens.hash(UserTestData.extractToken(confirmation)));
+        }
+
+        @Test
+        void requireOnlyNewEmailLinkAndNotifyCurrentEmail_whenAdminChangesEmail() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var newEmail = UserTestData.createValidUserUpdateRequest().email();
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(TestUtils::authAdmin)
+                    .body(new UserUpdateRequest(null, null, null, newEmail))
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.pendingEmail").isEqualTo(newEmail);
+
+            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
+            final var notice = captor.getAllValues().getLast();
+            assertThat(notice.getTo()).containsExactly(tester.getEmail());
+            assertThat(notice.getText()).doesNotContain("token=");
+            final var updated = userRepository.findById(tester.getId()).orElseThrow();
+            assertThat(updated.getVerificationTokenHash()).isNotNull();
+            assertThat(updated.getCurrentEmailTokenHash()).isNull();
         }
 
         @Test
