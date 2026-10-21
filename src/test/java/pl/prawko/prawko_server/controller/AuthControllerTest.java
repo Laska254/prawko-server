@@ -385,7 +385,8 @@ public class AuthControllerTest {
 
         verifyEmail(token).expectStatus().isNoContent();
         assertThat(userRepository.findById(tester.getId())
-                .orElseThrow().getEmail()).isEqualTo(email);
+                .orElseThrow()
+                .getEmail()).isEqualTo(email);
         verifyEmail(currentEmailToken).expectStatus().isNoContent();
 
         final var changed = userRepository.findById(tester.getId()).orElseThrow();

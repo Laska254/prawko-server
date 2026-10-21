@@ -239,8 +239,8 @@ public class UserService implements IUserService, UserDetailsService {
     }
 
     /**
-     * Only the user themselves must confirm the change from the current address, an admin changing it for them
-     * may do so because the user lost access to it.
+     * Requests an email change. Only the user themselves must confirm it from the current address too, an admin may
+     * skip that because the user may have lost access to it.
      */
     private void requestEmailChange(final User user, final String email, final boolean self) {
         if (emailVerificationService.isCoolingDown(user)) {

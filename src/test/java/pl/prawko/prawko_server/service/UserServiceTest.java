@@ -452,12 +452,10 @@ class UserServiceTest {
     @Test
     void changePassword_cancelEmailChange_whenEmailChangeIsPending() {
         final var givenId = 44L;
-        final var changing = UserTestData.createPippinChangingEmail();
+        final var changing = UserTestData.createPippinChangingEmail().setCurrentEmailTokenHash("currentTokenHash");
         final var request = UserTestData.createValidChangePasswordRequest();
         when(repository.findById(givenId)).thenReturn(Optional.of(changing));
         when(passwordEncoder.matches(request.currentPassword(), changing.getPassword())).thenReturn(true);
-
-        changing.setCurrentEmailTokenHash("currentTokenHash");
 
         service.changePassword(givenId, request);
 
