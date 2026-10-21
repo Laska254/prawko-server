@@ -164,9 +164,14 @@ other authenticated request `401`. Another link can be requested with `POST /aut
 verified before their link expires are deleted, so the username and email can be registered again.
 
 Changing the email with `PATCH /users/{id}` works the same way: the new address is only stored as pending and a link
-is emailed to it (`pendingEmail` in the user response). The current email stays in use (sign-in, password reset) until the link is used with
-`POST /auth/verify`; for another link send the `PATCH` again after the cooldown - within it the `PATCH` answers `429`
-and changes nothing.
+is emailed to it (`pendingEmail` in the user response). When users change their own email, a confirmation link is
+emailed to the current address too, so a stolen password alone can't move the account to another inbox. When an admin
+changes another user's email, only the new address must confirm (the user may have lost access to the current one),
+and the current address just gets a notice. Both links go to `POST /auth/verify`, in any order; the user response
+tells which are still unopened (`awaitingNewEmailConfirmation`, `awaitingCurrentEmailConfirmation`). The current email
+stays in use (sign-in, password reset) until all required links are used. Changing or resetting the password cancels
+a pending change, and so does sending the current email in the `PATCH`. For new links send the `PATCH` again after
+the cooldown - within it the `PATCH` answers `429` and changes nothing.
 
 ### Endpoints
 
@@ -180,7 +185,7 @@ own data (admins may act on any user), **admin** - admins only.
   | `POST` | `/auth`                 | public | verify credentials (sign-in)                                                 |
   | `POST` | `/auth/password/forgot` | public | email a password reset link, returns `202` whether the account exists or not |
   | `POST` | `/auth/password/reset`  | public | set a new password with the token from the reset link                        |
-  | `POST` | `/auth/verify`          | public | verify a new account's or changed email with the token from the link         |
+  | `POST` | `/auth/verify`          | public | verify a new account's email or confirm an email change with a link's token  |
   | `POST` | `/auth/verify/resend`   | public | email a new verification link, returns `202` whatever the account's state    |
 
 * `/users`
