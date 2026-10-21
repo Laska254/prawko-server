@@ -163,6 +163,8 @@ class EmailVerificationServiceTest {
             assertThat(confirmation.getText())
                     .startsWith("A change of your account's email address to " + newEmail)
                     .contains(VERIFICATION_URL, "expires in 1d.")
+                    .endsWith("If you didn't request this, don't open the link. "
+                            + "Someone else knows your password, so change or reset it, that also cancels the change.")
                     .doesNotContain("someToken");
             assertThat(UserTestData.extractToken(confirmation)).isEqualTo("currentToken");
         }

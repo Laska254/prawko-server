@@ -104,8 +104,8 @@ public class EmailVerificationService implements IEmailVerificationService {
                 + "It takes effect only once confirmed with both the link below and the link sent to the new address. "
                 + "The link expires in " + printedValidity() + ".\n\n"
                 + link(currentEmailToken) + "\n\n"
-                + "If you didn't request this, don't open the link and change your password, someone else knows it. "
-                + "Changing or resetting the password cancels the change.");
+                + "If you didn't request this, don't open the link. "
+                + "Someone else knows your password, so change or reset it, that also cancels the change.");
         deliver(userId, message, "email change confirmation");
     }
 
