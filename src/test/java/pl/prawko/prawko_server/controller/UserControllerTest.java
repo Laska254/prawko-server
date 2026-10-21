@@ -466,8 +466,9 @@ public class UserControllerTest {
             final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
             final var link = captor.getAllValues().getFirst();
+            final var notice = captor.getAllValues().getLast();
             assertThat(link.getTo()).containsExactly(newEmail);
-            assertThat(captor.getAllValues().getLast().getTo()).containsExactly(tester.getEmail());
+            assertThat(notice.getTo()).containsExactly(tester.getEmail());
             final var updated = userRepository.findById(tester.getId()).orElseThrow();
             assertThat(updated.getEmail()).isEqualTo(tester.getEmail());
             assertThat(updated.getPendingEmail()).isEqualTo(newEmail);

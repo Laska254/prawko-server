@@ -145,8 +145,9 @@ public class UserService implements IUserService, UserDetailsService {
      * {@inheritDoc}
      * <p>
      * Like in {@link #register}, the verification email (and the notice to the current address) is dispatched inside
-     * the transaction, so the update is rolled back if it can't be queued. Email changes are subject to the verification email cooldown. Sending the current
-     * email cancels a pending change and invalidates its link, without a cooldown since no email is sent.
+     * the transaction, so the update is rolled back if it can't be queued. Email changes are subject to the
+     * verification email cooldown. Sending the current email cancels a pending change and invalidates its link,
+     * without a cooldown since no email is sent.
      *
      * @throws EntityNotFoundException  if user with the given ID have not been found
      * @throws AlreadyExistsException   if the new username or email conflicts with another user
@@ -164,8 +165,10 @@ public class UserService implements IUserService, UserDetailsService {
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
         Optional.ofNullable(updateRequest.userName()).ifPresent(user::setUserName);
-        if (cancelsEmailChange && user.cancelEmailChange()) {
-            log.info("Email change of user with id '{}' cancelled.", userId);
+        if (cancelsEmailChange) {
+            if (user.cancelEmailChange()) {
+                log.info("Email change of user with id '{}' canceled.", userId);
+            }
         }
         final var verificationToken = Optional.ofNullable(newEmail)
                 .map(pendingEmail -> requestEmailChange(pendingEmail, user));
@@ -203,7 +206,7 @@ public class UserService implements IUserService, UserDetailsService {
                 .setPasswordResetTokenHash(null)
                 .setPasswordResetTokenExpires(null);
         if (user.cancelEmailChange()) {
-            log.info("Email change of user with id '{}' cancelled by the password change.", userId);
+            log.info("Email change of user with id '{}' canceled by the password change.", userId);
         }
         repository.save(user);
         log.info("Successfully changed password for user with id '{}'", userId);

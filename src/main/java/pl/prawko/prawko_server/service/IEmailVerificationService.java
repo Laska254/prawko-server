@@ -14,7 +14,7 @@ public interface IEmailVerificationService {
      * Issues a single-use email verification token for the user, replacing any previous one.
      * <p>
      * Only the token's hash is set on the user, the caller persists it. The returned token is meant for
-     * {@link #sendVerificationEmail}.
+     * {@link #sendVerificationEmail} or {@link #sendEmailChangeEmails}.
      * </p>
      *
      * @param user the user with an unverified email address
