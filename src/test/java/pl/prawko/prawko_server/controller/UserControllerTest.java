@@ -422,7 +422,7 @@ public class UserControllerTest {
         void success_whenDtoIsValid() {
             final var id = userRepository.save(UserTestData.createTestUserPippin()).getId();
             final var validDto = UserTestData.createValidUserUpdateRequest();
-            final var expected = UserTestData.createUpdatedUserDto(id);
+            final var expected = UserTestData.createUpdatedByAdminUserDto(id);
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, id)
@@ -461,7 +461,9 @@ public class UserControllerTest {
                     .expectStatus().isOk()
                     .expectBody()
                     .jsonPath("$.email").isEqualTo(tester.getEmail())
-                    .jsonPath("$.pendingEmail").isEqualTo(newEmail);
+                    .jsonPath("$.pendingEmail").isEqualTo(newEmail)
+                    .jsonPath("$.awaitingNewEmailConfirmation").isEqualTo(true)
+                    .jsonPath("$.awaitingCurrentEmailConfirmation").isEqualTo(true);
 
             final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
@@ -490,7 +492,9 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
-                    .jsonPath("$.pendingEmail").isEqualTo(newEmail);
+                    .jsonPath("$.pendingEmail").isEqualTo(newEmail)
+                    .jsonPath("$.awaitingNewEmailConfirmation").isEqualTo(true)
+                    .jsonPath("$.awaitingCurrentEmailConfirmation").isEqualTo(false);
 
             final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());

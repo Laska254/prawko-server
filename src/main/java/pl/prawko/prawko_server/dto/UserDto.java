@@ -30,6 +30,13 @@ public record UserDto(
         @Schema(description = "New email address awaiting verification, null if no change is pending or its link expired")
         String pendingEmail,
 
+        @Schema(description = "Whether the link emailed to the pending email still has to be opened")
+        boolean awaitingNewEmailConfirmation,
+
+        @Schema(description = "Whether the link emailed to the current email still has to be opened to confirm the "
+                + "change, required only when users change their own email")
+        boolean awaitingCurrentEmailConfirmation,
+
         @Schema(description = "User's role")
         Role role
 

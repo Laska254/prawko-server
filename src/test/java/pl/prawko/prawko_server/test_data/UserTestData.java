@@ -88,6 +88,8 @@ public class UserTestData {
                 "pippin",
                 "pippin@shire.me",
                 null,
+                false,
+                false,
                 Role.USER);
     }
 
@@ -99,9 +101,14 @@ public class UserTestData {
                 TestUtils.ADMIN_NAME,
                 "gimli@erebor.me",
                 null,
+                false,
+                false,
                 Role.ADMIN);
     }
 
+    /**
+     * The user updated by themselves, so the email change awaits confirmation from both addresses.
+     */
     public static UserDto createUpdatedUserDto(final long id) {
         return new UserDto(
                 id,
@@ -110,6 +117,26 @@ public class UserTestData {
                 "UpdatedUserName",
                 "pippin@shire.me",
                 createValidUserUpdateRequest().email(),
+                true,
+                true,
+                Role.USER
+        );
+    }
+
+    /**
+     * The user updated by an admin, so the email change awaits confirmation from the new address only.
+     */
+    public static UserDto createUpdatedByAdminUserDto(final long id) {
+        final var updated = createUpdatedUserDto(id);
+        return new UserDto(
+                id,
+                updated.firstName(),
+                updated.lastName(),
+                updated.userName(),
+                updated.email(),
+                updated.pendingEmail(),
+                true,
+                false,
                 Role.USER
         );
     }
