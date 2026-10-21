@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.service.implementation;
 
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -92,21 +91,14 @@ public class EmailVerificationService implements IEmailVerificationService {
      */
     @Async
     @Override
-    public void sendEmailChangeEmails(final long userId,
-                                      final String currentEmail,
-                                      final String newEmail,
-                                      final String token,
-                                      @Nullable final String currentEmailToken) {
+    public void sendEmailChangeConfirmation(final long userId,
+                                            final String currentEmail,
+                                            final String newEmail,
+                                            final String token,
+                                            final String currentEmailToken) {
         send(userId, newEmail, token);
         final var message = new SimpleMailMessage();
         message.setTo(currentEmail);
-        if (currentEmailToken == null) {
-            message.setSubject("Email address change requested");
-            message.setText("An administrator requested a change of your account's email address to " + newEmail
-                    + ". It takes effect once confirmed with the link sent to the new address.");
-            deliver(userId, message, "email change notice");
-            return;
-        }
         message.setSubject("Confirm your email address change");
         message.setText("A change of your account's email address to " + newEmail + " was requested. "
                 + "It takes effect only once confirmed with both the link below and the link sent to the new address. "
@@ -115,6 +107,26 @@ public class EmailVerificationService implements IEmailVerificationService {
                 + "If you didn't request this, don't open the link and change your password, someone else knows it. "
                 + "Changing or resetting the password cancels the change.");
         deliver(userId, message, "email change confirmation");
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The emails are sent independently, a failure of either is only logged.
+     */
+    @Async
+    @Override
+    public void sendEmailChangeNotice(final long userId,
+                                      final String currentEmail,
+                                      final String newEmail,
+                                      final String token) {
+        send(userId, newEmail, token);
+        final var message = new SimpleMailMessage();
+        message.setTo(currentEmail);
+        message.setSubject("Email address change requested");
+        message.setText("An administrator requested a change of your account's email address to " + newEmail
+                + ". It takes effect once confirmed with the link sent to the new address.");
+        deliver(userId, message, "email change notice");
     }
 
     /**

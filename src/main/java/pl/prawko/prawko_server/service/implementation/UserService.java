@@ -249,14 +249,14 @@ public class UserService implements IUserService, UserDetailsService {
             throw new TooManyRequestsException(message);
         }
         final var token = emailVerificationService.issueToken(user.setPendingEmail(email));
-        final String currentEmailToken;
         if (principalId == user.getId()) {
-            currentEmailToken = emailVerificationService.issueCurrentEmailToken(user);
+            final var currentEmailToken = emailVerificationService.issueCurrentEmailToken(user);
+            emailVerificationService.sendEmailChangeConfirmation(
+                    user.getId(), user.getEmail(), email, token, currentEmailToken);
         } else {
             user.setCurrentEmailTokenHash(null);
-            currentEmailToken = null;
+            emailVerificationService.sendEmailChangeNotice(user.getId(), user.getEmail(), email, token);
         }
-        emailVerificationService.sendEmailChangeEmails(user.getId(), user.getEmail(), email, token, currentEmailToken);
         log.info("Email change of user with id '{}' awaiting verification.", user.getId());
     }
 

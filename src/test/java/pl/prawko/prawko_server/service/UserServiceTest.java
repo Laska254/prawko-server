@@ -275,7 +275,7 @@ class UserServiceTest {
         order.verify(emailVerificationService).issueToken(tester);
         order.verify(emailVerificationService).issueCurrentEmailToken(tester);
         order.verify(emailVerificationService)
-                .sendEmailChangeEmails(givenId, email, updateUserRequest.email(), token, currentEmailToken);
+                .sendEmailChangeConfirmation(givenId, email, updateUserRequest.email(), token, currentEmailToken);
         verify(repository).save(tester);
     }
 
@@ -299,7 +299,8 @@ class UserServiceTest {
         assertThat(changing.getCurrentEmailTokenHash()).isNull();
         verify(emailVerificationService, never()).issueCurrentEmailToken(any());
         verify(emailVerificationService)
-                .sendEmailChangeEmails(givenId, changing.getEmail(), updateUserRequest.email(), token, null);
+                .sendEmailChangeNotice(givenId, changing.getEmail(), updateUserRequest.email(), token);
+        verify(emailVerificationService, never()).sendEmailChangeConfirmation(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -316,7 +317,8 @@ class UserServiceTest {
         assertThat(tester.getPendingEmail()).isNull();
         verify(repository, never()).save(any());
         verify(emailVerificationService, never()).issueToken(any());
-        verify(emailVerificationService, never()).sendEmailChangeEmails(anyLong(), any(), any(), any(), any());
+        verify(emailVerificationService, never()).sendEmailChangeConfirmation(anyLong(), any(), any(), any(), any());
+        verify(emailVerificationService, never()).sendEmailChangeNotice(anyLong(), any(), any(), any());
     }
 
     @Test

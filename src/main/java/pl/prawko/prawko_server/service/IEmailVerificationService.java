@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.service;
 
-import org.jspecify.annotations.Nullable;
 import pl.prawko.prawko_server.model.User;
 
 /**
@@ -17,7 +16,7 @@ public interface IEmailVerificationService {
      * Issues a single-use email verification token for the user, replacing any previous one.
      * <p>
      * Only the token's hash is set on the user, the caller persists it. The returned token is meant for
-     * {@link #sendVerificationEmail} or {@link #sendEmailChangeEmails}.
+     * {@link #sendVerificationEmail}, {@link #sendEmailChangeConfirmation} or {@link #sendEmailChangeNotice}.
      * </p>
      *
      * @param user the user with an unverified email address
@@ -31,7 +30,7 @@ public interface IEmailVerificationService {
      * <p>
      * It shares the expiry of the token issued by {@link #issueToken}, so it's meant to be issued along with it.
      * Only the token's hash is set on the user, the caller persists it. The returned token is meant for
-     * {@link #sendEmailChangeEmails}.
+     * {@link #sendEmailChangeConfirmation}.
      * </p>
      *
      * @param user the user with a pending email
@@ -54,8 +53,7 @@ public interface IEmailVerificationService {
 
     /**
      * Emails a verification link with the token to the new address and a confirmation link to the current address,
-     * so a change the owner didn't request never takes effect. Without a current email token, the current address
-     * is only notified that an administrator requested the change.
+     * so a change the owner didn't request never takes effect.
      * <p>
      * Like {@link #sendVerificationEmail}, returns without waiting for the emails to be sent.
      * </p>
@@ -64,14 +62,27 @@ public interface IEmailVerificationService {
      * @param currentEmail      the user's current email address
      * @param newEmail          the requested email address to verify
      * @param token             the token issued by {@link #issueToken}
-     * @param currentEmailToken the token issued by {@link #issueCurrentEmailToken}, or {@code null} if the current
-     *                          address needn't confirm the change
+     * @param currentEmailToken the token issued by {@link #issueCurrentEmailToken}
      */
-    void sendEmailChangeEmails(long userId,
-                               String currentEmail,
-                               String newEmail,
-                               String token,
-                               @Nullable String currentEmailToken);
+    void sendEmailChangeConfirmation(long userId,
+                                     String currentEmail,
+                                     String newEmail,
+                                     String token,
+                                     String currentEmailToken);
+
+    /**
+     * Emails a verification link with the token to the new address and notifies the current address that
+     * an administrator requested the change, for changes the current address needn't confirm.
+     * <p>
+     * Like {@link #sendVerificationEmail}, returns without waiting for the emails to be sent.
+     * </p>
+     *
+     * @param userId       the ID of the user, used for logging
+     * @param currentEmail the user's current email address
+     * @param newEmail     the requested email address to verify
+     * @param token        the token issued by {@link #issueToken}
+     */
+    void sendEmailChangeNotice(long userId, String currentEmail, String newEmail, String token);
 
     /**
      * Tells whether the user's verification token was issued within the cooldown, so no new one should be sent yet.
