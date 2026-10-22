@@ -180,13 +180,13 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/auth`
 
-  | Method | Path                    | Access | Description                                                                  |
-  |--------|-------------------------|--------|------------------------------------------------------------------------------|
-  | `POST` | `/auth`                 | public | verify credentials (sign-in)                                                 |
-  | `POST` | `/auth/password/forgot` | public | email a password reset link, returns `202` whether the account exists or not |
-  | `POST` | `/auth/password/reset`  | public | set a new password with the token from the reset link                        |
-  | `POST` | `/auth/verify`          | public | verify a new account's email or confirm an email change with a link's token  |
-  | `POST` | `/auth/verify/resend`   | public | email a new verification link, returns `202` whatever the account's state    |
+  | Method | Path                    | Access | Description                                                                                    |
+  |--------|-------------------------|--------|------------------------------------------------------------------------------------------------|
+  | `POST` | `/auth`                 | public | verify credentials (sign-in)                                                                   |
+  | `POST` | `/auth/password/forgot` | public | email a password reset link, returns `202` whether the account exists or not                   |
+  | `POST` | `/auth/password/reset`  | public | set a new password with the token from the reset link                                          |
+  | `POST` | `/auth/verify`          | public | verify an email with a link's token, returns `202` while an email change awaits the other link |
+  | `POST` | `/auth/verify/resend`   | public | email a new verification link, returns `202` whatever the account's state                      |
 
 * `/users`
 
