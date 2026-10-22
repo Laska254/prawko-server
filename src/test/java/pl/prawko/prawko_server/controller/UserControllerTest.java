@@ -419,9 +419,9 @@ public class UserControllerTest {
     class UpdateUser {
 
         @Test
-        void success_whenDtoIsValid() {
+        void success_whenAdminUpdatesAnotherUserWithoutEmail() {
             final var id = userRepository.save(UserTestData.createTestUserPippin()).getId();
-            final var validDto = UserTestData.createValidUserUpdateRequest();
+            final var validDto = UserTestData.createUserUpdateRequestWithoutEmail();
             final var expected = UserTestData.createUpdatedByAdminUserDto(id);
 
             restClient.patch()
@@ -481,29 +481,37 @@ public class UserControllerTest {
         }
 
         @Test
-        void requireOnlyNewEmailLinkAndNotifyCurrentEmail_whenAdminChangesEmail() {
+        void returnForbiddenAndSendNoEmail_whenAdminChangesAnotherUsersEmail() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
-            final var newEmail = UserTestData.createValidUserUpdateRequest().email();
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
                     .headers(TestUtils::authAdmin)
-                    .body(new UserUpdateRequest(null, null, null, newEmail))
+                    .body(UserTestData.createValidUserUpdateRequest())
                     .exchange()
-                    .expectStatus().isOk()
+                    .expectStatus().isForbidden()
                     .expectBody()
-                    .jsonPath("$.pendingEmail").isEqualTo(newEmail)
-                    .jsonPath("$.awaitingNewEmailConfirmation").isEqualTo(true)
-                    .jsonPath("$.awaitingCurrentEmailConfirmation").isEqualTo(false);
+                    .jsonPath("$.detail").isEqualTo(TestUtils.ACCESS_DENIED);
 
-            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
-            final var notice = captor.getAllValues().getLast();
-            assertThat(notice.getTo()).containsExactly(tester.getEmail());
-            assertThat(notice.getText()).doesNotContain("token=");
-            final var updated = userRepository.findById(tester.getId()).orElseThrow();
-            assertThat(updated.getVerificationTokenHash()).isNotNull();
-            assertThat(updated.getCurrentEmailTokenHash()).isNull();
+            final var unchanged = userRepository.findById(tester.getId()).orElseThrow();
+            assertThat(unchanged.getUserName()).isEqualTo(tester.getUserName());
+            assertThat(unchanged.getPendingEmail()).isNull();
+            verifyNoMoreInteractions(mailSender);
+        }
+
+        @Test
+        void returnForbidden_whenAdminCancelsAnotherUsersEmailChange() {
+            final var tester = userRepository.save(UserTestData.createPippinChangingEmail());
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(TestUtils::authAdmin)
+                    .body(new UserUpdateRequest(null, null, null, tester.getEmail()))
+                    .exchange()
+                    .expectStatus().isForbidden();
+
+            assertThat(userRepository.findById(tester.getId()).orElseThrow().getPendingEmail())
+                    .isEqualTo(tester.getPendingEmail());
         }
 
         @Test
@@ -636,7 +644,7 @@ public class UserControllerTest {
         @ParameterizedTest
         @ValueSource(longs = {-1L, 0L})
         void returnBadRequest_whenIdIsNotPositive(final long invalidId) {
-            final var validDto = UserTestData.createValidUserUpdateRequest();
+            final var validDto = UserTestData.createUserUpdateRequestWithoutEmail();
             final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
             restClient.patch()
@@ -652,7 +660,7 @@ public class UserControllerTest {
         @Test
         void returnNotFound_whenUserDoesNotExist() {
             final var nonExistentId = 666L;
-            final var validDto = UserTestData.createValidUserUpdateRequest();
+            final var validDto = UserTestData.createUserUpdateRequestWithoutEmail();
             final var expectedMessage = UserTestData.userNotFoundMessage(nonExistentId);
 
             restClient.patch()

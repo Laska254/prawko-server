@@ -241,7 +241,7 @@ class UserServiceTest {
         when(repository.save(user)).thenReturn(user);
         when(mapper.toDto(user)).thenReturn(updatedUserDto);
 
-        final var result = service.updateUser(givenId, updateUserRequest, givenId);
+        final var result = service.updateUser(givenId, updateUserRequest);
 
         assertThat(result).isEqualTo(updatedUserDto);
         verify(repository).findById(givenId);
@@ -266,7 +266,7 @@ class UserServiceTest {
         when(emailVerificationService.issueCurrentEmailToken(tester)).thenReturn(currentEmailToken);
         when(repository.save(tester)).thenReturn(tester);
 
-        service.updateUser(givenId, updateUserRequest, givenId);
+        service.updateUser(givenId, updateUserRequest);
 
         assertThat(tester.getEmail()).isEqualTo(email);
         assertThat(tester.getPendingEmail()).isEqualTo(updateUserRequest.email());
@@ -280,37 +280,13 @@ class UserServiceTest {
     }
 
     @Test
-    void updateUser_requireOnlyPendingEmailLink_whenAdminChangesEmail() {
-        final var givenId = 44L;
-        final var adminId = 7L;
-        final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
-        final var changing = UserTestData.createPippinChangingEmail()
-                .setId(givenId)
-                .setVerificationTokenExpires(LocalDateTime.now().minusMinutes(1))
-                .setCurrentEmailTokenHash("previousCurrentTokenHash");
-        final var token = "someToken";
-        when(repository.findById(givenId)).thenReturn(Optional.of(changing));
-        when(emailVerificationService.issueToken(changing)).thenReturn(token);
-        when(repository.save(changing)).thenReturn(changing);
-
-        service.updateUser(givenId, updateUserRequest, adminId);
-
-        assertThat(changing.getPendingEmail()).isEqualTo(updateUserRequest.email());
-        assertThat(changing.getCurrentEmailTokenHash()).isNull();
-        verify(emailVerificationService, never()).issueCurrentEmailToken(any());
-        verify(emailVerificationService)
-                .sendEmailChangeNotice(givenId, changing.getEmail(), updateUserRequest.email(), token);
-        verify(emailVerificationService, never()).sendEmailChangeConfirmation(anyLong(), any(), any(), any(), any());
-    }
-
-    @Test
     void updateUser_throwTooManyRequestsAndNotSave_whenEmailChangedWithinCooldown() {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(emailVerificationService.isCoolingDown(tester)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.updateUser(givenId, updateUserRequest, givenId))
+        assertThatThrownBy(() -> service.updateUser(givenId, updateUserRequest))
                 .isInstanceOf(TooManyRequestsException.class)
                 .hasMessage(UserTestData.VERIFICATION_COOLDOWN);
 
@@ -318,7 +294,6 @@ class UserServiceTest {
         verify(repository, never()).save(any());
         verify(emailVerificationService, never()).issueToken(any());
         verify(emailVerificationService, never()).sendEmailChangeConfirmation(anyLong(), any(), any(), any(), any());
-        verify(emailVerificationService, never()).sendEmailChangeNotice(anyLong(), any(), any(), any());
     }
 
     @Test
@@ -331,7 +306,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(changing));
         when(repository.save(changing)).thenReturn(changing);
 
-        service.updateUser(givenId, new UserUpdateRequest(null, null, null, currentEmail), givenId);
+        service.updateUser(givenId, new UserUpdateRequest(null, null, null, currentEmail));
 
         assertThat(changing.getEmail()).isEqualTo(tester.getEmail());
         assertThat(changing.getPendingEmail()).isNull();
@@ -351,7 +326,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(unverified));
         when(repository.save(unverified)).thenReturn(unverified);
 
-        service.updateUser(givenId, new UserUpdateRequest(null, null, null, unverified.getEmail()), givenId);
+        service.updateUser(givenId, new UserUpdateRequest(null, null, null, unverified.getEmail()));
 
         assertThat(unverified.getVerificationTokenHash()).isEqualTo(token);
         verify(repository, never()).existsByEmailIgnoreCase(any());
@@ -365,7 +340,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
-        service.updateUser(givenId, updateUserRequest, givenId);
+        service.updateUser(givenId, updateUserRequest);
 
         assertThat(tester.getPendingEmail()).isNull();
         verifyNoInteractions(emailVerificationService);
@@ -379,7 +354,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
-        service.updateUser(givenId, updateUserRequest, givenId);
+        service.updateUser(givenId, updateUserRequest);
 
         assertThat(output).contains("Successfully updated user with id '" + givenId + "'")
                 .doesNotContain(updateUserRequest.firstName(), updateUserRequest.lastName(),
@@ -394,7 +369,7 @@ class UserServiceTest {
         when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(true);
 
         final ThrowableAssert.ThrowingCallable executable =
-                () -> service.updateUser(givenId, updateUserRequest, givenId);
+                () -> service.updateUser(givenId, updateUserRequest);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
@@ -411,7 +386,7 @@ class UserServiceTest {
         when(repository.existsByEmailIgnoreCase(updateUserRequest.email())).thenReturn(true);
 
         final ThrowableAssert.ThrowingCallable executable =
-                () -> service.updateUser(givenId, updateUserRequest, givenId);
+                () -> service.updateUser(givenId, updateUserRequest);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);

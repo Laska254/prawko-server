@@ -123,9 +123,6 @@ public class UserTestData {
         );
     }
 
-    /**
-     * The user updated by an admin, so the email change awaits confirmation from the new address only.
-     */
     public static UserDto createUpdatedByAdminUserDto(final long id) {
         final var updated = createUpdatedUserDto(id);
         return new UserDto(
@@ -134,10 +131,10 @@ public class UserTestData {
                 updated.lastName(),
                 updated.userName(),
                 updated.email(),
-                updated.pendingEmail(),
-                true,
+                null,
                 false,
-                Role.USER
+                false,
+                updated.role()
         );
     }
 
@@ -147,6 +144,11 @@ public class UserTestData {
                 "UpdatedLastName",
                 "UpdatedUserName",
                 "UpdatedEmail@shire.me");
+    }
+
+    public static UserUpdateRequest createUserUpdateRequestWithoutEmail() {
+        final var request = createValidUserUpdateRequest();
+        return new UserUpdateRequest(request.firstName(), request.lastName(), request.userName(), null);
     }
 
     public static UserUpdateRequest createInvalidUserUpdateRequest() {

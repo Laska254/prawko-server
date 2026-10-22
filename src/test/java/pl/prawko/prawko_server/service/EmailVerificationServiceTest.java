@@ -186,45 +186,6 @@ class EmailVerificationServiceTest {
     }
 
     @Nested
-    class SendEmailChangeNotice {
-
-        @Test
-        void sendLinkToNewEmailAndNoticeToCurrentEmail_whenCalled() {
-            final var newEmail = UserTestData.createMerry().getEmail();
-
-            service.sendEmailChangeNotice(tester.getId(), tester.getEmail(), newEmail, "someToken");
-
-            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-            verify(mailSender, times(2)).send(captor.capture());
-            final var notice = captor.getAllValues().getLast();
-            assertThat(captor.getAllValues().getFirst().getTo()).containsExactly(newEmail);
-            assertThat(notice.getFrom()).isEqualTo(MAIL_FROM);
-            assertThat(notice.getTo()).containsExactly(tester.getEmail());
-            assertThat(notice.getText())
-                    .startsWith("An administrator requested a change of your account's email address to " + newEmail)
-                    .endsWith("If you didn't ask for this, change or reset your password, that cancels the change.")
-                    .doesNotContain(VERIFICATION_URL);
-        }
-
-        @Test
-        void sendNoticeAndLogUserIdOnly_whenSendingLinkFails(final CapturedOutput output) {
-            final var newEmail = UserTestData.createMerry().getEmail();
-            doThrow(new MailSendException("SMTP down"))
-                    .doNothing()
-                    .when(mailSender).send(any(SimpleMailMessage.class));
-
-            service.sendEmailChangeNotice(tester.getId(), tester.getEmail(), newEmail, "someToken");
-
-            verify(mailSender, times(2)).send(any(SimpleMailMessage.class));
-            assertThat(output)
-                    .contains("Failed to send verification email to user with id '" + tester.getId() + "'")
-                    .contains("Sent email change notice to user with id '" + tester.getId() + "'")
-                    .doesNotContain(tester.getEmail(), newEmail);
-        }
-
-    }
-
-    @Nested
     class IsCoolingDown {
 
         @Test

@@ -6,9 +6,8 @@ import pl.prawko.prawko_server.model.User;
  * Service interface for verifying email addresses of {@link User}s.
  * <p>
  * A new account is disabled, so it can't sign in or use the API, until the link emailed to its address is opened.
- * A changed email address is pending until the link emailed to the new address is opened. When users change it
- * themselves, also the link emailed to the current address must be opened, so a stolen password alone isn't enough
- * to take over the account by moving its email.
+ * A changed email address is pending until the links emailed to the new and the current address are opened, so
+ * a stolen password alone isn't enough to take over the account by moving its email.
  */
 public interface IEmailVerificationService {
 
@@ -16,7 +15,7 @@ public interface IEmailVerificationService {
      * Issues a single-use email verification token for the user, replacing any previous one.
      * <p>
      * Only the token's hash is set on the user, the caller persists it. The returned token is meant for
-     * {@link #sendVerificationEmail}, {@link #sendEmailChangeConfirmation} or {@link #sendEmailChangeNotice}.
+     * {@link #sendVerificationEmail} or {@link #sendEmailChangeConfirmation}.
      * </p>
      *
      * @param user the user with an unverified email address
@@ -69,20 +68,6 @@ public interface IEmailVerificationService {
                                      String newEmail,
                                      String token,
                                      String currentEmailToken);
-
-    /**
-     * Emails a verification link with the token to the new address and notifies the current address that
-     * an administrator requested the change, for changes the current address needn't confirm.
-     * <p>
-     * Like {@link #sendVerificationEmail}, returns without waiting for the emails to be sent.
-     * </p>
-     *
-     * @param userId       the ID of the user, used for logging
-     * @param currentEmail the user's current email address
-     * @param newEmail     the requested email address to verify
-     * @param token        the token issued by {@link #issueToken}
-     */
-    void sendEmailChangeNotice(long userId, String currentEmail, String newEmail, String token);
 
     /**
      * Tells whether the user's verification token was issued within the cooldown, so no new one should be sent yet.
