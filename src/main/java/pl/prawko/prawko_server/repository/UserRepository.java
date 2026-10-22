@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import pl.prawko.prawko_server.model.User;
 
 import java.time.LocalDateTime;
@@ -60,12 +61,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Retrieves {@code user} by the hash of either of its pending email verification tokens: the one sent to the new
      * (or not yet verified) address or the one sent to the current address to confirm an email change.
      *
-     * @param verificationTokenHash SHA-256 hash of the token sent to the address being verified
-     * @param currentEmailTokenHash SHA-256 hash of the token sent to the current address
+     * @param tokenHash SHA-256 hash of the token
      * @return a {@code user} when found
      */
-    Optional<User> findByVerificationTokenHashOrCurrentEmailTokenHash(final String verificationTokenHash,
-                                                                      final String currentEmailTokenHash);
+    @Query("SELECT u FROM User u WHERE u.verificationTokenHash = :tokenHash OR u.currentEmailTokenHash = :tokenHash")
+    Optional<User> findByVerificationOrCurrentEmailTokenHash(final String tokenHash);
 
     /**
      * Deletes unverified users whose email verification token expired before the given time.

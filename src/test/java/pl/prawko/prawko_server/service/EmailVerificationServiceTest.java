@@ -329,7 +329,7 @@ class EmailVerificationServiceTest {
         void enableUserAndClearToken_whenTokenIsValid() {
             final var token = service.issueToken(tester);
             final var hash = tester.getVerificationTokenHash();
-            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash)).thenReturn(Optional.of(tester));
+            when(repository.findByVerificationOrCurrentEmailTokenHash(hash)).thenReturn(Optional.of(tester));
 
             final var result = service.verify(token);
 
@@ -349,7 +349,7 @@ class EmailVerificationServiceTest {
             final var newEmail = changing.getPendingEmail();
             final var token = service.issueToken(changing);
             final var hash = changing.getVerificationTokenHash();
-            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash)).thenReturn(Optional.of(changing));
+            when(repository.findByVerificationOrCurrentEmailTokenHash(hash)).thenReturn(Optional.of(changing));
             when(repository.existsByEmailIgnoreCase(newEmail)).thenReturn(false);
 
             final var result = service.verify(token);
@@ -371,7 +371,7 @@ class EmailVerificationServiceTest {
             final var token = service.issueToken(changing);
             final var currentEmailHash = SecureTokens.hash(service.issueCurrentEmailToken(changing));
             final var hash = changing.getVerificationTokenHash();
-            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash))
+            when(repository.findByVerificationOrCurrentEmailTokenHash(hash))
                     .thenReturn(Optional.of(changing));
 
             final var result = service.verify(token);
@@ -396,7 +396,7 @@ class EmailVerificationServiceTest {
             final var verificationHash = changing.getVerificationTokenHash();
             final var currentEmailToken = service.issueCurrentEmailToken(changing);
             final var hash = changing.getCurrentEmailTokenHash();
-            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash))
+            when(repository.findByVerificationOrCurrentEmailTokenHash(hash))
                     .thenReturn(Optional.of(changing));
 
             final var result = service.verify(currentEmailToken);
@@ -415,7 +415,7 @@ class EmailVerificationServiceTest {
             final var newEmail = changing.getPendingEmail();
             final var currentEmailToken = service.issueCurrentEmailToken(changing);
             final var hash = changing.getCurrentEmailTokenHash();
-            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash))
+            when(repository.findByVerificationOrCurrentEmailTokenHash(hash))
                     .thenReturn(Optional.of(changing));
             when(repository.existsByEmailIgnoreCase(newEmail)).thenReturn(false);
 
@@ -436,7 +436,7 @@ class EmailVerificationServiceTest {
             final var newEmail = changing.getPendingEmail();
             final var token = service.issueToken(changing);
             final var hash = changing.getVerificationTokenHash();
-            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash)).thenReturn(Optional.of(changing));
+            when(repository.findByVerificationOrCurrentEmailTokenHash(hash)).thenReturn(Optional.of(changing));
             when(repository.existsByEmailIgnoreCase(newEmail)).thenReturn(true);
 
             final var exception = catchThrowableOfType(AlreadyExistsException.class, () -> service.verify(token));
@@ -453,7 +453,7 @@ class EmailVerificationServiceTest {
 
         @Test
         void throwInvalidToken_whenTokenIsUnknown() {
-            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(anyString(), anyString()))
+            when(repository.findByVerificationOrCurrentEmailTokenHash(anyString()))
                     .thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.verify("unknownToken"))
@@ -467,7 +467,7 @@ class EmailVerificationServiceTest {
             final var token = service.issueToken(tester);
             tester.setVerificationTokenExpires(LocalDateTime.now().minusSeconds(1));
             final var hash = tester.getVerificationTokenHash();
-            when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash)).thenReturn(Optional.of(tester));
+            when(repository.findByVerificationOrCurrentEmailTokenHash(hash)).thenReturn(Optional.of(tester));
 
             assertThatThrownBy(() -> service.verify(token))
                     .isInstanceOf(InvalidTokenException.class)

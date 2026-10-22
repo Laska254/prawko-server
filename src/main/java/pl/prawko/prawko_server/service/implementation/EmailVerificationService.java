@@ -158,7 +158,7 @@ public class EmailVerificationService implements IEmailVerificationService {
     @Transactional
     public boolean verify(final String token) {
         final var hash = SecureTokens.hash(token);
-        final var user = repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash)
+        final var user = repository.findByVerificationOrCurrentEmailTokenHash(hash)
                 .filter(found -> found.getVerificationTokenExpires().isAfter(LocalDateTime.now()))
                 .orElseThrow(() -> {
                     log.warn(INVALID_TOKEN);
