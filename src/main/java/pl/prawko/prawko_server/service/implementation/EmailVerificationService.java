@@ -125,7 +125,8 @@ public class EmailVerificationService implements IEmailVerificationService {
         message.setTo(currentEmail);
         message.setSubject("Email address change requested");
         message.setText("An administrator requested a change of your account's email address to " + newEmail
-                + ". It takes effect once confirmed with the link sent to the new address.");
+                + ". It takes effect once confirmed with the link sent to the new address.\n\n"
+                + "If you didn't ask for this, change or reset your password, that cancels the change.");
         deliver(userId, message, "email change notice");
     }
 

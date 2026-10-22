@@ -202,6 +202,7 @@ class EmailVerificationServiceTest {
             assertThat(notice.getTo()).containsExactly(tester.getEmail());
             assertThat(notice.getText())
                     .startsWith("An administrator requested a change of your account's email address to " + newEmail)
+                    .endsWith("If you didn't ask for this, change or reset your password, that cancels the change.")
                     .doesNotContain(VERIFICATION_URL);
         }
 
