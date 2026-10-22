@@ -234,7 +234,7 @@ class UserServiceTest {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
         final var updatedUserDto = UserTestData.createUpdatedUserDto(givenId);
-        final var user = tester;
+        final var user = tester.setId(givenId);
         when(repository.findById(givenId)).thenReturn(Optional.of(user));
         when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(false);
         when(repository.existsByEmailIgnoreCase(updateUserRequest.email())).thenReturn(false);
@@ -375,6 +375,7 @@ class UserServiceTest {
     void updateUser_notLogPersonalData_whenUpdated(final CapturedOutput output) {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
+        tester.setId(givenId);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
