@@ -112,27 +112,6 @@ public class EmailVerificationService implements IEmailVerificationService {
     /**
      * {@inheritDoc}
      * <p>
-     * The emails are sent independently, a failure of either is only logged.
-     */
-    @Async
-    @Override
-    public void sendEmailChangeNotice(final long userId,
-                                      final String currentEmail,
-                                      final String newEmail,
-                                      final String token) {
-        send(userId, newEmail, token);
-        final var message = new SimpleMailMessage();
-        message.setTo(currentEmail);
-        message.setSubject("Email address change requested");
-        message.setText("An administrator requested a change of your account's email address to " + newEmail
-                + ". It takes effect once confirmed with the link sent to the new address.\n\n"
-                + "If you didn't ask for this, change or reset your password, that cancels the change.");
-        deliver(userId, message, "email change notice");
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
      * Not transactional, so the token is committed before the email goes out.
      */
     @Async
