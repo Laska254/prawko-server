@@ -118,8 +118,10 @@ public interface IEmailVerificationService {
      * </p>
      *
      * @param token the token from the verification link
+     * @return {@code true} if the verification is complete, {@code false} if the email change still awaits
+     * confirmation by the other address
      */
-    void verify(String token);
+    boolean verify(String token);
 
     /**
      * Deletes users who didn't verify their email address before their verification token expired,

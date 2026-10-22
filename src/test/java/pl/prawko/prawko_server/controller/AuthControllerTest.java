@@ -383,7 +383,7 @@ public class AuthControllerTest {
         final var currentEmailToken = emailVerificationService.issueCurrentEmailToken(tester);
         userRepository.save(tester);
 
-        verifyEmail(token).expectStatus().isNoContent();
+        verifyEmail(token).expectStatus().isAccepted();
         assertThat(userRepository.findById(tester.getId())
                 .orElseThrow()
                 .getEmail()).isEqualTo(email);

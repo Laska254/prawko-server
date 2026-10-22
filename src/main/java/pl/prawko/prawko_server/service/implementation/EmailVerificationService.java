@@ -156,7 +156,7 @@ public class EmailVerificationService implements IEmailVerificationService {
      */
     @Override
     @Transactional
-    public void verify(final String token) {
+    public boolean verify(final String token) {
         final var hash = SecureTokens.hash(token);
         final var user = repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash)
                 .filter(found -> found.getVerificationTokenExpires().isAfter(LocalDateTime.now()))
@@ -172,7 +172,7 @@ public class EmailVerificationService implements IEmailVerificationService {
         if (user.getVerificationTokenHash() != null || user.getCurrentEmailTokenHash() != null) {
             repository.save(user);
             log.info("Email change of user with id '{}' confirmed by one address, awaiting the other.", user.getId());
-            return;
+            return false;
         }
         final var pendingEmail = user.getPendingEmail();
         if (pendingEmail != null) {
@@ -182,6 +182,7 @@ public class EmailVerificationService implements IEmailVerificationService {
                 .setVerificationTokenExpires(null);
         repository.save(user);
         log.info("Successfully verified email of user with id '{}'", user.getId());
+        return true;
     }
 
     @Override

@@ -114,20 +114,24 @@ public class AuthController {
      * a pending email change, which takes effect once all its links are opened.
      *
      * @param request the {@link VerifyEmailRequest} containing the token
-     * @return a {@link ResponseEntity} with HTTP 204 No Content
+     * @return a {@link ResponseEntity} with HTTP 204 No Content, or HTTP 202 Accepted if an email change still awaits
+     * the other link
      */
     @Operation(summary = "Verify email",
             description = "Activates an account or confirms an email change using a token from a verification link. "
                     + "An email change takes effect once confirmed by both the new and, if required, the current address.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Email verified successfully"),
+            @ApiResponse(responseCode = "202",
+                    description = "Email change confirmed by this address, awaiting the link sent to the other one"),
             @ApiResponse(responseCode = "400", description = "Invalid argument or invalid/expired token"),
             @ApiResponse(responseCode = "409", description = "The new email was taken by another user meanwhile"),
     })
     @PostMapping(ApiConstants.VERIFY_EMAIL)
     public ResponseEntity<Void> verifyEmail(@Valid @RequestBody final VerifyEmailRequest request) {
-        emailVerificationService.verify(request.token());
-        return ResponseEntity.noContent().build();
+        return emailVerificationService.verify(request.token())
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.accepted().build();
     }
 
     /**

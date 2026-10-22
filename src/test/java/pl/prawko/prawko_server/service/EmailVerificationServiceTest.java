@@ -331,8 +331,9 @@ class EmailVerificationServiceTest {
             final var hash = tester.getVerificationTokenHash();
             when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash)).thenReturn(Optional.of(tester));
 
-            service.verify(token);
+            final var result = service.verify(token);
 
+            assertThat(result).isTrue();
             assertThat(tester.isEnabled()).isTrue();
             assertThat(tester.getVerificationTokenHash()).isNull();
             assertThat(tester.getVerificationTokenExpires()).isNull();
@@ -351,8 +352,9 @@ class EmailVerificationServiceTest {
             when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash)).thenReturn(Optional.of(changing));
             when(repository.existsByEmailIgnoreCase(newEmail)).thenReturn(false);
 
-            service.verify(token);
+            final var result = service.verify(token);
 
+            assertThat(result).isTrue();
             assertThat(changing.getEmail()).isEqualTo(newEmail);
             assertThat(changing.getPendingEmail()).isNull();
             assertThat(changing.isEnabled()).isTrue();
@@ -372,8 +374,9 @@ class EmailVerificationServiceTest {
             when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash))
                     .thenReturn(Optional.of(changing));
 
-            service.verify(token);
+            final var result = service.verify(token);
 
+            assertThat(result).isFalse();
             assertThat(changing.getEmail()).isEqualTo(email);
             assertThat(changing.getPendingEmail()).isNotNull();
             assertThat(changing.getVerificationTokenHash()).isNull();
@@ -396,8 +399,9 @@ class EmailVerificationServiceTest {
             when(repository.findByVerificationTokenHashOrCurrentEmailTokenHash(hash, hash))
                     .thenReturn(Optional.of(changing));
 
-            service.verify(currentEmailToken);
+            final var result = service.verify(currentEmailToken);
 
+            assertThat(result).isFalse();
             assertThat(changing.getEmail()).isEqualTo(email);
             assertThat(changing.getCurrentEmailTokenHash()).isNull();
             assertThat(changing.getVerificationTokenHash()).isEqualTo(verificationHash);
@@ -415,8 +419,9 @@ class EmailVerificationServiceTest {
                     .thenReturn(Optional.of(changing));
             when(repository.existsByEmailIgnoreCase(newEmail)).thenReturn(false);
 
-            service.verify(currentEmailToken);
+            final var result = service.verify(currentEmailToken);
 
+            assertThat(result).isTrue();
             assertThat(changing.getEmail()).isEqualTo(newEmail);
             assertThat(changing.getPendingEmail()).isNull();
             assertThat(changing.getCurrentEmailTokenHash()).isNull();
