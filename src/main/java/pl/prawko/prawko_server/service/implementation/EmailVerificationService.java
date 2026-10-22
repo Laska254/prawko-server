@@ -16,6 +16,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.model.VerificationResult;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IEmailVerificationService;
 import pl.prawko.prawko_server.util.SecureTokens;
@@ -135,7 +136,7 @@ public class EmailVerificationService implements IEmailVerificationService {
      */
     @Override
     @Transactional
-    public boolean verify(final String token) {
+    public VerificationResult verify(final String token) {
         final var hash = SecureTokens.hash(token);
         final var user = repository.findByVerificationOrCurrentEmailTokenHash(hash)
                 .filter(found -> found.getVerificationTokenExpires().isAfter(LocalDateTime.now()))
@@ -151,7 +152,7 @@ public class EmailVerificationService implements IEmailVerificationService {
         if (user.getVerificationTokenHash() != null || user.getCurrentEmailTokenHash() != null) {
             repository.save(user);
             log.info("Email change of user with id '{}' confirmed by one address, awaiting the other.", user.getId());
-            return false;
+            return VerificationResult.AWAITING_OTHER_LINK;
         }
         final var pendingEmail = user.getPendingEmail();
         if (pendingEmail != null) {
@@ -161,7 +162,7 @@ public class EmailVerificationService implements IEmailVerificationService {
                 .setVerificationTokenExpires(null);
         repository.save(user);
         log.info("Successfully verified email of user with id '{}'", user.getId());
-        return true;
+        return VerificationResult.COMPLETED;
     }
 
     @Override

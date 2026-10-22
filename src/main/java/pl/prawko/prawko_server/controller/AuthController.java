@@ -129,9 +129,10 @@ public class AuthController {
     })
     @PostMapping(ApiConstants.VERIFY_EMAIL)
     public ResponseEntity<Void> verifyEmail(@Valid @RequestBody final VerifyEmailRequest request) {
-        return emailVerificationService.verify(request.token())
-                ? ResponseEntity.noContent().build()
-                : ResponseEntity.accepted().build();
+        return switch (emailVerificationService.verify(request.token())) {
+            case COMPLETED -> ResponseEntity.noContent().build();
+            case AWAITING_OTHER_LINK -> ResponseEntity.accepted().build();
+        };
     }
 
     /**

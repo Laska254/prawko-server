@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.service;
 
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.model.VerificationResult;
 
 /**
  * Service interface for verifying email addresses of {@link User}s.
@@ -103,10 +104,10 @@ public interface IEmailVerificationService {
      * </p>
      *
      * @param token the token from the verification link
-     * @return {@code true} if the verification is complete, {@code false} if the email change still awaits
-     * confirmation by the other address
+     * @return {@link VerificationResult#COMPLETED}, or {@link VerificationResult#AWAITING_OTHER_LINK} if the email
+     * change still awaits confirmation by the other address
      */
-    boolean verify(String token);
+    VerificationResult verify(String token);
 
     /**
      * Deletes users who didn't verify their email address before their verification token expired,

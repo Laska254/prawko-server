@@ -15,6 +15,7 @@ import org.springframework.mail.SimpleMailMessage;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.model.VerificationResult;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
 import pl.prawko.prawko_server.test_data.UserTestData;
@@ -294,7 +295,7 @@ class EmailVerificationServiceTest {
 
             final var result = service.verify(token);
 
-            assertThat(result).isTrue();
+            assertThat(result).isEqualTo(VerificationResult.COMPLETED);
             assertThat(tester.isEnabled()).isTrue();
             assertThat(tester.getVerificationTokenHash()).isNull();
             assertThat(tester.getVerificationTokenExpires()).isNull();
@@ -315,7 +316,7 @@ class EmailVerificationServiceTest {
 
             final var result = service.verify(token);
 
-            assertThat(result).isTrue();
+            assertThat(result).isEqualTo(VerificationResult.COMPLETED);
             assertThat(changing.getEmail()).isEqualTo(newEmail);
             assertThat(changing.getPendingEmail()).isNull();
             assertThat(changing.isEnabled()).isTrue();
@@ -337,7 +338,7 @@ class EmailVerificationServiceTest {
 
             final var result = service.verify(token);
 
-            assertThat(result).isFalse();
+            assertThat(result).isEqualTo(VerificationResult.AWAITING_OTHER_LINK);
             assertThat(changing.getEmail()).isEqualTo(email);
             assertThat(changing.getPendingEmail()).isNotNull();
             assertThat(changing.getVerificationTokenHash()).isNull();
@@ -362,7 +363,7 @@ class EmailVerificationServiceTest {
 
             final var result = service.verify(currentEmailToken);
 
-            assertThat(result).isFalse();
+            assertThat(result).isEqualTo(VerificationResult.AWAITING_OTHER_LINK);
             assertThat(changing.getEmail()).isEqualTo(email);
             assertThat(changing.getCurrentEmailTokenHash()).isNull();
             assertThat(changing.getVerificationTokenHash()).isEqualTo(verificationHash);
@@ -382,7 +383,7 @@ class EmailVerificationServiceTest {
 
             final var result = service.verify(currentEmailToken);
 
-            assertThat(result).isTrue();
+            assertThat(result).isEqualTo(VerificationResult.COMPLETED);
             assertThat(changing.getEmail()).isEqualTo(newEmail);
             assertThat(changing.getPendingEmail()).isNull();
             assertThat(changing.getCurrentEmailTokenHash()).isNull();
