@@ -171,7 +171,7 @@ class EmailVerificationServiceTest {
         }
 
         @Test
-        void sendConfirmation_whenSendingLinkFails(final CapturedOutput output) {
+        void sendConfirmationAndLogUserIdOnly_whenSendingLinkFails(final CapturedOutput output) {
             final var newEmail = UserTestData.createMerry().getEmail();
             doThrow(new MailSendException("SMTP down"))
                     .doNothing()
@@ -181,7 +181,10 @@ class EmailVerificationServiceTest {
                     tester.getId(), tester.getEmail(), newEmail, "someToken", "currentToken");
 
             verify(mailSender, times(2)).send(any(SimpleMailMessage.class));
-            assertThat(output).contains("Sent email change confirmation to user with id '" + tester.getId() + "'");
+            assertThat(output)
+                    .contains("Failed to send verification email to user with id '" + tester.getId() + "'")
+                    .contains("Sent email change confirmation to user with id '" + tester.getId() + "'")
+                    .doesNotContain(tester.getEmail(), newEmail);
         }
 
     }
@@ -232,7 +235,8 @@ class EmailVerificationServiceTest {
 
             service.resendVerification(tester.getEmail());
 
-            assertThat(captureSentMessage().getTo()).containsExactly(pendingEmail);
+            final var message = captureSentMessage();
+            assertThat(message.getTo()).containsExactly(pendingEmail);
         }
 
         @Test

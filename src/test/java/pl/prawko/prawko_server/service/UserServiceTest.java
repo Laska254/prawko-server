@@ -260,7 +260,8 @@ class UserServiceTest {
         final var resetHash = "pendingTokenHash";
         final var token = "someToken";
         final var currentEmailToken = "currentToken";
-        tester.setId(givenId).setPasswordResetTokenHash(resetHash);
+        tester.setId(givenId)
+                .setPasswordResetTokenHash(resetHash);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(emailVerificationService.issueToken(tester)).thenReturn(token);
         when(emailVerificationService.issueCurrentEmailToken(tester)).thenReturn(currentEmailToken);
@@ -433,7 +434,8 @@ class UserServiceTest {
     @Test
     void changePassword_cancelEmailChange_whenEmailChangeIsPending() {
         final var givenId = 44L;
-        final var changing = UserTestData.createPippinChangingEmail().setCurrentEmailTokenHash("currentTokenHash");
+        final var changing = UserTestData.createPippinChangingEmail()
+                .setCurrentEmailTokenHash("currentTokenHash");
         final var request = UserTestData.createValidChangePasswordRequest();
         when(repository.findById(givenId)).thenReturn(Optional.of(changing));
         when(passwordEncoder.matches(request.currentPassword(), changing.getPassword())).thenReturn(true);
