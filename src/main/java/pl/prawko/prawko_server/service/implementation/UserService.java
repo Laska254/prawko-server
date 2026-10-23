@@ -144,10 +144,10 @@ public class UserService implements IUserService, UserDetailsService {
     /**
      * {@inheritDoc}
      * <p>
-     * Like in {@link #register}, the emails to the new and current address are dispatched inside the transaction, so
-     * the update is rolled back if they can't be queued. Email changes are subject to the verification email cooldown.
-     * Sending the current email cancels a pending change and invalidates its links, without a cooldown since no email
-     * is sent.
+     * Like in {@link #register}, the tokens are issued before the save and the emails to the new and current address
+     * are dispatched after it, inside the transaction, so the update is rolled back if they can't be queued. Email
+     * changes are subject to the verification email cooldown. Sending the current email cancels a pending change and
+     * invalidates its links, without a cooldown since no email is sent.
      *
      * @throws EntityNotFoundException  if user with the given ID have not been found
      * @throws AlreadyExistsException   if the new username or email conflicts with another user
@@ -170,10 +170,9 @@ public class UserService implements IUserService, UserDetailsService {
                 log.info("Email change of user with id '{}' canceled.", userId);
             }
         }
-        if (newEmail != null) {
-            requestEmailChange(user, newEmail);
-        }
+        final Runnable sendEmailChangeLinks = newEmail == null ? () -> { } : requestEmailChange(user, newEmail);
         final var updated = repository.save(user);
+        sendEmailChangeLinks.run();
         log.info("Successfully updated user with id '{}'", userId);
         return mapper.toDto(updated);
     }
@@ -239,9 +238,12 @@ public class UserService implements IUserService, UserDetailsService {
     }
 
     /**
-     * Requests an email change, to be confirmed from both the new and the current address.
+     * Requests an email change, to be confirmed from both the new and the current address: stores the email as pending
+     * and issues its tokens.
+     *
+     * @return the action sending the links, to be run after the user is saved
      */
-    private void requestEmailChange(final User user, final String email) {
+    private Runnable requestEmailChange(final User user, final String email) {
         if (emailVerificationService.isCoolingDown(user)) {
             final var message = "Verification email was sent recently, try again later.";
             log.warn("{} User id: {}", message, user.getId());
@@ -249,9 +251,9 @@ public class UserService implements IUserService, UserDetailsService {
         }
         final var token = emailVerificationService.issueToken(user.setPendingEmail(email));
         final var currentEmailToken = emailVerificationService.issueCurrentEmailToken(user);
-        emailVerificationService.sendEmailChangeConfirmation(
-                user.getId(), user.getEmail(), email, token, currentEmailToken);
         log.info("Email change of user with id '{}' awaiting verification.", user.getId());
+        return () -> emailVerificationService.sendEmailChangeConfirmation(
+                user.getId(), user.getEmail(), email, token, currentEmailToken);
     }
 
 }

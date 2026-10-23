@@ -449,7 +449,7 @@ public class UserControllerTest {
         }
 
         @Test
-        void keepEmailAndSendLinksToNewAndCurrentEmail_whenOwnEmailChanged() {
+        void keepEmailAndSendLinksToNewAndCurrentEmail_whenEmailChanged() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var newEmail = UserTestData.createValidUserUpdateRequest().email();
 

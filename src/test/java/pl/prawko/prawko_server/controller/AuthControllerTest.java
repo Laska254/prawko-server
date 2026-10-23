@@ -359,7 +359,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    void verifyEmail_returnNoContentAndChangeEmail_whenEmailChangeIsPending() {
+    void verifyEmail_returnNoContentAndChangeEmail_whenCurrentEmailAlreadyConfirmed() {
         final var tester = UserTestData.createPippinChangingEmail();
         final var newEmail = tester.getPendingEmail();
         final var token = emailVerificationService.issueToken(tester);
@@ -375,7 +375,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    void verifyEmail_changeEmailOnlyAfterBothAddressesConfirm_whenOwnEmailChangeIsPending() {
+    void verifyEmail_changeEmailOnlyAfterBothAddressesConfirm_whenEmailChangeIsPending() {
         final var tester = UserTestData.createPippinChangingEmail();
         final var email = tester.getEmail();
         final var newEmail = tester.getPendingEmail();

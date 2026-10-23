@@ -307,7 +307,7 @@ class EmailVerificationServiceTest {
         }
 
         @Test
-        void changeEmailAndClearResetToken_whenEmailChangeIsPending() {
+        void changeEmailAndClearResetToken_whenCurrentEmailAlreadyConfirmed() {
             final var changing = UserTestData.createPippinChangingEmail()
                     .setPasswordResetTokenHash("pendingTokenHash")
                     .setPasswordResetTokenExpires(LocalDateTime.now().plusMinutes(15));

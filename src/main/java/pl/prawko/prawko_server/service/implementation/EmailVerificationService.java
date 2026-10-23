@@ -212,6 +212,11 @@ public class EmailVerificationService implements IEmailVerificationService {
     }
 
     private void send(final long userId, final String email, final String token) {
+        final var message = createMessage(email, token);
+        deliver(userId, message, "verification email");
+    }
+
+    private SimpleMailMessage createMessage(final String email, final String token) {
         final var message = new SimpleMailMessage();
         message.setTo(email);
         message.setSubject("Verify your email address");
@@ -219,7 +224,7 @@ public class EmailVerificationService implements IEmailVerificationService {
                 + printedValidity() + ".\n\n"
                 + link(token) + "\n\n"
                 + "If you didn't request this, ignore this email.");
-        deliver(userId, message, "verification email");
+        return message;
     }
 
     private String link(final String token) {

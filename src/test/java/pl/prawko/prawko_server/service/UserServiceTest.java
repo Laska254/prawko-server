@@ -253,7 +253,7 @@ class UserServiceTest {
     }
 
     @Test
-    void updateUser_keepEmailAndSendLinksToPendingAndCurrentEmail_whenOwnEmailChanged() {
+    void updateUser_keepEmailAndSendLinksToPendingAndCurrentEmailAfterSave_whenEmailChanged() {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
         final var email = tester.getEmail();
@@ -272,12 +272,12 @@ class UserServiceTest {
         assertThat(tester.getEmail()).isEqualTo(email);
         assertThat(tester.getPendingEmail()).isEqualTo(updateUserRequest.email());
         assertThat(tester.getPasswordResetTokenHash()).isEqualTo(resetHash);
-        final var order = inOrder(emailVerificationService);
+        final var order = inOrder(emailVerificationService, repository);
         order.verify(emailVerificationService).issueToken(tester);
         order.verify(emailVerificationService).issueCurrentEmailToken(tester);
+        order.verify(repository).save(tester);
         order.verify(emailVerificationService)
                 .sendEmailChangeConfirmation(givenId, email, updateUserRequest.email(), token, currentEmailToken);
-        verify(repository).save(tester);
     }
 
     @Test
