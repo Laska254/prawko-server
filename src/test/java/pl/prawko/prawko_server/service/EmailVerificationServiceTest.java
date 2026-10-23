@@ -235,8 +235,7 @@ class EmailVerificationServiceTest {
 
             service.resendVerification(tester.getEmail());
 
-            final var message = captureSentMessage();
-            assertThat(message.getTo()).containsExactly(pendingEmail);
+            assertThat(captureSentMessage().getTo()).containsExactly(pendingEmail);
         }
 
         @Test

@@ -369,8 +369,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(true);
 
-        final ThrowableAssert.ThrowingCallable executable =
-                () -> service.updateUser(givenId, updateUserRequest);
+        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
@@ -386,8 +385,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.existsByEmailIgnoreCase(updateUserRequest.email())).thenReturn(true);
 
-        final ThrowableAssert.ThrowingCallable executable =
-                () -> service.updateUser(givenId, updateUserRequest);
+        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);

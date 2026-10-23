@@ -37,8 +37,8 @@ import java.util.List;
  * as the SHA-256 hash of its token with an expiry time, both {@code null} once the account is verified.
  * <p>
  * A changed email address is kept as the pending email until it's verified with the same kind of token, only then it
- * replaces the current email. When the user changes it themselves, the current address must confirm it too, with
- * another token sharing the expiry. A {@code null} token hash means that address confirmed (or needn't confirm).
+ * replaces the current email. The current address must confirm it too, with another token sharing the expiry.
+ * A {@code null} token hash means that address confirmed.
  * Changing or resetting the password cancels the change.
  * <p>
  * Relationships:

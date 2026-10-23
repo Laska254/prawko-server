@@ -34,7 +34,7 @@ public record UserDto(
         boolean awaitingNewEmailConfirmation,
 
         @Schema(description = "Whether the link emailed to the current email still has to be opened to confirm the "
-                + "change, required only when users change their own email")
+                + "change")
         boolean awaitingCurrentEmailConfirmation,
 
         @Schema(description = "User's role")

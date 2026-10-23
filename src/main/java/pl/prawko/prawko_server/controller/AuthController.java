@@ -119,7 +119,7 @@ public class AuthController {
      */
     @Operation(summary = "Verify email",
             description = "Activates an account or confirms an email change using a token from a verification link. "
-                    + "An email change takes effect once confirmed by both the new and, if required, the current address.")
+                    + "An email change takes effect once confirmed by both the new and the current address.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Email verified successfully"),
             @ApiResponse(responseCode = "202",
