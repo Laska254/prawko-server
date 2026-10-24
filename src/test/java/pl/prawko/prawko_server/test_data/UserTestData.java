@@ -12,7 +12,8 @@ import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -51,8 +52,8 @@ public class UserTestData {
                 .setPassword(new BCryptPasswordEncoder().encode("lembasy"))
                 .setRole(Role.USER)
                 .setEnabled(true)
-                .setCreated(LocalDateTime.now())
-                .setUpdated(LocalDateTime.now())
+                .setCreated(Instant.now())
+                .setUpdated(Instant.now())
                 .setExams(new ArrayList<>());
     }
 
@@ -73,7 +74,7 @@ public class UserTestData {
                 .setPendingEmail(createValidUserUpdateRequest().email())
                 .setVerificationTokenHash("pendingTokenHash")
                 .setCurrentEmailTokenHash("currentTokenHash")
-                .setVerificationTokenExpires(LocalDateTime.now().plusHours(1));
+                .setVerificationTokenExpires(Instant.now().plus(Duration.ofHours(1)));
     }
 
     public static User createGimli() {

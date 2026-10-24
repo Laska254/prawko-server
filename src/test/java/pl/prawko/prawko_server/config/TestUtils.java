@@ -5,6 +5,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.web.servlet.client.RestTestClient;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +33,9 @@ public class TestUtils {
     public static final String SERVER_BUSY = "Server is busy, try again later.";
 
     public static final long ASYNC_TIMEOUT_MS = 5_000;
+
+    // a fixed time in a zone far from UTC: the results must not depend on it
+    public static final Clock CLOCK = Clock.fixed(Instant.now(), ZoneId.of("Pacific/Kiritimati"));
 
     public static void authUser(final HttpHeaders headers) {
         headers.setBasicAuth(USER_NAME, USER_PASSWORD);

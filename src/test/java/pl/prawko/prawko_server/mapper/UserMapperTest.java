@@ -1,10 +1,12 @@
 package pl.prawko.prawko_server.mapper;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,6 +17,11 @@ class UserMapperTest {
     private final UserMapper mapper = new UserMapperImpl();
 
     private final User tester = UserTestData.createTestUserPippin();
+
+    @BeforeEach
+    void setUp() {
+        mapper.setClock(TestUtils.CLOCK);
+    }
 
     @Test
     void fromDto_mapUserFields_whenDtoIsValid() {
@@ -85,7 +92,7 @@ class UserMapperTest {
     void toDto_awaitNoConfirmation_whenUnverifiedUserHasNoPendingEmail() {
         final var user = UserTestData.createUnverifiedPippin()
                 .setVerificationTokenHash("pendingTokenHash")
-                .setVerificationTokenExpires(LocalDateTime.now().plusHours(1));
+                .setVerificationTokenExpires(TestUtils.CLOCK.instant().plus(Duration.ofHours(1)));
 
         final var result = mapper.toDto(user);
 
@@ -96,7 +103,7 @@ class UserMapperTest {
     @Test
     void toDto_omitPendingEmailAndAwaitNoConfirmation_whenVerificationLinkExpired() {
         final var user = UserTestData.createPippinChangingEmail()
-                .setVerificationTokenExpires(LocalDateTime.now().minusMinutes(1));
+                .setVerificationTokenExpires(TestUtils.CLOCK.instant());
 
         final var result = mapper.toDto(user);
 

@@ -13,7 +13,7 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -45,7 +45,8 @@ import java.util.List;
  * <ul>
  *     <li>{@link Exam}: A user can be assigned to multiple exams.</li>
  * </ul>
- * The entity is mapped to the database table {@code user} and uses automatic timestamp handling.
+ * The entity is mapped to the database table {@code user}. Timestamps are {@link Instant}s, so they don't depend on
+ * the JVM's time zone; {@code created} and {@code updated} are set automatically.
  * All setters are returning {@code User} itself, enabling method chaining.
  * {@link #toString()} leaves out personal data and credentials, so it's safe to log.
  */
@@ -78,20 +79,20 @@ public class User {
     private boolean enabled;
 
     @CreationTimestamp
-    private LocalDateTime created;
+    private Instant created;
 
     @UpdateTimestamp
-    private LocalDateTime updated;
+    private Instant updated;
 
     @Column(length = 64, unique = true)
     private String passwordResetTokenHash;
 
-    private LocalDateTime passwordResetTokenExpires;
+    private Instant passwordResetTokenExpires;
 
     @Column(length = 64, unique = true)
     private String verificationTokenHash;
 
-    private LocalDateTime verificationTokenExpires;
+    private Instant verificationTokenExpires;
 
     @Column(length = 64, unique = true)
     private String currentEmailTokenHash;
@@ -192,20 +193,20 @@ public class User {
         return this;
     }
 
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public User setCreated(final LocalDateTime created) {
+    public User setCreated(final Instant created) {
         this.created = created;
         return this;
     }
 
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public User setUpdated(final LocalDateTime updated) {
+    public User setUpdated(final Instant updated) {
         this.updated = updated;
         return this;
     }
@@ -219,11 +220,11 @@ public class User {
         return this;
     }
 
-    public LocalDateTime getPasswordResetTokenExpires() {
+    public Instant getPasswordResetTokenExpires() {
         return passwordResetTokenExpires;
     }
 
-    public User setPasswordResetTokenExpires(final LocalDateTime passwordResetTokenExpires) {
+    public User setPasswordResetTokenExpires(final Instant passwordResetTokenExpires) {
         this.passwordResetTokenExpires = passwordResetTokenExpires;
         return this;
     }
@@ -237,11 +238,11 @@ public class User {
         return this;
     }
 
-    public LocalDateTime getVerificationTokenExpires() {
+    public Instant getVerificationTokenExpires() {
         return verificationTokenExpires;
     }
 
-    public User setVerificationTokenExpires(final LocalDateTime verificationTokenExpires) {
+    public User setVerificationTokenExpires(final Instant verificationTokenExpires) {
         this.verificationTokenExpires = verificationTokenExpires;
         return this;
     }

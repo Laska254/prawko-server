@@ -12,6 +12,7 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
@@ -20,12 +21,10 @@ import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -58,7 +57,8 @@ class PasswordResetServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PasswordResetService(repository, passwordEncoder, mailSender, RESET_URL, TOKEN_VALIDITY, COOLDOWN, MAIL_FROM);
+        service = new PasswordResetService(repository, passwordEncoder, mailSender, RESET_URL, TOKEN_VALIDITY, COOLDOWN,
+                MAIL_FROM, TestUtils.CLOCK);
     }
 
     @Test
@@ -77,8 +77,7 @@ class PasswordResetServiceTest {
         assertThat(tester.getPasswordResetTokenHash())
                 .hasSize(64)
                 .isNotEqualTo(token);
-        assertThat(tester.getPasswordResetTokenExpires())
-                .isCloseTo(LocalDateTime.now().plus(TOKEN_VALIDITY), within(Duration.ofSeconds(5)));
+        assertThat(tester.getPasswordResetTokenExpires()).isEqualTo(TestUtils.CLOCK.instant().plus(TOKEN_VALIDITY));
         verify(repository).save(tester);
     }
 
@@ -209,7 +208,7 @@ class PasswordResetServiceTest {
     @Test
     void resetPassword_throwInvalidToken_whenTokenIsExpired() {
         final var token = issueToken();
-        tester.setPasswordResetTokenExpires(LocalDateTime.now().minusSeconds(1));
+        tester.setPasswordResetTokenExpires(TestUtils.CLOCK.instant());
         final var request = UserTestData.createValidResetPasswordRequest(token);
         when(repository.findByPasswordResetTokenHash(tester.getPasswordResetTokenHash())).thenReturn(Optional.of(tester));
 

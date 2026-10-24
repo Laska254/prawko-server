@@ -21,8 +21,8 @@ import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IEmailVerificationService;
 import pl.prawko.prawko_server.util.SecureTokens;
 
+import java.time.Clock;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -42,26 +42,29 @@ public class EmailVerificationService implements IEmailVerificationService {
     private final Duration tokenValidity;
     private final Duration cooldown;
     private final String mailFrom;
+    private final Clock clock;
 
     public EmailVerificationService(final UserRepository repository,
                                     final MailSender mailSender,
                                     @Value("${email-verification.url}") final String verificationUrl,
                                     @Value("${email-verification.token-validity}") final Duration tokenValidity,
                                     @Value("${email-verification.cooldown}") final Duration cooldown,
-                                    @Value("${mail.from}") final String mailFrom) {
+                                    @Value("${mail.from}") final String mailFrom,
+                                    final Clock clock) {
         this.repository = repository;
         this.mailSender = mailSender;
         this.verificationUrl = verificationUrl;
         this.tokenValidity = tokenValidity;
         this.cooldown = cooldown;
         this.mailFrom = mailFrom;
+        this.clock = clock;
     }
 
     @Override
     public String issueToken(final User user) {
         final var token = SecureTokens.generate();
         user.setVerificationTokenHash(SecureTokens.hash(token))
-                .setVerificationTokenExpires(LocalDateTime.now().plus(tokenValidity));
+                .setVerificationTokenExpires(clock.instant().plus(tokenValidity));
         return token;
     }
 
@@ -130,7 +133,7 @@ public class EmailVerificationService implements IEmailVerificationService {
     public VerificationResult verify(final String token) {
         final var hash = SecureTokens.hash(token);
         final var user = repository.findByVerificationOrCurrentEmailTokenHash(hash)
-                .filter(found -> found.getVerificationTokenExpires().isAfter(LocalDateTime.now()))
+                .filter(found -> found.getVerificationTokenExpires().isAfter(clock.instant()))
                 .orElseThrow(() -> {
                     log.warn(INVALID_TOKEN);
                     return new InvalidTokenException(INVALID_TOKEN);
@@ -161,7 +164,7 @@ public class EmailVerificationService implements IEmailVerificationService {
     @Scheduled(fixedDelayString = "${email-verification.cleanup-interval}",
             initialDelayString = "${email-verification.cleanup-interval}")
     public void deleteExpiredUnverifiedUsers() {
-        final var deleted = repository.deleteByEnabledFalseAndVerificationTokenExpiresBefore(LocalDateTime.now());
+        final var deleted = repository.deleteByEnabledFalseAndVerificationTokenExpiresBefore(clock.instant());
         if (deleted > 0) {
             log.info("Deleted {} unverified users with expired verification tokens.", deleted);
         }
@@ -199,7 +202,7 @@ public class EmailVerificationService implements IEmailVerificationService {
     @Override
     public boolean isCoolingDown(final User user) {
         final var expires = user.getVerificationTokenExpires();
-        return expires != null && expires.minus(tokenValidity).plus(cooldown).isAfter(LocalDateTime.now());
+        return expires != null && expires.minus(tokenValidity).plus(cooldown).isAfter(clock.instant());
     }
 
     private void send(final long userId, final String email, final String token) {

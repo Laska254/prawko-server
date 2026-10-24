@@ -8,7 +8,8 @@ import org.springframework.test.context.ActiveProfiles;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -137,12 +138,12 @@ class UserRepositoryTest {
 
     @Test
     void deleteByEnabledFalseAndVerificationTokenExpiresBefore_deleteOnlyUnverifiedUsers_whenTokenExpired() {
-        final var now = LocalDateTime.now();
+        final var now = Instant.now();
         final var expired = repository.save(UserTestData.createUnverifiedPippin()
-                .setVerificationTokenExpires(now.minusMinutes(1)));
+                .setVerificationTokenExpires(now.minus(Duration.ofMinutes(1))));
         final var pending = repository.save(UserTestData.createMerry()
                 .setEnabled(false)
-                .setVerificationTokenExpires(now.plusMinutes(1)));
+                .setVerificationTokenExpires(now.plus(Duration.ofMinutes(1))));
 
         final var deleted = repository.deleteByEnabledFalseAndVerificationTokenExpiresBefore(now);
 

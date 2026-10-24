@@ -4,7 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import pl.prawko.prawko_server.model.User;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -73,6 +73,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param expiredBefore the time the tokens must have expired before
      * @return the number of deleted users
      */
-    long deleteByEnabledFalseAndVerificationTokenExpiresBefore(final LocalDateTime expiredBefore);
+    long deleteByEnabledFalseAndVerificationTokenExpiresBefore(final Instant expiredBefore);
 
 }
