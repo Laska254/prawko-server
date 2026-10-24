@@ -20,8 +20,8 @@ import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IPasswordResetService;
 import pl.prawko.prawko_server.util.SecureTokens;
 
+import java.time.Clock;
 import java.time.Duration;
-import java.time.LocalDateTime;
 
 /**
  * Implementation of {@link IPasswordResetService} sending reset links with {@link MailSender}.
@@ -41,6 +41,7 @@ public class PasswordResetService implements IPasswordResetService {
     private final Duration tokenValidity;
     private final Duration cooldown;
     private final String mailFrom;
+    private final Clock clock;
 
     public PasswordResetService(final UserRepository repository,
                                 final PasswordEncoder passwordEncoder,
@@ -48,7 +49,8 @@ public class PasswordResetService implements IPasswordResetService {
                                 @Value("${password-reset.url}") final String resetUrl,
                                 @Value("${password-reset.token-validity}") final Duration tokenValidity,
                                 @Value("${password-reset.cooldown}") final Duration cooldown,
-                                @Value("${mail.from}") final String mailFrom) {
+                                @Value("${mail.from}") final String mailFrom,
+                                final Clock clock) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
@@ -56,6 +58,7 @@ public class PasswordResetService implements IPasswordResetService {
         this.tokenValidity = tokenValidity;
         this.cooldown = cooldown;
         this.mailFrom = mailFrom;
+        this.clock = clock;
     }
 
     /**
@@ -87,7 +90,7 @@ public class PasswordResetService implements IPasswordResetService {
     @Transactional
     public void resetPassword(final ResetPasswordRequest request) {
         final var user = repository.findByPasswordResetTokenHash(SecureTokens.hash(request.token()))
-                .filter(found -> found.getPasswordResetTokenExpires().isAfter(LocalDateTime.now()))
+                .filter(found -> found.getPasswordResetTokenExpires().isAfter(clock.instant()))
                 .orElseThrow(() -> {
                     log.warn(INVALID_TOKEN);
                     return new InvalidTokenException(INVALID_TOKEN);
@@ -104,13 +107,13 @@ public class PasswordResetService implements IPasswordResetService {
 
     private boolean isCoolingDown(final User user) {
         final var expires = user.getPasswordResetTokenExpires();
-        return expires != null && expires.minus(tokenValidity).plus(cooldown).isAfter(LocalDateTime.now());
+        return expires != null && expires.minus(tokenValidity).plus(cooldown).isAfter(clock.instant());
     }
 
     private String issueToken(final User user) {
         final var token = SecureTokens.generate();
         user.setPasswordResetTokenHash(SecureTokens.hash(token))
-                .setPasswordResetTokenExpires(LocalDateTime.now().plus(tokenValidity));
+                .setPasswordResetTokenExpires(clock.instant().plus(tokenValidity));
         repository.save(user);
         log.debug("Password reset token issued for user with id '{}'", user.getId());
         return token;

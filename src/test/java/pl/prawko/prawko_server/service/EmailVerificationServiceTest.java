@@ -12,6 +12,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
+import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
@@ -22,14 +23,13 @@ import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
-import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -59,7 +59,8 @@ class EmailVerificationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new EmailVerificationService(repository, mailSender, VERIFICATION_URL, TOKEN_VALIDITY, COOLDOWN, MAIL_FROM);
+        service = new EmailVerificationService(repository, mailSender, VERIFICATION_URL, TOKEN_VALIDITY, COOLDOWN,
+                MAIL_FROM, TestUtils.CLOCK);
     }
 
     @Nested
@@ -73,8 +74,7 @@ class EmailVerificationServiceTest {
             assertThat(tester.getVerificationTokenHash())
                     .isEqualTo(SecureTokens.hash(token))
                     .isNotEqualTo(token);
-            assertThat(tester.getVerificationTokenExpires())
-                    .isCloseTo(LocalDateTime.now().plus(TOKEN_VALIDITY), within(Duration.ofSeconds(5)));
+            assertThat(tester.getVerificationTokenExpires()).isEqualTo(TestUtils.CLOCK.instant().plus(TOKEN_VALIDITY));
             verifyNoInteractions(repository, mailSender);
         }
 
@@ -194,14 +194,14 @@ class EmailVerificationServiceTest {
 
         @Test
         void returnTrue_whenTokenIssuedWithinCooldown() {
-            issueTokenIssuedAgo(Duration.ZERO);
+            issueTokenIssuedAgo(COOLDOWN.minusNanos(1));
 
             assertThat(service.isCoolingDown(tester)).isTrue();
         }
 
         @Test
         void returnFalse_whenCooldownHasPassed() {
-            issueTokenIssuedAgo(COOLDOWN.plusSeconds(1));
+            issueTokenIssuedAgo(COOLDOWN);
 
             assertThat(service.isCoolingDown(tester)).isFalse();
         }
@@ -300,7 +300,7 @@ class EmailVerificationServiceTest {
             final var changing = UserTestData.createPippinChangingEmail()
                     .setCurrentEmailTokenHash(null)
                     .setPasswordResetTokenHash("pendingTokenHash")
-                    .setPasswordResetTokenExpires(LocalDateTime.now().plusMinutes(15));
+                    .setPasswordResetTokenExpires(TestUtils.CLOCK.instant().plus(Duration.ofMinutes(15)));
             final var newEmail = changing.getPendingEmail();
             final var token = service.issueToken(changing);
             final var hash = changing.getVerificationTokenHash();
@@ -422,7 +422,7 @@ class EmailVerificationServiceTest {
         @Test
         void throwInvalidToken_whenTokenIsExpired() {
             final var token = service.issueToken(tester);
-            tester.setVerificationTokenExpires(LocalDateTime.now().minusSeconds(1));
+            tester.setVerificationTokenExpires(TestUtils.CLOCK.instant());
             final var hash = tester.getVerificationTokenHash();
             when(repository.findByVerificationOrCurrentEmailTokenHash(hash)).thenReturn(Optional.of(tester));
 
@@ -440,12 +440,12 @@ class EmailVerificationServiceTest {
 
         @Test
         void deleteUnverifiedUsersExpiredBeforeNow_whenCalled() {
-            final var captor = ArgumentCaptor.forClass(LocalDateTime.class);
+            final var captor = ArgumentCaptor.forClass(Instant.class);
 
             service.deleteExpiredUnverifiedUsers();
 
             verify(repository).deleteByEnabledFalseAndVerificationTokenExpiresBefore(captor.capture());
-            assertThat(captor.getValue()).isCloseTo(LocalDateTime.now(), within(Duration.ofSeconds(5)));
+            assertThat(captor.getValue()).isEqualTo(TestUtils.CLOCK.instant());
         }
 
         @Test
