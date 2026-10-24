@@ -120,7 +120,7 @@ public class UserControllerTest {
         void returnBadRequest_whenDtoIsInvalid() {
             final var invalidDto = new RegisterDto(
                     "Supercalifragilisticexpialidocious",
-                    null,
+                    "Tu",
                     "OK",
                     "notValidMail@mail@mail",
                     "lembas");
@@ -128,7 +128,7 @@ public class UserControllerTest {
                     Map.entry("message", TestUtils.VALIDATION_FAILED),
                     Map.entry("details", Map.ofEntries(
                             Map.entry("firstName", "First name must be at most 31 characters."),
-                            Map.entry("lastName", "Last name is required."),
+                            Map.entry("lastName", "Last name must be at least 3 characters."),
                             Map.entry("userName", "Username must be at least 3 characters."),
                             Map.entry("email", "Email format is not valid."),
                             Map.entry("password", "Password must be at least 7 characters."))
@@ -141,6 +141,19 @@ public class UserControllerTest {
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(expectedMap.get("message"))
                     .jsonPath("$.details").isEqualTo(expectedMap.get("details"));
+        }
+
+        @Test
+        void returnBadRequest_whenLastNameIsTooLong() {
+            final var invalidDto = new RegisterDto("Peregrin", "Supercalifragilisticexpialidocious", "pippin",
+                    "pippin@shire.me", "lembasy");
+
+            restClient.post()
+                    .body(invalidDto)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.details.lastName").isEqualTo("Last name must be at most 31 characters.");
         }
 
         @Test

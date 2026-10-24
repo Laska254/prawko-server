@@ -23,8 +23,8 @@ public record RegisterDto(
         String firstName,
 
         @NotBlank(message = "{lastname.required}")
-        @Size(min = 3, message = "lastname.size.min")
-        @Size(max = 31, message = "lastname.size.max")
+        @Size(min = 3, message = "{lastname.size.min}")
+        @Size(max = 31, message = "{lastname.size.max}")
         @Schema(description = "User's last name", minLength = 3, maxLength = 31)
         String lastName,
 
