@@ -174,6 +174,7 @@ public class ExamControllerTest {
                     .expectStatus().isOk()
                     .expectBody()
                     .jsonPath("$.created").isEqualTo(exam.getCreated().toString())
+                    .jsonPath("$.expires").isEqualTo(exam.getExpires().toString())
                     .jsonPath("$.updated").isEqualTo(exam.getUpdated().toString());
         }
 

@@ -230,12 +230,18 @@ When done, finish the exam with `POST /exams/7/finish` (no body); it returns `20
 is no longer `active`, so no more answers can be submitted, its `score` is the sum of `points` of the correctly
 answered questions (unanswered questions give no points) and answers' `correct` flag is included.
 
-| Status | When                                                                                  |
-|--------|---------------------------------------------------------------------------------------|
-| `400`  | `answerId` or the body is missing (answers only), or the exam ID is not positive      |
-| `403`  | the exam belongs to another user                                                      |
-| `404`  | the exam doesn't exist, or the answer doesn't belong to any of its questions          |
-| `409`  | the exam is no longer `active`, or it was modified by a concurrent request - retry it |
+An exam lasts 25 minutes: `expires` (`created` + 25 minutes) is the deadline for answers. Answers submitted after it
+return `409`, and the exam is finished automatically within `exam.expiry-check-interval` (`30s`).
+
+Timestamps (`created`, `updated`, `expires`) are ISO-8601 instants in UTC, e.g. `2026-10-23T12:00:00Z`, independent
+of the server's time zone.
+
+| Status | When                                                                                                                         |
+|--------|------------------------------------------------------------------------------------------------------------------------------|
+| `400`  | `answerId` or the body is missing (answers only), or the exam ID is not positive                                             |
+| `403`  | the exam belongs to another user                                                                                             |
+| `404`  | the exam doesn't exist, or the answer doesn't belong to any of its questions                                                 |
+| `409`  | the exam is no longer `active` or its time has expired (answers only), or it was modified by a concurrent request - retry it |
 
 ### Pagination
 

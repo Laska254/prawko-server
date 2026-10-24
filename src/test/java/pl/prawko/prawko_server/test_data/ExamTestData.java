@@ -50,6 +50,7 @@ public class ExamTestData {
                 exam.getCategory().getName(),
                 exam.getCreated(),
                 exam.getUpdated(),
+                exam.getExpires(),
                 exam.getScore(),
                 exam.isActive());
     }
@@ -74,6 +75,7 @@ public class ExamTestData {
                 exam.getCategory().getName(),
                 exam.getCreated(),
                 exam.getUpdated(),
+                exam.getExpires(),
                 questions,
                 Collections.emptyList(),
                 exam.getScore(),

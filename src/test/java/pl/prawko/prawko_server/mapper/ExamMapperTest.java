@@ -38,6 +38,7 @@ class ExamMapperTest {
     @ValueSource(booleans = {true, false})
     void toDto_mapFieldsAndDelegateToNestedMappers_whenAllFieldsAreSet(final boolean revealCorrect) {
         final var now = Instant.now();
+        final var expires = now.plus(Exam.DURATION);
         final var question = new Question().setId(10L);
         final var answer = new Answer().setId(20L);
         final var user = new User().setId(42L);
@@ -49,6 +50,7 @@ class ExamMapperTest {
                 .setScore(67)
                 .setCreated(now)
                 .setUpdated(now)
+                .setExpires(expires)
                 .setQuestions(List.of(question))
                 .setUserAnswers(List.of(answer));
 
@@ -61,6 +63,7 @@ class ExamMapperTest {
         assertThat(result.score()).isEqualTo(67);
         assertThat(result.created()).isEqualTo(now);
         assertThat(result.updated()).isEqualTo(now);
+        assertThat(result.expires()).isEqualTo(expires);
         verify(questionMapper).toDto(question, revealCorrect);
         verify(answerMapper).toDto(answer, revealCorrect);
     }
@@ -68,6 +71,7 @@ class ExamMapperTest {
     @Test
     void toSummaryDto_mapFieldsWithoutQuestionsAndAnswers_whenAllFieldsAreSet() {
         final var now = Instant.now();
+        final var expires = now.plus(Exam.DURATION);
         final var exam = new Exam()
                 .setId(1L)
                 .setCategory(new Category().setName("B"))
@@ -75,12 +79,13 @@ class ExamMapperTest {
                 .setScore(68)
                 .setCreated(now)
                 .setUpdated(now)
+                .setExpires(expires)
                 .setQuestions(List.of(new Question().setId(10L)))
                 .setUserAnswers(List.of(new Answer().setId(20L)));
 
         final var result = examMapper.toSummaryDto(exam);
 
-        assertThat(result).isEqualTo(new ExamSummaryDto(1L, "B", now, now, 68, false));
+        assertThat(result).isEqualTo(new ExamSummaryDto(1L, "B", now, now, expires, 68, false));
         verifyNoInteractions(questionMapper, answerMapper);
     }
 

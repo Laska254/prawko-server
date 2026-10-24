@@ -25,6 +25,9 @@ public record ExamSummaryDto(
         @Schema(description = "Last exam update timestamp (UTC)", example = "2026-10-23T12:10:00Z")
         Instant updated,
 
+        @Schema(description = "Deadline for answers (UTC), `created` + exam duration", example = "2026-10-23T12:25:00Z")
+        Instant expires,
+
         @Schema(description = "User's score on the exam")
         int score,
 
