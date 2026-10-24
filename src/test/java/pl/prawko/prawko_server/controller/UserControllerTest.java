@@ -10,6 +10,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailSender;
@@ -26,7 +27,12 @@ import pl.prawko.prawko_server.dto.DeleteAccountRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.model.QuestionType;
+import pl.prawko.prawko_server.repository.ExamRepository;
+import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
+import pl.prawko.prawko_server.test_data.ExamTestData;
+import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
@@ -48,6 +54,12 @@ public class UserControllerTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ExamRepository examRepository;
+
+    @Autowired
+    private QuestionRepository questionRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -73,6 +85,7 @@ public class UserControllerTest {
     @AfterEach
     void tearDown() {
         userRepository.deleteAll();
+        questionRepository.deleteAll();
     }
 
     @Nested
@@ -874,6 +887,49 @@ public class UserControllerTest {
 
             assertThat(userRepository.existsById(tester.getId())).isFalse();
             assertThat(userRepository.existsById(other.getId())).isTrue();
+        }
+
+        @Test
+        void removeOwnExamsButKeepQuestionsAndOtherUsersExams_whenPasswordIsCorrect() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var other = userRepository.save(UserTestData.createMerry());
+            final var question = questionRepository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
+            examRepository.save(ExamTestData.createExamWithoutQuestions(tester)
+                    .setQuestions(List.of(question))
+                    .setUserAnswers(List.of(question.getAnswers().getFirst())));
+            final var otherExam = examRepository.save(ExamTestData.createExamWithoutQuestions(other)
+                    .setQuestions(List.of(question)));
+
+            restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.ME)
+                    .headers(TestUtils::authUser)
+                    .body(UserTestData.createValidDeleteAccountRequest())
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            assertThat(examRepository.findAllByUser_Id(tester.getId(), Pageable.unpaged())).isEmpty();
+            assertThat(examRepository.findAll()).containsExactly(otherExam);
+            assertThat(questionRepository.existsById(question.getId())).isTrue();
+        }
+
+        @Test
+        void allowRegisteringSameUserNameAndEmailAgain_whenAccountDeleted() {
+            userRepository.save(UserTestData.createTestUserPippin());
+            restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.ME)
+                    .headers(TestUtils::authUser)
+                    .body(UserTestData.createValidDeleteAccountRequest())
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            restClient.post()
+                    .body(registerDto)
+                    .exchange()
+                    .expectStatus().isCreated();
+
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
+            assertThat(userRepository.existsByUserName(registerDto.userName())).isTrue();
+            assertThat(userRepository.existsByEmailIgnoreCase(registerDto.email())).isTrue();
         }
 
         @Test
