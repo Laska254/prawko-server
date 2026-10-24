@@ -9,7 +9,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.model.Answer;
-import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.User;
@@ -74,7 +73,7 @@ class ExamMapperTest {
         final var expires = now.plus(Exam.DURATION);
         final var exam = new Exam()
                 .setId(1L)
-                .setCategory(new Category().setName("B"))
+                .setCategory(CategoryTestData.CATEGORY_B)
                 .setActive(false)
                 .setScore(68)
                 .setCreated(now)
@@ -85,7 +84,7 @@ class ExamMapperTest {
 
         final var result = examMapper.toSummaryDto(exam);
 
-        assertThat(result).isEqualTo(new ExamSummaryDto(1L, "B", now, now, expires, 68, false));
+        assertThat(result).isEqualTo(new ExamSummaryDto(1L, CategoryTestData.CATEGORY_B.getName(), now, now, expires, 68, false));
         verifyNoInteractions(questionMapper, answerMapper);
     }
 

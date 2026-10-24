@@ -46,6 +46,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class ExamServiceTest {
 
+    // a zone far from UTC: the results must not depend on it
+    private static final Clock CLOCK = Clock.fixed(Instant.now(), ZoneId.of("Pacific/Kiritimati"));
+
     @Mock
     private UserService userService;
 
@@ -64,14 +67,11 @@ public class ExamServiceTest {
     @Mock
     private AnswerRepository answerRepository;
 
-    // a zone far from UTC: the results must not depend on it
-    private final Clock clock = Clock.fixed(Instant.now(), ZoneId.of("Pacific/Kiritimati"));
-
     private ExamService service;
 
     @BeforeEach
     void setUp() {
-        service = new ExamService(repository, userService, examGenerator, categoryService, examMapper, answerRepository, clock);
+        service = new ExamService(repository, userService, examGenerator, categoryService, examMapper, answerRepository, CLOCK);
     }
 
     @Nested
@@ -120,8 +120,8 @@ public class ExamServiceTest {
             service.createExam(user.getId(), category.getName());
 
             final var exam = user.getExams().getFirst();
-            assertThat(exam.getCreated()).isEqualTo(clock.instant());
-            assertThat(exam.getExpires()).isEqualTo(clock.instant().plus(Exam.DURATION));
+            assertThat(exam.getCreated()).isEqualTo(CLOCK.instant());
+            assertThat(exam.getExpires()).isEqualTo(CLOCK.instant().plus(Exam.DURATION));
         }
 
         @Test
@@ -356,7 +356,7 @@ public class ExamServiceTest {
             final var question = createQuestionWithAnswerIds(QuestionType.SPECIAL);
             final var exam = stubExam(ExamTestData.createExamWithoutQuestions(user)
                     .setQuestions(List.of(question))
-                    .setExpires(clock.instant()));
+                    .setExpires(CLOCK.instant()));
             final var answer = question.getAnswers().getFirst();
             when(answerRepository.findById(answer.getId())).thenReturn(Optional.of(answer));
 
@@ -368,7 +368,7 @@ public class ExamServiceTest {
         @Test
         void throwExamFinished_whenExamHasExpired() {
             final var user = UserTestData.createTestUserPippin();
-            final var exam = stubExam(ExamTestData.createExam(user).setExpires(clock.instant().minusNanos(1)));
+            final var exam = stubExam(ExamTestData.createExam(user).setExpires(CLOCK.instant().minusNanos(1)));
 
             assertThatThrownBy(() -> service.submitAnswer(exam.getId(), user.getId(), 1L))
                     .isInstanceOf(ExamFinishedException.class)
@@ -476,7 +476,7 @@ public class ExamServiceTest {
 
             service.finishExpiredExams();
 
-            assertThat(time.getValue()).isEqualTo(clock.instant());
+            assertThat(time.getValue()).isEqualTo(CLOCK.instant());
             assertThat(answered.isActive()).isFalse();
             assertThat(answered.getScore()).isEqualTo(special.getPoints());
             assertThat(unanswered.isActive()).isFalse();
