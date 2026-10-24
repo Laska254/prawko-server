@@ -71,6 +71,17 @@ class UserMapperTest {
     }
 
     @Test
+    void toDto_awaitOnlyNewEmailConfirmation_whenCurrentEmailConfirmedFirst() {
+        final var user = UserTestData.createPippinChangingEmail()
+                .setCurrentEmailTokenHash(null);
+
+        final var result = mapper.toDto(user);
+
+        assertThat(result.awaitingNewEmailConfirmation()).isTrue();
+        assertThat(result.awaitingCurrentEmailConfirmation()).isFalse();
+    }
+
+    @Test
     void toDto_awaitNoConfirmation_whenUnverifiedUserHasNoPendingEmail() {
         final var user = UserTestData.createUnverifiedPippin()
                 .setVerificationTokenHash("pendingTokenHash")
