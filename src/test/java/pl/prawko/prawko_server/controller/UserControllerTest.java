@@ -644,6 +644,20 @@ public class UserControllerTest {
                     .jsonPath("$.details.userName").isEqualTo(USERNAME_CONTAINS_AT_MSG);
         }
 
+        @Test
+        void returnBadRequest_whenEmailIsTooShort() {
+            final var invalidUpdateRequest = new UserUpdateRequest(null, null, null, "p@sh");
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, 1L)
+                    .headers(TestUtils::authUser)
+                    .body(invalidUpdateRequest)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.details.email").isEqualTo("Email must be at least 5 characters.");
+        }
+
         @ParameterizedTest
         @ValueSource(longs = {-1L, 0L})
         void returnBadRequest_whenIdIsNotPositive(final long invalidId) {
