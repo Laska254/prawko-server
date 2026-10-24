@@ -1,11 +1,11 @@
 package pl.prawko.prawko_server.service;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -21,7 +21,6 @@ import pl.prawko.prawko_server.repository.AnswerRepository;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.service.implementation.CategoryService;
 import pl.prawko.prawko_server.service.implementation.ExamService;
-import pl.prawko.prawko_server.service.implementation.QuestionService;
 import pl.prawko.prawko_server.service.implementation.UserService;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
 import pl.prawko.prawko_server.test_data.ExamTestData;
@@ -29,8 +28,9 @@ import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +38,6 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -47,14 +46,14 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class ExamServiceTest {
 
+    // a zone far from UTC: the results must not depend on it
+    private static final Clock CLOCK = Clock.fixed(Instant.now(), ZoneId.of("Pacific/Kiritimati"));
+
     @Mock
     private UserService userService;
 
     @Mock
     private CategoryService categoryService;
-
-    @Mock
-    private QuestionService questionService;
 
     @Mock
     private ExamRepository repository;
@@ -68,8 +67,12 @@ public class ExamServiceTest {
     @Mock
     private AnswerRepository answerRepository;
 
-    @InjectMocks
     private ExamService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new ExamService(repository, userService, examGenerator, categoryService, examMapper, answerRepository, CLOCK);
+    }
 
     @Nested
     class CreateExam {
@@ -108,7 +111,7 @@ public class ExamServiceTest {
         }
 
         @Test
-        void setExpiresAfterExamDuration_whenSuccess() {
+        void setCreatedFromClock_andExpiresAfterExamDuration_whenSuccess() {
             final var user = UserTestData.createTestUserPippin();
             final var category = CategoryTestData.CATEGORY_PT;
             when(userService.getById(user.getId())).thenReturn(user);
@@ -116,8 +119,9 @@ public class ExamServiceTest {
 
             service.createExam(user.getId(), category.getName());
 
-            assertThat(user.getExams().getFirst().getExpires())
-                    .isCloseTo(LocalDateTime.now().plus(Exam.DURATION), within(Duration.ofSeconds(5)));
+            final var exam = user.getExams().getFirst();
+            assertThat(exam.getCreated()).isEqualTo(CLOCK.instant());
+            assertThat(exam.getExpires()).isEqualTo(CLOCK.instant().plus(Exam.DURATION));
         }
 
         @Test
@@ -131,7 +135,7 @@ public class ExamServiceTest {
                     .isInstanceOf(EntityNotFoundException.class)
                     .hasMessageContaining(expectedMessage);
 
-            verifyNoInteractions(repository, categoryService, questionService, examMapper, examGenerator);
+            verifyNoInteractions(repository, categoryService, examMapper, examGenerator);
         }
 
         @Test
@@ -146,7 +150,7 @@ public class ExamServiceTest {
                     .isInstanceOf(EntityNotFoundException.class)
                     .hasMessageContaining("Category not found");
 
-            verifyNoInteractions(repository, questionService, examMapper, examGenerator);
+            verifyNoInteractions(repository, examMapper, examGenerator);
         }
 
     }
@@ -347,9 +351,24 @@ public class ExamServiceTest {
         }
 
         @Test
+        void addAnswer_whenDeadlineIsNow() {
+            final var user = UserTestData.createTestUserPippin();
+            final var question = createQuestionWithAnswerIds(QuestionType.SPECIAL);
+            final var exam = stubExam(ExamTestData.createExamWithoutQuestions(user)
+                    .setQuestions(List.of(question))
+                    .setExpires(CLOCK.instant()));
+            final var answer = question.getAnswers().getFirst();
+            when(answerRepository.findById(answer.getId())).thenReturn(Optional.of(answer));
+
+            service.submitAnswer(exam.getId(), user.getId(), answer.getId());
+
+            assertThat(exam.getUserAnswers()).containsExactly(answer);
+        }
+
+        @Test
         void throwExamFinished_whenExamHasExpired() {
             final var user = UserTestData.createTestUserPippin();
-            final var exam = stubExam(ExamTestData.expire(ExamTestData.createExam(user)));
+            final var exam = stubExam(ExamTestData.createExam(user).setExpires(CLOCK.instant().minusNanos(1)));
 
             assertThatThrownBy(() -> service.submitAnswer(exam.getId(), user.getId(), 1L))
                     .isInstanceOf(ExamFinishedException.class)
@@ -452,12 +471,12 @@ public class ExamServiceTest {
                     .setQuestions(List.of(special, basic)));
             answered.getUserAnswers().addAll(QuestionTestData.getUserAnswers(special, basic));
             final var unanswered = ExamTestData.expire(ExamTestData.createExam(user).setScore(5));
-            final var time = ArgumentCaptor.forClass(LocalDateTime.class);
+            final var time = ArgumentCaptor.forClass(Instant.class);
             when(repository.findAllByActiveTrueAndExpiresBefore(time.capture())).thenReturn(List.of(answered, unanswered));
 
             service.finishExpiredExams();
 
-            assertThat(time.getValue()).isCloseTo(LocalDateTime.now(), within(Duration.ofSeconds(5)));
+            assertThat(time.getValue()).isEqualTo(CLOCK.instant());
             assertThat(answered.isActive()).isFalse();
             assertThat(answered.getScore()).isEqualTo(special.getPoints());
             assertThat(unanswered.isActive()).isFalse();

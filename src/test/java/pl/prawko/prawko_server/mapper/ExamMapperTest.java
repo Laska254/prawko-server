@@ -9,12 +9,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.model.Answer;
-import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.test_data.CategoryTestData;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,17 +36,20 @@ class ExamMapperTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void toDto_mapFieldsAndDelegateToNestedMappers_whenAllFieldsAreSet(final boolean revealCorrect) {
-        final var now = LocalDateTime.now();
+        final var now = Instant.now();
+        final var expires = now.plus(Exam.DURATION);
         final var question = new Question().setId(10L);
         final var answer = new Answer().setId(20L);
         final var user = new User().setId(42L);
         final var expected = new Exam()
                 .setId(1L)
                 .setUser(user)
+                .setCategory(CategoryTestData.CATEGORY_B)
                 .setActive(true)
                 .setScore(67)
                 .setCreated(now)
                 .setUpdated(now)
+                .setExpires(expires)
                 .setQuestions(List.of(question))
                 .setUserAnswers(List.of(answer));
 
@@ -54,31 +57,42 @@ class ExamMapperTest {
 
         assertThat(result.id()).isEqualTo(1L);
         assertThat(result.userId()).isEqualTo(42L);
+        assertThat(result.category()).isEqualTo(CategoryTestData.CATEGORY_B.getName());
         assertThat(result.active()).isTrue();
         assertThat(result.score()).isEqualTo(67);
         assertThat(result.created()).isEqualTo(now);
         assertThat(result.updated()).isEqualTo(now);
+        assertThat(result.expires()).isEqualTo(expires);
         verify(questionMapper).toDto(question, revealCorrect);
         verify(answerMapper).toDto(answer, revealCorrect);
     }
 
     @Test
     void toSummaryDto_mapFieldsWithoutQuestionsAndAnswers_whenAllFieldsAreSet() {
-        final var now = LocalDateTime.now();
+        final var now = Instant.now();
+        final var expires = now.plus(Exam.DURATION);
         final var exam = new Exam()
                 .setId(1L)
-                .setCategory(new Category().setName("B"))
+                .setCategory(CategoryTestData.CATEGORY_B)
                 .setActive(false)
                 .setScore(68)
                 .setCreated(now)
                 .setUpdated(now)
+                .setExpires(expires)
                 .setQuestions(List.of(new Question().setId(10L)))
                 .setUserAnswers(List.of(new Answer().setId(20L)));
 
         final var result = examMapper.toSummaryDto(exam);
 
-        assertThat(result).isEqualTo(new ExamSummaryDto(1L, "B", now, now, 68, false));
+        assertThat(result).isEqualTo(new ExamSummaryDto(1L, CategoryTestData.CATEGORY_B.getName(), now, now, expires, 68, false));
         verifyNoInteractions(questionMapper, answerMapper);
+    }
+
+    @Test
+    void toDto_returnNullCategory_whenCategoryIsNull() {
+        final var result = examMapper.toDto(new Exam().setId(1L), false);
+
+        assertThat(result.category()).isNull();
     }
 
     @Test

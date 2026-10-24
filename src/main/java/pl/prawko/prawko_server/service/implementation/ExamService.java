@@ -21,7 +21,7 @@ import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.service.IExamService;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
-import java.time.LocalDateTime;
+import java.time.Clock;
 import java.util.ArrayList;
 
 /**
@@ -38,19 +38,22 @@ public class ExamService implements IExamService {
     private final CategoryService categoryService;
     private final ExamMapper examMapper;
     private final AnswerRepository answerRepository;
+    private final Clock clock;
 
     public ExamService(final ExamRepository repository,
                        final UserService userService,
                        final ExamGenerator examGenerator,
                        final CategoryService categoryService,
                        final ExamMapper examMapper,
-                       final AnswerRepository answerRepository) {
+                       final AnswerRepository answerRepository,
+                       final Clock clock) {
         this.repository = repository;
         this.userService = userService;
         this.examGenerator = examGenerator;
         this.categoryService = categoryService;
         this.examMapper = examMapper;
         this.answerRepository = answerRepository;
+        this.clock = clock;
     }
 
     /**
@@ -65,11 +68,13 @@ public class ExamService implements IExamService {
         final var user = userService.getById(userId);
         final var category = categoryService.findByName(categoryName);
         final var questions = examGenerator.generate(category);
+        final var now = clock.instant();
         final var exam = new Exam()
                 .setUser(user)
                 .setQuestions(questions)
                 .setCategory(category)
-                .setExpires(LocalDateTime.now().plus(Exam.DURATION))
+                .setCreated(now)
+                .setExpires(now.plus(Exam.DURATION))
                 .setScore(0)
                 .setActive(true)
                 .setUserAnswers(new ArrayList<>());
@@ -121,7 +126,7 @@ public class ExamService implements IExamService {
     public void submitAnswer(final long examId, final long userId, final long answerId) {
         log.info("Submitting answer '{}' to exam '{}' by user '{}'", answerId, examId, userId);
         final var exam = findActiveExamOfUser(examId, userId);
-        if (exam.getExpires().isBefore(LocalDateTime.now())) {
+        if (exam.getExpires().isBefore(clock.instant())) {
             final var message = "Time for exam with '" + examId + "' has expired.";
             log.warn(message);
             throw new ExamFinishedException(message);
@@ -159,7 +164,7 @@ public class ExamService implements IExamService {
     @Transactional
     @Scheduled(fixedDelayString = "${exam.expiry-check-interval}", initialDelayString = "${exam.expiry-check-interval}")
     public void finishExpiredExams() {
-        final var expired = repository.findAllByActiveTrueAndExpiresBefore(LocalDateTime.now());
+        final var expired = repository.findAllByActiveTrueAndExpiresBefore(clock.instant());
         expired.forEach(exam -> {
             finish(exam);
             log.info("Finished expired exam '{}' with score {}", exam.getId(), exam.getScore());

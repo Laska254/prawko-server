@@ -163,6 +163,22 @@ public class ExamControllerTest {
         }
 
         @Test
+        void returnTimestampsAsUtcInstants_whenExamIsFound() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, exam.getId())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.created").isEqualTo(exam.getCreated().toString())
+                    .jsonPath("$.expires").isEqualTo(exam.getExpires().toString())
+                    .jsonPath("$.updated").isEqualTo(exam.getUpdated().toString());
+        }
+
+        @Test
         void returnExamWithoutCorrectAnswers_whenExamIsActive() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var question = questionRepository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));

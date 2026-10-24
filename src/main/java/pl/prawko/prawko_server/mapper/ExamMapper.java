@@ -22,6 +22,7 @@ import pl.prawko.prawko_server.model.Exam;
 public interface ExamMapper {
 
     @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "category", source = "category.name")
     ExamDto toDto(Exam entity, @Context boolean revealCorrect);
 
     @Mapping(target = "category", source = "category.name")

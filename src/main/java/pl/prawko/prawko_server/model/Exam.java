@@ -9,11 +9,10 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Version;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -38,7 +37,9 @@ import java.util.List;
  *     <li>{@link Language}: Each exam have single language</li>
  *     <li>{@link Category}: Each exam have single category or multiple categories</li>
  * </ul>
- * The entity is mapped to the database table {@code exam} and uses automatic timestamp handling.
+ * The entity is mapped to the database table {@code exam}. Timestamps are {@link Instant}s, so they don't depend on
+ * the JVM's time zone; {@code created} and {@code expires} are set together when the exam is created (so
+ * {@code expires} is exactly {@code created} + {@link #DURATION}), {@code updated} is set automatically.
  * All setters are returning {@code Exam} itself, enabling method chaining.
  */
 @Entity
@@ -53,13 +54,12 @@ public class Exam {
     private boolean active;
     private int score;
 
-    @CreationTimestamp
-    private LocalDateTime created;
+    private Instant created;
 
     @UpdateTimestamp
-    private LocalDateTime updated;
+    private Instant updated;
 
-    private LocalDateTime expires;
+    private Instant expires;
 
     @Version
     private long version;
@@ -101,11 +101,11 @@ public class Exam {
         return this;
     }
 
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public Exam setCreated(final LocalDateTime created) {
+    public Exam setCreated(final Instant created) {
         this.created = created;
         return this;
     }
@@ -173,20 +173,20 @@ public class Exam {
         return this;
     }
 
-    public LocalDateTime getExpires() {
+    public Instant getExpires() {
         return expires;
     }
 
-    public Exam setExpires(final LocalDateTime expires) {
+    public Exam setExpires(final Instant expires) {
         this.expires = expires;
         return this;
     }
 
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public Exam setUpdated(final LocalDateTime updated) {
+    public Exam setUpdated(final Instant updated) {
         this.updated = updated;
         return this;
     }
