@@ -324,7 +324,7 @@ class EmailVerificationServiceTest {
             final var changing = UserTestData.createPippinChangingEmail().setId(1L);
             final var email = changing.getEmail();
             final var token = service.issueToken(changing);
-            final var currentEmailHash = SecureTokens.hash(service.issueCurrentEmailToken(changing));
+            final var currentEmailHash = changing.getCurrentEmailTokenHash();
             final var hash = changing.getVerificationTokenHash();
             when(repository.findByVerificationOrCurrentEmailTokenHash(hash))
                     .thenReturn(Optional.of(changing));
