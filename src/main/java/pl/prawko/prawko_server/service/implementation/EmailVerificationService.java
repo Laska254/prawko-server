@@ -16,6 +16,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.model.VerificationResult;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IEmailVerificationService;
 import pl.prawko.prawko_server.util.SecureTokens;
@@ -23,7 +24,6 @@ import pl.prawko.prawko_server.util.SecureTokens;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Implementation of {@link IEmailVerificationService} sending verification links with {@link MailSender}.
@@ -65,6 +65,13 @@ public class EmailVerificationService implements IEmailVerificationService {
         return token;
     }
 
+    @Override
+    public String issueCurrentEmailToken(final User user) {
+        final var token = SecureTokens.generate();
+        user.setCurrentEmailTokenHash(SecureTokens.hash(token));
+        return token;
+    }
+
     /**
      * {@inheritDoc}
      * <p>
@@ -74,6 +81,24 @@ public class EmailVerificationService implements IEmailVerificationService {
     @Override
     public void sendVerificationEmail(final long userId, final String email, final String token) {
         send(userId, email, token);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Both links lead to the same verification page. The emails are sent independently, a failure of either is only
+     * logged.
+     */
+    @Async
+    @Override
+    public void sendEmailChangeConfirmation(final long userId,
+                                            final String currentEmail,
+                                            final String newEmail,
+                                            final String token,
+                                            final String currentEmailToken) {
+        send(userId, newEmail, token);
+        deliver(userId, createConfirmationMessage(currentEmail, newEmail, currentEmailToken),
+                "email change confirmation");
     }
 
     /**
@@ -102,22 +127,33 @@ public class EmailVerificationService implements IEmailVerificationService {
      */
     @Override
     @Transactional
-    public void verify(final String token) {
-        final var user = repository.findByVerificationTokenHash(SecureTokens.hash(token))
+    public VerificationResult verify(final String token) {
+        final var hash = SecureTokens.hash(token);
+        final var user = repository.findByVerificationOrCurrentEmailTokenHash(hash)
                 .filter(found -> found.getVerificationTokenExpires().isAfter(LocalDateTime.now()))
                 .orElseThrow(() -> {
                     log.warn(INVALID_TOKEN);
                     return new InvalidTokenException(INVALID_TOKEN);
                 });
+        if (hash.equals(user.getCurrentEmailTokenHash())) {
+            user.setCurrentEmailTokenHash(null);
+        } else {
+            user.setVerificationTokenHash(null);
+        }
+        if (user.getVerificationTokenHash() != null || user.getCurrentEmailTokenHash() != null) {
+            repository.save(user);
+            log.info("Email change of user with id '{}' confirmed by one address, awaiting the other.", user.getId());
+            return VerificationResult.AWAITING_OTHER_LINK;
+        }
         final var pendingEmail = user.getPendingEmail();
         if (pendingEmail != null) {
             changeEmail(user, pendingEmail);
         }
         user.setEnabled(true)
-                .setVerificationTokenHash(null)
                 .setVerificationTokenExpires(null);
         repository.save(user);
         log.info("Successfully verified email of user with id '{}'", user.getId());
+        return VerificationResult.COMPLETED;
     }
 
     @Override
@@ -152,7 +188,7 @@ public class EmailVerificationService implements IEmailVerificationService {
         }
         final var token = issueToken(user);
         repository.save(user);
-        send(user.getId(), Objects.requireNonNullElse(user.getPendingEmail(), user.getEmail()), token);
+        send(user.getId(), user.getEmail(), token);
     }
 
     /**
@@ -167,22 +203,52 @@ public class EmailVerificationService implements IEmailVerificationService {
     }
 
     private void send(final long userId, final String email, final String token) {
-        final var link = UriComponentsBuilder.fromUriString(verificationUrl)
-                .queryParam("token", token)
-                .toUriString();
+        deliver(userId, createVerificationMessage(email, token), "verification email");
+    }
+
+    private SimpleMailMessage createVerificationMessage(final String email, final String token) {
         final var message = new SimpleMailMessage();
-        message.setFrom(mailFrom);
         message.setTo(email);
         message.setSubject("Verify your email address");
         message.setText("To verify your email address, open the link below. It expires in "
-                + DurationFormatterUtils.print(tokenValidity, DurationFormat.Style.COMPOSITE) + ".\n\n"
-                + link + "\n\n"
+                + printedValidity() + ".\n\n"
+                + link(token) + "\n\n"
                 + "If you didn't request this, ignore this email.");
+        return message;
+    }
+
+    private SimpleMailMessage createConfirmationMessage(final String currentEmail,
+                                                        final String newEmail,
+                                                        final String token) {
+        final var message = new SimpleMailMessage();
+        message.setTo(currentEmail);
+        message.setSubject("Confirm your email address change");
+        message.setText("A change of your account's email address to " + newEmail + " was requested. "
+                + "It takes effect only once confirmed with both the link below and the link sent to the new address. "
+                + "The link expires in " + printedValidity() + ".\n\n"
+                + link(token) + "\n\n"
+                + "If you didn't request this, don't open the link. "
+                + "Someone else knows your password, so change or reset it, that also cancels the change.");
+        return message;
+    }
+
+    private String link(final String token) {
+        return UriComponentsBuilder.fromUriString(verificationUrl)
+                .queryParam("token", token)
+                .toUriString();
+    }
+
+    private String printedValidity() {
+        return DurationFormatterUtils.print(tokenValidity, DurationFormat.Style.COMPOSITE);
+    }
+
+    private void deliver(final long userId, final SimpleMailMessage message, final String kind) {
+        message.setFrom(mailFrom);
         try {
             mailSender.send(message);
-            log.info("Verification email sent to user with id '{}'", userId);
+            log.info("Sent {} to user with id '{}'", kind, userId);
         } catch (final MailException exception) {
-            log.error("Failed to send verification email to user with id '{}'", userId, exception);
+            log.error("Failed to send {} to user with id '{}'", kind, userId, exception);
         }
     }
 

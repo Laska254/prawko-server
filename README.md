@@ -164,9 +164,14 @@ other authenticated request `401`. Another link can be requested with `POST /aut
 verified before their link expires are deleted, so the username and email can be registered again.
 
 Changing the email with `PATCH /users/{id}` works the same way: the new address is only stored as pending and a link
-is emailed to it (`pendingEmail` in the user response). The current email stays in use (sign-in, password reset) until the link is used with
-`POST /auth/verify`; for another link send the `PATCH` again after the cooldown - within it the `PATCH` answers `429`
-and changes nothing.
+is emailed to it (`pendingEmail` in the user response), and a confirmation link to the current address, so a stolen
+password alone can't move the account to another inbox. Only the user themselves may change their email - admins get
+`403`, so a stolen admin account can't take over other accounts this way either. Both links go to
+`POST /auth/verify`, in any order; the user response tells which are still unopened (`awaitingNewEmailConfirmation`,
+`awaitingCurrentEmailConfirmation`). The current email stays in use (sign-in, password reset) until both links are
+used. Changing or resetting the password cancels a pending change, and so does sending the current email in the
+`PATCH`. For new links send the `PATCH` again after the cooldown - within it the `PATCH` answers `429` and changes
+nothing.
 
 ### Endpoints
 
@@ -175,13 +180,13 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/auth`
 
-  | Method | Path                    | Access | Description                                                                  |
-  |--------|-------------------------|--------|------------------------------------------------------------------------------|
-  | `POST` | `/auth`                 | public | verify credentials (sign-in)                                                 |
-  | `POST` | `/auth/password/forgot` | public | email a password reset link, returns `202` whether the account exists or not |
-  | `POST` | `/auth/password/reset`  | public | set a new password with the token from the reset link                        |
-  | `POST` | `/auth/verify`          | public | verify a new account's or changed email with the token from the link         |
-  | `POST` | `/auth/verify/resend`   | public | email a new verification link, returns `202` whatever the account's state    |
+  | Method | Path                    | Access | Description                                                                                    |
+  |--------|-------------------------|--------|------------------------------------------------------------------------------------------------|
+  | `POST` | `/auth`                 | public | verify credentials (sign-in)                                                                   |
+  | `POST` | `/auth/password/forgot` | public | email a password reset link, returns `202` whether the account exists or not                   |
+  | `POST` | `/auth/password/reset`  | public | set a new password with the token from the reset link                                          |
+  | `POST` | `/auth/verify`          | public | verify an email with a link's token, returns `202` while an email change awaits the other link |
+  | `POST` | `/auth/verify/resend`   | public | email a new verification link, returns `202` whatever the account's state                      |
 
 * `/users`
 
@@ -192,7 +197,7 @@ own data (admins may act on any user), **admin** - admins only.
   | `PATCH`  | `/users/me/password` | user   | change own password (requires current password) |
   | `GET`    | `/users`             | admin  | get a page of users                             |
   | `GET`    | `/users/{id}`        | admin  | get a user                                      |
-  | `PATCH`  | `/users/{id}`        | self   | update a user                                   |
+  | `PATCH`  | `/users/{id}`        | self   | update a user (email: the user themselves only) |
   | `DELETE` | `/users/{id}`        | admin  | delete a user                                   |
 
 * `/questions`

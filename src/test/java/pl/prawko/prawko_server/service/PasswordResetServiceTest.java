@@ -17,6 +17,7 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.PasswordResetService;
 import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -176,6 +177,21 @@ class PasswordResetServiceTest {
         assertThat(tester.getPasswordResetTokenHash()).isNull();
         assertThat(tester.getPasswordResetTokenExpires()).isNull();
         verify(repository, times(2)).save(tester);
+    }
+
+    @Test
+    void resetPassword_cancelEmailChange_whenEmailChangeIsPending() {
+        final var token = issueToken();
+        tester.setPendingEmail(UserTestData.createMerry().getEmail())
+                .setVerificationTokenHash(SecureTokens.hash("verificationToken"))
+                .setCurrentEmailTokenHash(SecureTokens.hash("currentEmailToken"));
+        when(repository.findByPasswordResetTokenHash(tester.getPasswordResetTokenHash())).thenReturn(Optional.of(tester));
+
+        service.resetPassword(UserTestData.createValidResetPasswordRequest(token));
+
+        assertThat(tester.getPendingEmail()).isNull();
+        assertThat(tester.getVerificationTokenHash()).isNull();
+        assertThat(tester.getCurrentEmailTokenHash()).isNull();
     }
 
     @Test

@@ -359,8 +359,9 @@ public class AuthControllerTest {
     }
 
     @Test
-    void verifyEmail_returnNoContentAndChangeEmail_whenEmailChangeIsPending() {
-        final var tester = UserTestData.createPippinChangingEmail();
+    void verifyEmail_returnNoContentAndChangeEmail_whenCurrentEmailAlreadyConfirmed() {
+        final var tester = UserTestData.createPippinChangingEmail()
+                .setCurrentEmailTokenHash(null);
         final var newEmail = tester.getPendingEmail();
         final var token = emailVerificationService.issueToken(tester);
         userRepository.save(tester);
@@ -375,8 +376,31 @@ public class AuthControllerTest {
     }
 
     @Test
-    void verifyEmail_returnConflictAndKeepEmail_whenPendingEmailWasTakenMeanwhile() {
+    void verifyEmail_changeEmailOnlyAfterBothAddressesConfirm_whenEmailChangeIsPending() {
         final var tester = UserTestData.createPippinChangingEmail();
+        final var email = tester.getEmail();
+        final var newEmail = tester.getPendingEmail();
+        final var token = emailVerificationService.issueToken(tester);
+        final var currentEmailToken = emailVerificationService.issueCurrentEmailToken(tester);
+        userRepository.save(tester);
+
+        verifyEmail(token).expectStatus().isAccepted();
+        assertThat(userRepository.findById(tester.getId())
+                .orElseThrow()
+                .getEmail()).isEqualTo(email);
+        verifyEmail(currentEmailToken).expectStatus().isNoContent();
+
+        final var changed = userRepository.findById(tester.getId()).orElseThrow();
+        assertThat(changed.getEmail()).isEqualTo(newEmail);
+        assertThat(changed.getPendingEmail()).isNull();
+        assertThat(changed.getCurrentEmailTokenHash()).isNull();
+        assertThat(changed.getVerificationTokenExpires()).isNull();
+    }
+
+    @Test
+    void verifyEmail_returnConflictAndKeepEmail_whenPendingEmailWasTakenMeanwhile() {
+        final var tester = UserTestData.createPippinChangingEmail()
+                .setCurrentEmailTokenHash(null);
         final var email = tester.getEmail();
         final var newEmail = tester.getPendingEmail();
         final var token = emailVerificationService.issueToken(tester);

@@ -211,7 +211,7 @@ class UserServiceTest {
         final var tester2 = UserTestData.createMerry();
         final var users = List.of(tester, tester2);
         final var pippinDto = UserTestData.createUserDto(4L);
-        final var merryDto = new UserDto(45L, tester2.getFirstName(), tester2.getLastName(), tester2.getUserName(), tester2.getEmail(), null, tester2.getRole());
+        final var merryDto = new UserDto(45L, tester2.getFirstName(), tester2.getLastName(), tester2.getUserName(), tester2.getEmail(), null, false, false, tester2.getRole());
         final var expected = List.of(pippinDto, merryDto);
         final var pageable = PageRequest.of(1, 2);
         when(repository.findAll(pageable)).thenReturn(new PageImpl<>(users, pageable, 4));
@@ -234,7 +234,7 @@ class UserServiceTest {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
         final var updatedUserDto = UserTestData.createUpdatedUserDto(givenId);
-        final var user = tester;
+        final var user = tester.setId(givenId);
         when(repository.findById(givenId)).thenReturn(Optional.of(user));
         when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(false);
         when(repository.existsByEmailIgnoreCase(updateUserRequest.email())).thenReturn(false);
@@ -253,15 +253,18 @@ class UserServiceTest {
     }
 
     @Test
-    void updateUser_keepEmailAndSendVerificationToPendingEmail_whenEmailChanged() {
+    void updateUser_keepEmailAndSendLinksToPendingAndCurrentEmailAfterSave_whenEmailChanged() {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
         final var email = tester.getEmail();
         final var resetHash = "pendingTokenHash";
         final var token = "someToken";
-        tester.setPasswordResetTokenHash(resetHash);
+        final var currentEmailToken = "currentToken";
+        tester.setId(givenId)
+                .setPasswordResetTokenHash(resetHash);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(emailVerificationService.issueToken(tester)).thenReturn(token);
+        when(emailVerificationService.issueCurrentEmailToken(tester)).thenReturn(currentEmailToken);
         when(repository.save(tester)).thenReturn(tester);
 
         service.updateUser(givenId, updateUserRequest);
@@ -271,8 +274,10 @@ class UserServiceTest {
         assertThat(tester.getPasswordResetTokenHash()).isEqualTo(resetHash);
         final var order = inOrder(emailVerificationService, repository);
         order.verify(emailVerificationService).issueToken(tester);
+        order.verify(emailVerificationService).issueCurrentEmailToken(tester);
         order.verify(repository).save(tester);
-        order.verify(emailVerificationService).sendVerificationEmail(givenId, updateUserRequest.email(), token);
+        order.verify(emailVerificationService)
+                .sendEmailChangeConfirmation(givenId, email, updateUserRequest.email(), token, currentEmailToken);
     }
 
     @Test
@@ -289,7 +294,7 @@ class UserServiceTest {
         assertThat(tester.getPendingEmail()).isNull();
         verify(repository, never()).save(any());
         verify(emailVerificationService, never()).issueToken(any());
-        verify(emailVerificationService, never()).sendVerificationEmail(anyLong(), any(), any());
+        verify(emailVerificationService, never()).sendEmailChangeConfirmation(anyLong(), any(), any(), any(), any());
     }
 
     @Test
@@ -306,6 +311,7 @@ class UserServiceTest {
         assertThat(changing.getEmail()).isEqualTo(tester.getEmail());
         assertThat(changing.getPendingEmail()).isNull();
         assertThat(changing.getVerificationTokenHash()).isNull();
+        assertThat(changing.getCurrentEmailTokenHash()).isNull();
         assertThat(changing.getVerificationTokenExpires()).isEqualTo(expires);
         verify(repository, never()).existsByEmailIgnoreCase(any());
         verifyNoInteractions(emailVerificationService);
@@ -344,6 +350,7 @@ class UserServiceTest {
     void updateUser_notLogPersonalData_whenUpdated(final CapturedOutput output) {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createValidUserUpdateRequest();
+        tester.setId(givenId);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
@@ -419,6 +426,22 @@ class UserServiceTest {
         assertThat(tester.getPasswordResetTokenHash()).isNull();
         assertThat(tester.getPasswordResetTokenExpires()).isNull();
         verify(repository).save(tester);
+    }
+
+    @Test
+    void changePassword_cancelEmailChange_whenEmailChangeIsPending() {
+        final var givenId = 44L;
+        final var changing = UserTestData.createPippinChangingEmail();
+        final var request = UserTestData.createValidChangePasswordRequest();
+        when(repository.findById(givenId)).thenReturn(Optional.of(changing));
+        when(passwordEncoder.matches(request.currentPassword(), changing.getPassword())).thenReturn(true);
+
+        service.changePassword(givenId, request);
+
+        assertThat(changing.getPendingEmail()).isNull();
+        assertThat(changing.getVerificationTokenHash()).isNull();
+        assertThat(changing.getCurrentEmailTokenHash()).isNull();
+        verify(repository).save(changing);
     }
 
     @Test

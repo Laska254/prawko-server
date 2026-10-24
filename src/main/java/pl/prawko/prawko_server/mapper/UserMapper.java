@@ -31,10 +31,14 @@ public interface UserMapper {
     @Mapping(target = "passwordResetTokenExpires", ignore = true)
     @Mapping(target = "verificationTokenHash", ignore = true)
     @Mapping(target = "verificationTokenExpires", ignore = true)
+    @Mapping(target = "currentEmailTokenHash", ignore = true)
     @Mapping(target = "enabled", constant = "false")
     User fromDto(RegisterDto registerDto);
 
     @Mapping(target = "pendingEmail", source = "user", qualifiedByName = "activePendingEmail")
+    @Mapping(target = "awaitingNewEmailConfirmation", source = "user", qualifiedByName = "awaitingNewEmailConfirmation")
+    @Mapping(target = "awaitingCurrentEmailConfirmation", source = "user",
+            qualifiedByName = "awaitingCurrentEmailConfirmation")
     UserDto toDto(User user);
 
     /**
@@ -44,6 +48,16 @@ public interface UserMapper {
     default @Nullable String activePendingEmail(final User user) {
         final var expires = user.getVerificationTokenExpires();
         return expires != null && expires.isAfter(LocalDateTime.now()) ? user.getPendingEmail() : null;
+    }
+
+    @Named("awaitingNewEmailConfirmation")
+    default boolean awaitingNewEmailConfirmation(final User user) {
+        return activePendingEmail(user) != null && user.getVerificationTokenHash() != null;
+    }
+
+    @Named("awaitingCurrentEmailConfirmation")
+    default boolean awaitingCurrentEmailConfirmation(final User user) {
+        return activePendingEmail(user) != null && user.getCurrentEmailTokenHash() != null;
     }
 
 }

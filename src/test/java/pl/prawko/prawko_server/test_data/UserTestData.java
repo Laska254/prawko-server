@@ -72,6 +72,7 @@ public class UserTestData {
         return createTestUserPippin()
                 .setPendingEmail(createValidUserUpdateRequest().email())
                 .setVerificationTokenHash("pendingTokenHash")
+                .setCurrentEmailTokenHash("currentTokenHash")
                 .setVerificationTokenExpires(LocalDateTime.now().plusHours(1));
     }
 
@@ -88,6 +89,8 @@ public class UserTestData {
                 "pippin",
                 "pippin@shire.me",
                 null,
+                false,
+                false,
                 Role.USER);
     }
 
@@ -99,6 +102,8 @@ public class UserTestData {
                 TestUtils.ADMIN_NAME,
                 "gimli@erebor.me",
                 null,
+                false,
+                false,
                 Role.ADMIN);
     }
 
@@ -110,7 +115,24 @@ public class UserTestData {
                 "UpdatedUserName",
                 "pippin@shire.me",
                 createValidUserUpdateRequest().email(),
+                true,
+                true,
                 Role.USER
+        );
+    }
+
+    public static UserDto createUpdatedByAdminUserDto(final long id) {
+        final var updated = createUpdatedUserDto(id);
+        return new UserDto(
+                id,
+                updated.firstName(),
+                updated.lastName(),
+                updated.userName(),
+                updated.email(),
+                null,
+                false,
+                false,
+                updated.role()
         );
     }
 
@@ -120,6 +142,11 @@ public class UserTestData {
                 "UpdatedLastName",
                 "UpdatedUserName",
                 "UpdatedEmail@shire.me");
+    }
+
+    public static UserUpdateRequest createUserUpdateRequestWithoutEmail() {
+        final var request = createValidUserUpdateRequest();
+        return new UserUpdateRequest(request.firstName(), request.lastName(), request.userName(), null);
     }
 
     public static UserUpdateRequest createInvalidUserUpdateRequest() {

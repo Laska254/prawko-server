@@ -144,9 +144,10 @@ public class UserService implements IUserService, UserDetailsService {
     /**
      * {@inheritDoc}
      * <p>
-     * Like in {@link #register}, the verification email is dispatched inside the transaction, so the update is rolled
-     * back if it can't be queued. Email changes are subject to the verification email cooldown. Sending the current
-     * email cancels a pending change and invalidates its link, without a cooldown since no email is sent.
+     * Like in {@link #register}, the tokens are issued before the save and the emails to the new and current address
+     * are dispatched after it, inside the transaction, so the update is rolled back if they can't be queued. Email
+     * changes are subject to the verification email cooldown. Sending the current email cancels a pending change and
+     * invalidates its links, without a cooldown since no email is sent.
      *
      * @throws EntityNotFoundException  if user with the given ID have not been found
      * @throws AlreadyExistsException   if the new username or email conflicts with another user
@@ -165,15 +166,13 @@ public class UserService implements IUserService, UserDetailsService {
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
         Optional.ofNullable(updateRequest.userName()).ifPresent(user::setUserName);
         if (cancelsEmailChange) {
-            cancelEmailChange(user);
+            if (user.cancelEmailChange()) {
+                log.info("Email change of user with id '{}' canceled.", userId);
+            }
         }
-        final var verificationToken = Optional.ofNullable(newEmail)
-                .map(pendingEmail -> requestEmailChange(pendingEmail, user));
+        final Runnable sendEmailChangeLinks = newEmail == null ? () -> { } : requestEmailChange(user, newEmail);
         final var updated = repository.save(user);
-        verificationToken.ifPresent(token -> {
-            emailVerificationService.sendVerificationEmail(userId, user.getPendingEmail(), token);
-            log.info("Email change of user with id '{}' awaiting verification.", userId);
-        });
+        sendEmailChangeLinks.run();
         log.info("Successfully updated user with id '{}'", userId);
         return mapper.toDto(updated);
     }
@@ -202,6 +201,9 @@ public class UserService implements IUserService, UserDetailsService {
         user.setPassword(passwordEncoder.encode(request.newPassword()))
                 .setPasswordResetTokenHash(null)
                 .setPasswordResetTokenExpires(null);
+        if (user.cancelEmailChange()) {
+            log.info("Email change of user with id '{}' canceled by the password change.", userId);
+        }
         repository.save(user);
         log.info("Successfully changed password for user with id '{}'", userId);
     }
@@ -235,24 +237,23 @@ public class UserService implements IUserService, UserDetailsService {
         }
     }
 
-    private String requestEmailChange(final String email, final User user) {
+    /**
+     * Requests an email change, to be confirmed from both the new and the current address: stores the email as pending
+     * and issues its tokens.
+     *
+     * @return the action sending the links, to be run after the user is saved
+     */
+    private Runnable requestEmailChange(final User user, final String email) {
         if (emailVerificationService.isCoolingDown(user)) {
             final var message = "Verification email was sent recently, try again later.";
             log.warn("{} User id: {}", message, user.getId());
             throw new TooManyRequestsException(message);
         }
-        return emailVerificationService.issueToken(user.setPendingEmail(email));
-    }
-
-    /**
-     * Keeps the token expiry, so the cooldown still applies and an unverified account is still cleaned up.
-     */
-    private void cancelEmailChange(final User user) {
-        if (user.getPendingEmail() != null) {
-            user.setPendingEmail(null)
-                    .setVerificationTokenHash(null);
-            log.info("Email change of user with id '{}' cancelled.", user.getId());
-        }
+        final var token = emailVerificationService.issueToken(user.setPendingEmail(email));
+        final var currentEmailToken = emailVerificationService.issueCurrentEmailToken(user);
+        log.info("Email change of user with id '{}' awaiting verification.", user.getId());
+        return () -> emailVerificationService.sendEmailChangeConfirmation(
+                user.getId(), user.getEmail(), email, token, currentEmailToken);
     }
 
 }

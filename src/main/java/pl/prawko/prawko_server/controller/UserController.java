@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.data.web.SortDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import pl.prawko.prawko_server.config.IsSelfOrAdmin;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
@@ -130,26 +130,29 @@ public class UserController {
     /**
      * Updates user details.
      *
-     * <p>Allowed only for the user themselves or an admin. A new email is only stored as pending and a verification
-     * link is emailed to it. Sending the current email cancels a pending change.
+     * <p>Allowed only for the user themselves or an admin, but only the user themselves may change the email: an
+     * admin can't confirm who's asking, so letting them would make a stolen admin account worth every account.
+     * A new email is only stored as pending and links are emailed to it and to the current address, both must
+     * confirm it. Sending the current email cancels a pending change.
      *
      * @param id            the unique identifier of the user to update (must be positive)
      * @param updateRequest the {@link UserUpdateRequest} containing fields to update
      * @return a {@link ResponseEntity} containing the updated {@link UserDto}
      */
     @Operation(summary = "Update user details", description = "Updates specified fields of an existing user. "
-            + "A new email takes effect only after it's verified with the link emailed to it. "
+            + "Only the user themselves may change the email. A new email takes effect only after it's verified with "
+            + "the link emailed to it and confirmed with the link emailed to the current address. "
             + "Sending the current email cancels a pending change and invalidates its link.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User updated successfully; a new email stays pending (`pendingEmail`) until verified"),
-            @ApiResponse(responseCode = "403", description = "Updating another user is not allowed"),
+            @ApiResponse(responseCode = "403", description = "Updating another user, or another user's email as an admin, is not allowed"),
             @ApiResponse(responseCode = "404", description = "User not found"),
             @ApiResponse(responseCode = "400", description = "Invalid update data or ID is negative or zero"),
             @ApiResponse(responseCode = "409", description = "Username or email already exists"),
             @ApiResponse(responseCode = "429", description = "Email changed again within the verification email cooldown"),
             @ApiResponse(responseCode = "503", description = "Too many requests pending")
     })
-    @IsSelfOrAdmin(userId = "#id")
+    @PreAuthorize("principal.isSelf(#id) or (hasRole('ADMIN') and #updateRequest.email() == null)")
     @PatchMapping(ApiConstants.BY_ID)
     public ResponseEntity<UserDto> updateUser(@PathVariable @Positive final long id,
                                               @Valid @RequestBody final UserUpdateRequest updateRequest) {

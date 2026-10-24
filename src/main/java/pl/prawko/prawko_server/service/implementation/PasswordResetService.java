@@ -95,6 +95,9 @@ public class PasswordResetService implements IPasswordResetService {
         user.setPassword(passwordEncoder.encode(request.newPassword()))
                 .setPasswordResetTokenHash(null)
                 .setPasswordResetTokenExpires(null);
+        if (user.cancelEmailChange()) {
+            log.info("Email change of user with id '{}' canceled by the password reset.", user.getId());
+        }
         repository.save(user);
         log.info("Successfully reset password for user with id '{}'", user.getId());
     }

@@ -110,23 +110,29 @@ public class AuthController {
     }
 
     /**
-     * Verifies an email address using the token from a verification link: enables a new account or applies
-     * a pending email change.
+     * Verifies an email address using the token from a verification link: enables a new account or confirms
+     * a pending email change, which takes effect once all its links are opened.
      *
      * @param request the {@link VerifyEmailRequest} containing the token
-     * @return a {@link ResponseEntity} with HTTP 204 No Content
+     * @return a {@link ResponseEntity} with HTTP 204 No Content, or HTTP 202 Accepted if an email change still awaits
+     * the other link
      */
     @Operation(summary = "Verify email",
-            description = "Activates an account or applies an email change using an email verification token.")
+            description = "Activates an account or confirms an email change using a token from a verification link. "
+                    + "An email change takes effect once confirmed by both the new and the current address.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Email verified successfully"),
+            @ApiResponse(responseCode = "202",
+                    description = "Email change confirmed by this address, awaiting the link sent to the other one"),
             @ApiResponse(responseCode = "400", description = "Invalid argument or invalid/expired token"),
             @ApiResponse(responseCode = "409", description = "The new email was taken by another user meanwhile"),
     })
     @PostMapping(ApiConstants.VERIFY_EMAIL)
     public ResponseEntity<Void> verifyEmail(@Valid @RequestBody final VerifyEmailRequest request) {
-        emailVerificationService.verify(request.token());
-        return ResponseEntity.noContent().build();
+        return switch (emailVerificationService.verify(request.token())) {
+            case COMPLETED -> ResponseEntity.noContent().build();
+            case AWAITING_OTHER_LINK -> ResponseEntity.accepted().build();
+        };
     }
 
     /**
