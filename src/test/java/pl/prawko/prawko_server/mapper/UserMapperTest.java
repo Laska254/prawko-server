@@ -56,14 +56,13 @@ class UserMapperTest {
         assertThat(result.email()).isEqualTo(user.getEmail());
         assertThat(result.pendingEmail()).isEqualTo(user.getPendingEmail());
         assertThat(result.awaitingNewEmailConfirmation()).isTrue();
-        assertThat(result.awaitingCurrentEmailConfirmation()).isFalse();
+        assertThat(result.awaitingCurrentEmailConfirmation()).isTrue();
     }
 
     @Test
     void toDto_awaitOnlyCurrentEmailConfirmation_whenNewEmailConfirmedFirst() {
         final var user = UserTestData.createPippinChangingEmail()
-                .setVerificationTokenHash(null)
-                .setCurrentEmailTokenHash("currentTokenHash");
+                .setVerificationTokenHash(null);
 
         final var result = mapper.toDto(user);
 
@@ -86,8 +85,7 @@ class UserMapperTest {
     @Test
     void toDto_omitPendingEmailAndAwaitNoConfirmation_whenVerificationLinkExpired() {
         final var user = UserTestData.createPippinChangingEmail()
-                .setVerificationTokenExpires(LocalDateTime.now().minusMinutes(1))
-                .setCurrentEmailTokenHash("currentTokenHash");
+                .setVerificationTokenExpires(LocalDateTime.now().minusMinutes(1));
 
         final var result = mapper.toDto(user);
 

@@ -72,6 +72,7 @@ public class UserTestData {
         return createTestUserPippin()
                 .setPendingEmail(createValidUserUpdateRequest().email())
                 .setVerificationTokenHash("pendingTokenHash")
+                .setCurrentEmailTokenHash("currentTokenHash")
                 .setVerificationTokenExpires(LocalDateTime.now().plusHours(1));
     }
 
@@ -106,9 +107,6 @@ public class UserTestData {
                 Role.ADMIN);
     }
 
-    /**
-     * The user updated by themselves, so the email change awaits confirmation from both addresses.
-     */
     public static UserDto createUpdatedUserDto(final long id) {
         return new UserDto(
                 id,

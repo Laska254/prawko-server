@@ -228,17 +228,6 @@ class EmailVerificationServiceTest {
         }
 
         @Test
-        void sendLinkToPendingEmail_whenUnverifiedUserHasPendingEmail() {
-            final var pendingEmail = UserTestData.createMerry().getEmail();
-            tester.setPendingEmail(pendingEmail);
-            when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
-
-            service.resendVerification(tester.getEmail());
-
-            assertThat(captureSentMessage().getTo()).containsExactly(pendingEmail);
-        }
-
-        @Test
         void issueNewToken_whenCooldownHasPassed() {
             final var oldHash = issueTokenIssuedAgo(COOLDOWN.plusSeconds(1));
             when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
@@ -309,6 +298,7 @@ class EmailVerificationServiceTest {
         @Test
         void changeEmailAndClearResetToken_whenCurrentEmailAlreadyConfirmed() {
             final var changing = UserTestData.createPippinChangingEmail()
+                    .setCurrentEmailTokenHash(null)
                     .setPasswordResetTokenHash("pendingTokenHash")
                     .setPasswordResetTokenExpires(LocalDateTime.now().plusMinutes(15));
             final var newEmail = changing.getPendingEmail();
@@ -396,7 +386,9 @@ class EmailVerificationServiceTest {
 
         @Test
         void throwAlreadyExistsAndKeepEmail_whenPendingEmailWasTakenMeanwhile(final CapturedOutput output) {
-            final var changing = UserTestData.createPippinChangingEmail().setId(1L);
+            final var changing = UserTestData.createPippinChangingEmail()
+                    .setCurrentEmailTokenHash(null)
+                    .setId(1L);
             final var email = changing.getEmail();
             final var newEmail = changing.getPendingEmail();
             final var token = service.issueToken(changing);

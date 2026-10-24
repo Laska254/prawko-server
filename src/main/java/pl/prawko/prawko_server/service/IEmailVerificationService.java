@@ -81,9 +81,6 @@ public interface IEmailVerificationService {
     /**
      * Issues a new verification token and emails a verification link to the unverified user with the given email.
      * <p>
-     * The link goes to the user's pending email, if there is one.
-     * </p>
-     * <p>
      * Does nothing if no unverified user has the email. Returns without waiting for the outcome.
      * Requests made within a cooldown after issuing a token are ignored, so the user can't be flooded with emails.
      * </p>

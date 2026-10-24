@@ -360,7 +360,8 @@ public class AuthControllerTest {
 
     @Test
     void verifyEmail_returnNoContentAndChangeEmail_whenCurrentEmailAlreadyConfirmed() {
-        final var tester = UserTestData.createPippinChangingEmail();
+        final var tester = UserTestData.createPippinChangingEmail()
+                .setCurrentEmailTokenHash(null);
         final var newEmail = tester.getPendingEmail();
         final var token = emailVerificationService.issueToken(tester);
         userRepository.save(tester);
@@ -398,7 +399,8 @@ public class AuthControllerTest {
 
     @Test
     void verifyEmail_returnConflictAndKeepEmail_whenPendingEmailWasTakenMeanwhile() {
-        final var tester = UserTestData.createPippinChangingEmail();
+        final var tester = UserTestData.createPippinChangingEmail()
+                .setCurrentEmailTokenHash(null);
         final var email = tester.getEmail();
         final var newEmail = tester.getPendingEmail();
         final var token = emailVerificationService.issueToken(tester);

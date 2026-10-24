@@ -508,10 +508,13 @@ public class UserControllerTest {
                     .headers(TestUtils::authAdmin)
                     .body(new UserUpdateRequest(null, null, null, tester.getEmail()))
                     .exchange()
-                    .expectStatus().isForbidden();
+                    .expectStatus().isForbidden()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.ACCESS_DENIED);
 
-            assertThat(userRepository.findById(tester.getId()).orElseThrow().getPendingEmail())
-                    .isEqualTo(tester.getPendingEmail());
+            assertThat(userRepository.findById(tester.getId())
+                    .orElseThrow()
+                    .getPendingEmail()).isEqualTo(tester.getPendingEmail());
         }
 
         @Test
@@ -731,6 +734,7 @@ public class UserControllerTest {
             assertThat(updated.getEmail()).isEqualTo(tester.getEmail());
             assertThat(updated.getPendingEmail()).isNull();
             assertThat(updated.getVerificationTokenHash()).isNull();
+            assertThat(updated.getCurrentEmailTokenHash()).isNull();
         }
 
         @Test
