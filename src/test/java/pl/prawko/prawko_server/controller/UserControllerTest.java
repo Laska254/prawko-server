@@ -41,6 +41,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class UserControllerTest {
 
     private static final String USERNAME_CONTAINS_AT_MSG = "Username must not contain '@'.";
+    private static final String LAST_NAME_TOO_SHORT_MSG = "Last name must be at least 3 characters.";
+    private static final String TOO_LONG_NAME = "Supercalifragilisticexpialidocious";
 
     @Autowired
     private UserRepository userRepository;
@@ -119,7 +121,7 @@ public class UserControllerTest {
         @Test
         void returnBadRequest_whenDtoIsInvalid() {
             final var invalidDto = new RegisterDto(
-                    "Supercalifragilisticexpialidocious",
+                    TOO_LONG_NAME,
                     "Tu",
                     "OK",
                     "notValidMail@mail@mail",
@@ -128,7 +130,7 @@ public class UserControllerTest {
                     Map.entry("message", TestUtils.VALIDATION_FAILED),
                     Map.entry("details", Map.ofEntries(
                             Map.entry("firstName", "First name must be at most 31 characters."),
-                            Map.entry("lastName", "Last name must be at least 3 characters."),
+                            Map.entry("lastName", LAST_NAME_TOO_SHORT_MSG),
                             Map.entry("userName", "Username must be at least 3 characters."),
                             Map.entry("email", "Email format is not valid."),
                             Map.entry("password", "Password must be at least 7 characters."))
@@ -145,8 +147,8 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenLastNameIsTooLong() {
-            final var invalidDto = new RegisterDto("Peregrin", "Supercalifragilisticexpialidocious", "pippin",
-                    "pippin@shire.me", "lembasy");
+            final var invalidDto = new RegisterDto(registerDto.firstName(), TOO_LONG_NAME, registerDto.userName(),
+                    registerDto.email(), registerDto.password());
 
             restClient.post()
                     .body(invalidDto)
@@ -629,7 +631,7 @@ public class UserControllerTest {
                     Map.entry("message", TestUtils.VALIDATION_FAILED),
                     Map.entry("details", Map.ofEntries(
                             Map.entry("firstName", "First name must be at least 3 characters."),
-                            Map.entry("lastName", "Last name must be at least 3 characters."),
+                            Map.entry("lastName", LAST_NAME_TOO_SHORT_MSG),
                             Map.entry("email", "Email format is not valid."))));
 
             restClient.patch()
