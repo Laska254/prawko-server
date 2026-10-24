@@ -10,7 +10,6 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailSender;
@@ -907,7 +906,6 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isNoContent();
 
-            assertThat(examRepository.findAllByUser_Id(tester.getId(), Pageable.unpaged())).isEmpty();
             assertThat(examRepository.findAll()).containsExactly(otherExam);
             assertThat(questionRepository.existsById(question.getId())).isTrue();
         }
