@@ -15,7 +15,7 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +37,7 @@ class ExamMapperTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void toDto_mapFieldsAndDelegateToNestedMappers_whenAllFieldsAreSet(final boolean revealCorrect) {
-        final var now = LocalDateTime.now();
+        final var now = Instant.now();
         final var question = new Question().setId(10L);
         final var answer = new Answer().setId(20L);
         final var user = new User().setId(42L);
@@ -67,7 +67,7 @@ class ExamMapperTest {
 
     @Test
     void toSummaryDto_mapFieldsWithoutQuestionsAndAnswers_whenAllFieldsAreSet() {
-        final var now = LocalDateTime.now();
+        final var now = Instant.now();
         final var exam = new Exam()
                 .setId(1L)
                 .setCategory(new Category().setName("B"))

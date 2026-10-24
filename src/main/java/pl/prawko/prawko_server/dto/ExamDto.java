@@ -2,7 +2,7 @@ package pl.prawko.prawko_server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -23,11 +23,11 @@ public record ExamDto(
         @Schema(description = "Driving license category of the exam")
         String category,
 
-        @Schema(description = "Exam creation timestamp")
-        LocalDateTime created,
+        @Schema(description = "Exam creation timestamp (UTC)", example = "2026-10-23T12:00:00Z")
+        Instant created,
 
-        @Schema(description = "Last exam update timestamp")
-        LocalDateTime updated,
+        @Schema(description = "Last exam update timestamp (UTC)", example = "2026-10-23T12:10:00Z")
+        Instant updated,
 
         @Schema(description = "List of questions in the exam")
         List<QuestionDto> questions,

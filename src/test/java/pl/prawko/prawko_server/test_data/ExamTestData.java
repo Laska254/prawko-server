@@ -9,7 +9,8 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.model.User;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -21,10 +22,13 @@ public class ExamTestData {
     }
 
     public static Exam createExam(final User user) {
+        // the database stores microseconds, so truncate to compare persisted exams with the original
+        final var now = Instant.now().truncatedTo(ChronoUnit.MICROS);
         final var exam = new Exam()
                 .setUser(user)
                 .setCategory(CategoryTestData.CATEGORY_B)
-                .setExpires(LocalDateTime.now().plus(Exam.DURATION))
+                .setCreated(now)
+                .setExpires(now.plus(Exam.DURATION))
                 .setQuestions(Stream.concat(
                                 QuestionTestData.createQuestions(QuestionType.BASIC).stream(),
                                 QuestionTestData.createQuestions(QuestionType.SPECIAL).stream())
@@ -89,7 +93,7 @@ public class ExamTestData {
     }
 
     public static Exam expire(final Exam exam) {
-        return exam.setExpires(LocalDateTime.now().minusMinutes(1));
+        return exam.setExpires(Instant.now().minus(1, ChronoUnit.MINUTES));
     }
 
     public static String answerNotFoundMessage(final long answerId, final long examId) {

@@ -13,7 +13,7 @@ import pl.prawko.prawko_server.test_data.ExamTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,7 +62,7 @@ class ExamRepositoryTest {
         repository.save(ExamTestData.createExamWithoutQuestions(user));
         entityManager.clear();
 
-        final var result = repository.findAllByActiveTrueAndExpiresBefore(LocalDateTime.now());
+        final var result = repository.findAllByActiveTrueAndExpiresBefore(Instant.now());
 
         assertThat(result)
                 .extracting(Exam::getId)
