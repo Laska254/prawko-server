@@ -5,6 +5,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
+import pl.prawko.prawko_server.dto.DeleteAccountRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.UserDto;
@@ -30,6 +31,7 @@ public class UserTestData {
     public static final String INVALID_VERIFICATION_TOKEN = "Email verification token is invalid or expired.";
     public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";
     public static final String VERIFICATION_COOLDOWN = "Verification email was sent recently, try again later.";
+    public static final String INCORRECT_PASSWORD = "Current password is incorrect.";
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 
@@ -164,6 +166,14 @@ public class UserTestData {
 
     public static ChangePasswordRequest createSameAsCurrentPasswordRequest() {
         return new ChangePasswordRequest("lembasy", "lembasy");
+    }
+
+    public static DeleteAccountRequest createValidDeleteAccountRequest() {
+        return new DeleteAccountRequest("lembasy");
+    }
+
+    public static DeleteAccountRequest createWrongPasswordDeleteAccountRequest() {
+        return new DeleteAccountRequest("wrongPassword");
     }
 
     public static ResetPasswordRequest createValidResetPasswordRequest(final String token) {

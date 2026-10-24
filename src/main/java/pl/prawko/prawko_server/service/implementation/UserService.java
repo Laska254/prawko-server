@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
+import pl.prawko.prawko_server.dto.DeleteAccountRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
@@ -188,11 +189,7 @@ public class UserService implements IUserService, UserDetailsService {
     public void changePassword(final long userId, final ChangePasswordRequest request) {
         log.info("Changing password for user with id: {}", userId);
         final var user = getById(userId);
-        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-            final var message = "Current password is incorrect.";
-            log.warn("{} User id: {}", message, userId);
-            throw new InvalidPasswordException(message);
-        }
+        verifyPassword(user, request.currentPassword());
         if (request.currentPassword().equals(request.newPassword())) {
             final var message = "New password must be different from the current one.";
             log.warn("{} User id: {}", message, userId);
@@ -220,6 +217,30 @@ public class UserService implements IUserService, UserDetailsService {
         final var user = getById(userId);
         repository.delete(user);
         log.info("Successfully deleted user with id '{}'", userId);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException  if a user with provided id have not been found
+     * @throws InvalidPasswordException if the password doesn't match
+     */
+    @Transactional
+    @Override
+    public void deleteOwnAccount(final long userId, final DeleteAccountRequest request) {
+        log.info("Deleting own account of user with id: {}", userId);
+        final var user = getById(userId);
+        verifyPassword(user, request.password());
+        repository.delete(user);
+        log.info("User with id '{}' deleted their account.", userId);
+    }
+
+    private void verifyPassword(final User user, final String password) {
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            final var message = "Current password is incorrect.";
+            log.warn("{} User id: {}", message, user.getId());
+            throw new InvalidPasswordException(message);
+        }
     }
 
     private void validateNoConflict(@Nullable final String userName, @Nullable final String email) {

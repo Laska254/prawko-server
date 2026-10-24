@@ -194,6 +194,7 @@ own data (admins may act on any user), **admin** - admins only.
   |----------|----------------------|--------|-------------------------------------------------|
   | `POST`   | `/users`             | public | register a new user, emails a verification link |
   | `GET`    | `/users/me`          | user   | get the signed-in user (e.g. their ID and role) |
+  | `DELETE` | `/users/me`          | user   | delete own account (requires current password)  |
   | `PATCH`  | `/users/me/password` | user   | change own password (requires current password) |
   | `GET`    | `/users`             | admin  | get a page of users                             |
   | `GET`    | `/users/{id}`        | admin  | get a user                                      |

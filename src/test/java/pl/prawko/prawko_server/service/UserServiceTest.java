@@ -456,7 +456,7 @@ class UserServiceTest {
         final ThrowableAssert.ThrowingCallable executable = () -> service.changePassword(givenId, request);
         final var exception = catchThrowableOfType(InvalidPasswordException.class, executable);
 
-        assertThat(exception.getMessage()).isEqualTo("Current password is incorrect.");
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.INCORRECT_PASSWORD);
         assertThat(tester.getPassword()).isEqualTo(oldEncoded);
         verify(repository).findById(givenId);
         verify(repository, never()).save(any());
@@ -506,6 +506,50 @@ class UserServiceTest {
         verify(repository).delete(tester);
         verifyNoMoreInteractions(repository);
         verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void deleteOwnAccount_deleteUser_whenPasswordMatches() {
+        final var givenId = 44L;
+        final var request = UserTestData.createValidDeleteAccountRequest();
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(passwordEncoder.matches(request.password(), tester.getPassword())).thenReturn(true);
+
+        service.deleteOwnAccount(givenId, request);
+
+        verify(repository).findById(givenId);
+        verify(repository).delete(tester);
+        verifyNoMoreInteractions(repository);
+    }
+
+    @Test
+    void deleteOwnAccount_throwException_whenPasswordIsIncorrect() {
+        final var givenId = 44L;
+        final var request = UserTestData.createWrongPasswordDeleteAccountRequest();
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(passwordEncoder.matches(request.password(), tester.getPassword())).thenReturn(false);
+
+        final ThrowableAssert.ThrowingCallable executable = () -> service.deleteOwnAccount(givenId, request);
+        final var exception = catchThrowableOfType(InvalidPasswordException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.INCORRECT_PASSWORD);
+        verify(repository).findById(givenId);
+        verify(repository, never()).delete(any());
+        verifyNoMoreInteractions(repository);
+    }
+
+    @Test
+    void deleteOwnAccount_throwException_whenUserNotFound() {
+        final var givenId = 666L;
+        when(repository.findById(givenId)).thenReturn(Optional.empty());
+
+        final ThrowableAssert.ThrowingCallable executable =
+                () -> service.deleteOwnAccount(givenId, UserTestData.createValidDeleteAccountRequest());
+        final var exception = catchThrowableOfType(EntityNotFoundException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.userNotFoundMessage(givenId));
+        verify(repository, never()).delete(any());
+        verifyNoInteractions(passwordEncoder);
     }
 
     @Test

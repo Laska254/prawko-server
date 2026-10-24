@@ -10,6 +10,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -21,6 +22,7 @@ import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
+import pl.prawko.prawko_server.dto.DeleteAccountRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
@@ -795,7 +797,7 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo("Current password is incorrect.");
+                    .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
         }
 
         @Test
@@ -856,6 +858,90 @@ public class UserControllerTest {
     }
 
     @Nested
+    class DeleteOwnAccount {
+
+        @Test
+        void returnNoContentAndDeleteOnlyOwnAccount_whenPasswordIsCorrect() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var other = userRepository.save(UserTestData.createMerry());
+
+            restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.ME)
+                    .headers(TestUtils::authUser)
+                    .body(UserTestData.createValidDeleteAccountRequest())
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.existsById(tester.getId())).isFalse();
+            assertThat(userRepository.existsById(other.getId())).isTrue();
+        }
+
+        @Test
+        void returnNoContent_whenAuthenticatedAsAdmin() {
+            final var admin = userRepository.save(UserTestData.createGimli());
+
+            restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.ME)
+                    .headers(TestUtils::authAdmin)
+                    .body(UserTestData.createValidDeleteAccountRequest())
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.existsById(admin.getId())).isFalse();
+        }
+
+        @Test
+        void returnBadRequestAndKeepAccount_whenPasswordIsIncorrect() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+
+            restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.ME)
+                    .headers(TestUtils::authUser)
+                    .body(UserTestData.createWrongPasswordDeleteAccountRequest())
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
+
+            assertThat(userRepository.existsById(tester.getId())).isTrue();
+        }
+
+        @Test
+        void returnBadRequest_whenPasswordIsBlank() {
+            restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.ME)
+                    .headers(TestUtils::authUser)
+                    .body(new DeleteAccountRequest(" "))
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
+                    .jsonPath("$.details.password").isEqualTo(TestUtils.PASSWORD_REQUIRED);
+        }
+
+        @Test
+        void returnBadRequest_whenBodyIsMissing() {
+            restClient.delete()
+                    .uri(ApiConstants.ME)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.ME)
+                    .body(UserTestData.createValidDeleteAccountRequest())
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+    }
+
+    @Nested
     class DeleteUser {
 
         @Test
@@ -866,6 +952,19 @@ public class UserControllerTest {
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isNoContent();
+        }
+
+        @Test
+        void returnForbiddenAndKeepUser_whenAuthenticatedAsUser() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+
+            restClient.delete()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isForbidden();
+
+            assertThat(userRepository.existsById(tester.getId())).isTrue();
         }
 
         @Test

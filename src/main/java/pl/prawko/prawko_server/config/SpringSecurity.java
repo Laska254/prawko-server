@@ -58,7 +58,7 @@ import java.util.List;
  *     (password reset), {@code POST /auth/verify} and {@code POST /auth/verify/resend} (email verification),
  *     {@code POST /users} (registration)</li>
  *     <li>ADMIN only: {@code POST /questions} (upload), {@code GET /questions} (list all)</li>
- *     <li>USER+ required: {@code GET /users/me}, {@code GET /questions/**}, {@code POST/GET /exams/**}</li>
+ *     <li>USER+ required: {@code GET/DELETE /users/me}, {@code GET /questions/**}, {@code POST/GET /exams/**}</li>
  *     <li>ADMIN only: User management endpoints, delete operations</li>
  *     <li>Public: Swagger UI and OpenAPI docs</li>
  *     <li>Any other request is denied</li>
@@ -220,6 +220,7 @@ public class SpringSecurity {
                 .requestMatchers(HttpMethod.GET, ApiConstants.USERS_BASE_URL + ApiConstants.ME).hasRole("USER")
                 .requestMatchers(HttpMethod.GET, ApiConstants.USERS_BASE_URL_ALL).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, ApiConstants.USERS_BASE_URL_ALL).hasRole("USER")
+                .requestMatchers(HttpMethod.DELETE, ApiConstants.USERS_BASE_URL + ApiConstants.ME).hasRole("USER")
                 .requestMatchers(HttpMethod.DELETE, ApiConstants.USERS_BASE_URL_ALL).hasRole("ADMIN");
     }
 

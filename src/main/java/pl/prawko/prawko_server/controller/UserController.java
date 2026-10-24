@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
+import pl.prawko.prawko_server.dto.DeleteAccountRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
@@ -175,6 +176,27 @@ public class UserController {
     public ResponseEntity<Void> changePassword(@AuthenticationPrincipal(expression = "id") final long userId,
                                                @Valid @RequestBody final ChangePasswordRequest request) {
         userService.changePassword(userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Deletes the account of the currently authenticated user.
+     *
+     * <p>Requires the current password, so credentials held by a client alone can't delete the account.
+     *
+     * @param userId  the ID of the currently authenticated user
+     * @param request the {@link DeleteAccountRequest} containing the current password
+     * @return a {@link ResponseEntity} with HTTP 204 No Content
+     */
+    @Operation(summary = "Delete own account", description = "Permanently removes the authenticated user after verifying their password.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Account deleted successfully"),
+            @ApiResponse(responseCode = "400", description = "Missing or incorrect password")
+    })
+    @DeleteMapping(ApiConstants.ME)
+    public ResponseEntity<Void> deleteOwnAccount(@AuthenticationPrincipal(expression = "id") final long userId,
+                                                 @Valid @RequestBody final DeleteAccountRequest request) {
+        userService.deleteOwnAccount(userId, request);
         return ResponseEntity.noContent().build();
     }
 
