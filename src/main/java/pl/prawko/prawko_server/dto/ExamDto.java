@@ -20,6 +20,9 @@ public record ExamDto(
         @Schema(description = "ID of the user taking the exam")
         long userId,
 
+        @Schema(description = "Driving license category of the exam")
+        String category,
+
         @Schema(description = "Exam creation timestamp")
         LocalDateTime created,
 

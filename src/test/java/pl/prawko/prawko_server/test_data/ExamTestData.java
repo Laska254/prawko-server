@@ -67,6 +67,7 @@ public class ExamTestData {
         return new ExamDto(
                 exam.getId(),
                 exam.getUser().getId(),
+                exam.getCategory().getName(),
                 exam.getCreated(),
                 exam.getUpdated(),
                 questions,

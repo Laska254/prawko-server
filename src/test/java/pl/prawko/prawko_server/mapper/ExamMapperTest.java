@@ -13,6 +13,7 @@ import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.test_data.CategoryTestData;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,6 +44,7 @@ class ExamMapperTest {
         final var expected = new Exam()
                 .setId(1L)
                 .setUser(user)
+                .setCategory(CategoryTestData.CATEGORY_B)
                 .setActive(true)
                 .setScore(67)
                 .setCreated(now)
@@ -54,6 +56,7 @@ class ExamMapperTest {
 
         assertThat(result.id()).isEqualTo(1L);
         assertThat(result.userId()).isEqualTo(42L);
+        assertThat(result.category()).isEqualTo(CategoryTestData.CATEGORY_B.getName());
         assertThat(result.active()).isTrue();
         assertThat(result.score()).isEqualTo(67);
         assertThat(result.created()).isEqualTo(now);
@@ -79,6 +82,13 @@ class ExamMapperTest {
 
         assertThat(result).isEqualTo(new ExamSummaryDto(1L, "B", now, now, 68, false));
         verifyNoInteractions(questionMapper, answerMapper);
+    }
+
+    @Test
+    void toDto_returnNullCategory_whenCategoryIsNull() {
+        final var result = examMapper.toDto(new Exam().setId(1L), false);
+
+        assertThat(result.category()).isNull();
     }
 
     @Test
