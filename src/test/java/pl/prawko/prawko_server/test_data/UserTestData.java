@@ -51,7 +51,7 @@ public class UserTestData {
                 .setLastName(lastName)
                 .setUserName(userName)
                 .setEmail(email)
-                .setPassword(new BCryptPasswordEncoder().encode("lembasy"))
+                .setPassword(new BCryptPasswordEncoder().encode(TestUtils.USER_PASSWORD))
                 .setRole(Role.USER)
                 .setEnabled(true)
                 .setCreated(Instant.now())
@@ -81,7 +81,8 @@ public class UserTestData {
 
     public static User createGimli() {
         return createTestUser("Gimli", "Gloinson", TestUtils.ADMIN_NAME, "gimli@erebor.me")
-                .setRole(Role.ADMIN);
+                .setRole(Role.ADMIN)
+                .setPassword(new BCryptPasswordEncoder().encode(TestUtils.ADMIN_PASSWORD));
     }
 
     public static UserDto createUserDto(final long id) {
@@ -157,7 +158,7 @@ public class UserTestData {
     }
 
     public static ChangePasswordRequest createValidChangePasswordRequest() {
-        return new ChangePasswordRequest("lembasy", "racuchy");
+        return new ChangePasswordRequest(TestUtils.USER_PASSWORD, "racuchy");
     }
 
     public static ChangePasswordRequest createWrongCurrentPasswordRequest() {
@@ -165,11 +166,11 @@ public class UserTestData {
     }
 
     public static ChangePasswordRequest createSameAsCurrentPasswordRequest() {
-        return new ChangePasswordRequest("lembasy", "lembasy");
+        return new ChangePasswordRequest(TestUtils.USER_PASSWORD, TestUtils.USER_PASSWORD);
     }
 
     public static DeleteAccountRequest createValidDeleteAccountRequest() {
-        return new DeleteAccountRequest("lembasy");
+        return new DeleteAccountRequest(TestUtils.USER_PASSWORD);
     }
 
     public static DeleteAccountRequest createWrongPasswordDeleteAccountRequest() {
@@ -194,7 +195,7 @@ public class UserTestData {
                 "Tuk",
                 "pippin",
                 "pippin@shire.me",
-                "lembasy");
+                TestUtils.USER_PASSWORD);
     }
 
 }

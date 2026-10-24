@@ -182,7 +182,7 @@ public class UserController {
     /**
      * Deletes the account of the currently authenticated user.
      *
-     * <p>Requires the current password, so credentials held by a client alone can't delete the account.
+     * <p>Requires re-entering the current password to confirm the deletion.
      *
      * @param userId  the ID of the currently authenticated user
      * @param request the {@link DeleteAccountRequest} containing the current password

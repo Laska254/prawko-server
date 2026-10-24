@@ -6,8 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 /**
  * DTO for deleting the currently authenticated user's account.
  *
- * <p>Requires the user's current password, so credentials held by a client alone aren't enough to delete the account.
- *
+ * <p>Requires re-entering the current password to confirm the deletion.
  */
 @Schema(description = "Account deletion request containing the current password")
 public record DeleteAccountRequest(

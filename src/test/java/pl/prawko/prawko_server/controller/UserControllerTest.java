@@ -939,7 +939,7 @@ public class UserControllerTest {
             restClient.method(HttpMethod.DELETE)
                     .uri(ApiConstants.ME)
                     .headers(TestUtils::authAdmin)
-                    .body(UserTestData.createValidDeleteAccountRequest())
+                    .body(new DeleteAccountRequest(TestUtils.ADMIN_PASSWORD))
                     .exchange()
                     .expectStatus().isNoContent();
 

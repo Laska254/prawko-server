@@ -59,7 +59,7 @@ import java.util.List;
  *     {@code POST /users} (registration)</li>
  *     <li>ADMIN only: {@code POST /questions} (upload), {@code GET /questions} (list all)</li>
  *     <li>USER+ required: {@code GET/DELETE /users/me}, {@code GET /questions/**}, {@code POST/GET /exams/**}</li>
- *     <li>ADMIN only: User management endpoints, delete operations</li>
+ *     <li>ADMIN only: other user management endpoints and delete operations</li>
  *     <li>Public: Swagger UI and OpenAPI docs</li>
  *     <li>Any other request is denied</li>
  * </ul>

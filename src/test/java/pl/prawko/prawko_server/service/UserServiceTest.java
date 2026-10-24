@@ -548,7 +548,9 @@ class UserServiceTest {
         final var exception = catchThrowableOfType(EntityNotFoundException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.userNotFoundMessage(givenId));
+        verify(repository).findById(givenId);
         verify(repository, never()).delete(any());
+        verifyNoMoreInteractions(repository);
         verifyNoInteractions(passwordEncoder);
     }
 
