@@ -26,7 +26,7 @@ public abstract class UserMapper {
     private Clock clock;
 
     @Autowired
-    public void setClock(final Clock clock) {
+    void setClock(final Clock clock) {
         this.clock = clock;
     }
 
