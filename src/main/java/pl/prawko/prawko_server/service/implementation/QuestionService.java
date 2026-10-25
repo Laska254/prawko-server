@@ -1,23 +1,29 @@
 package pl.prawko.prawko_server.service.implementation;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.mapper.QuestionMapper;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.service.IQuestionService;
 import pl.prawko.prawko_server.util.CSVParser;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Implementation of {@link IQuestionService} that manages {@link Question} entities and parsing csv file to {@code question} entities.
@@ -81,11 +87,43 @@ public class QuestionService implements IQuestionService {
                 });
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Counts the matching questions and fetches the one at a random offset, ordered by ID.
+     *
+     * @throws EntityNotFoundException if no question matches the category and type
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public QuestionDto getRandom(final CategoryVariant category, @Nullable final QuestionType type) {
+        log.info("Fetching random question by category '{}' and type '{}'", category, type);
+        final var types = type == null ? EnumSet.allOf(QuestionType.class) : EnumSet.of(type);
+        final var count = repository.countByTypeInAndCategories_Name(types, category.name());
+        if (count == 0) {
+            throw randomQuestionNotFound(category, type);
+        }
+        final var page = PageRequest.of(ThreadLocalRandom.current().nextInt(Math.toIntExact(count)), 1, Sort.by("id"));
+        return repository.findByTypeInAndCategories_Name(types, category.name(), page).stream()
+                .findFirst()
+                .map(question -> mapper.toDto(question, true))
+                // a question may be deleted between the count and the fetch
+                .orElseThrow(() -> randomQuestionNotFound(category, type));
+    }
+
     @Override
     @Transactional(readOnly = true)
     public Page<QuestionDto> getAll(final Pageable pageable) {
         return repository.findAll(pageable)
                 .map(question -> mapper.toDto(question, true));
+    }
+
+    private static EntityNotFoundException randomQuestionNotFound(final CategoryVariant category,
+                                                                  @Nullable final QuestionType type) {
+        final var message = "No question found for category '" + category + "'"
+                + (type == null ? "" : " and type '" + type + "'") + ".";
+        log.warn(message);
+        return new EntityNotFoundException(message);
     }
 
 }

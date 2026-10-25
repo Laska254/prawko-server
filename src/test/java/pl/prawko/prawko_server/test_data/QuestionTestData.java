@@ -2,6 +2,7 @@ package pl.prawko.prawko_server.test_data;
 
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.model.Answer;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 
@@ -63,6 +64,14 @@ public class QuestionTestData {
 
     public static String questionNotFoundMessage(final long id) {
         return "Question with id '" + id + "' not found.";
+    }
+
+    public static String noQuestionFoundMessage(final CategoryVariant category) {
+        return "No question found for category '" + category + "'.";
+    }
+
+    public static String noQuestionFoundMessage(final CategoryVariant category, final QuestionType type) {
+        return "No question found for category '" + category + "' and type '" + type + "'.";
     }
 
     public static List<Answer> getUserAnswers(final Question correct, final Question incorrect) {
