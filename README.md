@@ -203,11 +203,12 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/questions`
 
-  | Method | Path              | Access | Description                                                                |
-  |--------|-------------------|--------|----------------------------------------------------------------------------|
-  | `POST` | `/questions`      | admin  | upload a CSV file (`file` multipart part, max 5MB) with questions          |
-  | `GET`  | `/questions`      | admin  | get a page of questions                                                    |
-  | `GET`  | `/questions/{id}` | user   | get a question; answers' `correct` flag is included only for admins        |
+  | Method | Path                                                | Access | Description                                                                                        |
+  |--------|-----------------------------------------------------|--------|----------------------------------------------------------------------------------------------------|
+  | `POST` | `/questions`                                        | admin  | upload a CSV file (`file` multipart part, max 5MB) with questions                                  |
+  | `GET`  | `/questions`                                        | admin  | get a page of questions                                                                            |
+  | `GET`  | `/questions/random?category={category}&type={type}` | user   | random question for practice, with answers' `correct` flag; `type` (`BASIC`/`SPECIAL`) is optional |
+  | `GET`  | `/questions/{id}`                                   | user   | get a question; answers' `correct` flag is included only for admins                                |
 
 * `/exams`
 

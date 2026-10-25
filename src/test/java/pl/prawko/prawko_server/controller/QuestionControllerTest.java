@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -17,6 +18,7 @@ import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.QuestionDto;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
@@ -202,6 +204,96 @@ public class QuestionControllerTest {
         void returnUnauthorized_whenNotAuthenticated() {
             restClient.get()
                     .uri(ApiConstants.BY_ID, 1L)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+    }
+
+    @Nested
+    class GetRandomQuestion {
+
+        @Test
+        void returnQuestionWithCorrectAnswers_whenCategoryAndTypeMatch() {
+            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
+            repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
+            final var expected = QuestionTestData.createQuestionDto(question);
+
+            restClient.get()
+                    .uri(uri -> uri.path(ApiConstants.RANDOM)
+                            .queryParam("category", expected.categories().getFirst())
+                            .queryParam("type", expected.type())
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(QuestionDto.class).isEqualTo(expected);
+        }
+
+        @Test
+        void returnQuestionOfAnyType_whenTypeIsMissing() {
+            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
+            final var expected = QuestionTestData.createQuestionDto(question);
+
+            restClient.get()
+                    .uri(uri -> uri.path(ApiConstants.RANDOM)
+                            .queryParam("category", expected.categories().getFirst())
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(QuestionDto.class).isEqualTo(expected);
+        }
+
+        @Test
+        void returnNotFound_whenNoQuestionMatches() {
+            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
+            final var category = CategoryVariant.valueOf(question.getCategories().getFirst().getName());
+            final var type = QuestionType.SPECIAL;
+
+            restClient.get()
+                    .uri(uri -> uri.path(ApiConstants.RANDOM)
+                            .queryParam("category", category)
+                            .queryParam("type", type)
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isNotFound()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(QuestionTestData.noQuestionFoundMessage(category, type));
+        }
+
+        @ParameterizedTest
+        @CsvSource({"category, Z", "type, X"})
+        void returnBadRequest_whenCategoryOrTypeIsUnknown(final String parameter, final String invalidValue) {
+            restClient.get()
+                    .uri(uri -> uri.path(ApiConstants.RANDOM)
+                            .queryParam("category", CategoryVariant.B)
+                            .queryParam("type", QuestionType.BASIC)
+                            .replaceQueryParam(parameter, invalidValue)
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.invalidValueMessage(invalidValue, parameter));
+        }
+
+        @Test
+        void returnBadRequest_whenCategoryIsMissing() {
+            restClient.get()
+                    .uri(ApiConstants.RANDOM)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("Request parameter 'category' is missing.");
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.get()
+                    .uri(ApiConstants.RANDOM)
                     .exchange()
                     .expectStatus().isUnauthorized();
         }

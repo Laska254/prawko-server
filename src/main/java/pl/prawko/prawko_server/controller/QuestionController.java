@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Positive;
+import org.jspecify.annotations.Nullable;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
@@ -17,19 +18,22 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.QuestionDto;
+import pl.prawko.prawko_server.model.CategoryVariant;
+import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.implementation.QuestionService;
 
 /**
  * REST controller for question management operations.
  *
  * <p>Provides endpoints for uploading questions via CSV files and retrieving
- * individual or all questions from the database.
+ * individual, random or all questions from the database.
  *
  */
 @Tag(name = "Questions", description = "Questions management endpoints")
@@ -89,6 +93,28 @@ public class QuestionController {
     public ResponseEntity<QuestionDto> getQuestion(@PathVariable @Positive final long id,
                                                    @AuthenticationPrincipal(expression = "isAdmin()") final boolean admin) {
         return ResponseEntity.ok(questionService.getById(id, admin));
+    }
+
+    /**
+     * Retrieves a random question of the given category and type for practice.
+     *
+     * <p>Which answers are correct is revealed, so the client can check the answer itself.
+     *
+     * @param category the category the question must belong to
+     * @param type     the type of the question, or {@code null} for any type
+     * @return a {@link ResponseEntity} containing the {@link QuestionDto}
+     */
+    @Operation(summary = "Get random question",
+            description = "Retrieves a random question of the given category and optional type, with correct answers.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Question found"),
+            @ApiResponse(responseCode = "400", description = "Category is missing, or category or type is unknown"),
+            @ApiResponse(responseCode = "404", description = "No question matches the category and type")
+    })
+    @GetMapping(ApiConstants.RANDOM)
+    public ResponseEntity<QuestionDto> getRandomQuestion(@RequestParam final CategoryVariant category,
+                                                         @RequestParam @Nullable final QuestionType type) {
+        return ResponseEntity.ok(questionService.getRandom(category, type));
     }
 
     /**
