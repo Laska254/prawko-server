@@ -2,16 +2,14 @@ package pl.prawko.prawko_server.repository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -64,37 +62,47 @@ public class QuestionRepositoryTest {
     }
 
     @Test
-    void countByTypeInAndCategoriesName_returnCount_whenTypeAndCategoryMatch() {
+    void countMatching_returnCount_whenTypeAndCategoryMatch() {
         final var question = repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
         final var category = question.getCategories().getFirst().getName();
 
-        assertThat(repository.countByTypeInAndCategories_Name(EnumSet.allOf(QuestionType.class), category)).isOne();
-        assertThat(repository.countByTypeInAndCategories_Name(EnumSet.of(QuestionType.SPECIAL), category)).isZero();
+        assertThat(repository.countMatching(question.getType(), category)).isOne();
+        assertThat(repository.countMatching(QuestionType.SPECIAL, category)).isZero();
     }
 
     @Test
-    void countByTypeInAndCategoriesName_returnZero_whenCategoryOnlyContainsName() {
+    void countMatching_returnZero_whenCategoryOnlyContainsName() {
         final var question = repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
         final var partialName = CategoryTestData.CATEGORY_PT.getName().substring(1);
 
-        assertThat(repository.countByTypeInAndCategories_Name(EnumSet.of(question.getType()), partialName)).isZero();
+        assertThat(repository.countMatching(question.getType(), partialName)).isZero();
     }
 
     @Test
-    void findByTypeInAndCategoriesName_returnQuestionAtOffset_whenTypesAndCategoryMatch() {
+    void countMatching_matchAnyValueAndCountQuestionOnce_whenParameterIsNull() {
+        final var multiCategory = QuestionTestData.createQuestion(QuestionType.BASIC);
+        final var special = QuestionTestData.createQuestion(QuestionType.SPECIAL);
+        repository.saveAll(List.of(multiCategory, special));
+
+        assertThat(repository.countMatching(null, null)).isEqualTo(2);
+        assertThat(repository.countMatching(multiCategory.getType(), null)).isOne();
+        assertThat(repository.countMatching(null, CategoryTestData.CATEGORY_PT.getName())).isOne();
+    }
+
+    @Test
+    void findMatching_returnQuestionAtOffsetOrderedById_whenTypeAndCategoryMatch() {
         final var questions = Stream.concat(
                         QuestionTestData.createQuestions(QuestionType.SPECIAL).stream(),
                         QuestionTestData.createQuestions(QuestionType.BASIC).stream())
                 .toList();
         repository.saveAll(questions);
-        final var category = CategoryTestData.CATEGORY_B.getName();
-        final var page = PageRequest.of(1, 1, Sort.by("id"));
+        final var page = PageRequest.of(1, 1);
 
-        final var allTypes = repository.findByTypeInAndCategories_Name(EnumSet.allOf(QuestionType.class), category, page);
-        final var specialOnly = repository.findByTypeInAndCategories_Name(EnumSet.of(QuestionType.SPECIAL), category, page);
+        final var any = repository.findMatching(null, null, page);
+        final var specialInB = repository.findMatching(QuestionType.SPECIAL, CategoryTestData.CATEGORY_B.getName(), page);
 
-        assertThat(allTypes).extracting(Question::getId).containsExactly(2L);
-        assertThat(specialOnly).extracting(Question::getId).containsExactly(5L);
+        assertThat(any).extracting(Question::getId).containsExactly(2L);
+        assertThat(specialInB).extracting(Question::getId).containsExactly(5L);
     }
 
 }

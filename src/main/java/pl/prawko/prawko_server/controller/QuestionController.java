@@ -96,23 +96,23 @@ public class QuestionController {
     }
 
     /**
-     * Retrieves a random question of the given category and type for practice.
+     * Retrieves a random question of the given category and type for practice; a missing parameter matches any value.
      *
      * <p>Which answers are correct is revealed, so the client can check the answer itself.
      *
-     * @param category the category the question must belong to
+     * @param category the category the question must belong to, or {@code null} for any category
      * @param type     the type of the question, or {@code null} for any type
      * @return a {@link ResponseEntity} containing the {@link QuestionDto}
      */
     @Operation(summary = "Get random question",
-            description = "Retrieves a random question of the given category and optional type, with correct answers.")
+            description = "Retrieves a random question, with correct answers, of the given category and type; both are optional.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Question found"),
-            @ApiResponse(responseCode = "400", description = "Category is missing, or category or type is unknown"),
+            @ApiResponse(responseCode = "400", description = "Category or type is unknown"),
             @ApiResponse(responseCode = "404", description = "No question matches the category and type")
     })
     @GetMapping(ApiConstants.RANDOM)
-    public ResponseEntity<QuestionDto> getRandomQuestion(@RequestParam final CategoryVariant category,
+    public ResponseEntity<QuestionDto> getRandomQuestion(@RequestParam @Nullable final CategoryVariant category,
                                                          @RequestParam @Nullable final QuestionType type) {
         return ResponseEntity.ok(questionService.getRandom(category, type));
     }

@@ -280,14 +280,32 @@ public class QuestionControllerTest {
         }
 
         @Test
-        void returnBadRequest_whenCategoryIsMissing() {
+        void returnQuestionOfAnyCategory_whenCategoryIsMissing() {
+            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
+            repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
+            final var expected = QuestionTestData.createQuestionDto(question);
+
+            restClient.get()
+                    .uri(uri -> uri.path(ApiConstants.RANDOM)
+                            .queryParam("type", expected.type())
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(QuestionDto.class).isEqualTo(expected);
+        }
+
+        @Test
+        void returnAnyQuestion_whenNoParametersAreGiven() {
+            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
+            final var expected = QuestionTestData.createQuestionDto(question);
+
             restClient.get()
                     .uri(ApiConstants.RANDOM)
                     .headers(TestUtils::authUser)
                     .exchange()
-                    .expectStatus().isBadRequest()
-                    .expectBody()
-                    .jsonPath("$.detail").isEqualTo("Request parameter 'category' is missing.");
+                    .expectStatus().isOk()
+                    .expectBody(QuestionDto.class).isEqualTo(expected);
         }
 
         @Test

@@ -58,11 +58,11 @@ public interface IQuestionService {
     /**
      * Retrieves a random question of the given category and type, revealing which answers are correct.
      *
-     * @param category the category the question must belong to
+     * @param category the category the question must belong to, or {@code null} for any category
      * @param type     the type of the question, or {@code null} for any type
      * @return the question as a {@link QuestionDto}
      */
-    QuestionDto getRandom(CategoryVariant category, @Nullable QuestionType type);
+    QuestionDto getRandom(@Nullable CategoryVariant category, @Nullable QuestionType type);
 
     /**
      * Returns a page of questions converted to DTO, revealing which answers are correct.

@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.test_data;
 
+import org.jspecify.annotations.Nullable;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.CategoryVariant;
@@ -7,6 +8,7 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 public class QuestionTestData {
@@ -66,12 +68,10 @@ public class QuestionTestData {
         return "Question with id '" + id + "' not found.";
     }
 
-    public static String noQuestionFoundMessage(final CategoryVariant category) {
-        return "No question found for category '" + category + "'.";
-    }
-
-    public static String noQuestionFoundMessage(final CategoryVariant category, final QuestionType type) {
-        return "No question found for category '" + category + "' and type '" + type + "'.";
+    public static String noQuestionFoundMessage(@Nullable final CategoryVariant category,
+                                                @Nullable final QuestionType type) {
+        return "No question found for category '" + Objects.toString(category, "any")
+                + "' and type '" + Objects.toString(type, "any") + "'.";
     }
 
     public static List<Answer> getUserAnswers(final Question correct, final Question incorrect) {

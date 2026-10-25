@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
@@ -21,8 +20,8 @@ import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.service.IQuestionService;
 import pl.prawko.prawko_server.util.CSVParser;
 
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -96,15 +95,15 @@ public class QuestionService implements IQuestionService {
      */
     @Override
     @Transactional(readOnly = true)
-    public QuestionDto getRandom(final CategoryVariant category, @Nullable final QuestionType type) {
+    public QuestionDto getRandom(@Nullable final CategoryVariant category, @Nullable final QuestionType type) {
         log.info("Fetching random question by category '{}' and type '{}'", category, type);
-        final var types = type == null ? EnumSet.allOf(QuestionType.class) : EnumSet.of(type);
-        final var count = repository.countByTypeInAndCategories_Name(types, category.name());
+        final var categoryName = category == null ? null : category.name();
+        final var count = repository.countMatching(type, categoryName);
         if (count == 0) {
             throw randomQuestionNotFound(category, type);
         }
-        final var page = PageRequest.of(ThreadLocalRandom.current().nextInt(Math.toIntExact(count)), 1, Sort.by("id"));
-        return repository.findByTypeInAndCategories_Name(types, category.name(), page).stream()
+        final var page = PageRequest.of(ThreadLocalRandom.current().nextInt(Math.toIntExact(count)), 1);
+        return repository.findMatching(type, categoryName, page).stream()
                 .findFirst()
                 .map(question -> mapper.toDto(question, true))
                 // a question may be deleted between the count and the fetch
@@ -118,10 +117,10 @@ public class QuestionService implements IQuestionService {
                 .map(question -> mapper.toDto(question, true));
     }
 
-    private static EntityNotFoundException randomQuestionNotFound(final CategoryVariant category,
+    private static EntityNotFoundException randomQuestionNotFound(@Nullable final CategoryVariant category,
                                                                   @Nullable final QuestionType type) {
-        final var message = "No question found for category '" + category + "'"
-                + (type == null ? "" : " and type '" + type + "'") + ".";
+        final var message = "No question found for category '" + Objects.toString(category, "any")
+                + "' and type '" + Objects.toString(type, "any") + "'.";
         log.warn(message);
         return new EntityNotFoundException(message);
     }
