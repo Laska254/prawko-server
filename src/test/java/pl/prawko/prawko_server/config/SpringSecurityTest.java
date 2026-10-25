@@ -89,7 +89,7 @@ class SpringSecurityTest {
     }
 
     @Test
-    void corsConfigurationSource_exposeLocationHeader_whenOriginIsAllowed() {
+    void corsConfigurationSource_exposeLocationAndDateHeaders_whenOriginIsAllowed() {
         restClient.get()
                 .uri(ApiConstants.USERS_BASE_URL)
                 .headers(TestUtils::authAdmin)
@@ -97,7 +97,8 @@ class SpringSecurityTest {
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, ALLOWED_ORIGIN)
-                .expectHeader().valueEquals(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.LOCATION);
+                .expectHeader().valueEquals(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
+                        String.join(", ", HttpHeaders.LOCATION, HttpHeaders.DATE));
     }
 
     @Test

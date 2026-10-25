@@ -235,7 +235,8 @@ An exam lasts 25 minutes: `expires` (`created` + 25 minutes) is the deadline for
 return `409`, and the exam is finished automatically within `exam.expiry-check-interval` (`30s`).
 
 Timestamps (`created`, `updated`, `expires`) are ISO-8601 instants in UTC, e.g. `2026-10-23T12:00:00Z`, independent
-of the server's time zone.
+of the server's time zone. Clients can estimate their clock offset from the `Date` response header (exposed to
+cross-origin scripts via CORS) to show the remaining time correctly.
 
 | Status | When                                                                                                                         |
 |--------|------------------------------------------------------------------------------------------------------------------------------|

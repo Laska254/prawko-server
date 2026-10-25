@@ -109,7 +109,8 @@ public class SpringSecurity {
      * Configures CORS for every endpoint, so a frontend served from another origin can call the API.
      *
      * <p>Spring Security handles preflight ({@code OPTIONS}) requests before authentication, so they don't require
-     * credentials. The {@code Location} header is exposed so clients can read the URL of created resources.
+     * credentials. The {@code Location} header is exposed so clients can read the URL of created resources, and
+     * {@code Date} so they can estimate their clock offset from the server (e.g. for the exam timer).
      *
      * @param allowedOriginPatterns origin patterns allowed to call the API, e.g. {@code http://localhost:[*]}
      * @return the {@link CorsConfigurationSource} applied by the security filter chain
@@ -122,7 +123,7 @@ public class SpringSecurity {
         configuration.setAllowedMethods(List.of(
                 HttpMethod.GET.name(), HttpMethod.POST.name(), HttpMethod.PATCH.name(), HttpMethod.DELETE.name()));
         configuration.setAllowedHeaders(List.of(HttpHeaders.AUTHORIZATION, HttpHeaders.CONTENT_TYPE));
-        configuration.setExposedHeaders(List.of(HttpHeaders.LOCATION));
+        configuration.setExposedHeaders(List.of(HttpHeaders.LOCATION, HttpHeaders.DATE));
         final var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
