@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
+import pl.prawko.prawko_server.dto.DeleteAccountRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
@@ -96,5 +97,16 @@ public interface IUserService {
      * @param userId the ID of the user to delete
      */
     void deleteUser(long userId);
+
+    /**
+     * Deletes a user's own account.
+     * <p>
+     * Verifies the current password before removing the user like {@link #deleteUser}.
+     * </p>
+     *
+     * @param userId  the ID of the user deleting their account
+     * @param request the request containing the current password
+     */
+    void deleteOwnAccount(long userId, DeleteAccountRequest request);
 
 }

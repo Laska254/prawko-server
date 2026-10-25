@@ -5,6 +5,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
+import pl.prawko.prawko_server.dto.DeleteAccountRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.UserDto;
@@ -30,6 +31,7 @@ public class UserTestData {
     public static final String INVALID_VERIFICATION_TOKEN = "Email verification token is invalid or expired.";
     public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";
     public static final String VERIFICATION_COOLDOWN = "Verification email was sent recently, try again later.";
+    public static final String INCORRECT_PASSWORD = "Current password is incorrect.";
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 
@@ -49,7 +51,7 @@ public class UserTestData {
                 .setLastName(lastName)
                 .setUserName(userName)
                 .setEmail(email)
-                .setPassword(new BCryptPasswordEncoder().encode("lembasy"))
+                .setPassword(new BCryptPasswordEncoder().encode(TestUtils.USER_PASSWORD))
                 .setRole(Role.USER)
                 .setEnabled(true)
                 .setCreated(Instant.now())
@@ -79,7 +81,8 @@ public class UserTestData {
 
     public static User createGimli() {
         return createTestUser("Gimli", "Gloinson", TestUtils.ADMIN_NAME, "gimli@erebor.me")
-                .setRole(Role.ADMIN);
+                .setRole(Role.ADMIN)
+                .setPassword(new BCryptPasswordEncoder().encode(TestUtils.ADMIN_PASSWORD));
     }
 
     public static UserDto createUserDto(final long id) {
@@ -155,7 +158,7 @@ public class UserTestData {
     }
 
     public static ChangePasswordRequest createValidChangePasswordRequest() {
-        return new ChangePasswordRequest("lembasy", "racuchy");
+        return new ChangePasswordRequest(TestUtils.USER_PASSWORD, "racuchy");
     }
 
     public static ChangePasswordRequest createWrongCurrentPasswordRequest() {
@@ -163,7 +166,15 @@ public class UserTestData {
     }
 
     public static ChangePasswordRequest createSameAsCurrentPasswordRequest() {
-        return new ChangePasswordRequest("lembasy", "lembasy");
+        return new ChangePasswordRequest(TestUtils.USER_PASSWORD, TestUtils.USER_PASSWORD);
+    }
+
+    public static DeleteAccountRequest createValidDeleteAccountRequest() {
+        return new DeleteAccountRequest(TestUtils.USER_PASSWORD);
+    }
+
+    public static DeleteAccountRequest createWrongPasswordDeleteAccountRequest() {
+        return new DeleteAccountRequest("wrongPassword");
     }
 
     public static ResetPasswordRequest createValidResetPasswordRequest(final String token) {
@@ -184,7 +195,7 @@ public class UserTestData {
                 "Tuk",
                 "pippin",
                 "pippin@shire.me",
-                "lembasy");
+                TestUtils.USER_PASSWORD);
     }
 
 }
