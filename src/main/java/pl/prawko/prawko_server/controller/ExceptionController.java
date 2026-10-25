@@ -17,6 +17,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
@@ -138,6 +139,13 @@ public class ExceptionController {
     public ProblemDetail handleMissingParameter(final MissingServletRequestParameterException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                 "Request parameter '" + exception.getParameterName() + "' is missing.");
+    }
+
+    @ApiResponse(responseCode = "400", description = "Request parameter or path variable has an invalid value")
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleArgumentTypeMismatch(final MethodArgumentTypeMismatchException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Invalid value '" + exception.getValue() + "' for '" + exception.getName() + "'.");
     }
 
     @ApiResponse(responseCode = "400", description = "Invalid sort property")

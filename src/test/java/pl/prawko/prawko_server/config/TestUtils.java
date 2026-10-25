@@ -49,6 +49,10 @@ public class TestUtils {
         headers.setBasicAuth(UNVERIFIED_NAME, UNVERIFIED_PASSWORD);
     }
 
+    public static String invalidValueMessage(final String value, final String parameter) {
+        return "Invalid value '" + value + "' for '" + parameter + "'.";
+    }
+
     public static RestTestClient createRestTestClient(final int port, final String controllerBasePath) {
         return RestTestClient
                 .bindToServer()

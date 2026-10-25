@@ -186,6 +186,19 @@ public class QuestionControllerTest {
         }
 
         @Test
+        void returnBadRequest_whenIdIsNotANumber() {
+            final var invalidId = "abc";
+
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, invalidId)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.invalidValueMessage(invalidId, "id"));
+        }
+
+        @Test
         void returnUnauthorized_whenNotAuthenticated() {
             restClient.get()
                     .uri(ApiConstants.BY_ID, 1L)
