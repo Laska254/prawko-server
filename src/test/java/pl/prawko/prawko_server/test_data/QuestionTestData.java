@@ -114,7 +114,7 @@ public class QuestionTestData {
                 .toList();
     }
 
-    static List<Question> createQuestions(final QuestionType type) {
+    public static List<Question> createQuestions(final QuestionType type) {
         return switch (type) {
             case BASIC -> createBasicQuestions();
             case SPECIAL -> createSpecialQuestions();
