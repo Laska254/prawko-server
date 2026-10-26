@@ -999,13 +999,18 @@ public class UserControllerTest {
     class DeleteUser {
 
         @Test
-        void returnNoContent_whenSuccess() {
-            final var id = registerUser();
+        void returnNoContentAndRemoveUserWithExams_whenSuccess() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+
             restClient.delete()
-                    .uri(ApiConstants.BY_ID, id)
+                    .uri(ApiConstants.BY_ID, tester.getId())
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isNoContent();
+
+            assertThat(userRepository.existsById(tester.getId())).isFalse();
+            assertThat(examRepository.findAll()).isEmpty();
         }
 
         @Test
