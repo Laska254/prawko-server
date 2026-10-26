@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Represents a {@code Category} entity within the application.
  * <p>
- * A {@code Language} has:
+ * A {@code Category} has:
  *  <ul>
  *     <li>{@code id} - generated unique identifier</li>
  *     <li>{@code name} - driving license category represented by {@link CategoryVariant}, stored as its name</li>
@@ -28,8 +28,8 @@ import java.util.List;
  *     <li>{@link Exam}: {@code Category} can be assigned to multiple exams</li>
  * </ul>
  * <p>
- * The entity is mapped do the database table {@code category}.
- * All setters are returning {@code  Language} itself, enabling method chaining.
+ * The entity is mapped to the database table {@code category}.
+ * All setters are returning {@code Category} itself, enabling method chaining.
  */
 @Entity
 public class Category {

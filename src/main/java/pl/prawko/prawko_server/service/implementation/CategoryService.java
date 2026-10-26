@@ -11,7 +11,6 @@ import pl.prawko.prawko_server.service.ICategoryService;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Implementation of {@link ICategoryService} that manages and retrieves {@link Category} entities.
@@ -43,10 +42,9 @@ public class CategoryService implements ICategoryService {
     public List<Category> findAllFromString(final String input) {
         log.info("Fetching categories from '{}'", input);
         return Arrays.stream(input.split(","))
-                .flatMap(name -> Arrays.stream(CategoryVariant.values())
-                        .filter(variant -> variant.name().equals(name)))
-                .map(repository::findByName)
-                .flatMap(Optional::stream)
+                .flatMap(name -> CategoryVariant.ofName(name)
+                        .flatMap(repository::findByName)
+                        .stream())
                 .toList();
     }
 
