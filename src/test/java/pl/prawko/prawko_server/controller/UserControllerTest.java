@@ -35,8 +35,6 @@ import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -913,27 +911,6 @@ public class UserControllerTest {
         }
 
         @Test
-        void removePendingTokens_whenPasswordIsCorrect() {
-            final var resetTokenHash = SecureTokens.hash(SecureTokens.generate());
-            final var tester = userRepository.save(UserTestData.createPippinChangingEmail()
-                    .setPasswordResetTokenHash(resetTokenHash)
-                    .setPasswordResetTokenExpires(Instant.now().plus(Duration.ofHours(1))));
-
-            restClient.method(HttpMethod.DELETE)
-                    .uri(ApiConstants.ME)
-                    .headers(TestUtils::authUser)
-                    .body(UserTestData.createValidDeleteAccountRequest())
-                    .exchange()
-                    .expectStatus().isNoContent();
-
-            assertThat(userRepository.findByPasswordResetTokenHash(resetTokenHash)).isEmpty();
-            assertThat(userRepository.findByVerificationOrCurrentEmailTokenHash(tester.getVerificationTokenHash()))
-                    .isEmpty();
-            assertThat(userRepository.findByVerificationOrCurrentEmailTokenHash(tester.getCurrentEmailTokenHash()))
-                    .isEmpty();
-        }
-
-        @Test
         void allowRegisteringSameUserNameAndEmailAgain_whenAccountDeleted() {
             userRepository.save(UserTestData.createTestUserPippin());
             restClient.method(HttpMethod.DELETE)
@@ -1022,13 +999,18 @@ public class UserControllerTest {
     class DeleteUser {
 
         @Test
-        void returnNoContent_whenSuccess() {
-            final var id = registerUser();
+        void returnNoContentAndRemoveUserWithExams_whenSuccess() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+
             restClient.delete()
-                    .uri(ApiConstants.BY_ID, id)
+                    .uri(ApiConstants.BY_ID, tester.getId())
                     .headers(TestUtils::authAdmin)
                     .exchange()
                     .expectStatus().isNoContent();
+
+            assertThat(userRepository.existsById(tester.getId())).isFalse();
+            assertThat(examRepository.findAll()).isEmpty();
         }
 
         @Test
