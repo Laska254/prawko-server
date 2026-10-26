@@ -27,6 +27,7 @@ import pl.prawko.prawko_server.util.CSVParser;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -188,7 +189,7 @@ public class QuestionServiceTest {
         @ParameterizedTest
         @CsvSource({"B, SPECIAL", ","})
         void throwEntityNotFound_whenNoQuestionMatches(final CategoryVariant category, final QuestionType type) {
-            final var categoryName = category == null ? null : category.name();
+            final var categoryName = Objects.toString(category, null);
             when(repository.countMatching(type, categoryName)).thenReturn(0L);
 
             assertThatThrownBy(() -> questionService.getRandom(category, type))

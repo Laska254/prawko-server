@@ -97,7 +97,7 @@ public class QuestionService implements IQuestionService {
     @Transactional(readOnly = true)
     public QuestionDto getRandom(@Nullable final CategoryVariant category, @Nullable final QuestionType type) {
         log.info("Fetching random question by category '{}' and type '{}'", category, type);
-        final var categoryName = category == null ? null : category.name();
+        final var categoryName = Objects.toString(category, null);
         final var count = repository.countMatching(type, categoryName);
         if (count == 0) {
             throw randomQuestionNotFound(category, type);
