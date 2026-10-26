@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import pl.prawko.prawko_server.model.CategoryVariant;
 
 import java.time.Instant;
 import java.util.List;
@@ -21,7 +22,7 @@ public record ExamDto(
         long userId,
 
         @Schema(description = "Driving license category of the exam")
-        String category,
+        CategoryVariant category,
 
         @Schema(description = "Exam creation timestamp (UTC)", example = "2026-10-23T12:00:00Z")
         Instant created,

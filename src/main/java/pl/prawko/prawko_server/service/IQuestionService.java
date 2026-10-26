@@ -41,10 +41,10 @@ public interface IQuestionService {
      * Retrieves all questions by {@link QuestionType} and {@link Category}'s name.
      *
      * @param type     the type of questions to retrieve
-     * @param category the name of the category to filter by
+     * @param category the category to filter by
      * @return a list of all matching questions
      */
-    List<Question> getAllByTypeAndCategory(QuestionType type, String category);
+    List<Question> getAllByTypeAndCategory(QuestionType type, CategoryVariant category);
 
     /**
      * Retrieves a question by its ID.

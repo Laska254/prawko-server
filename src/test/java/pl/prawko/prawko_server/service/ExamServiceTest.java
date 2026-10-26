@@ -15,6 +15,7 @@ import org.springframework.security.access.AccessDeniedException;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.mapper.ExamMapper;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
@@ -138,7 +139,7 @@ public class ExamServiceTest {
         @Test
         void throwEntityNotFound_whenCategoryDoesNotExist() {
             final var user = UserTestData.createTestUserPippin();
-            final var nonExistentCategory = "NON_EXISTENT";
+            final var nonExistentCategory = CategoryVariant.T;
 
             when(userService.getById(user.getId())).thenReturn(user);
             when(categoryService.findByName(nonExistentCategory)).thenThrow(new EntityNotFoundException("Category not found"));

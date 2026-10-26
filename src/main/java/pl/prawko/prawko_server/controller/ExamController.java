@@ -74,7 +74,7 @@ public class ExamController {
         final var location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path(ApiConstants.BY_ID)
-                .buildAndExpand(service.createExam(dto.userId(), dto.categoryName().name()))
+                .buildAndExpand(service.createExam(dto.userId(), dto.categoryName()))
                 .toUri();
         return ResponseEntity.created(location).build();
     }

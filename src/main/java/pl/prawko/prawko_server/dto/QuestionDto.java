@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.QuestionType;
 
 import java.util.List;
@@ -33,7 +34,7 @@ public record QuestionDto(
         int value,
 
         @Schema(description = "Categories this question belongs to")
-        List<String> categories,
+        List<CategoryVariant> categories,
 
         @Schema(description = "Translations of the question in different languages")
         List<QuestionTranslationDto> translations

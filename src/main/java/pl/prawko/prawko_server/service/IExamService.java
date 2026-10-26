@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Exam;
 
 /**
@@ -24,10 +25,10 @@ public interface IExamService {
      * </p>
      *
      * @param userId       the ID of the user who owns the exam
-     * @param categoryName the name of the category from which to generate exam questions
+     * @param categoryName the category from which to generate exam questions
      * @return the ID of the newly created exam
      */
-    long createExam(long userId, String categoryName);
+    long createExam(long userId, CategoryVariant categoryName);
 
     /**
      * Retrieves an {@link Exam} by its ID and maps it to {@link ExamDto}.

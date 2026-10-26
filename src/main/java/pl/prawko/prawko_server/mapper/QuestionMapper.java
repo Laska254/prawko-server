@@ -9,6 +9,7 @@ import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.dto.QuestionTranslationDto;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Category;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
 import pl.prawko.prawko_server.model.QuestionTranslation;
@@ -44,7 +45,7 @@ public interface QuestionMapper {
     @Mapping(target = "type", expression = "java(QuestionType.ofType(questionCSV.type()))")
     Question toEntity(QuestionCSV questionCSV);
 
-    default String categoryToName(final Category category) {
+    default CategoryVariant categoryToName(final Category category) {
         return category.getName();
     }
 
