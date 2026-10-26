@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.mapper.QuestionMapper;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
@@ -74,39 +75,39 @@ public class QuestionServiceTest {
         @Test
         void returnListOfQuestions_whenFound() {
             final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
-            final var category = "B";
+            final var category = CategoryVariant.B;
             final var expected = List.of(question);
-            when(repository.findByTypeAndCategories_NameContains(question.getType(), category)).thenReturn(expected);
+            when(repository.findByTypeAndCategories_Name(question.getType(), category)).thenReturn(expected);
 
             final var result = questionService.getAllByTypeAndCategory(question.getType(), category);
 
             assertThat(result).isEqualTo(expected);
-            verify(repository).findByTypeAndCategories_NameContains(question.getType(), category);
+            verify(repository).findByTypeAndCategories_Name(question.getType(), category);
             verifyNoMoreInteractions(repository);
         }
 
         @Test
-        void returnEmptyList_whenCategoryNotExists() {
-            final var category = "Z";
+        void returnEmptyList_whenCategoryHasNoQuestions() {
+            final var category = CategoryVariant.T;
             final var type = QuestionType.BASIC;
-            when(repository.findByTypeAndCategories_NameContains(type, category)).thenReturn(Collections.emptyList());
+            when(repository.findByTypeAndCategories_Name(type, category)).thenReturn(Collections.emptyList());
 
             final var result = questionService.getAllByTypeAndCategory(type, category);
 
             assertThat(result).isEmpty();
-            verify(repository).findByTypeAndCategories_NameContains(type, category);
+            verify(repository).findByTypeAndCategories_Name(type, category);
             verifyNoMoreInteractions(repository);
         }
 
         @Test
         void returnEmptyList_whenTypeIsWrong() {
-            final var category = "B";
-            when(repository.findByTypeAndCategories_NameContains(null, category)).thenReturn(Collections.emptyList());
+            final var category = CategoryVariant.B;
+            when(repository.findByTypeAndCategories_Name(null, category)).thenReturn(Collections.emptyList());
 
             final var result = questionService.getAllByTypeAndCategory(null, category);
 
             assertThat(result).isEmpty();
-            verify(repository).findByTypeAndCategories_NameContains(null, category);
+            verify(repository).findByTypeAndCategories_Name(null, category);
             verifyNoMoreInteractions(repository);
         }
 

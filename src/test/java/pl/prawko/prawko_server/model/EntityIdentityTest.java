@@ -80,7 +80,7 @@ class EntityIdentityTest {
     @Test
     void toString_notRecurse_whenUserAndExamReferenceEachOther() {
         final var user = new User().setId(1).setUserName("pippin").setPassword("secret-hash");
-        final var category = new Category().setId(2).setName("B");
+        final var category = new Category().setId(2).setName(CategoryVariant.B);
         final var exam = new Exam().setId(3).setUser(user).setCategory(category);
         category.setExams(List.of(exam));
         user.setExams(List.of(exam));

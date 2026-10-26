@@ -3,6 +3,8 @@ package pl.prawko.prawko_server.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -14,10 +16,10 @@ import java.util.List;
 /**
  * Represents a {@code Category} entity within the application.
  * <p>
- * A {@code Language} has:
+ * A {@code Category} has:
  *  <ul>
  *     <li>{@code id} - generated unique identifier</li>
- *     <li>{@code name} - limited to 3 characters</li>
+ *     <li>{@code name} - driving license category represented by {@link CategoryVariant}, stored as its name</li>
  * </ul>
  * <p>
  * Relationships:
@@ -26,8 +28,8 @@ import java.util.List;
  *     <li>{@link Exam}: {@code Category} can be assigned to multiple exams</li>
  * </ul>
  * <p>
- * The entity is mapped do the database table {@code category}.
- * All setters are returning {@code  Language} itself, enabling method chaining.
+ * The entity is mapped to the database table {@code category}.
+ * All setters are returning {@code Category} itself, enabling method chaining.
  */
 @Entity
 public class Category {
@@ -36,8 +38,9 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 3)
-    private String name;
+    private CategoryVariant name;
 
     @ManyToMany(mappedBy = "categories")
     @JsonBackReference
@@ -55,11 +58,11 @@ public class Category {
         return this;
     }
 
-    public String getName() {
+    public CategoryVariant getName() {
         return name;
     }
 
-    public Category setName(final String name) {
+    public Category setName(final CategoryVariant name) {
         this.name = name;
         return this;
     }

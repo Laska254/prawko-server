@@ -6,6 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.Category;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
 import pl.prawko.prawko_server.model.QuestionType;
@@ -39,10 +40,10 @@ public interface IQuestionService {
      * Retrieves all questions by {@link QuestionType} and {@link Category}'s name.
      *
      * @param type     the type of questions to retrieve
-     * @param category the name of the category to filter by
+     * @param category the category to filter by
      * @return a list of all matching questions
      */
-    List<Question> getAllByTypeAndCategory(QuestionType type, String category);
+    List<Question> getAllByTypeAndCategory(QuestionType type, CategoryVariant category);
 
     /**
      * Retrieves a question by its ID.

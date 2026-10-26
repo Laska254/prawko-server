@@ -29,6 +29,7 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
+import pl.prawko.prawko_server.test_data.CategoryTestData;
 import pl.prawko.prawko_server.test_data.ExamTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
@@ -313,7 +314,7 @@ public class ExamControllerTest {
             assertThat(result.page().totalElements()).isEqualTo(2);
             assertThat(result.content())
                     .allSatisfy(summary -> {
-                        assertThat(summary.category()).isEqualTo("B");
+                        assertThat(summary.category()).isEqualTo(CategoryTestData.CATEGORY_B.getName());
                         assertThat(summary.active()).isTrue();
                         assertThat(summary.score()).isZero();
                         assertThat(summary.created()).isNotNull();

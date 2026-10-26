@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 import pl.prawko.prawko_server.model.Category;
+import pl.prawko.prawko_server.test_data.CategoryTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,18 +18,21 @@ class CategoryRepositoryTest {
 
     @Test
     void findByName_returnCategory_whenCategoryExists() {
-        final var category = new Category().setName("C4");
-        repository.save(category);
+        final var expected = CategoryTestData.CATEGORY_PT;
 
-        final var result = repository.findByName("C4");
+        final var result = repository.findByName(expected.getName());
 
-        assertThat(result).isPresent();
-        assertThat(result.get().getName()).isEqualTo("C4");
+        assertThat(result).get()
+                .extracting(Category::getId, Category::getName)
+                .containsExactly(expected.getId(), expected.getName());
     }
 
     @Test
     void findByName_returnEmpty_whenCategoryDoesNotExist() {
-        final var result = repository.findByName("WRONG");
+        final var category = CategoryTestData.CATEGORY_B;
+        repository.deleteById(category.getId());
+
+        final var result = repository.findByName(category.getName());
 
         assertThat(result).isEmpty();
     }
