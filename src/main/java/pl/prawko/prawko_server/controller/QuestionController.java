@@ -76,7 +76,8 @@ public class QuestionController {
     /**
      * Retrieves a question by its ID.
      *
-     * <p>Which answers are correct is revealed only to admins, so users can't look up answers to their active exams.
+     * <p>Which answers are correct is revealed only to admins. This only keeps them out of this view and is not a
+     * security boundary: the question bank is public and {@code GET /questions/random} reveals them for practice.
      *
      * @param id    the unique identifier of the question (must be positive)
      * @param admin whether the currently authenticated user is an admin

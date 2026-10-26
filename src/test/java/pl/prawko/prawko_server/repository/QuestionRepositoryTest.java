@@ -93,7 +93,7 @@ public class QuestionRepositoryTest {
         final var result = repository.findByTypeAndCategories_Name(
                 QuestionType.SPECIAL, CategoryTestData.CATEGORY_B.getName(), page);
 
-        assertThat(result).extracting(Question::getId).containsExactly(5L);
+        assertThat(result).extracting(Question::getId).containsExactly(questions.get(1).getId());
     }
 
 }

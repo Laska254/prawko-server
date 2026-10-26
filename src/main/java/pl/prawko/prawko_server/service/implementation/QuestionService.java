@@ -109,7 +109,6 @@ public class QuestionService implements IQuestionService {
         return repository.findByTypeAndCategories_Name(chosenType, chosenCategory, page).stream()
                 .findFirst()
                 .map(question -> mapper.toDto(question, true))
-                // a question may be deleted between the count and the fetch
                 .orElseThrow(() -> randomQuestionNotFound(chosenCategory, chosenType));
     }
 
