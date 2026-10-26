@@ -120,6 +120,15 @@ public final class ApiConstants {
     public static final String RESEND_VERIFICATION = VERIFY_EMAIL + "/resend";
 
     /**
+     * Path segment for retrieving a random question.
+     *
+     * <p>Example: {@code /questions/random}
+     *
+     * @see pl.prawko.prawko_server.controller.QuestionController
+     */
+    public static final String RANDOM = "/random";
+
+    /**
      * Path segment for submitting answers to questions of an exam.
      *
      * <p>Example: {@code /exams/{id}/answers}

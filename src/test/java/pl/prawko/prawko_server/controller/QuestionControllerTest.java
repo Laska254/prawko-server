@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -17,6 +18,7 @@ import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.QuestionDto;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
@@ -24,6 +26,7 @@ import pl.prawko.prawko_server.test_data.MultiPartFactory;
 import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -186,9 +189,157 @@ public class QuestionControllerTest {
         }
 
         @Test
+        void returnBadRequest_whenIdIsNotANumber() {
+            final var invalidId = "abc";
+
+            restClient.get()
+                    .uri(ApiConstants.BY_ID, invalidId)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.invalidValueMessage(invalidId, "id"));
+        }
+
+        @Test
         void returnUnauthorized_whenNotAuthenticated() {
             restClient.get()
                     .uri(ApiConstants.BY_ID, 1L)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+    }
+
+    @Nested
+    class GetRandomQuestion {
+
+        @Test
+        void returnQuestionWithCorrectAnswers_whenCategoryAndTypeMatch() {
+            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
+            repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
+            final var expected = QuestionTestData.createQuestionDto(question);
+
+            restClient.get()
+                    .uri(uri -> uri.path(ApiConstants.RANDOM)
+                            .queryParam("category", expected.categories().getFirst())
+                            .queryParam("type", expected.type())
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(QuestionDto.class).isEqualTo(expected);
+        }
+
+        @Test
+        void returnQuestionOfRandomType_whenTypeIsMissing() {
+            final var basic = repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
+            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L, QuestionType.SPECIAL));
+
+            final var result = restClient.get()
+                    .uri(uri -> uri.path(ApiConstants.RANDOM)
+                            .queryParam("category", CategoryVariant.B)
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(QuestionDto.class)
+                    .returnResult()
+                    .getResponseBody();
+
+            assertThat(result.id()).isIn(basic.getId(), special.getId());
+        }
+
+        @Test
+        void returnNotFound_whenNoQuestionMatches() {
+            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
+            final var category = question.getCategories().getFirst().getName();
+            final var type = QuestionType.SPECIAL;
+
+            restClient.get()
+                    .uri(uri -> uri.path(ApiConstants.RANDOM)
+                            .queryParam("category", category)
+                            .queryParam("type", type)
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isNotFound()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(QuestionTestData.noQuestionFoundMessage(category, type));
+        }
+
+        @Test
+        void returnNotFoundNamingPickedCategory_whenPickedCombinationHasNoQuestions() {
+            repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
+            final var type = QuestionType.SPECIAL;
+            final var expected = Arrays.stream(CategoryVariant.values())
+                    .map(category -> QuestionTestData.noQuestionFoundMessage(category, type))
+                    .toList();
+
+            restClient.get()
+                    .uri(uri -> uri.path(ApiConstants.RANDOM)
+                            .queryParam("type", type)
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isNotFound()
+                    .expectBody()
+                    .jsonPath("$.detail").value(String.class, detail -> assertThat(detail).isIn(expected));
+        }
+
+        @ParameterizedTest
+        @CsvSource({"category, Z", "type, X"})
+        void returnBadRequest_whenCategoryOrTypeIsUnknown(final String parameter, final String invalidValue) {
+            restClient.get()
+                    .uri(uri -> uri.path(ApiConstants.RANDOM)
+                            .queryParam("category", CategoryVariant.B)
+                            .queryParam("type", QuestionType.BASIC)
+                            .replaceQueryParam(parameter, invalidValue)
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.invalidValueMessage(invalidValue, parameter));
+        }
+
+        @Test
+        void returnQuestionOfRandomCategory_whenCategoryIsMissing() {
+            repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
+            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L, QuestionType.SPECIAL));
+
+            restClient.get()
+                    .uri(uri -> uri.path(ApiConstants.RANDOM)
+                            .queryParam("type", special.getType())
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.id").isEqualTo(special.getId());
+        }
+
+        @Test
+        void returnRandomQuestion_whenNoParametersAreGiven() {
+            final var basic = repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
+            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L, QuestionType.SPECIAL));
+
+            final var result = restClient.get()
+                    .uri(ApiConstants.RANDOM)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(QuestionDto.class)
+                    .returnResult()
+                    .getResponseBody();
+
+            assertThat(result.id()).isIn(basic.getId(), special.getId());
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.get()
+                    .uri(ApiConstants.RANDOM)
                     .exchange()
                     .expectStatus().isUnauthorized();
         }

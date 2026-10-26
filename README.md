@@ -203,11 +203,19 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/questions`
 
-  | Method | Path              | Access | Description                                                                |
-  |--------|-------------------|--------|----------------------------------------------------------------------------|
-  | `POST` | `/questions`      | admin  | upload a CSV file (`file` multipart part, max 5MB) with questions          |
-  | `GET`  | `/questions`      | admin  | get a page of questions                                                    |
-  | `GET`  | `/questions/{id}` | user   | get a question; answers' `correct` flag is included only for admins        |
+  | Method | Path                                                | Access | Description                                                                                               |
+  |--------|-----------------------------------------------------|--------|-----------------------------------------------------------------------------------------------------------|
+  | `POST` | `/questions`                                        | admin  | upload a CSV file (`file` multipart part, max 5MB) with questions                                         |
+  | `GET`  | `/questions`                                        | admin  | get a page of questions                                                                                   |
+  | `GET`  | `/questions/random?category={category}&type={type}` | user   | random question for practice, with answers' `correct` flag; `category` and `type` are random when missing |
+  | `GET`  | `/questions/{id}`                                   | user   | get a question; answers' `correct` flag is included only for admins                                       |
+
+  Hiding the `correct` flag (here and on active exams) only keeps it out of those views, it isn't a security boundary:
+  the question bank is public and `GET /questions/random` includes the flag for practice.
+
+  `GET /questions/random` picks a missing `category` or `type` at random, each value equally likely. The full question
+  bank has questions of both types in every category; after a partial import the picked combination can be empty and
+  the request returns `404` naming it.
 
 * `/exams`
 

@@ -1,10 +1,13 @@
 package pl.prawko.prawko_server.service.implementation;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
@@ -19,6 +22,8 @@ import pl.prawko.prawko_server.service.IQuestionService;
 import pl.prawko.prawko_server.util.CSVParser;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Implementation of {@link IQuestionService} that manages {@link Question} entities and parsing csv file to {@code question} entities.
@@ -82,11 +87,46 @@ public class QuestionService implements IQuestionService {
                 });
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Picks a random category and type for a missing one, then counts the matching questions and fetches the one
+     * at a random offset, ordered by ID.
+     *
+     * @throws EntityNotFoundException if no question matches the given or picked category and type
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public QuestionDto getRandom(@Nullable final CategoryVariant category, @Nullable final QuestionType type) {
+        final var chosenCategory = Objects.requireNonNullElseGet(category, () -> randomOf(CategoryVariant.values()));
+        final var chosenType = Objects.requireNonNullElseGet(type, () -> randomOf(QuestionType.values()));
+        log.info("Fetching random question by category '{}' and type '{}'", chosenCategory, chosenType);
+        final var count = repository.countByTypeAndCategories_Name(chosenType, chosenCategory);
+        if (count == 0) {
+            throw randomQuestionNotFound(chosenCategory, chosenType);
+        }
+        final var page = PageRequest.of(ThreadLocalRandom.current().nextInt(Math.toIntExact(count)), 1, Sort.by("id"));
+        return repository.findByTypeAndCategories_Name(chosenType, chosenCategory, page).stream()
+                .findFirst()
+                .map(question -> mapper.toDto(question, true))
+                .orElseThrow(() -> randomQuestionNotFound(chosenCategory, chosenType));
+    }
+
     @Override
     @Transactional(readOnly = true)
     public Page<QuestionDto> getAll(final Pageable pageable) {
         return repository.findAll(pageable)
                 .map(question -> mapper.toDto(question, true));
+    }
+
+    private static <T> T randomOf(final T[] values) {
+        return values[ThreadLocalRandom.current().nextInt(values.length)];
+    }
+
+    private static EntityNotFoundException randomQuestionNotFound(final CategoryVariant category, final QuestionType type) {
+        final var message = "No question found for category '" + category + "' and type '" + type + "'.";
+        log.warn(message);
+        return new EntityNotFoundException(message);
     }
 
 }

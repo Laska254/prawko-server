@@ -3,13 +3,17 @@ package pl.prawko.prawko_server.repository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import pl.prawko.prawko_server.model.CategoryVariant;
+import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,6 +70,30 @@ public class QuestionRepositoryTest {
         final var result = repository.findByTypeAndCategories_Name(question.getType(), CategoryVariant.T);
 
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void countByTypeAndCategoriesName_returnCount_whenTypeAndCategoryMatch() {
+        final var question = repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
+        final var category = question.getCategories().getFirst().getName();
+
+        assertThat(repository.countByTypeAndCategories_Name(question.getType(), category)).isOne();
+        assertThat(repository.countByTypeAndCategories_Name(QuestionType.SPECIAL, category)).isZero();
+    }
+
+    @Test
+    void findByTypeAndCategoriesName_returnQuestionAtOffset_whenPaged() {
+        final var questions = Stream.concat(
+                        QuestionTestData.createQuestions(QuestionType.SPECIAL).stream(),
+                        QuestionTestData.createQuestions(QuestionType.BASIC).stream())
+                .toList();
+        repository.saveAll(questions);
+        final var page = PageRequest.of(1, 1, Sort.by("id"));
+
+        final var result = repository.findByTypeAndCategories_Name(
+                QuestionType.SPECIAL, CategoryTestData.CATEGORY_B.getName(), page);
+
+        assertThat(result).extracting(Question::getId).containsExactly(questions.get(1).getId());
     }
 
 }

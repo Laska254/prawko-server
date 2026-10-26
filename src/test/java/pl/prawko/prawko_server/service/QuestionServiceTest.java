@@ -6,12 +6,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.CategoryVariant;
@@ -28,7 +31,10 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -137,6 +143,87 @@ public class QuestionServiceTest {
             assertThatThrownBy(() -> questionService.getById(nonExistentId, false))
                     .isInstanceOf(EntityNotFoundException.class)
                     .hasMessage(QuestionTestData.questionNotFoundMessage(nonExistentId));
+            verifyNoInteractions(mapper);
+        }
+
+    }
+
+    @Nested
+    class GetRandom {
+
+        private static final CategoryVariant CATEGORY = CategoryVariant.B;
+        private static final QuestionType TYPE = QuestionType.SPECIAL;
+
+        @Test
+        void returnDtoWithCorrectAnswersAtRandomOffset_whenQuestionsMatch() {
+            final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
+            final var dto = QuestionTestData.createQuestionDto(question);
+            final var count = 3L;
+            final var pageCaptor = ArgumentCaptor.forClass(Pageable.class);
+            when(repository.countByTypeAndCategories_Name(TYPE, CATEGORY)).thenReturn(count);
+            when(repository.findByTypeAndCategories_Name(eq(TYPE), eq(CATEGORY), pageCaptor.capture()))
+                    .thenReturn(List.of(question));
+            when(mapper.toDto(question, true)).thenReturn(dto);
+
+            final var result = questionService.getRandom(CATEGORY, TYPE);
+
+            assertThat(result).isEqualTo(dto);
+            final var page = pageCaptor.getValue();
+            assertThat(page.getPageNumber()).isBetween(0, (int) count - 1);
+            assertThat(page.getPageSize()).isOne();
+            assertThat(page.getSort()).isEqualTo(Sort.by("id"));
+        }
+
+        @Test
+        void searchRandomCategoryAndType_whenCategoryAndTypeAreNull() {
+            final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
+            final var dto = QuestionTestData.createQuestionDto(question);
+            final var typeCaptor = ArgumentCaptor.forClass(QuestionType.class);
+            final var categoryCaptor = ArgumentCaptor.forClass(CategoryVariant.class);
+            when(repository.countByTypeAndCategories_Name(typeCaptor.capture(), categoryCaptor.capture())).thenReturn(1L);
+            when(repository.findByTypeAndCategories_Name(any(), any(), any(Pageable.class))).thenReturn(List.of(question));
+            when(mapper.toDto(question, true)).thenReturn(dto);
+
+            final var result = questionService.getRandom(null, null);
+
+            assertThat(result).isEqualTo(dto);
+            assertThat(typeCaptor.getValue()).isNotNull();
+            assertThat(categoryCaptor.getValue()).isNotNull();
+            verify(repository).findByTypeAndCategories_Name(
+                    eq(typeCaptor.getValue()), eq(categoryCaptor.getValue()), any(Pageable.class));
+        }
+
+        @Test
+        void throwEntityNotFound_whenNoQuestionMatches() {
+            when(repository.countByTypeAndCategories_Name(TYPE, CATEGORY)).thenReturn(0L);
+
+            assertThatThrownBy(() -> questionService.getRandom(CATEGORY, TYPE))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage(QuestionTestData.noQuestionFoundMessage(CATEGORY, TYPE));
+            verify(repository, never()).findByTypeAndCategories_Name(any(), any(), any(Pageable.class));
+            verifyNoInteractions(mapper);
+        }
+
+        @Test
+        void throwEntityNotFoundNamingPickedFilters_whenPickedCombinationHasNoQuestions() {
+            final var typeCaptor = ArgumentCaptor.forClass(QuestionType.class);
+            final var categoryCaptor = ArgumentCaptor.forClass(CategoryVariant.class);
+            when(repository.countByTypeAndCategories_Name(typeCaptor.capture(), categoryCaptor.capture())).thenReturn(0L);
+
+            assertThatThrownBy(() -> questionService.getRandom(null, null))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage(QuestionTestData.noQuestionFoundMessage(categoryCaptor.getValue(), typeCaptor.getValue()));
+            verifyNoInteractions(mapper);
+        }
+
+        @Test
+        void throwEntityNotFound_whenQuestionIsDeletedAfterCount() {
+            when(repository.countByTypeAndCategories_Name(TYPE, CATEGORY)).thenReturn(1L);
+            when(repository.findByTypeAndCategories_Name(eq(TYPE), eq(CATEGORY), any(Pageable.class))).thenReturn(List.of());
+
+            assertThatThrownBy(() -> questionService.getRandom(CATEGORY, TYPE))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage(QuestionTestData.noQuestionFoundMessage(CATEGORY, TYPE));
             verifyNoInteractions(mapper);
         }
 

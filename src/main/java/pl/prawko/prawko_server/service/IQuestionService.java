@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.service;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
@@ -53,6 +54,15 @@ public interface IQuestionService {
      * @return the question as a {@link QuestionDto}
      */
     QuestionDto getById(long id, boolean revealCorrect);
+
+    /**
+     * Retrieves a random question of the given category and type, revealing which answers are correct.
+     *
+     * @param category the category the question must belong to, or {@code null} for a random category
+     * @param type     the type of the question, or {@code null} for a random type
+     * @return the question as a {@link QuestionDto}
+     */
+    QuestionDto getRandom(@Nullable CategoryVariant category, @Nullable QuestionType type);
 
     /**
      * Returns a page of questions converted to DTO, revealing which answers are correct.
