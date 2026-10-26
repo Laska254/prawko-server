@@ -26,6 +26,7 @@ import pl.prawko.prawko_server.test_data.MultiPartFactory;
 import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -265,6 +266,25 @@ public class QuestionControllerTest {
                     .expectStatus().isNotFound()
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(QuestionTestData.noQuestionFoundMessage(category, type));
+        }
+
+        @Test
+        void returnNotFoundNamingPickedCategory_whenPickedCombinationHasNoQuestions() {
+            repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
+            final var type = QuestionType.SPECIAL;
+            final var expected = Arrays.stream(CategoryVariant.values())
+                    .map(category -> QuestionTestData.noQuestionFoundMessage(category, type))
+                    .toList();
+
+            restClient.get()
+                    .uri(uri -> uri.path(ApiConstants.RANDOM)
+                            .queryParam("type", type)
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isNotFound()
+                    .expectBody()
+                    .jsonPath("$.detail").value(String.class, detail -> assertThat(detail).isIn(expected));
         }
 
         @ParameterizedTest

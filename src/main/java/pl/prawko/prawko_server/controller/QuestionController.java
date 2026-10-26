@@ -111,7 +111,8 @@ public class QuestionController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Question found"),
             @ApiResponse(responseCode = "400", description = "Category or type is unknown"),
-            @ApiResponse(responseCode = "404", description = "No question matches the category and type")
+            @ApiResponse(responseCode = "404",
+                    description = "No question matches the category and type, also when a missing one was picked at random")
     })
     @GetMapping(ApiConstants.RANDOM)
     public ResponseEntity<QuestionDto> getRandomQuestion(@RequestParam @Nullable final CategoryVariant category,

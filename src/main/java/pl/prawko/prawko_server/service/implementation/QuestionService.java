@@ -93,7 +93,7 @@ public class QuestionService implements IQuestionService {
      * <p>Picks a random category and type for a missing one, then counts the matching questions and fetches the one
      * at a random offset, ordered by ID.
      *
-     * @throws EntityNotFoundException if no question matches the category and type
+     * @throws EntityNotFoundException if no question matches the given or picked category and type
      */
     @Override
     @Transactional(readOnly = true)

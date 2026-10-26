@@ -213,6 +213,10 @@ own data (admins may act on any user), **admin** - admins only.
   Hiding the `correct` flag (here and on active exams) only keeps it out of those views, it isn't a security boundary:
   the question bank is public and `GET /questions/random` includes the flag for practice.
 
+  `GET /questions/random` picks a missing `category` or `type` at random, each value equally likely. The full question
+  bank has questions of both types in every category; after a partial import the picked combination can be empty and
+  the request returns `404` naming it.
+
 * `/exams`
 
   | Method | Path                  | Access | Description                                                                            |

@@ -205,6 +205,18 @@ public class QuestionServiceTest {
         }
 
         @Test
+        void throwEntityNotFoundNamingPickedFilters_whenPickedCombinationHasNoQuestions() {
+            final var typeCaptor = ArgumentCaptor.forClass(QuestionType.class);
+            final var categoryCaptor = ArgumentCaptor.forClass(CategoryVariant.class);
+            when(repository.countByTypeAndCategories_Name(typeCaptor.capture(), categoryCaptor.capture())).thenReturn(0L);
+
+            assertThatThrownBy(() -> questionService.getRandom(null, null))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessage(QuestionTestData.noQuestionFoundMessage(categoryCaptor.getValue(), typeCaptor.getValue()));
+            verifyNoInteractions(mapper);
+        }
+
+        @Test
         void throwEntityNotFound_whenQuestionIsDeletedAfterCount() {
             when(repository.countByTypeAndCategories_Name(TYPE, CATEGORY)).thenReturn(1L);
             when(repository.findByTypeAndCategories_Name(eq(TYPE), eq(CATEGORY), any(Pageable.class))).thenReturn(List.of());
