@@ -96,16 +96,17 @@ public class QuestionController {
     }
 
     /**
-     * Retrieves a random question of the given category and type for practice; a missing parameter matches any value.
+     * Retrieves a random question of the given category and type for practice; a missing parameter is chosen at random.
      *
      * <p>Which answers are correct is revealed, so the client can check the answer itself.
      *
-     * @param category the category the question must belong to, or {@code null} for any category
-     * @param type     the type of the question, or {@code null} for any type
+     * @param category the category the question must belong to, or {@code null} for a random category
+     * @param type     the type of the question, or {@code null} for a random type
      * @return a {@link ResponseEntity} containing the {@link QuestionDto}
      */
     @Operation(summary = "Get random question",
-            description = "Retrieves a random question, with correct answers, of the given category and type; both are optional.")
+            description = "Retrieves a random question, with correct answers, of the given category and type; "
+                    + "a missing one is chosen at random.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Question found"),
             @ApiResponse(responseCode = "400", description = "Category or type is unknown"),

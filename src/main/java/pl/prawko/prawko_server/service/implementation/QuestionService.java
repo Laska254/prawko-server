@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
@@ -89,25 +90,27 @@ public class QuestionService implements IQuestionService {
     /**
      * {@inheritDoc}
      *
-     * <p>Counts the matching questions and fetches the one at a random offset, ordered by ID.
+     * <p>Picks a random category and type for a missing one, then counts the matching questions and fetches the one
+     * at a random offset, ordered by ID.
      *
      * @throws EntityNotFoundException if no question matches the category and type
      */
     @Override
     @Transactional(readOnly = true)
     public QuestionDto getRandom(@Nullable final CategoryVariant category, @Nullable final QuestionType type) {
-        log.info("Fetching random question by category '{}' and type '{}'", category, type);
-        final var categoryName = Objects.toString(category, null);
-        final var count = repository.countMatching(type, categoryName);
+        final var chosenCategory = Objects.requireNonNullElseGet(category, () -> randomOf(CategoryVariant.values()));
+        final var chosenType = Objects.requireNonNullElseGet(type, () -> randomOf(QuestionType.values()));
+        log.info("Fetching random question by category '{}' and type '{}'", chosenCategory, chosenType);
+        final var count = repository.countByTypeAndCategories_Name(chosenType, chosenCategory);
         if (count == 0) {
-            throw randomQuestionNotFound(category, type);
+            throw randomQuestionNotFound(chosenCategory, chosenType);
         }
-        final var page = PageRequest.of(ThreadLocalRandom.current().nextInt(Math.toIntExact(count)), 1);
-        return repository.findMatching(type, categoryName, page).stream()
+        final var page = PageRequest.of(ThreadLocalRandom.current().nextInt(Math.toIntExact(count)), 1, Sort.by("id"));
+        return repository.findByTypeAndCategories_Name(chosenType, chosenCategory, page).stream()
                 .findFirst()
                 .map(question -> mapper.toDto(question, true))
                 // a question may be deleted between the count and the fetch
-                .orElseThrow(() -> randomQuestionNotFound(category, type));
+                .orElseThrow(() -> randomQuestionNotFound(chosenCategory, chosenType));
     }
 
     @Override
@@ -117,10 +120,12 @@ public class QuestionService implements IQuestionService {
                 .map(question -> mapper.toDto(question, true));
     }
 
-    private static EntityNotFoundException randomQuestionNotFound(@Nullable final CategoryVariant category,
-                                                                  @Nullable final QuestionType type) {
-        final var message = "No question found for category '" + Objects.toString(category, "any")
-                + "' and type '" + Objects.toString(type, "any") + "'.";
+    private static <T> T randomOf(final T[] values) {
+        return values[ThreadLocalRandom.current().nextInt(values.length)];
+    }
+
+    private static EntityNotFoundException randomQuestionNotFound(final CategoryVariant category, final QuestionType type) {
+        final var message = "No question found for category '" + category + "' and type '" + type + "'.";
         log.warn(message);
         return new EntityNotFoundException(message);
     }

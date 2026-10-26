@@ -231,24 +231,28 @@ public class QuestionControllerTest {
         }
 
         @Test
-        void returnQuestionOfAnyType_whenTypeIsMissing() {
-            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
-            final var expected = QuestionTestData.createQuestionDto(question);
+        void returnQuestionOfRandomType_whenTypeIsMissing() {
+            final var basic = repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
+            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L, QuestionType.SPECIAL));
 
-            restClient.get()
+            final var result = restClient.get()
                     .uri(uri -> uri.path(ApiConstants.RANDOM)
-                            .queryParam("category", expected.categories().getFirst())
+                            .queryParam("category", CategoryVariant.B)
                             .build())
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isOk()
-                    .expectBody(QuestionDto.class).isEqualTo(expected);
+                    .expectBody(QuestionDto.class)
+                    .returnResult()
+                    .getResponseBody();
+
+            assertThat(result.id()).isIn(basic.getId(), special.getId());
         }
 
         @Test
         void returnNotFound_whenNoQuestionMatches() {
             final var question = repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
-            final var category = CategoryVariant.valueOf(question.getCategories().getFirst().getName());
+            final var category = question.getCategories().getFirst().getName();
             final var type = QuestionType.SPECIAL;
 
             restClient.get()
@@ -280,32 +284,36 @@ public class QuestionControllerTest {
         }
 
         @Test
-        void returnQuestionOfAnyCategory_whenCategoryIsMissing() {
-            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL));
-            repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
-            final var expected = QuestionTestData.createQuestionDto(question);
+        void returnQuestionOfRandomCategory_whenCategoryIsMissing() {
+            repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
+            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L, QuestionType.SPECIAL));
 
             restClient.get()
                     .uri(uri -> uri.path(ApiConstants.RANDOM)
-                            .queryParam("type", expected.type())
+                            .queryParam("type", special.getType())
                             .build())
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isOk()
-                    .expectBody(QuestionDto.class).isEqualTo(expected);
+                    .expectBody()
+                    .jsonPath("$.id").isEqualTo(special.getId());
         }
 
         @Test
-        void returnAnyQuestion_whenNoParametersAreGiven() {
-            final var question = repository.save(QuestionTestData.createQuestion(QuestionType.BASIC));
-            final var expected = QuestionTestData.createQuestionDto(question);
+        void returnRandomQuestion_whenNoParametersAreGiven() {
+            final var basic = repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
+            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L, QuestionType.SPECIAL));
 
-            restClient.get()
+            final var result = restClient.get()
                     .uri(ApiConstants.RANDOM)
                     .headers(TestUtils::authUser)
                     .exchange()
                     .expectStatus().isOk()
-                    .expectBody(QuestionDto.class).isEqualTo(expected);
+                    .expectBody(QuestionDto.class)
+                    .returnResult()
+                    .getResponseBody();
+
+            assertThat(result.id()).isIn(basic.getId(), special.getId());
         }
 
         @Test
