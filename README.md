@@ -173,6 +173,9 @@ used. Changing or resetting the password cancels a pending change, and so does s
 `PATCH`. For new links send the `PATCH` again after the cooldown - within it the `PATCH` answers `429` and changes
 nothing.
 
+Deleting an account (`DELETE /users/me`, or `DELETE /users/{id}` by an admin) removes its exams and invalidates any
+pending reset or verification links; the username and email can be registered again.
+
 ### Endpoints
 
 Access: **public** - no authentication, **user** - any signed-in user, **self** - the signed-in user acting on their
@@ -190,16 +193,16 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/users`
 
-  | Method   | Path                 | Access | Description                                     |
-  |----------|----------------------|--------|-------------------------------------------------|
-  | `POST`   | `/users`             | public | register a new user, emails a verification link |
-  | `GET`    | `/users/me`          | user   | get the signed-in user (e.g. their ID and role) |
-  | `DELETE` | `/users/me`          | user   | delete own account (requires current password)  |
-  | `PATCH`  | `/users/me/password` | user   | change own password (requires current password) |
-  | `GET`    | `/users`             | admin  | get a page of users                             |
-  | `GET`    | `/users/{id}`        | admin  | get a user                                      |
-  | `PATCH`  | `/users/{id}`        | self   | update a user (email: the user themselves only) |
-  | `DELETE` | `/users/{id}`        | admin  | delete a user                                   |
+  | Method   | Path                 | Access | Description                                                   |
+  |----------|----------------------|--------|---------------------------------------------------------------|
+  | `POST`   | `/users`             | public | register a new user, emails a verification link               |
+  | `GET`    | `/users/me`          | user   | get the signed-in user (e.g. their ID and role)               |
+  | `DELETE` | `/users/me`          | user   | delete own account with its exams (requires current password) |
+  | `PATCH`  | `/users/me/password` | user   | change own password (requires current password)               |
+  | `GET`    | `/users`             | admin  | get a page of users                                           |
+  | `GET`    | `/users/{id}`        | admin  | get a user                                                    |
+  | `PATCH`  | `/users/{id}`        | self   | update a user (email: the user themselves only)               |
+  | `DELETE` | `/users/{id}`        | admin  | delete a user with their exams                                |
 
 * `/questions`
 

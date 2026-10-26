@@ -18,6 +18,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 class EntityCascadeTest {
 
+    private static final String QUESTION_LINKS = "test_question";
+    private static final String ANSWER_LINKS = "test_answer";
+
     @Autowired
     private EntityManager entityManager;
 
@@ -46,11 +49,19 @@ class EntityCascadeTest {
     }
 
     @Test
-    void removingUser_removesExams_butKeepsQuestionsAndAnswers() {
+    void persistingExam_storesQuestionAndAnswerLinks() {
+        assertThat(countExamLinks(QUESTION_LINKS)).isOne();
+        assertThat(countExamLinks(ANSWER_LINKS)).isOne();
+    }
+
+    @Test
+    void removingUser_removesExamsWithTheirLinks_butKeepsQuestionsAndAnswers() {
         entityManager.remove(entityManager.find(User.class, user.getId()));
         flushAndClear();
 
         assertThat(entityManager.find(Exam.class, exam.getId())).isNull();
+        assertThat(countExamLinks(QUESTION_LINKS)).isZero();
+        assertThat(countExamLinks(ANSWER_LINKS)).isZero();
         assertQuestionIsIntact();
     }
 
@@ -61,6 +72,8 @@ class EntityCascadeTest {
         flushAndClear();
 
         assertThat(entityManager.find(Exam.class, exam.getId())).isNull();
+        assertThat(countExamLinks(QUESTION_LINKS)).isZero();
+        assertThat(countExamLinks(ANSWER_LINKS)).isZero();
         assertThat(entityManager.find(User.class, user.getId())).isNotNull();
         assertQuestionIsIntact();
     }
@@ -122,6 +135,14 @@ class EntityCascadeTest {
     private long count(final Class<?> entity) {
         return entityManager.createQuery("select count(e) from " + entity.getSimpleName() + " e", Long.class)
                 .getSingleResult();
+    }
+
+    private long countExamLinks(final String joinTable) {
+        final var sql = "select count(*) from " + joinTable + " where test_id = :examId";
+        final var count = (Number) entityManager.createNativeQuery(sql)
+                .setParameter("examId", exam.getId())
+                .getSingleResult();
+        return count.longValue();
     }
 
     private void flushAndClear() {

@@ -35,6 +35,8 @@ import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -908,6 +910,27 @@ public class UserControllerTest {
 
             assertThat(examRepository.findAll()).containsExactly(otherExam);
             assertThat(questionRepository.existsById(question.getId())).isTrue();
+        }
+
+        @Test
+        void removePendingTokens_whenPasswordIsCorrect() {
+            final var resetTokenHash = SecureTokens.hash(SecureTokens.generate());
+            final var tester = userRepository.save(UserTestData.createPippinChangingEmail()
+                    .setPasswordResetTokenHash(resetTokenHash)
+                    .setPasswordResetTokenExpires(Instant.now().plus(Duration.ofHours(1))));
+
+            restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.ME)
+                    .headers(TestUtils::authUser)
+                    .body(UserTestData.createValidDeleteAccountRequest())
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByPasswordResetTokenHash(resetTokenHash)).isEmpty();
+            assertThat(userRepository.findByVerificationOrCurrentEmailTokenHash(tester.getVerificationTokenHash()))
+                    .isEmpty();
+            assertThat(userRepository.findByVerificationOrCurrentEmailTokenHash(tester.getCurrentEmailTokenHash()))
+                    .isEmpty();
         }
 
         @Test
