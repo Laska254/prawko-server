@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.service;
 
 import pl.prawko.prawko_server.model.Category;
+import pl.prawko.prawko_server.model.CategoryVariant;
 
 import java.util.List;
 
@@ -18,12 +19,13 @@ public interface ICategoryService {
      * @param name name of the category to retrieve
      * @return found {@link Category}
      */
-    Category findByName(String name);
+    Category findByName(CategoryVariant name);
 
     /**
      * Parses a comma-separated string of category names and retrieves all matching {@link Category} entities from the repository.
      * <p>
-     * Categories that are not found in the repository will be ignored and not included in the resulting list.
+     * Names that aren't a {@link CategoryVariant} and categories that are not found in the repository will be ignored
+     * and not included in the resulting list.
      * </p>
      *
      * @param input a comma-separated string of category names

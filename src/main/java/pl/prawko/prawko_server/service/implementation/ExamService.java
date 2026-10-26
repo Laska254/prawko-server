@@ -15,6 +15,7 @@ import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.mapper.ExamMapper;
 import pl.prawko.prawko_server.model.Answer;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.repository.AnswerRepository;
 import pl.prawko.prawko_server.repository.ExamRepository;
@@ -63,7 +64,7 @@ public class ExamService implements IExamService {
      */
     @Override
     @Transactional
-    public long createExam(final long userId, final String categoryName) {
+    public long createExam(final long userId, final CategoryVariant categoryName) {
         log.info("Creating exam for user '{}' and category '{}'", userId, categoryName);
         final var user = userService.getById(userId);
         final var category = categoryService.findByName(categoryName);

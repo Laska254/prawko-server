@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.mapper.QuestionMapper;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
@@ -56,9 +57,9 @@ public class QuestionService implements IQuestionService {
     }
 
     @Override
-    public List<Question> getAllByTypeAndCategory(final QuestionType type, final String category) {
+    public List<Question> getAllByTypeAndCategory(final QuestionType type, final CategoryVariant category) {
         log.info("Fetching questions by type '{}' and category '{}'", type, category);
-        final var questions = repository.findByTypeAndCategories_NameContains(type, category);
+        final var questions = repository.findByTypeAndCategories_Name(type, category);
         log.info("Found {} questions for type '{}' and category '{}'", questions.size(), type, category);
         return questions;
     }

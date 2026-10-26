@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import pl.prawko.prawko_server.model.Category;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.repository.CategoryRepository;
 import pl.prawko.prawko_server.service.ICategoryService;
 
@@ -32,7 +33,7 @@ public class CategoryService implements ICategoryService {
      * @throws EntityNotFoundException if category with the given name have not been found
      */
     @Override
-    public Category findByName(final String name) {
+    public Category findByName(final CategoryVariant name) {
         log.info("Fetching for category '{}'", name);
         return repository.findByName(name)
                 .orElseThrow(() -> new EntityNotFoundException("Category '" + name + "' not found."));
@@ -42,6 +43,8 @@ public class CategoryService implements ICategoryService {
     public List<Category> findAllFromString(final String input) {
         log.info("Fetching categories from '{}'", input);
         return Arrays.stream(input.split(","))
+                .flatMap(name -> Arrays.stream(CategoryVariant.values())
+                        .filter(variant -> variant.name().equals(name)))
                 .map(repository::findByName)
                 .flatMap(Optional::stream)
                 .toList();
