@@ -41,6 +41,10 @@ spring:
 exam:
   expiry-check-interval: 30s
 
+media:
+  directory: media
+  cache-max-age: 1d
+
 password-reset:
   token-validity: 15m
   cooldown: 1m

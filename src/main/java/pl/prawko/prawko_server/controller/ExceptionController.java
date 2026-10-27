@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.exception.InvalidCsvException;
@@ -96,6 +97,12 @@ public class ExceptionController {
     @ExceptionHandler(EntityNotFoundException.class)
     public ProblemDetail handleEntityNotFound(final EntityNotFoundException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "404", description = "File not found")
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ProblemDetail handleNoResourceFound() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "File not found.");
     }
 
     @ApiResponse(responseCode = "400", description = "Invalid argument")
