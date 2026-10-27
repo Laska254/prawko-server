@@ -60,7 +60,7 @@ import java.util.List;
  *     <li>ADMIN only: {@code POST /questions} (upload), {@code GET /questions} (list all)</li>
  *     <li>USER+ required: {@code GET/DELETE /users/me}, {@code GET /questions/**}, {@code POST/GET /exams/**}</li>
  *     <li>ADMIN only: other user management endpoints and delete operations</li>
- *     <li>Public: {@code GET /media/**} (question media, see {@link MediaConfig}), Swagger UI and OpenAPI docs</li>
+ *     <li>Public: {@code GET/HEAD /media/**} (question media, see {@link MediaConfig}), Swagger UI and OpenAPI docs</li>
  *     <li>Any other request is denied</li>
  * </ul>
  */
@@ -200,7 +200,8 @@ public class SpringSecurity {
                     configureEndpoint_Questions(authorize);
                     configureEndpoint_Exams(authorize);
                     authorize
-                            .requestMatchers(HttpMethod.GET, ApiConstants.MEDIA_BASE_URL_ALL).permitAll();
+                            .requestMatchers(HttpMethod.GET, ApiConstants.MEDIA_BASE_URL_ALL).permitAll()
+                            .requestMatchers(HttpMethod.HEAD, ApiConstants.MEDIA_BASE_URL_ALL).permitAll();
                     authorize.anyRequest().denyAll();
                 })
                 .httpBasic(Customizer.withDefaults())

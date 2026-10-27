@@ -99,10 +99,10 @@ public class ExceptionController {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
     }
 
-    @ApiResponse(responseCode = "404", description = "File not found")
+    @ApiResponse(responseCode = "404", description = "Resource not found")
     @ExceptionHandler(NoResourceFoundException.class)
     public ProblemDetail handleNoResourceFound() {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "File not found.");
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Resource not found.");
     }
 
     @ApiResponse(responseCode = "400", description = "Invalid argument")

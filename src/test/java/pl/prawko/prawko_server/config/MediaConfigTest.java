@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.constants.ApiConstants;
@@ -37,7 +38,9 @@ class MediaConfigTest {
 
     @Test
     void getMedia_returnFileWithCacheHeaders_whenFileExists() throws IOException {
-        final var content = Files.readAllBytes(directory.resolve(IMAGE));
+        final var file = directory.resolve(IMAGE);
+        final var content = Files.readAllBytes(file);
+        final var etag = "\"%x-%x\"".formatted(Files.getLastModifiedTime(file).toMillis(), Files.size(file));
 
         restClient.get()
                 .uri("/" + IMAGE)
@@ -45,10 +48,21 @@ class MediaConfigTest {
                 .expectStatus().isOk()
                 .expectHeader().contentType(MediaType.IMAGE_JPEG)
                 .expectHeader().valueEquals(HttpHeaders.CACHE_CONTROL, "max-age=86400, public")
-                .expectHeader().exists(HttpHeaders.ETAG)
+                .expectHeader().valueEquals(HttpHeaders.ETAG, etag)
                 .expectHeader().exists(HttpHeaders.LAST_MODIFIED)
                 .expectHeader().valueEquals(HttpHeaders.ACCEPT_RANGES, "bytes")
                 .expectBody(byte[].class).isEqualTo(content);
+    }
+
+    @Test
+    void headMedia_returnHeadersWithoutBody_whenFileExists() throws IOException {
+        restClient.head()
+                .uri("/" + IMAGE)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.IMAGE_JPEG)
+                .expectHeader().contentLength(Files.size(directory.resolve(IMAGE)))
+                .expectBody().isEmpty();
     }
 
     @Test
@@ -59,7 +73,7 @@ class MediaConfigTest {
                 .uri("/" + VIDEO)
                 .header(HttpHeaders.RANGE, "bytes=0-9")
                 .exchange()
-                .expectStatus().isEqualTo(206)
+                .expectStatus().isEqualTo(HttpStatus.PARTIAL_CONTENT)
                 .expectHeader().contentType("video/mp4")
                 .expectHeader().valueEquals(HttpHeaders.CONTENT_RANGE, "bytes 0-9/" + content.length)
                 .expectBody(byte[].class).isEqualTo(Arrays.copyOf(content, 10));
@@ -87,7 +101,7 @@ class MediaConfigTest {
                 .uri("/missing.jpg")
                 .exchange()
                 .expectStatus().isNotFound()
-                .expectBody().jsonPath("$.detail").isEqualTo("File not found.");
+                .expectBody().jsonPath("$.detail").isEqualTo("Resource not found.");
     }
 
     // Tomcat normalizes "/media/../x" to "/x" (denied) and rejects encoded separators, the handler rejects ".." too

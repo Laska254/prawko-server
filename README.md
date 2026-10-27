@@ -236,9 +236,10 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/media`
 
-  | Method | Path                | Access | Description                  |
-  |--------|---------------------|--------|------------------------------|
-  | `GET`  | `/media/{filename}` | public | question image or video file |
+  | Method | Path                | Access | Description                                 |
+  |--------|---------------------|--------|---------------------------------------------|
+  | `GET`  | `/media/{filename}` | public | question image or video file                |
+  | `HEAD` | `/media/{filename}` | public | headers of `GET`, e.g. size and `ETag` only |
 
   Files are served from `media.directory` (default `media` in the working directory, ignored by Git; `MEDIA_DIRECTORY`
   in `prod`) with the content type from the extension. They're public like the question bank, so image loaders and
