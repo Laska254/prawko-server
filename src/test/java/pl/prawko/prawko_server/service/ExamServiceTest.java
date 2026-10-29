@@ -219,11 +219,28 @@ public class ExamServiceTest {
             when(examMapper.toSummaryDto(newer)).thenReturn(newerDto);
             when(examMapper.toSummaryDto(older)).thenReturn(olderDto);
 
-            final var result = service.getAllByUserId(userId, pageable);
+            final var result = service.getAllByUserId(userId, null, pageable);
 
             assertThat(result.getContent()).containsExactly(newerDto, olderDto);
             assertThat(result.getTotalElements()).isEqualTo(5);
             assertThat(result.getPageable()).isEqualTo(pageable);
+        }
+
+        @Test
+        void returnSummariesOfCategory_whenCategoryIsGiven() {
+            final var userId = 44L;
+            final var user = UserTestData.createTestUserPippin();
+            final var exam = ExamTestData.createExam(user).setId(1L);
+            final var dto = ExamTestData.createExamSummaryDto(exam);
+            when(userService.getById(userId)).thenReturn(user);
+            final var pageable = PageRequest.of(0, 20);
+            when(repository.findAllByUser_IdAndCategory_Name(userId, CategoryVariant.B, pageable))
+                    .thenReturn(new PageImpl<>(List.of(exam), pageable, 1));
+            when(examMapper.toSummaryDto(exam)).thenReturn(dto);
+
+            final var result = service.getAllByUserId(userId, CategoryVariant.B, pageable);
+
+            assertThat(result.getContent()).containsExactly(dto);
         }
 
         @Test
@@ -233,7 +250,7 @@ public class ExamServiceTest {
             final var pageable = PageRequest.of(0, 20);
             when(repository.findAllByUser_Id(userId, pageable)).thenReturn(Page.empty(pageable));
 
-            final var result = service.getAllByUserId(userId, pageable);
+            final var result = service.getAllByUserId(userId, null, pageable);
 
             assertThat(result).isEmpty();
             verifyNoInteractions(examMapper);
@@ -245,7 +262,7 @@ public class ExamServiceTest {
             final var expectedMessage = UserTestData.userNotFoundMessage(userId);
             when(userService.getById(userId)).thenThrow(new EntityNotFoundException(expectedMessage));
 
-            assertThatThrownBy(() -> service.getAllByUserId(userId, PageRequest.of(0, 20)))
+            assertThatThrownBy(() -> service.getAllByUserId(userId, null, PageRequest.of(0, 20)))
                     .isInstanceOf(EntityNotFoundException.class)
                     .hasMessage(expectedMessage);
 

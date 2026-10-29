@@ -44,16 +44,17 @@ public interface IExamService {
     ExamDto getById(long examId);
 
     /**
-     * Retrieves a page of exams history of a specific user.
+     * Retrieves a page of exams history of a specific user, optionally only of one category.
      * <p>
      * Returns exams as {@link ExamSummaryDto}, ordered according to the given {@link Pageable}.
      * </p>
      *
      * @param userId   the ID of the user whose exams should be retrieved
+     * @param category the category of the exams, or {@code null} for all categories
      * @param pageable the pagination and sorting information
-     * @return page of {@link ExamSummaryDto}, empty if the user has no exams
+     * @return page of {@link ExamSummaryDto}, empty if the user has no matching exams
      */
-    Page<ExamSummaryDto> getAllByUserId(long userId, Pageable pageable);
+    Page<ExamSummaryDto> getAllByUserId(long userId, @Nullable CategoryVariant category, Pageable pageable);
 
     /**
      * Saves the user's answer to a question of their active {@link Exam}.
