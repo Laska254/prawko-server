@@ -14,10 +14,10 @@ public enum MediaKind {
     IMAGE("image"),
     VIDEO("video");
 
-    private final String mimeType;
+    private final String topLevelType;
 
-    MediaKind(final String mimeType) {
-        this.mimeType = mimeType;
+    MediaKind(final String topLevelType) {
+        this.topLevelType = topLevelType;
     }
 
     /**
@@ -28,7 +28,7 @@ public enum MediaKind {
      */
     public static Optional<MediaKind> of(final MimeType mimeType) {
         return Arrays.stream(values())
-                .filter(kind -> kind.mimeType.equals(mimeType.getType()))
+                .filter(kind -> kind.topLevelType.equals(mimeType.getType()))
                 .findFirst();
     }
 

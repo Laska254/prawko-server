@@ -31,7 +31,9 @@ public class MediaMapper {
         if (!StringUtils.hasText(filename)) {
             return null;
         }
-        return UriComponentsBuilder.fromUriString(baseUrl).pathSegment(filename).toUriString();
+        return UriComponentsBuilder.fromUriString(baseUrl)
+                .pathSegment(filename)
+                .toUriString();
     }
 
     @Named("mediaType")
