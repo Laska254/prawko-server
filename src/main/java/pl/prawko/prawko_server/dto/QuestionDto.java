@@ -1,7 +1,9 @@
 package pl.prawko.prawko_server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 import pl.prawko.prawko_server.model.CategoryVariant;
+import pl.prawko.prawko_server.model.MediaType;
 import pl.prawko.prawko_server.model.QuestionType;
 
 import java.util.List;
@@ -24,8 +26,13 @@ public record QuestionDto(
         @Schema(description = "Possible answers to the question")
         List<AnswerDto> answers,
 
-        @Schema(description = "Media filename associated with the question")
-        String media,
+        @Nullable
+        @Schema(description = "Absolute URL of the question's image or video, null without media", nullable = true)
+        String mediaUrl,
+
+        @Nullable
+        @Schema(description = "Kind of the question's media, null without media", nullable = true)
+        MediaType mediaType,
 
         @Schema(description = "Type of question")
         QuestionType type,
