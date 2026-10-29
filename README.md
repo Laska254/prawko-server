@@ -32,6 +32,7 @@
 
 * Java 21
 * Docker (optional, to catch emails locally with [Mailpit](#emails-mailpit))
+* ffmpeg (optional, to [convert question videos](#endpoints))
 
 Maven doesn't have to be installed - the repository includes the Maven Wrapper (`./mvnw`, `mvnw.cmd` on Windows).
 
@@ -40,6 +41,8 @@ Maven doesn't have to be installed - the repository includes the Maven Wrapper (
 `sudo apt install openjdk-21-jdk`
 
 `sudo apt install docker.io`
+
+`sudo apt install ffmpeg`
 
 To run `docker` without `sudo`, add yourself to the `docker` group and log out and back in (the group grants
 root-equivalent access):
@@ -247,6 +250,11 @@ own data (admins may act on any user), **admin** - admins only.
   video players need no credentials. Responses are cacheable for `media.cache-max-age` (`1d`), carry `ETag` and
   `Last-Modified` (revalidation answers `304`) and support range requests (`206`), so videos can be streamed and
   seeked. A missing file returns `404`.
+
+  The question bank's videos are `.wmv`, which Android and most browsers can't play, so the CSV import stores their
+  names as `.webm`. Convert the files once (VP9 + Opus, originals are kept, converted videos are skipped on reruns):
+
+  `scripts/convert-videos.sh <media directory>`
 
 `POST` endpoints creating a resource return `201 Created` with its URL in the `Location` header.
 
