@@ -253,9 +253,11 @@ own data (admins may act on any user), **admin** - admins only.
   seeked. A missing file returns `404`.
 
   Questions don't expose filenames: `mediaUrl` is the file's absolute URL (`media.base-url` followed by the filename)
-  and `mediaType` is `IMAGE` or `VIDEO` (from the file extension); both are `null` for a question without media.
-  Moving the files to a CDN only changes `media.base-url`. To add media, put the file into the media directory under
-  the name from the `Media` column of the imported question CSV.
+  and `mediaType` is `IMAGE` or `VIDEO` (from the file extension); both are `null` for a question without media, and
+  `mediaType` alone is `null` when the extension is neither an image nor a video. Moving the files to a CDN only
+  changes `media.base-url`. To add media, put the file into the media directory under the name from the `Media` column
+  of the imported question CSV - except `.wmv` videos: the import renames them to `.webm`, so convert them to WebM and
+  store them as `<name>.webm`.
 
 `POST` endpoints creating a resource return `201 Created` with its URL in the `Location` header.
 

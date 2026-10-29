@@ -6,7 +6,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-import pl.prawko.prawko_server.model.MediaType;
+import pl.prawko.prawko_server.model.MediaKind;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +52,7 @@ class MediaMapperTest {
                 "AK_D11_45org.webm, VIDEO",
                 "AK_D11_45org.wmv, VIDEO"
         })
-        void mapByExtension_whenFileIsImageOrVideo(final String filename, final MediaType expected) {
+        void mapByExtension_whenFileIsImageOrVideo(final String filename, final MediaKind expected) {
             assertThat(mediaMapper.toType(filename)).isEqualTo(expected);
         }
 

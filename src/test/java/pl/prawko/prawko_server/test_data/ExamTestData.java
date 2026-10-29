@@ -62,7 +62,7 @@ public class ExamTestData {
                         question.getId(),
                         question.getName(),
                         Collections.emptyList(),
-                        // exam questions have no media
+                        // the exam fixtures (createSimpleQuestion) set no media
                         null,
                         null,
                         question.getType(),

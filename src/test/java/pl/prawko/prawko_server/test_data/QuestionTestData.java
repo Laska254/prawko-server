@@ -3,7 +3,7 @@ package pl.prawko.prawko_server.test_data;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.CategoryVariant;
-import pl.prawko.prawko_server.model.MediaType;
+import pl.prawko.prawko_server.model.MediaKind;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 
@@ -102,7 +102,7 @@ public class QuestionTestData {
                 "W9(2)",
                 answers,
                 MEDIA_BASE_URL + "/" + question.getMedia(),
-                MediaType.VIDEO,
+                MediaKind.VIDEO,
                 QuestionType.BASIC,
                 3,
                 categories,
@@ -119,7 +119,7 @@ public class QuestionTestData {
                 "PD10(3)",
                 answers,
                 MEDIA_BASE_URL + "/" + question.getMedia(),
-                MediaType.IMAGE,
+                MediaKind.IMAGE,
                 QuestionType.SPECIAL,
                 2,
                 categories,
