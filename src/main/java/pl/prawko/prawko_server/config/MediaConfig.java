@@ -15,7 +15,7 @@ import java.time.Duration;
 
 /**
  * Serves question media files (images and videos) from the {@code media.directory} directory as
- * {@code GET /media/{filename}}.
+ * {@code GET}/{@code HEAD /media/{filename}}.
  *
  * <p>Spring's resource handler sets the content type from the file extension, answers range requests (so videos can be
  * streamed and seeked), conditional requests ({@code ETag}, {@code Last-Modified}) with {@code 304} and rejects paths

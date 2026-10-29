@@ -40,7 +40,6 @@ class MediaConfigTest {
     void getMedia_returnFileWithCacheHeaders_whenFileExists() throws IOException {
         final var file = directory.resolve(IMAGE);
         final var content = Files.readAllBytes(file);
-        final var etag = "\"%x-%x\"".formatted(Files.getLastModifiedTime(file).toMillis(), Files.size(file));
 
         restClient.get()
                 .uri("/" + IMAGE)
@@ -48,21 +47,23 @@ class MediaConfigTest {
                 .expectStatus().isOk()
                 .expectHeader().contentType(MediaType.IMAGE_JPEG)
                 .expectHeader().valueEquals(HttpHeaders.CACHE_CONTROL, "max-age=86400, public")
-                .expectHeader().valueEquals(HttpHeaders.ETAG, etag)
+                .expectHeader().valueEquals(HttpHeaders.ETAG, etagOf(file))
                 .expectHeader().exists(HttpHeaders.LAST_MODIFIED)
                 .expectHeader().valueEquals(HttpHeaders.ACCEPT_RANGES, "bytes")
                 .expectBody(byte[].class).isEqualTo(content);
     }
 
     @Test
-    void headMedia_returnHeadersWithoutBody_whenFileExists() throws IOException {
+    void headMedia_returnHeaders_whenFileExists() throws IOException {
+        final var file = directory.resolve(IMAGE);
+
         restClient.head()
                 .uri("/" + IMAGE)
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentType(MediaType.IMAGE_JPEG)
-                .expectHeader().contentLength(Files.size(directory.resolve(IMAGE)))
-                .expectBody().isEmpty();
+                .expectHeader().contentLength(Files.size(file))
+                .expectHeader().valueEquals(HttpHeaders.ETAG, etagOf(file));
     }
 
     @Test
@@ -113,6 +114,10 @@ class MediaConfigTest {
                 .exchange()
                 .expectStatus().is4xxClientError()
                 .expectHeader().doesNotExist(HttpHeaders.ETAG);
+    }
+
+    private static String etagOf(final Path file) throws IOException {
+        return "\"%x-%x\"".formatted(Files.getLastModifiedTime(file).toMillis(), Files.size(file));
     }
 
 }
