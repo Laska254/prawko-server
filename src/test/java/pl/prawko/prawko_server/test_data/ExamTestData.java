@@ -62,7 +62,9 @@ public class ExamTestData {
                         question.getId(),
                         question.getName(),
                         Collections.emptyList(),
-                        question.getMedia(),
+                        // the exam fixtures (createSimpleQuestion) set no media
+                        null,
+                        null,
                         question.getType(),
                         question.getPoints(),
                         question.getCategories().stream().map(Category::getName).toList(),

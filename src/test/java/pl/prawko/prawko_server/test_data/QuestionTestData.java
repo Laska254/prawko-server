@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.test_data;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.CategoryVariant;
+import pl.prawko.prawko_server.model.MediaKind;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 
@@ -10,6 +11,9 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 public class QuestionTestData {
+
+    // media.base-url in application-test.yaml
+    public static final String MEDIA_BASE_URL = "http://localhost/media";
 
     private QuestionTestData() {
     }
@@ -97,7 +101,8 @@ public class QuestionTestData {
                 110L,
                 "W9(2)",
                 answers,
-                "AK_D11_45org.webm",
+                MEDIA_BASE_URL + "/" + question.getMedia(),
+                MediaKind.VIDEO,
                 QuestionType.BASIC,
                 3,
                 categories,
@@ -113,7 +118,8 @@ public class QuestionTestData {
                 2143L,
                 "PD10(3)",
                 answers,
-                "R_101org.jpg",
+                MEDIA_BASE_URL + "/" + question.getMedia(),
+                MediaKind.IMAGE,
                 QuestionType.SPECIAL,
                 2,
                 categories,

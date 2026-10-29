@@ -79,6 +79,7 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
     + `PASSWORD_RESET_URL` frontend page the reset link points to, e.g. `https://prawko.pl/auth/password/reset`
     + `EMAIL_VERIFICATION_URL` frontend page the email verification link points to, e.g. `https://prawko.pl/auth/verify`
     + `MEDIA_DIRECTORY` directory with question media files, e.g. `/media` (a Docker volume)
+    + `MEDIA_BASE_URL` public URL the media files are served from, e.g. `https://api.prawko.pl/media`
 
   `data.sql` is not run in `prod` - seed categories and languages once manually.
 
@@ -139,6 +140,9 @@ password-reset:
 
 email-verification:
   url: http://localhost:5173/auth/verify
+
+media:
+  base-url: http://localhost:8080/media
 ```
 
 To use a local MariaDB instead, replace the datasource, e.g. `url: jdbc:mariadb://localhost:3306/prawko` with your
@@ -247,6 +251,13 @@ own data (admins may act on any user), **admin** - admins only.
   video players need no credentials. Responses are cacheable for `media.cache-max-age` (`1d`), carry `ETag` and
   `Last-Modified` (revalidation answers `304`) and support range requests (`206`), so videos can be streamed and
   seeked. A missing file returns `404`.
+
+  Questions don't expose filenames: `mediaUrl` is the file's absolute URL (`media.base-url` followed by the filename)
+  and `mediaType` is `IMAGE` or `VIDEO` (from the file extension); both are `null` for a question without media, and
+  `mediaType` alone is `null` when the extension is neither an image nor a video. Moving the files to a CDN only
+  changes `media.base-url`. To add media, put the file into the media directory under the name from the `Media` column
+  of the imported question CSV - except `.wmv` videos: the import renames them to `.webm`, so convert them to WebM and
+  store them as `<name>.webm`.
 
 `POST` endpoints creating a resource return `201 Created` with its URL in the `Location` header.
 

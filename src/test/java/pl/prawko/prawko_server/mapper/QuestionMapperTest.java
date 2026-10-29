@@ -4,9 +4,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.QuestionType;
@@ -26,6 +28,9 @@ class QuestionMapperTest {
     @Mock
     private AnswerMapper answerMapper;
 
+    @Spy
+    private MediaMapper mediaMapper = new MediaMapper(QuestionTestData.MEDIA_BASE_URL);
+
     @InjectMocks
     private QuestionMapperImpl questionMapper;
 
@@ -42,6 +47,17 @@ class QuestionMapperTest {
                 .ignoringFields("answers")
                 .isEqualTo(expected);
         verify(answerMapper, times(given.getAnswers().size())).toDto(any(), eq(true));
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    void toDto_mapMediaToNull_whenQuestionHasNoMedia(final String media) {
+        final var given = QuestionTestData.createQuestion(QuestionType.BASIC).setMedia(media);
+
+        final var result = questionMapper.toDto(given, true);
+
+        assertThat(result.mediaUrl()).isNull();
+        assertThat(result.mediaType()).isNull();
     }
 
     @ParameterizedTest
