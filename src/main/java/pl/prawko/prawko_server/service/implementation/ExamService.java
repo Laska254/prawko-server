@@ -110,10 +110,7 @@ public class ExamService implements IExamService {
                                                final Pageable pageable) {
         log.info("Fetching exams history of user with id: {}, category: {}", userId, category);
         userService.getById(userId);
-        final var exams = (category == null
-                ? repository.findAllByUser_Id(userId, pageable)
-                : repository.findAllByUser_IdAndCategory_Name(userId, category, pageable))
-                .map(examMapper::toSummaryDto);
+        final var exams = findExams(userId, category, pageable).map(examMapper::toSummaryDto);
         log.info("Found {} exam(s) for user with id: {}", exams.getTotalElements(), userId);
         return exams;
     }
@@ -190,6 +187,14 @@ public class ExamService implements IExamService {
                     log.warn(message);
                     return new EntityNotFoundException(message);
                 });
+    }
+
+    private Page<Exam> findExams(final long userId, @Nullable final CategoryVariant category,
+                                 final Pageable pageable) {
+        if (category == null) {
+            return repository.findAllByUser_Id(userId, pageable);
+        }
+        return repository.findAllByUser_IdAndCategory_Name(userId, category, pageable);
     }
 
     private Exam findActiveExamOfUser(final long examId, final long userId) {

@@ -231,13 +231,13 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/exams`
 
-  | Method | Path                  | Access | Description                                                                            |
-  |--------|-----------------------|--------|----------------------------------------------------------------------------------------|
-  | `POST` | `/exams`              | self   | create a new exam for the `userId` from the request body                               |
-  | `GET`  | `/exams?userId={id}`  | self   | get a page of the user's exams history, newest first, optionally of one `category`     |
-  | `GET`  | `/exams/{id}`         | self   | get an exam; answers' `correct` flag is included only once the exam is not `active`    |
-  | `POST` | `/exams/{id}/answers` | owner  | answer a question of an active exam, see [Solving an exam](#solving-an-exam)           |
-  | `POST` | `/exams/{id}/finish`  | owner  | finish an active exam and calculate its score, see [Solving an exam](#solving-an-exam) |
+  | Method | Path                                     | Access | Description                                                                                 |
+  |--------|------------------------------------------|--------|---------------------------------------------------------------------------------------------|
+  | `POST` | `/exams`                                 | self   | create a new exam for the `userId` from the request body                                    |
+  | `GET`  | `/exams?userId={id}&category={category}` | self   | get a page of the user's exams history, newest first; `category` is optional and filters it |
+  | `GET`  | `/exams/{id}`                            | self   | get an exam; answers' `correct` flag is included only once the exam is not `active`         |
+  | `POST` | `/exams/{id}/answers`                    | owner  | answer a question of an active exam, see [Solving an exam](#solving-an-exam)                |
+  | `POST` | `/exams/{id}/finish`                     | owner  | finish an active exam and calculate its score, see [Solving an exam](#solving-an-exam)      |
 
 * `/media`
 
