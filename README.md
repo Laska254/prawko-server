@@ -78,6 +78,7 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
     + `MAIL_FROM` sender address, e.g. `no-reply@prawko.pl`
     + `PASSWORD_RESET_URL` frontend page the reset link points to, e.g. `https://prawko.pl/auth/password/reset`
     + `EMAIL_VERIFICATION_URL` frontend page the email verification link points to, e.g. `https://prawko.pl/auth/verify`
+    + `MEDIA_DIRECTORY` directory with question media files, e.g. `/media` (a Docker volume)
 
   `data.sql` is not run in `prod` - seed categories and languages once manually.
 
@@ -100,6 +101,9 @@ Run with Docker (after `./mvnw package`)
 `docker build -t prawko-server .`
 
 `docker run -p 8080:8080 prawko-server`
+
+In the `prod` profile mount the media directory as a volume, e.g.
+`docker run -p 8080:8080 -v /srv/prawko/media:/media -e MEDIA_DIRECTORY=/media ... prawko-server`.
 
 ### Local configuration
 
@@ -148,7 +152,8 @@ categories and languages once manually).
 Base URL: `http://localhost:8080/`
 
 Application has Swagger, so you can test out the REST API via `/swagger-ui/index.html` (OpenAPI docs at
-`/v3/api-docs`). Both are disabled in the `prod` profile.
+`/v3/api-docs`). Both are disabled in the `prod` profile. [`/media`](#endpoints) is served by a resource handler, not
+a controller, so it's documented only here.
 
 ### Authentication
 
@@ -229,6 +234,19 @@ own data (admins may act on any user), **admin** - admins only.
   | `GET`  | `/exams/{id}`         | self   | get an exam; answers' `correct` flag is included only once the exam is not `active`    |
   | `POST` | `/exams/{id}/answers` | owner  | answer a question of an active exam, see [Solving an exam](#solving-an-exam)           |
   | `POST` | `/exams/{id}/finish`  | owner  | finish an active exam and calculate its score, see [Solving an exam](#solving-an-exam) |
+
+* `/media`
+
+  | Method | Path                | Access | Description                                      |
+  |--------|---------------------|--------|--------------------------------------------------|
+  | `GET`  | `/media/{filename}` | public | question image or video file                     |
+  | `HEAD` | `/media/{filename}` | public | same headers as `GET` (size, `ETag`, …), no body |
+
+  Files are served from `media.directory` (default `media` in the working directory, ignored by Git; `MEDIA_DIRECTORY`
+  in `prod`) with the content type from the extension. They're public like the question bank, so image loaders and
+  video players need no credentials. Responses are cacheable for `media.cache-max-age` (`1d`), carry `ETag` and
+  `Last-Modified` (revalidation answers `304`) and support range requests (`206`), so videos can be streamed and
+  seeked. A missing file returns `404`.
 
 `POST` endpoints creating a resource return `201 Created` with its URL in the `Location` header.
 

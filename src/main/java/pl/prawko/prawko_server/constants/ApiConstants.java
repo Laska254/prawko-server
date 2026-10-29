@@ -53,6 +53,20 @@ public final class ApiConstants {
     public static final String EXAMS_BASE_URL_ALL = "/exams/**";
 
     /**
+     * Base URL for question media files.
+     *
+     * @see pl.prawko.prawko_server.config.MediaConfig
+     */
+    public static final String MEDIA_BASE_URL = "/media";
+
+    /**
+     * Nested URL for question media files.
+     *
+     * @see pl.prawko.prawko_server.config.MediaConfig
+     */
+    public static final String MEDIA_BASE_URL_ALL = "/media/**";
+
+    /**
      * Base URL for authentication endpoints.
      *
      * @see pl.prawko.prawko_server.controller.AuthController

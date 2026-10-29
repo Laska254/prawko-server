@@ -12,6 +12,7 @@ src/main/resources/application-local.properties
 /.idea/misc.xml
 /.idea/modules.xml
 /.mvn/
+/media/
 
 ### Claude Code ###
 CLAUDE.local.md

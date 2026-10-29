@@ -25,3 +25,6 @@ password-reset:
 
 email-verification:
   url: http://localhost:5173/auth/verify
+
+media:
+  directory: src/test/resources/media
