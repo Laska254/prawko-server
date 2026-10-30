@@ -17,6 +17,7 @@
     + [Authentication](#authentication)
     + [Endpoints](#endpoints)
     + [Solving an exam](#solving-an-exam)
+    + [Exam statistics](#exam-statistics)
     + [Pagination](#pagination)
 * [Emails (Mailpit)](#emails-mailpit)
 
@@ -202,16 +203,17 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/users`
 
-  | Method   | Path                 | Access | Description                                                   |
-  |----------|----------------------|--------|---------------------------------------------------------------|
-  | `POST`   | `/users`             | public | register a new user, emails a verification link               |
-  | `GET`    | `/users/me`          | user   | get the signed-in user (e.g. their ID and role)               |
-  | `DELETE` | `/users/me`          | user   | delete own account with its exams (requires current password) |
-  | `PATCH`  | `/users/me/password` | user   | change own password (requires current password)               |
-  | `GET`    | `/users`             | admin  | get a page of users                                           |
-  | `GET`    | `/users/{id}`        | admin  | get a user                                                    |
-  | `PATCH`  | `/users/{id}`        | self   | update a user (email: the user themselves only)               |
-  | `DELETE` | `/users/{id}`        | admin  | delete a user with their exams                                |
+  | Method   | Path                 | Access | Description                                                      |
+  |----------|----------------------|--------|------------------------------------------------------------------|
+  | `POST`   | `/users`             | public | register a new user, emails a verification link                  |
+  | `GET`    | `/users/me`          | user   | get the signed-in user (e.g. their ID and role)                  |
+  | `GET`    | `/users/me/stats`    | user   | get own exam statistics, see [Exam statistics](#exam-statistics) |
+  | `DELETE` | `/users/me`          | user   | delete own account with its exams (requires current password)    |
+  | `PATCH`  | `/users/me/password` | user   | change own password (requires current password)                  |
+  | `GET`    | `/users`             | admin  | get a page of users                                              |
+  | `GET`    | `/users/{id}`        | admin  | get a user                                                       |
+  | `PATCH`  | `/users/{id}`        | self   | update a user (email: the user themselves only)                  |
+  | `DELETE` | `/users/{id}`        | admin  | delete a user with their exams                                   |
 
 * `/questions`
 
@@ -284,6 +286,26 @@ cross-origin scripts via CORS) to show the remaining time correctly.
 | `403`  | the exam belongs to another user                                                                                             |
 | `404`  | the exam doesn't exist, or the answer doesn't belong to any of its questions                                                 |
 | `409`  | the exam is no longer `active` or its time has expired (answers only), or it was modified by a concurrent request - retry it |
+
+### Exam statistics
+
+`GET /users/me/stats` summarizes the signed-in user's finished exams, overall and per category; active exams are not
+counted. An exam is passed with a `score` of at least 68 (out of 74). Categories without finished exams are left out.
+
+```json
+{
+  "examsTaken": 12,
+  "examsPassed": 7,
+  "averageScore": 63.5,
+  "bestScore": 72,
+  "categories": [
+    {"category": "A", "examsTaken": 2, "examsPassed": 1, "averageScore": 60.5, "bestScore": 68},
+    {"category": "B", "examsTaken": 10, "examsPassed": 6, "averageScore": 64.1, "bestScore": 72}
+  ]
+}
+```
+
+Without finished exams the counts are `0`, `averageScore` and `bestScore` are `null` and `categories` is empty.
 
 ### Pagination
 
