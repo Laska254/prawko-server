@@ -25,7 +25,6 @@ import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
 import javax.crypto.SecretKey;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -40,14 +39,12 @@ import static org.mockito.Mockito.when;
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class RefreshTokenServiceTest {
 
-    private static final Duration ACCESS_TOKEN_VALIDITY = Duration.ofMinutes(15);
-    private static final String REFRESH_TOKEN = "refreshToken";
-
     private final JwtConfig jwtConfig = new JwtConfig();
     private final SecretKey key = jwtConfig.accessTokenKey(null);
     private final JwtDecoder decoder = jwtConfig.jwtDecoder(key, TestUtils.CLOCK);
     private final IAccessTokenService accessTokenService =
-            new AccessTokenService(jwtConfig.jwtEncoder(key), ACCESS_TOKEN_VALIDITY, TestUtils.CLOCK);
+            new AccessTokenService(jwtConfig.jwtEncoder(key), TestUtils.ACCESS_TOKEN_VALIDITY, TestUtils.CLOCK);
+    private final User tester = UserTestData.createTestUserPippin().setId(TestUtils.PRINCIPAL_ID);
 
     @Mock
     private RefreshTokenRepository repository;
@@ -56,8 +53,6 @@ class RefreshTokenServiceTest {
     private UserRepository userRepository;
 
     private RefreshTokenService service;
-
-    private final User tester = UserTestData.createTestUserPippin().setId(TestUtils.PRINCIPAL_ID);
 
     @BeforeEach
     void setUp() {
@@ -93,7 +88,7 @@ class RefreshTokenServiceTest {
             final var result = service.issueTokens(principal);
 
             assertThat(decoder.decode(result.accessToken()).getSubject()).isEqualTo(String.valueOf(principal.getId()));
-            assertThat(result.expiresIn()).isEqualTo(ACCESS_TOKEN_VALIDITY.toSeconds());
+            assertThat(result.expiresIn()).isEqualTo(TestUtils.ACCESS_TOKEN_VALIDITY.toSeconds());
         }
 
     }
@@ -108,9 +103,9 @@ class RefreshTokenServiceTest {
             when(repository.revokeIfActive(token.getId())).thenReturn(1);
             when(userRepository.getReferenceById(tester.getId())).thenReturn(tester);
 
-            final var result = service.refresh(REFRESH_TOKEN);
+            final var result = service.refresh(RefreshTokenTestData.TOKEN);
 
-            assertThat(result.refreshToken()).isNotEqualTo(REFRESH_TOKEN);
+            assertThat(result.refreshToken()).isNotEqualTo(RefreshTokenTestData.TOKEN);
             final var accessToken = decoder.decode(result.accessToken());
             assertThat(accessToken.getSubject()).isEqualTo(String.valueOf(tester.getId()));
             assertThat(accessToken.getClaimAsStringList(JwtConfig.AUTHORITIES_CLAIM))
@@ -121,7 +116,7 @@ class RefreshTokenServiceTest {
 
         @Test
         void throwAndRevokeNothing_whenTokenIsUnknown() {
-            when(repository.findByTokenHash(SecureTokens.hash(REFRESH_TOKEN))).thenReturn(Optional.empty());
+            when(repository.findByTokenHash(SecureTokens.hash(RefreshTokenTestData.TOKEN))).thenReturn(Optional.empty());
 
             assertInvalid();
 
@@ -165,16 +160,16 @@ class RefreshTokenServiceTest {
         }
 
         private RefreshToken stubToken(final Instant expires) {
-            final var token = RefreshTokenTestData.createRefreshToken(tester, REFRESH_TOKEN, expires).setId(1L);
+            final var token = RefreshTokenTestData.createRefreshToken(tester, RefreshTokenTestData.TOKEN, expires).setId(1L);
             when(repository.findByTokenHash(token.getTokenHash())).thenReturn(Optional.of(token));
             return token;
         }
 
         private void assertInvalid() {
-            assertThatThrownBy(() -> service.refresh(REFRESH_TOKEN))
+            assertThatThrownBy(() -> service.refresh(RefreshTokenTestData.TOKEN))
                     .isInstanceOf(InvalidRefreshTokenException.class)
                     .hasMessage(RefreshTokenTestData.INVALID_REFRESH_TOKEN);
-            verify(repository).findByTokenHash(SecureTokens.hash(REFRESH_TOKEN));
+            verify(repository).findByTokenHash(SecureTokens.hash(RefreshTokenTestData.TOKEN));
         }
 
     }

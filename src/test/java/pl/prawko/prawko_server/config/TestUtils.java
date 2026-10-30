@@ -43,6 +43,8 @@ public class TestUtils {
 
     public static final long PRINCIPAL_ID = 7L;
 
+    public static final Duration ACCESS_TOKEN_VALIDITY = Duration.ofMinutes(15);
+
     // a fixed time in a zone far from UTC: the results must not depend on it
     public static final Clock CLOCK = Clock.fixed(Instant.now(), ZoneId.of("Pacific/Kiritimati"));
 

@@ -55,8 +55,8 @@ public class AuthController {
     /**
      * Authenticates a user with provided credentials and issues tokens.
      *
-     * <p>No session is created: subsequent requests carry the access token, and the refresh token gets a new pair
-     * once it expires. Accounts whose email isn't verified yet are rejected.
+     * <p>No session is created: subsequent requests carry the access token; once it expires, the refresh token gets
+     * a new pair. Accounts whose email isn't verified yet are rejected.
      *
      * @param request the {@link LoginDto} containing username and password
      * @return a {@link ResponseEntity} with HTTP 200 Ok and the issued {@link AuthTokensDto}

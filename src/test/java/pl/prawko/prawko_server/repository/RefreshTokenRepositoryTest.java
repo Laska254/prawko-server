@@ -38,14 +38,14 @@ class RefreshTokenRepositoryTest {
     @BeforeEach
     void setUp() {
         tester = userRepository.save(UserTestData.createTestUserPippin());
-        token = save(tester, "refreshToken", now.plus(RefreshTokenTestData.VALIDITY));
+        token = save(tester, RefreshTokenTestData.TOKEN, now.plus(RefreshTokenTestData.VALIDITY));
     }
 
     @Test
     void findByTokenHash_returnTokenWithUser_whenHashExists() {
         entityManager.clear();
 
-        final var result = repository.findByTokenHash(SecureTokens.hash("refreshToken")).orElseThrow();
+        final var result = repository.findByTokenHash(SecureTokens.hash(RefreshTokenTestData.TOKEN)).orElseThrow();
 
         assertThat(result).isEqualTo(token);
         entityManager.clear();

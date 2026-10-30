@@ -59,7 +59,7 @@ class EntityCascadeTest {
     @Test
     void removingUser_removesRefreshTokens() {
         final var token = RefreshTokenTestData.createRefreshToken(
-                entityManager.find(User.class, user.getId()), "refreshToken", Instant.now());
+                entityManager.find(User.class, user.getId()), RefreshTokenTestData.TOKEN, Instant.now());
         entityManager.persist(token);
         flushAndClear();
 

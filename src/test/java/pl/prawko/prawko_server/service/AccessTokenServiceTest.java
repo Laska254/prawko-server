@@ -8,17 +8,14 @@ import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.service.implementation.AccessTokenService;
 
 import javax.crypto.SecretKey;
-import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AccessTokenServiceTest {
 
-    private static final Duration VALIDITY = Duration.ofMinutes(15);
-
     private final JwtConfig config = new JwtConfig();
     private final SecretKey key = config.accessTokenKey(null);
-    private final AccessTokenService service = new AccessTokenService(config.jwtEncoder(key), VALIDITY, TestUtils.CLOCK);
+    private final AccessTokenService service = new AccessTokenService(config.jwtEncoder(key), TestUtils.ACCESS_TOKEN_VALIDITY, TestUtils.CLOCK);
     private final AuthenticatedUser user = TestUtils.createUserPrincipal();
 
     @Test
@@ -35,7 +32,7 @@ class AccessTokenServiceTest {
         final var token = service.issue(user);
 
         assertThat(token.getIssuedAt()).isEqualTo(TestUtils.CLOCK.instant());
-        assertThat(token.getExpiresAt()).isEqualTo(TestUtils.CLOCK.instant().plus(VALIDITY));
+        assertThat(token.getExpiresAt()).isEqualTo(TestUtils.CLOCK.instant().plus(TestUtils.ACCESS_TOKEN_VALIDITY));
     }
 
     @Test
