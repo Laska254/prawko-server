@@ -168,10 +168,23 @@ The API is stateless - every request that requires authentication must carry an 
 Basic (`Basic ...`) or an access token (`Bearer ...`, see below). With Basic you can sign in with either the username
 or the email address.
 
-Signed JWT access tokens are accepted alongside Basic as `Authorization: Bearer ...`. A token is valid for
-`access-token.validity` (15 minutes) and carries the user's role, so a role change or account deletion applies only
-once it expires. An invalid or expired token is answered with `401` and
+Signing in with `POST /auth` (`{"userName": "...", "password": "..."}`, username or email) returns a token pair:
+
+```json
+{"accessToken": "...", "refreshToken": "...", "expiresIn": 900}
+```
+
+The access token is a signed JWT, accepted alongside Basic as `Authorization: Bearer ...`. It's valid for
+`access-token.validity` (15 minutes, `expiresIn` in seconds) and carries the user's role, so a role change or account
+deletion applies only once it expires. An invalid or expired token is answered with `401` and
 `WWW-Authenticate: Bearer error="invalid_token"`.
+
+Once it expires, `POST /auth/refresh` with `{"refreshToken": "..."}` returns a new pair with the user's current role.
+A refresh token is valid for `refresh-token.validity` (30 days) and can be used only once - each refresh returns a new
+one, valid for the full period again. An unknown, expired or already used refresh token is answered with `401`, and
+using one again also revokes every other refresh token of the user, signing out all their clients - a used token
+showing up again means it was copied. Clients therefore must not refresh concurrently. Expired refresh tokens are
+deleted every `refresh-token.cleanup-interval`.
 
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 
@@ -191,8 +204,8 @@ used. Changing or resetting the password cancels a pending change, and so does s
 `PATCH`. For new links send the `PATCH` again after the cooldown - within it the `PATCH` answers `429` and changes
 nothing.
 
-Deleting an account (`DELETE /users/me`, or `DELETE /users/{id}` by an admin) removes its exams and invalidates any
-pending reset or verification links; the username and email can be registered again.
+Deleting an account (`DELETE /users/me`, or `DELETE /users/{id}` by an admin) removes its exams and refresh tokens and
+invalidates any pending reset or verification links; the username and email can be registered again.
 
 ### Endpoints
 
@@ -203,7 +216,8 @@ own data (admins may act on any user), **admin** - admins only.
 
   | Method | Path                    | Access | Description                                                                                    |
   |--------|-------------------------|--------|------------------------------------------------------------------------------------------------|
-  | `POST` | `/auth`                 | public | verify credentials (sign-in)                                                                   |
+  | `POST` | `/auth`                 | public | sign in, returns an access and a refresh token                                                 |
+  | `POST` | `/auth/refresh`         | public | exchange a refresh token for a new token pair, the used one is revoked                         |
   | `POST` | `/auth/password/forgot` | public | email a password reset link, returns `202` whether the account exists or not                   |
   | `POST` | `/auth/password/reset`  | public | set a new password with the token from the reset link                                          |
   | `POST` | `/auth/verify`          | public | verify an email with a link's token, returns `202` while an email change awaits the other link |
