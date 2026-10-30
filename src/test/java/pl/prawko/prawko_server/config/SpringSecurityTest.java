@@ -125,6 +125,33 @@ class SpringSecurityTest {
     }
 
     @Test
+    void filterChain_grantSelfEndpoint_whenBearerTokenOwnerIsSelf() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+
+        restClient.get()
+                .uri(uri -> uri.path(ApiConstants.EXAMS_BASE_URL)
+                        .queryParam("userId", tester.getId())
+                        .build())
+                .headers(headers -> headers.setBearerAuth(issueToken(TestUtils.USER_NAME)))
+                .exchange()
+                .expectStatus().isOk();
+    }
+
+    @Test
+    void filterChain_denySelfEndpoint_whenBearerTokenOwnerIsNotSelf() {
+        userRepository.save(UserTestData.createTestUserPippin());
+        final var other = userRepository.save(UserTestData.createMerry());
+
+        restClient.get()
+                .uri(uri -> uri.path(ApiConstants.EXAMS_BASE_URL)
+                        .queryParam("userId", other.getId())
+                        .build())
+                .headers(headers -> headers.setBearerAuth(issueToken(TestUtils.USER_NAME)))
+                .exchange()
+                .expectStatus().isForbidden();
+    }
+
+    @Test
     void filterChain_returnUnauthorized_whenBearerTokenIsExpired() {
         final var claims = TestUtils.adminClaims(Instant.now().minus(Duration.ofMinutes(5)));
         final var token = jwtEncoder.encode(JwtEncoderParameters.from(claims))
