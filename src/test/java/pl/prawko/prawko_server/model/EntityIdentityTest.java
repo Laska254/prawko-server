@@ -25,6 +25,7 @@ class EntityIdentityTest {
                 Named.of("Language", id -> new Language().setId(id)),
                 Named.of("Question", id -> new Question().setId(id)),
                 Named.of("QuestionTranslation", id -> new QuestionTranslation().setId(id)),
+                Named.of("RefreshToken", id -> new RefreshToken().setId(id)),
                 Named.of("User", id -> new User().setId(id))
         );
     }
@@ -110,6 +111,15 @@ class EntityIdentityTest {
         assertThat(answer.toString()).contains("question=10");
         assertThat(answerTranslation.toString()).contains("answer=12", "language=pl");
         assertThat(exam.toString()).contains("id=14");
+    }
+
+    @Test
+    void toString_excludeTokenHash_whenRefreshTokenHasUser() {
+        final var token = new RefreshToken().setId(3).setTokenHash("secret-hash").setUser(new User().setId(1));
+
+        assertThat(token.toString())
+                .contains("id=3", "user=1")
+                .doesNotContain("secret-hash");
     }
 
     @Test
