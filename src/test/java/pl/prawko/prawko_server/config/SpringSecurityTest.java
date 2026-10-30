@@ -153,7 +153,7 @@ class SpringSecurityTest {
 
     @Test
     void filterChain_returnUnauthorized_whenBearerTokenIsExpired() {
-        final var claims = TestUtils.adminClaims(Instant.now().minus(Duration.ofMinutes(5)));
+        final var claims = TestUtils.expiredAdminClaims();
         final var token = jwtEncoder.encode(JwtEncoderParameters.from(claims))
                 .getTokenValue();
 

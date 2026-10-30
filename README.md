@@ -180,6 +180,7 @@ deletion applies only once it expires. An invalid or expired token is answered w
 `WWW-Authenticate: Bearer error="invalid_token"`.
 
 Once it expires, `POST /auth/refresh` with `{"refreshToken": "..."}` returns a new pair with the user's current role.
+Access tokens sent to `POST /auth/**` are ignored, so a client may keep attaching its expired one when refreshing.
 A refresh token is valid for `refresh-token.validity` (30 days) and can be used only once - each refresh returns a new
 one, valid for the full period again. An unknown, expired or already used refresh token is answered with `401`, and
 using one again also revokes every other refresh token of the user, signing out all their clients - a used token

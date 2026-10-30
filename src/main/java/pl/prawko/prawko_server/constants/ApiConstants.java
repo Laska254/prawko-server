@@ -74,6 +74,13 @@ public final class ApiConstants {
     public static final String AUTH_BASE_URL = "/auth";
 
     /**
+     * Nested URL for authentication endpoints.
+     *
+     * @see pl.prawko.prawko_server.controller.AuthController
+     */
+    public static final String AUTH_BASE_URL_ALL = "/auth/**";
+
+    /**
      * Path variable template for resource identification.
      * Used with any of the base URLs to identify specific resources by ID.
      *

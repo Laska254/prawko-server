@@ -11,6 +11,7 @@ import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.service.IAccessTokenService;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
@@ -74,6 +75,10 @@ public class TestUtils {
                 .claim(JwtConfig.AUTHORITIES_CLAIM, List.of(Role.ADMIN.getAuthority()))
                 .expiresAt(expiresAt)
                 .build();
+    }
+
+    public static JwtClaimsSet expiredAdminClaims() {
+        return adminClaims(Instant.now().minus(Duration.ofMinutes(5)));
     }
 
     public static String issueAccessToken(final IAccessTokenService accessTokenService,
