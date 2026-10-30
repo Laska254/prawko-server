@@ -93,6 +93,21 @@ public class RefreshTokenService implements IRefreshTokenService {
         return issueTokens(AuthenticatedUser.of(user));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The token is deleted rather than marked revoked, so its later use isn't taken for reuse of a copied token.
+     */
+    @Override
+    @Transactional
+    public void revoke(final String refreshToken) {
+        if (repository.deleteByTokenHash(SecureTokens.hash(refreshToken)) == 0) {
+            log.info("Unknown refresh token revoked, nothing to do.");
+            return;
+        }
+        log.info("Refresh token revoked.");
+    }
+
     @Override
     @Transactional
     @Scheduled(fixedDelayString = "${refresh-token.cleanup-interval}",

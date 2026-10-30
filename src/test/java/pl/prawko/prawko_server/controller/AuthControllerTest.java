@@ -305,6 +305,34 @@ public class AuthControllerTest {
     }
 
     @Test
+    void logout_returnNoContentAndRevokeOnlyThatToken_whenRefreshTokenIsValid() {
+        userRepository.save(UserTestData.createTestUserPippin());
+        final var otherClient = login();
+        final var signedIn = login();
+
+        logout(signedIn.refreshToken())
+                .expectStatus().isNoContent();
+
+        assertRefreshUnauthorized(signedIn.refreshToken());
+        refreshTokens(otherClient.refreshToken());
+    }
+
+    @Test
+    void logout_returnNoContent_whenRefreshTokenIsUnknown() {
+        logout("unknownToken")
+                .expectStatus().isNoContent();
+    }
+
+    @Test
+    void logout_returnBadRequest_whenRefreshTokenIsBlank() {
+        logout(" ")
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
+                .jsonPath("$.details.refreshToken").isEqualTo("Token is required.");
+    }
+
+    @Test
     void forgotPassword_returnAcceptedAndEmailResetLink_whenEmailExists() {
         final var tester = userRepository.save(UserTestData.createTestUserPippin());
 
@@ -620,6 +648,13 @@ public class AuthControllerTest {
                 .expectStatus().isUnauthorized()
                 .expectBody()
                 .jsonPath("$.detail").isEqualTo(RefreshTokenTestData.INVALID_REFRESH_TOKEN);
+    }
+
+    private RestTestClient.ResponseSpec logout(final String refreshToken) {
+        return restClient.post()
+                .uri(ApiConstants.LOGOUT)
+                .body(new RefreshTokenRequest(refreshToken))
+                .exchange();
     }
 
     private RestTestClient.ResponseSpec getMe(final String accessToken) {

@@ -187,6 +187,9 @@ using one again also revokes every other refresh token of the user, signing out 
 showing up again means it was copied. Clients therefore must not refresh concurrently. Expired refresh tokens are
 deleted every `refresh-token.cleanup-interval`.
 
+Signing out with `POST /auth/logout` (`{"refreshToken": "..."}`) revokes the refresh token and answers `204`, also for
+an unknown one. The client's access token stays valid until it expires, so the client should discard it too.
+
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 
 A new account must verify its email address before signing in. Registration emails a link to the frontend page
@@ -219,6 +222,7 @@ own data (admins may act on any user), **admin** - admins only.
   |--------|-------------------------|--------|------------------------------------------------------------------------------------------------|
   | `POST` | `/auth`                 | public | sign in, returns an access and a refresh token                                                 |
   | `POST` | `/auth/refresh`         | public | exchange a refresh token for a new token pair, the used one is revoked                         |
+  | `POST` | `/auth/logout`          | public | revoke a refresh token                                                                         |
   | `POST` | `/auth/password/forgot` | public | email a password reset link, returns `202` whether the account exists or not                   |
   | `POST` | `/auth/password/reset`  | public | set a new password with the token from the reset link                                          |
   | `POST` | `/auth/verify`          | public | verify an email with a link's token, returns `202` while an email change awaits the other link |
