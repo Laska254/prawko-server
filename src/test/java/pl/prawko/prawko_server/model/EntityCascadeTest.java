@@ -8,8 +8,10 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 import pl.prawko.prawko_server.test_data.ExamTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
+import pl.prawko.prawko_server.test_data.RefreshTokenTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,6 +54,19 @@ class EntityCascadeTest {
 
         assertThat(entityManager.find(Exam.class, exam.getId())).isNull();
         assertQuestionIsIntact();
+    }
+
+    @Test
+    void removingUser_removesRefreshTokens() {
+        final var token = RefreshTokenTestData.createRefreshToken(
+                entityManager.find(User.class, user.getId()), RefreshTokenTestData.TOKEN, Instant.now());
+        entityManager.persist(token);
+        flushAndClear();
+
+        entityManager.remove(entityManager.find(User.class, user.getId()));
+        flushAndClear();
+
+        assertThat(entityManager.find(RefreshToken.class, token.getId())).isNull();
     }
 
     @Test

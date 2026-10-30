@@ -44,6 +44,7 @@ import java.util.List;
  * Relationships:
  * <ul>
  *     <li>{@link Exam}: A user can be assigned to multiple exams.</li>
+ *     <li>{@link RefreshToken}: A user can have multiple refresh tokens, deleted with the user.</li>
  * </ul>
  * The entity is mapped to the database table {@code user}. Timestamps are {@link Instant}s, so they don't depend on
  * the JVM's time zone; {@code created} and {@code updated} are set automatically.
@@ -103,6 +104,9 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Exam> exams;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RefreshToken> refreshTokens;
 
     public long getId() {
         return id;

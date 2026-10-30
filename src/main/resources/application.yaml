@@ -48,6 +48,10 @@ media:
 access-token:
   validity: 15m
 
+refresh-token:
+  validity: 30d
+  cleanup-interval: 1h
+
 password-reset:
   token-validity: 15m
   cooldown: 1m

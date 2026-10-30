@@ -24,8 +24,11 @@ import org.springframework.security.core.annotation.AnnotationTemplateExpression
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -54,8 +57,9 @@ import java.util.List;
  *
  * <p>Authorization rules:
  * <ul>
- *     <li>Public: {@code POST /auth} (login), {@code POST /auth/password/forgot} and {@code POST /auth/password/reset}
- *     (password reset), {@code POST /auth/verify} and {@code POST /auth/verify/resend} (email verification),
+ *     <li>Public: {@code POST /auth} (login), {@code POST /auth/refresh} (new token pair),
+ *     {@code POST /auth/password/forgot} and {@code POST /auth/password/reset} (password reset),
+ *     {@code POST /auth/verify} and {@code POST /auth/verify/resend} (email verification),
  *     {@code POST /users} (registration)</li>
  *     <li>ADMIN only: {@code POST /questions} (upload), {@code GET /questions} (list all)</li>
  *     <li>USER+ required: {@code GET/DELETE /users/me}, {@code GET /questions/**}, {@code POST/GET /exams/**}</li>
@@ -206,14 +210,37 @@ public class SpringSecurity {
                 })
                 .httpBasic(Customizer.withDefaults())
                 .oauth2ResourceServer(resourceServer -> resourceServer
+                        .bearerTokenResolver(bearerTokenResolver())
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(JwtConfig::toAuthentication)))
                 .build();
+    }
+
+    /**
+     * Resolves the {@code Authorization: Bearer ...} access token, except on the public {@code POST /auth/**}
+     * endpoints.
+     *
+     * <p>Clients often attach the access token to every request, and it has usually just expired when they refresh.
+     * Since a sent token is validated before authorization, it would fail the refresh with {@code 401} even though
+     * these endpoints don't need it.
+     *
+     * @return the {@link BearerTokenResolver} ignoring access tokens sent to {@code POST /auth/**}
+     */
+    private static BearerTokenResolver bearerTokenResolver() {
+        final var resolver = new DefaultBearerTokenResolver();
+        final var authEndpoints = PathPatternRequestMatcher.pathPattern(HttpMethod.POST, ApiConstants.AUTH_BASE_URL_ALL);
+        return request -> {
+            if (authEndpoints.matches(request)) {
+                return null;
+            }
+            return resolver.resolve(request);
+        };
     }
 
     private void configureEndpoint_Auth(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST,
                         ApiConstants.AUTH_BASE_URL,
+                        ApiConstants.AUTH_BASE_URL + ApiConstants.REFRESH,
                         ApiConstants.AUTH_BASE_URL + ApiConstants.FORGOT_PASSWORD,
                         ApiConstants.AUTH_BASE_URL + ApiConstants.RESET_PASSWORD,
                         ApiConstants.AUTH_BASE_URL + ApiConstants.VERIFY_EMAIL,

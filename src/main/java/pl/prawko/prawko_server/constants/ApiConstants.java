@@ -74,6 +74,13 @@ public final class ApiConstants {
     public static final String AUTH_BASE_URL = "/auth";
 
     /**
+     * Nested URL for authentication endpoints.
+     *
+     * @see pl.prawko.prawko_server.controller.AuthController
+     */
+    public static final String AUTH_BASE_URL_ALL = "/auth/**";
+
+    /**
      * Path variable template for resource identification.
      * Used with any of the base URLs to identify specific resources by ID.
      *
@@ -105,6 +112,15 @@ public final class ApiConstants {
      * @see pl.prawko.prawko_server.controller.UserController
      */
     public static final String STATS = ME + "/stats";
+
+    /**
+     * Path segment for exchanging a refresh token for a new token pair.
+     *
+     * <p>Example: {@code /auth/refresh}
+     *
+     * @see pl.prawko.prawko_server.controller.AuthController
+     */
+    public static final String REFRESH = "/refresh";
 
     /**
      * Path segment for requesting a password reset link by email.

@@ -6,11 +6,14 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.service.IAccessTokenService;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
@@ -41,6 +44,8 @@ public class TestUtils {
     public static final long ASYNC_TIMEOUT_MS = 5_000;
 
     public static final long PRINCIPAL_ID = 7L;
+
+    public static final Duration ACCESS_TOKEN_VALIDITY = Duration.ofMinutes(15);
 
     // a fixed time in a zone far from UTC: the results must not depend on it
     public static final Clock CLOCK = Clock.fixed(Instant.now(), ZoneId.of("Pacific/Kiritimati"));
@@ -74,6 +79,15 @@ public class TestUtils {
                 .claim(JwtConfig.AUTHORITIES_CLAIM, List.of(Role.ADMIN.getAuthority()))
                 .expiresAt(expiresAt)
                 .build();
+    }
+
+    public static JwtClaimsSet expiredAdminClaims() {
+        return adminClaims(Instant.now().minus(Duration.ofMinutes(5)));
+    }
+
+    public static String expiredAccessToken(final JwtEncoder jwtEncoder) {
+        return jwtEncoder.encode(JwtEncoderParameters.from(expiredAdminClaims()))
+                .getTokenValue();
     }
 
     public static String issueAccessToken(final IAccessTokenService accessTokenService,
