@@ -6,6 +6,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.service.IAccessTokenService;
@@ -81,6 +83,11 @@ public class TestUtils {
 
     public static JwtClaimsSet expiredAdminClaims() {
         return adminClaims(Instant.now().minus(Duration.ofMinutes(5)));
+    }
+
+    public static String expiredAccessToken(final JwtEncoder jwtEncoder) {
+        return jwtEncoder.encode(JwtEncoderParameters.from(expiredAdminClaims()))
+                .getTokenValue();
     }
 
     public static String issueAccessToken(final IAccessTokenService accessTokenService,

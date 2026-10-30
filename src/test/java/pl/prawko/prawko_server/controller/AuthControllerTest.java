@@ -19,7 +19,6 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
@@ -226,7 +225,7 @@ public class AuthControllerTest {
         userRepository.save(UserTestData.createTestUserPippin());
 
         restClient.post()
-                .headers(headers -> headers.setBearerAuth(expiredAccessToken()))
+                .headers(headers -> headers.setBearerAuth(TestUtils.expiredAccessToken(jwtEncoder)))
                 .body(new LoginDto(TestUtils.USER_NAME, TestUtils.USER_PASSWORD))
                 .exchange()
                 .expectStatus().isOk();
@@ -252,7 +251,7 @@ public class AuthControllerTest {
 
         restClient.post()
                 .uri(ApiConstants.REFRESH)
-                .headers(headers -> headers.setBearerAuth(expiredAccessToken()))
+                .headers(headers -> headers.setBearerAuth(TestUtils.expiredAccessToken(jwtEncoder)))
                 .body(new RefreshTokenRequest(signedIn.refreshToken()))
                 .exchange()
                 .expectStatus().isOk();
@@ -621,10 +620,6 @@ public class AuthControllerTest {
                 .expectStatus().isUnauthorized()
                 .expectBody()
                 .jsonPath("$.detail").isEqualTo(RefreshTokenTestData.INVALID_REFRESH_TOKEN);
-    }
-
-    private String expiredAccessToken() {
-        return jwtEncoder.encode(JwtEncoderParameters.from(TestUtils.expiredAdminClaims())).getTokenValue();
     }
 
     private RestTestClient.ResponseSpec getMe(final String accessToken) {
