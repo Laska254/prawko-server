@@ -2,6 +2,7 @@ package pl.prawko.prawko_server.config;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import pl.prawko.prawko_server.test_data.UserTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,6 +28,21 @@ class AuthenticatedUserTest {
     @Test
     void isAdmin_returnTrue_whenRoleIsAdmin() {
         assertThat(TestUtils.createAdminPrincipal().isAdmin()).isTrue();
+    }
+
+    @Test
+    void of_copyIdUsernamePasswordStatusAndRole_whenUserIsPersisted() {
+        final var gimli = UserTestData.createGimli()
+                .setId(TestUtils.PRINCIPAL_ID)
+                .setEnabled(false);
+
+        final var result = AuthenticatedUser.of(gimli);
+
+        assertThat(result.getId()).isEqualTo(gimli.getId());
+        assertThat(result.getUsername()).isEqualTo(gimli.getUserName());
+        assertThat(result.getPassword()).isEqualTo(gimli.getPassword());
+        assertThat(result.isEnabled()).isFalse();
+        assertThat(result.isAdmin()).isTrue();
     }
 
     @Test

@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.config;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
 import pl.prawko.prawko_server.model.Role;
 
@@ -35,6 +36,21 @@ public class AuthenticatedUser extends User {
                              final Collection<? extends GrantedAuthority> authorities) {
         super(username, password, enabled, true, true, true, authorities);
         this.id = id;
+    }
+
+    /**
+     * Creates the principal of a persisted user, with its current password hash, enabled status and role.
+     *
+     * @param user the persisted user
+     * @return the principal of the user
+     */
+    public static AuthenticatedUser of(final pl.prawko.prawko_server.model.User user) {
+        return new AuthenticatedUser(
+                user.getId(),
+                user.getUserName(),
+                user.getPassword(),
+                user.isEnabled(),
+                AuthorityUtils.createAuthorityList(user.getRole().getAuthority()));
     }
 
     public static Optional<Long> idOf(@Nullable final Authentication authentication) {
