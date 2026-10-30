@@ -98,6 +98,15 @@ public final class ApiConstants {
     public static final String PASSWORD = ME + "/password";
 
     /**
+     * Path segment for exam statistics of the currently authenticated user.
+     *
+     * <p>Example: {@code /users/me/stats}
+     *
+     * @see pl.prawko.prawko_server.controller.UserController
+     */
+    public static final String STATS = ME + "/stats";
+
+    /**
      * Path segment for requesting a password reset link by email.
      *
      * <p>Example: {@code /auth/password/forgot}

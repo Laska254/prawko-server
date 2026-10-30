@@ -25,6 +25,7 @@ import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.DeleteAccountRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.ExamRepository;
@@ -350,6 +351,58 @@ public class UserControllerTest {
         void returnUnauthorized_whenNotAuthenticated() {
             restClient.get()
                     .uri(ApiConstants.ME)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+    }
+
+    @Nested
+    class GetCurrentUserStats {
+
+        @Test
+        void returnStatsOfOwnFinishedExams_whenAuthenticatedAsUser() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var other = userRepository.save(UserTestData.createMerry());
+            examRepository.saveAll(ExamTestData.createExamsForStats(tester));
+            examRepository.save(ExamTestData.createFinishedExamWithMaxScore(other));
+
+            restClient.get()
+                    .uri(ApiConstants.STATS)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserStatsDto.class).isEqualTo(ExamTestData.STATS);
+        }
+
+        @Test
+        void returnEmptyStats_whenUserHasNoExams() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            restClient.get()
+                    .uri(ApiConstants.STATS)
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserStatsDto.class).isEqualTo(ExamTestData.EMPTY_STATS);
+        }
+
+        @Test
+        void returnStats_whenAuthenticatedAsAdmin() {
+            userRepository.save(UserTestData.createGimli());
+
+            restClient.get()
+                    .uri(ApiConstants.STATS)
+                    .headers(TestUtils::authAdmin)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserStatsDto.class).isEqualTo(ExamTestData.EMPTY_STATS);
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.get()
+                    .uri(ApiConstants.STATS)
                     .exchange()
                     .expectStatus().isUnauthorized();
         }

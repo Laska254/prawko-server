@@ -396,6 +396,47 @@ public class ExamControllerTest {
         }
 
         @Test
+        void returnOnlyExamsOfCategory_whenCategoryIsGiven() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+            examRepository.save(ExamTestData.createExamWithoutQuestions(tester).setCategory(CategoryTestData.CATEGORY_A));
+            final var newer = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
+
+            restClient.get()
+                    .uri(uri -> uri
+                            .queryParam("userId", tester.getId())
+                            .queryParam("category", CategoryTestData.CATEGORY_B.getName())
+                            .queryParam("size", 1)
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.content.length()").isEqualTo(1)
+                    .jsonPath("$.content[0].id").isEqualTo(newer.getId())
+                    .jsonPath("$.content[0].category").isEqualTo(CategoryTestData.CATEGORY_B.getName().name())
+                    .jsonPath("$.page.totalElements").isEqualTo(2)
+                    .jsonPath("$.page.totalPages").isEqualTo(2);
+        }
+
+        @Test
+        void returnBadRequest_whenCategoryIsUnknown() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var invalidCategory = "X";
+
+            restClient.get()
+                    .uri(uri -> uri
+                            .queryParam("userId", tester.getId())
+                            .queryParam("category", invalidCategory)
+                            .build())
+                    .headers(TestUtils::authUser)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.invalidValueMessage(invalidCategory, "category"));
+        }
+
+        @Test
         void returnUserExams_whenAdminRequestsExamsOfAnotherUser() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var exam = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));

@@ -28,7 +28,9 @@ import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.DeleteAccountRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.service.implementation.ExamService;
 import pl.prawko.prawko_server.service.implementation.UserService;
 
 /**
@@ -43,9 +45,11 @@ import pl.prawko.prawko_server.service.implementation.UserService;
 public class UserController {
 
     private final UserService userService;
+    private final ExamService examService;
 
-    public UserController(final UserService userService) {
+    public UserController(final UserService userService, final ExamService examService) {
         this.userService = userService;
+        this.examService = examService;
     }
 
     /**
@@ -107,6 +111,25 @@ public class UserController {
     @GetMapping(ApiConstants.ME)
     public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal(expression = "id") final long userId) {
         return ResponseEntity.ok(userService.getUserDtoById(userId));
+    }
+
+    /**
+     * Retrieves exam statistics of the currently authenticated user.
+     *
+     * <p>Only finished exams are counted, overall and per category.
+     *
+     * @param userId the ID of the currently authenticated user
+     * @return a {@link ResponseEntity} containing the {@link UserStatsDto}
+     */
+    @Operation(summary = "Get own exam statistics",
+            description = "Retrieves statistics of the authenticated user's finished exams, overall and per category.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exam statistics, zero counts without finished exams"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated")
+    })
+    @GetMapping(ApiConstants.STATS)
+    public ResponseEntity<UserStatsDto> getCurrentUserStats(@AuthenticationPrincipal(expression = "id") final long userId) {
+        return ResponseEntity.ok(examService.getStats(userId));
     }
 
     /**

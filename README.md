@@ -17,6 +17,7 @@
     + [Authentication](#authentication)
     + [Endpoints](#endpoints)
     + [Solving an exam](#solving-an-exam)
+    + [Exam statistics](#exam-statistics)
     + [Pagination](#pagination)
 * [Emails (Mailpit)](#emails-mailpit)
 
@@ -82,6 +83,7 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
     + `PASSWORD_RESET_URL` frontend page the reset link points to, e.g. `https://prawko.pl/auth/password/reset`
     + `EMAIL_VERIFICATION_URL` frontend page the email verification link points to, e.g. `https://prawko.pl/auth/verify`
     + `MEDIA_DIRECTORY` directory with question media files, e.g. `/media` (a Docker volume)
+    + `MEDIA_BASE_URL` public URL the media files are served from, e.g. `https://api.prawko.pl/media`
 
   `data.sql` is not run in `prod` - seed categories and languages once manually.
 
@@ -142,6 +144,9 @@ password-reset:
 
 email-verification:
   url: http://localhost:5173/auth/verify
+
+media:
+  base-url: http://localhost:8080/media
 ```
 
 To use a local MariaDB instead, replace the datasource, e.g. `url: jdbc:mariadb://localhost:3306/prawko` with your
@@ -201,16 +206,17 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/users`
 
-  | Method   | Path                 | Access | Description                                                   |
-  |----------|----------------------|--------|---------------------------------------------------------------|
-  | `POST`   | `/users`             | public | register a new user, emails a verification link               |
-  | `GET`    | `/users/me`          | user   | get the signed-in user (e.g. their ID and role)               |
-  | `DELETE` | `/users/me`          | user   | delete own account with its exams (requires current password) |
-  | `PATCH`  | `/users/me/password` | user   | change own password (requires current password)               |
-  | `GET`    | `/users`             | admin  | get a page of users                                           |
-  | `GET`    | `/users/{id}`        | admin  | get a user                                                    |
-  | `PATCH`  | `/users/{id}`        | self   | update a user (email: the user themselves only)               |
-  | `DELETE` | `/users/{id}`        | admin  | delete a user with their exams                                |
+  | Method   | Path                 | Access | Description                                                      |
+  |----------|----------------------|--------|------------------------------------------------------------------|
+  | `POST`   | `/users`             | public | register a new user, emails a verification link                  |
+  | `GET`    | `/users/me`          | user   | get the signed-in user (e.g. their ID and role)                  |
+  | `GET`    | `/users/me/stats`    | user   | get own exam statistics, see [Exam statistics](#exam-statistics) |
+  | `DELETE` | `/users/me`          | user   | delete own account with its exams (requires current password)    |
+  | `PATCH`  | `/users/me/password` | user   | change own password (requires current password)                  |
+  | `GET`    | `/users`             | admin  | get a page of users                                              |
+  | `GET`    | `/users/{id}`        | admin  | get a user                                                       |
+  | `PATCH`  | `/users/{id}`        | self   | update a user (email: the user themselves only)                  |
+  | `DELETE` | `/users/{id}`        | admin  | delete a user with their exams                                   |
 
 * `/questions`
 
@@ -230,13 +236,13 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/exams`
 
-  | Method | Path                  | Access | Description                                                                            |
-  |--------|-----------------------|--------|----------------------------------------------------------------------------------------|
-  | `POST` | `/exams`              | self   | create a new exam for the `userId` from the request body                               |
-  | `GET`  | `/exams?userId={id}`  | self   | get a page of the user's exams history, newest first                                   |
-  | `GET`  | `/exams/{id}`         | self   | get an exam; answers' `correct` flag is included only once the exam is not `active`    |
-  | `POST` | `/exams/{id}/answers` | owner  | answer a question of an active exam, see [Solving an exam](#solving-an-exam)           |
-  | `POST` | `/exams/{id}/finish`  | owner  | finish an active exam and calculate its score, see [Solving an exam](#solving-an-exam) |
+  | Method | Path                                     | Access | Description                                                                                 |
+  |--------|------------------------------------------|--------|---------------------------------------------------------------------------------------------|
+  | `POST` | `/exams`                                 | self   | create a new exam for the `userId` from the request body                                    |
+  | `GET`  | `/exams?userId={id}&category={category}` | self   | get a page of the user's exams history, newest first; `category` is optional and filters it |
+  | `GET`  | `/exams/{id}`                            | self   | get an exam; answers' `correct` flag is included only once the exam is not `active`         |
+  | `POST` | `/exams/{id}/answers`                    | owner  | answer a question of an active exam, see [Solving an exam](#solving-an-exam)                |
+  | `POST` | `/exams/{id}/finish`                     | owner  | finish an active exam and calculate its score, see [Solving an exam](#solving-an-exam)      |
 
 * `/media`
 
@@ -250,6 +256,13 @@ own data (admins may act on any user), **admin** - admins only.
   video players need no credentials. Responses are cacheable for `media.cache-max-age` (`1d`), carry `ETag` and
   `Last-Modified` (revalidation answers `304`) and support range requests (`206`), so videos can be streamed and
   seeked. A missing file returns `404`.
+
+  Questions don't expose filenames: `mediaUrl` is the file's absolute URL (`media.base-url` followed by the filename)
+  and `mediaType` is `IMAGE` or `VIDEO` (from the file extension); both are `null` for a question without media, and
+  `mediaType` alone is `null` when the extension is neither an image nor a video. Moving the files to a CDN only
+  changes `media.base-url`. To add media, put the file into the media directory under the name from the `Media` column
+  of the imported question CSV - except `.wmv` videos: the import renames them to `.webm`, so convert them to WebM and
+  store them as `<name>.webm`.
 
   The question bank's videos are `.wmv`, which Android and most browsers can't play, so the CSV import stores their
   names as `.webm`. Convert the files once (VP9 + Opus, originals are kept, converted videos are skipped on reruns):
@@ -281,6 +294,26 @@ cross-origin scripts via CORS) to show the remaining time correctly.
 | `403`  | the exam belongs to another user                                                                                             |
 | `404`  | the exam doesn't exist, or the answer doesn't belong to any of its questions                                                 |
 | `409`  | the exam is no longer `active` or its time has expired (answers only), or it was modified by a concurrent request - retry it |
+
+### Exam statistics
+
+`GET /users/me/stats` summarizes the signed-in user's finished exams, overall and per category; active exams are not
+counted. An exam is passed with a `score` of at least 68 (out of 74). Categories without finished exams are left out.
+
+```json
+{
+  "examsTaken": 12,
+  "examsPassed": 7,
+  "averageScore": 63.5,
+  "bestScore": 72,
+  "categories": [
+    {"category": "A", "examsTaken": 2, "examsPassed": 1, "averageScore": 60.5, "bestScore": 68},
+    {"category": "B", "examsTaken": 10, "examsPassed": 6, "averageScore": 64.1, "bestScore": 72}
+  ]
+}
+```
+
+Without finished exams the counts are `0`, `averageScore` and `bestScore` are `null` and `categories` is empty.
 
 ### Pagination
 

@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
+import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Exam;
 
@@ -44,16 +45,29 @@ public interface IExamService {
     ExamDto getById(long examId);
 
     /**
-     * Retrieves a page of exams history of a specific user.
+     * Retrieves a page of exams history of a specific user, optionally only of one category.
      * <p>
      * Returns exams as {@link ExamSummaryDto}, ordered according to the given {@link Pageable}.
      * </p>
      *
      * @param userId   the ID of the user whose exams should be retrieved
+     * @param category the category of the exams, or {@code null} for all categories
      * @param pageable the pagination and sorting information
-     * @return page of {@link ExamSummaryDto}, empty if the user has no exams
+     * @return page of {@link ExamSummaryDto}, empty if the user has no matching exams
      */
-    Page<ExamSummaryDto> getAllByUserId(long userId, Pageable pageable);
+    Page<ExamSummaryDto> getAllByUserId(long userId, @Nullable CategoryVariant category, Pageable pageable);
+
+    /**
+     * Computes statistics of the finished exams of a specific user, overall and per category.
+     * <p>
+     * Active exams are skipped. An exam is passed with a score of at least {@link Exam#PASSING_SCORE}.
+     * </p>
+     *
+     * @param userId the ID of the user whose exams should be counted
+     * @return {@link UserStatsDto} with zero counts, {@code null} scores and no categories if the user has no
+     * finished exams
+     */
+    UserStatsDto getStats(long userId);
 
     /**
      * Saves the user's answer to a question of their active {@link Exam}.

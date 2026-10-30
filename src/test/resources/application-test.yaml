@@ -28,3 +28,4 @@ email-verification:
 
 media:
   directory: src/test/resources/media
+  base-url: http://localhost/media

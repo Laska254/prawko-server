@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import org.jspecify.annotations.Nullable;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -29,6 +30,7 @@ import pl.prawko.prawko_server.dto.CreateExamDto;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.dto.SubmitAnswerRequest;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.service.implementation.ExamService;
 
 /**
@@ -108,23 +110,25 @@ public class ExamController {
      * Sorted from the newest unless specified otherwise. Allowed only for the user themselves or an admin.
      *
      * @param userId   the unique identifier of the user (must be positive)
+     * @param category the category of the exams, or {@code null} for all categories
      * @param pageable the pagination and sorting information
      * @return a {@link ResponseEntity} containing a {@link PagedModel} of {@link ExamSummaryDto}'s
      */
-    @Operation(summary = "Get user's exams history", description = "Retrieves a page of user's exams, by default ordered from the newest")
+    @Operation(summary = "Get user's exams history", description = "Retrieves a page of user's exams, optionally of one category, by default ordered from the newest")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Page of user's exams"),
             @ApiResponse(responseCode = "403", description = "Accessing exams of another user is not allowed"),
             @ApiResponse(responseCode = "404", description = "User not found"),
-            @ApiResponse(responseCode = "400", description = "User ID is missing, negative or zero, or invalid sort property"),
+            @ApiResponse(responseCode = "400", description = "User ID is missing, negative or zero, unknown category or invalid sort property"),
     })
     @IsSelfOrAdmin(userId = "#userId")
     @GetMapping
     public ResponseEntity<PagedModel<ExamSummaryDto>> getUserExams(
             @RequestParam @Positive final long userId,
+            @RequestParam @Nullable final CategoryVariant category,
             @ParameterObject
             @SortDefault(sort = {"created", "id"}, direction = Sort.Direction.DESC) final Pageable pageable) {
-        return ResponseEntity.ok(new PagedModel<>(service.getAllByUserId(userId, pageable)));
+        return ResponseEntity.ok(new PagedModel<>(service.getAllByUserId(userId, category, pageable)));
     }
 
     /**

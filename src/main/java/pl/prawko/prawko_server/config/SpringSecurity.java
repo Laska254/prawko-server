@@ -222,6 +222,7 @@ public class SpringSecurity {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.USERS_BASE_URL).permitAll()
                 .requestMatchers(HttpMethod.GET, ApiConstants.USERS_BASE_URL + ApiConstants.ME).hasRole("USER")
+                .requestMatchers(HttpMethod.GET, ApiConstants.USERS_BASE_URL + ApiConstants.STATS).hasRole("USER")
                 .requestMatchers(HttpMethod.GET, ApiConstants.USERS_BASE_URL_ALL).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, ApiConstants.USERS_BASE_URL_ALL).hasRole("USER")
                 .requestMatchers(HttpMethod.DELETE, ApiConstants.USERS_BASE_URL + ApiConstants.ME).hasRole("USER")

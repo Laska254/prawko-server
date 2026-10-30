@@ -35,6 +35,7 @@ email-verification:
 
 media:
   directory: ${MEDIA_DIRECTORY}
+  base-url: ${MEDIA_BASE_URL}
 
 springdoc:
   api-docs:
