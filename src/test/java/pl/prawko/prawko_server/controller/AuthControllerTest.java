@@ -222,6 +222,17 @@ public class AuthControllerTest {
     }
 
     @Test
+    void login_returnTokens_whenExpiredAccessTokenIsSent() {
+        userRepository.save(UserTestData.createTestUserPippin());
+
+        restClient.post()
+                .headers(headers -> headers.setBearerAuth(expiredAccessToken()))
+                .body(new LoginDto(TestUtils.USER_NAME, TestUtils.USER_PASSWORD))
+                .exchange()
+                .expectStatus().isOk();
+    }
+
+    @Test
     void refresh_returnNewTokensAuthenticatingRequests_whenRefreshTokenIsValid() {
         userRepository.save(UserTestData.createTestUserPippin());
         final var signedIn = login();
@@ -238,12 +249,10 @@ public class AuthControllerTest {
     void refresh_returnNewTokens_whenExpiredAccessTokenIsSent() {
         userRepository.save(UserTestData.createTestUserPippin());
         final var signedIn = login();
-        final var expiredAccessToken = jwtEncoder.encode(JwtEncoderParameters.from(TestUtils.expiredAdminClaims()))
-                .getTokenValue();
 
         restClient.post()
                 .uri(ApiConstants.REFRESH)
-                .headers(headers -> headers.setBearerAuth(expiredAccessToken))
+                .headers(headers -> headers.setBearerAuth(expiredAccessToken()))
                 .body(new RefreshTokenRequest(signedIn.refreshToken()))
                 .exchange()
                 .expectStatus().isOk();
@@ -612,6 +621,10 @@ public class AuthControllerTest {
                 .expectStatus().isUnauthorized()
                 .expectBody()
                 .jsonPath("$.detail").isEqualTo(RefreshTokenTestData.INVALID_REFRESH_TOKEN);
+    }
+
+    private String expiredAccessToken() {
+        return jwtEncoder.encode(JwtEncoderParameters.from(TestUtils.expiredAdminClaims())).getTokenValue();
     }
 
     private RestTestClient.ResponseSpec getMe(final String accessToken) {

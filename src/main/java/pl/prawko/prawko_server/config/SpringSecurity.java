@@ -228,7 +228,12 @@ public class SpringSecurity {
     private static BearerTokenResolver bearerTokenResolver() {
         final var resolver = new DefaultBearerTokenResolver();
         final var authEndpoints = PathPatternRequestMatcher.pathPattern(HttpMethod.POST, ApiConstants.AUTH_BASE_URL_ALL);
-        return request -> authEndpoints.matches(request) ? null : resolver.resolve(request);
+        return request -> {
+            if (authEndpoints.matches(request)) {
+                return null;
+            }
+            return resolver.resolve(request);
+        };
     }
 
     private void configureEndpoint_Auth(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
