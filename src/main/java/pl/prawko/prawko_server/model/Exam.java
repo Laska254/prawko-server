@@ -22,7 +22,8 @@ import java.util.List;
  *  <ul>
  *     <li>{@code id} - unique generated identifier</li>
  *     <li>{@code active} - status of exam, representing if user is solving it</li>
- *     <li>{@code score} - sum of points of questions answered correctly, set when the exam is finished</li>
+ *     <li>{@code score} - sum of points of questions answered correctly, set when the exam is finished; at least
+ *     {@link #PASSING_SCORE} passes</li>
  *     <li>{@code created} - timestamp of creation</li>
  *     <li>{@code expires} - deadline for answers, {@link #DURATION} after creation; the exam is finished automatically afterward</li>
  *     <li>{@code updated} - timestamp of last update</li>
@@ -46,6 +47,7 @@ import java.util.List;
 public class Exam {
 
     public static final Duration DURATION = Duration.ofMinutes(25);
+    public static final int PASSING_SCORE = 68;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

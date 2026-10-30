@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
+import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.mapper.ExamMapper;
 import pl.prawko.prawko_server.model.Answer;
@@ -113,6 +114,16 @@ public class ExamService implements IExamService {
         final var exams = findExams(userId, category, pageable).map(examMapper::toSummaryDto);
         log.info("Found {} exam(s) for user with id: {}", exams.getTotalElements(), userId);
         return exams;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserStatsDto getStats(final long userId) {
+        log.info("Computing exam statistics of user with id: {}", userId);
+        final var totals = repository.findTotalsByUserId(userId, Exam.PASSING_SCORE);
+        final var categories = repository.findCategoryStatsByUserId(userId, Exam.PASSING_SCORE);
+        return new UserStatsDto(totals.getExamsTaken(), totals.getExamsPassed(), totals.getAverageScore(),
+                totals.getBestScore(), categories);
     }
 
     /**

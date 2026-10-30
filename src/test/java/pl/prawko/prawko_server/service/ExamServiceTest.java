@@ -39,6 +39,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -267,6 +268,28 @@ public class ExamServiceTest {
                     .hasMessage(expectedMessage);
 
             verifyNoInteractions(repository, examMapper);
+        }
+
+    }
+
+    @Nested
+    class GetStats {
+
+        @Test
+        void combineTotalsAndCategoryStats_withPassingScore() {
+            final var userId = 44L;
+            final var expected = ExamTestData.STATS;
+            final var totals = mock(ExamRepository.ExamTotals.class);
+            when(totals.getExamsTaken()).thenReturn(expected.examsTaken());
+            when(totals.getExamsPassed()).thenReturn(expected.examsPassed());
+            when(totals.getAverageScore()).thenReturn(expected.averageScore());
+            when(totals.getBestScore()).thenReturn(expected.bestScore());
+            when(repository.findTotalsByUserId(userId, Exam.PASSING_SCORE)).thenReturn(totals);
+            when(repository.findCategoryStatsByUserId(userId, Exam.PASSING_SCORE)).thenReturn(expected.categories());
+
+            final var result = service.getStats(userId);
+
+            assertThat(result).isEqualTo(expected);
         }
 
     }
