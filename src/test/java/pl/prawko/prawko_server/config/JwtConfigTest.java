@@ -1,13 +1,17 @@
 package pl.prawko.prawko_server.config;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
+import pl.prawko.prawko_server.model.Role;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -17,6 +21,32 @@ class JwtConfigTest {
     private static final long USER_ID = 7L;
 
     private final JwtConfig config = new JwtConfig();
+
+    @Test
+    void toAuthentication_returnAuthenticatedUser_whenTokenIsValid() {
+        final var jwt = Jwt.withTokenValue("token")
+                .header("alg", "HS256")
+                .subject(String.valueOf(USER_ID))
+                .claim(JwtConfig.USERNAME_CLAIM, TestUtils.ADMIN_NAME)
+                .claim(JwtConfig.AUTHORITIES_CLAIM, List.of(Role.ADMIN.getAuthority()))
+                .build();
+
+        final var authentication = JwtConfig.toAuthentication(jwt);
+
+        assertThat(authentication.isAuthenticated()).isTrue();
+        assertThat(authentication.getCredentials()).isNull();
+        assertThat(authentication.getPrincipal())
+                .isInstanceOfSatisfying(AuthenticatedUser.class, principal -> {
+                    assertThat(principal.getId()).isEqualTo(USER_ID);
+                    assertThat(principal.getUsername()).isEqualTo(TestUtils.ADMIN_NAME);
+                    assertThat(principal.getPassword()).isNull();
+                    assertThat(principal.isEnabled()).isTrue();
+                    assertThat(principal.isAdmin()).isTrue();
+                });
+        assertThat(authentication.getAuthorities())
+                .extracting(GrantedAuthority::getAuthority)
+                .containsExactly(Role.ADMIN.getAuthority());
+    }
 
     @Test
     void accessTokenKey_decodeSecret_whenSecretIsConfigured() {

@@ -37,8 +37,9 @@ import java.util.List;
 /**
  * Spring Security configuration class for the application.
  *
- * <p>This configuration enables HTTP Basic Authentication for stateless REST API access
- * (no HTTP session is created) with role-based authorization (RBAC). It defines which endpoints
+ * <p>This configuration enables HTTP Basic Authentication and JWT access tokens ({@code Authorization: Bearer ...},
+ * see {@link JwtConfig}) for stateless REST API access (no HTTP session is created) with role-based authorization
+ * (RBAC). It defines which endpoints
  * are public and which require specific roles (ADMIN, USER) for access.
  *
  * <p>Resource ownership (e.g. a user may only modify their own account) is enforced by method security
@@ -205,6 +206,8 @@ public class SpringSecurity {
                     authorize.anyRequest().denyAll();
                 })
                 .httpBasic(Customizer.withDefaults())
+                .oauth2ResourceServer(resourceServer -> resourceServer
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(JwtConfig::toAuthentication)))
                 .build();
     }
 

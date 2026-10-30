@@ -20,7 +20,7 @@ import java.io.IOException;
  * audit trails for debugging and monitoring API usage.
  *
  * <p>Users are identified by ID only, {@code anonymous} when not authenticated, so no personal data ends up in logs.
- * The filter runs before HTTP Basic authentication, so the user is resolved only once the request has been handled.
+ * The filter runs before authentication, so the user is resolved only once the request has been handled.
  *
  * <p>The filter is executed once per request, capturing both incoming requests and outgoing responses
  * with precise timing information.

@@ -6,8 +6,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.crypto.keygen.KeyGenerators;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
@@ -21,12 +24,15 @@ import java.time.Clock;
 import java.util.Base64;
 
 /**
- * Configures signing and validating JWT access tokens, issued by
- * {@link pl.prawko.prawko_server.service.IAccessTokenService}.
+ * Configures signed JWT access tokens, issued by {@link pl.prawko.prawko_server.service.IAccessTokenService} and
+ * accepted as {@code Authorization: Bearer ...} by {@link SpringSecurity}.
  *
  * <p>Tokens are signed with HS256, as the server is the only party issuing and validating them. The key is the
  * Base64-encoded {@code access-token.secret}, at least 256 bits. Without it a random key is generated at startup, so
  * tokens don't survive a restart - meant for {@code dev} and {@code test}, {@code prod} requires the secret.
+ *
+ * <p>The claims hold the user ID as subject, the username and the authorities, so requests are authenticated without
+ * querying the database. Changes to the account, like its role or deletion, take effect once the token expires.
  */
 @Configuration
 public class JwtConfig {
@@ -37,6 +43,23 @@ public class JwtConfig {
     private static final Logger log = LoggerFactory.getLogger(JwtConfig.class);
     private static final String KEY_ALGORITHM = "HmacSHA256";
     private static final int GENERATED_KEY_BYTES = 32;
+
+    /**
+     * Converts the claims of a validated access token into an authentication with an {@link AuthenticatedUser}, so
+     * the principal is the same as after signing in with a password.
+     *
+     * @param jwt the validated access token
+     * @return the authenticated token, without credentials
+     */
+    public static UsernamePasswordAuthenticationToken toAuthentication(final Jwt jwt) {
+        final var principal = new AuthenticatedUser(
+                Long.parseLong(jwt.getSubject()),
+                jwt.getClaimAsString(USERNAME_CLAIM),
+                null,
+                true,
+                AuthorityUtils.createAuthorityList(jwt.getClaimAsStringList(AUTHORITIES_CLAIM)));
+        return UsernamePasswordAuthenticationToken.authenticated(principal, null, principal.getAuthorities());
+    }
 
     @Bean
     public SecretKey accessTokenKey(@Value("${access-token.secret:#{null}}") @Nullable final String secret) {
