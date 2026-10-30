@@ -77,6 +77,8 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
     + `CORS_ALLOWED_ORIGIN_PATTERNS` comma-separated, e.g. `https://prawko.pl`
     + `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` SMTP server (with auth and STARTTLS)
     + `MAIL_FROM` sender address, e.g. `no-reply@prawko.pl`
+    + `ACCESS_TOKEN_SECRET` Base64-encoded key signing access tokens, at least 256 bits, e.g. from
+      `openssl rand -base64 32`
     + `PASSWORD_RESET_URL` frontend page the reset link points to, e.g. `https://prawko.pl/auth/password/reset`
     + `EMAIL_VERIFICATION_URL` frontend page the email verification link points to, e.g. `https://prawko.pl/auth/verify`
     + `MEDIA_DIRECTORY` directory with question media files, e.g. `/media` (a Docker volume)
