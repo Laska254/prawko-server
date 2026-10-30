@@ -164,8 +164,9 @@ a controller, so it's documented only here.
 
 ### Authentication
 
-The API is stateless and uses HTTP Basic - every request that requires authentication must carry the
-`Authorization: Basic ...` header. You can sign in with either the username or the email address.
+The API is stateless - every request that requires authentication must carry an `Authorization` header, either HTTP
+Basic (`Basic ...`) or an access token (`Bearer ...`, see below). With Basic you can sign in with either the username
+or the email address.
 
 Signed JWT access tokens are accepted alongside Basic as `Authorization: Bearer ...`. A token is valid for
 `access-token.validity` (15 minutes) and carries the user's role, so a role change or account deletion applies only
