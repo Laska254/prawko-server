@@ -109,7 +109,7 @@ public class ExamTestData {
         return "Time for exam with '" + id + "' has expired.";
     }
 
-    public static Exam finish(final Exam exam, final int score) {
+    private static Exam finish(final Exam exam, final int score) {
         return exam
                 .setActive(false)
                 .setScore(score);

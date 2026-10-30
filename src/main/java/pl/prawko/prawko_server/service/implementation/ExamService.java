@@ -26,6 +26,7 @@ import pl.prawko.prawko_server.util.ExamGenerator;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of {@link IExamService} that manages {@link Exam} entities.
@@ -123,19 +124,22 @@ public class ExamService implements IExamService {
         log.info("Computing exam statistics of user with id: {}", userId);
         // totals are derived from the categories, so both come from one query and always agree
         final var categories = repository.findCategoryStatsByUserId(userId, Exam.PASSING_SCORE);
+        if (categories.isEmpty()) {
+            return new UserStatsDto(0, 0, null, null, List.of());
+        }
         final var examsTaken = categories.stream()
                 .mapToLong(CategoryStatsDto::examsTaken)
                 .sum();
         final var examsPassed = categories.stream()
                 .mapToLong(CategoryStatsDto::examsPassed)
                 .sum();
-        @Nullable final Double averageScore = examsTaken == 0 ? null : categories.stream()
+        final var averageScore = categories.stream()
                 .mapToDouble(stats -> stats.averageScore() * stats.examsTaken())
                 .sum() / examsTaken;
-        @Nullable final Integer bestScore = categories.stream()
-                .map(CategoryStatsDto::bestScore)
-                .max(Integer::compare)
-                .orElse(null);
+        final var bestScore = categories.stream()
+                .mapToInt(CategoryStatsDto::bestScore)
+                .max()
+                .orElseThrow();
         return new UserStatsDto(examsTaken, examsPassed, averageScore, bestScore, categories);
     }
 
