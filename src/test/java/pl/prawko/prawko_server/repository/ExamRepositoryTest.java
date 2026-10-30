@@ -92,40 +92,6 @@ class ExamRepositoryTest {
     }
 
     @Test
-    void findTotalsByUserId_aggregateOnlyFinishedExamsOfUser() {
-        final var user = UserTestData.createTestUserPippin();
-        entityManager.persist(user);
-        final var other = UserTestData.createMerry();
-        entityManager.persist(other);
-        repository.saveAll(ExamTestData.createExamsForStats(user));
-        repository.save(ExamTestData.finish(ExamTestData.createExamWithoutQuestions(other), 74));
-        entityManager.clear();
-
-        final var result = repository.findTotalsByUserId(user.getId(), Exam.PASSING_SCORE);
-
-        final var expected = ExamTestData.STATS;
-        assertThat(result.getExamsTaken()).isEqualTo(expected.examsTaken());
-        assertThat(result.getExamsPassed()).isEqualTo(expected.examsPassed());
-        assertThat(result.getAverageScore()).isEqualTo(expected.averageScore());
-        assertThat(result.getBestScore()).isEqualTo(expected.bestScore());
-    }
-
-    @Test
-    void findTotalsByUserId_returnZeroCountsAndNullScores_whenUserHasNoFinishedExams() {
-        final var user = UserTestData.createTestUserPippin();
-        entityManager.persist(user);
-        repository.save(ExamTestData.createExamWithoutQuestions(user));
-        entityManager.clear();
-
-        final var result = repository.findTotalsByUserId(user.getId(), Exam.PASSING_SCORE);
-
-        assertThat(result.getExamsTaken()).isZero();
-        assertThat(result.getExamsPassed()).isZero();
-        assertThat(result.getAverageScore()).isNull();
-        assertThat(result.getBestScore()).isNull();
-    }
-
-    @Test
     void findCategoryStatsByUserId_aggregateOnlyFinishedExamsOfUserPerCategory() {
         final var user = UserTestData.createTestUserPippin();
         entityManager.persist(user);

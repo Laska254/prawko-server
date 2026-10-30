@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.prawko.prawko_server.dto.CategoryStatsDto;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.dto.UserStatsDto;
@@ -120,10 +121,22 @@ public class ExamService implements IExamService {
     @Transactional(readOnly = true)
     public UserStatsDto getStats(final long userId) {
         log.info("Computing exam statistics of user with id: {}", userId);
-        final var totals = repository.findTotalsByUserId(userId, Exam.PASSING_SCORE);
+        // totals are derived from the categories, so both come from one query and always agree
         final var categories = repository.findCategoryStatsByUserId(userId, Exam.PASSING_SCORE);
-        return new UserStatsDto(totals.getExamsTaken(), totals.getExamsPassed(), totals.getAverageScore(),
-                totals.getBestScore(), categories);
+        final var examsTaken = categories.stream()
+                .mapToLong(CategoryStatsDto::examsTaken)
+                .sum();
+        final var examsPassed = categories.stream()
+                .mapToLong(CategoryStatsDto::examsPassed)
+                .sum();
+        @Nullable final Double averageScore = examsTaken == 0 ? null : categories.stream()
+                .mapToDouble(stats -> stats.averageScore() * stats.examsTaken())
+                .sum() / examsTaken;
+        @Nullable final Integer bestScore = categories.stream()
+                .map(CategoryStatsDto::bestScore)
+                .max(Integer::compare)
+                .orElse(null);
+        return new UserStatsDto(examsTaken, examsPassed, averageScore, bestScore, categories);
     }
 
     /**

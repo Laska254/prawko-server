@@ -1,6 +1,5 @@
 package pl.prawko.prawko_server.repository;
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -38,23 +37,6 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
     List<Exam> findAllByActiveTrueAndExpiresBefore(final Instant time);
 
     /**
-     * Aggregates the finished exams of a user.
-     *
-     * @param userId       the ID of the user owning the exams
-     * @param passingScore the lowest score of a passed exam
-     * @return the totals; without finished exams the counts are {@code 0}, the scores {@code null}
-     */
-    @Query("""
-            SELECT COUNT(e) AS examsTaken,
-                   COALESCE(SUM(CASE WHEN e.score >= :passingScore THEN 1 ELSE 0 END), 0) AS examsPassed,
-                   AVG(e.score) AS averageScore,
-                   MAX(e.score) AS bestScore
-            FROM Exam e
-            WHERE e.user.id = :userId AND e.active = false
-            """)
-    ExamTotals findTotalsByUserId(final long userId, final int passingScore);
-
-    /**
      * Aggregates the finished exams of a user per category.
      *
      * @param userId       the ID of the user owning the exams
@@ -74,22 +56,5 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
             ORDER BY e.category.name
             """)
     List<CategoryStatsDto> findCategoryStatsByUserId(final long userId, final int passingScore);
-
-    /**
-     * Projection of {@link #findTotalsByUserId(long, int)}.
-     */
-    interface ExamTotals {
-
-        long getExamsTaken();
-
-        long getExamsPassed();
-
-        @Nullable
-        Double getAverageScore();
-
-        @Nullable
-        Integer getBestScore();
-
-    }
 
 }
