@@ -54,8 +54,9 @@ import java.util.List;
  *
  * <p>Authorization rules:
  * <ul>
- *     <li>Public: {@code POST /auth} (login), {@code POST /auth/password/forgot} and {@code POST /auth/password/reset}
- *     (password reset), {@code POST /auth/verify} and {@code POST /auth/verify/resend} (email verification),
+ *     <li>Public: {@code POST /auth} (login), {@code POST /auth/refresh} (new token pair),
+ *     {@code POST /auth/password/forgot} and {@code POST /auth/password/reset} (password reset),
+ *     {@code POST /auth/verify} and {@code POST /auth/verify/resend} (email verification),
  *     {@code POST /users} (registration)</li>
  *     <li>ADMIN only: {@code POST /questions} (upload), {@code GET /questions} (list all)</li>
  *     <li>USER+ required: {@code GET/DELETE /users/me}, {@code GET /questions/**}, {@code POST/GET /exams/**}</li>
@@ -214,6 +215,7 @@ public class SpringSecurity {
         authorize
                 .requestMatchers(HttpMethod.POST,
                         ApiConstants.AUTH_BASE_URL,
+                        ApiConstants.AUTH_BASE_URL + ApiConstants.REFRESH,
                         ApiConstants.AUTH_BASE_URL + ApiConstants.FORGOT_PASSWORD,
                         ApiConstants.AUTH_BASE_URL + ApiConstants.RESET_PASSWORD,
                         ApiConstants.AUTH_BASE_URL + ApiConstants.VERIFY_EMAIL,

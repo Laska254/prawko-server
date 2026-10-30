@@ -22,17 +22,23 @@ import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.dto.AuthTokensDto;
 import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
+import pl.prawko.prawko_server.dto.RefreshTokenRequest;
 import pl.prawko.prawko_server.dto.ResendVerificationRequest;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.VerifyEmailRequest;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.repository.RefreshTokenRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
+import pl.prawko.prawko_server.test_data.RefreshTokenTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,6 +63,9 @@ public class AuthControllerTest {
     private UserRepository userRepository;
 
     @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -70,6 +79,9 @@ public class AuthControllerTest {
 
     @Value("${password-reset.cooldown}")
     private Duration cooldown;
+
+    @Value("${access-token.validity}")
+    private Duration accessTokenValidity;
 
     @LocalServerPort
     private int port;
@@ -99,16 +111,18 @@ public class AuthControllerTest {
     }
 
     @Test
-    void login_returnOk_whenCredentialsAreValid() {
-        final var request = new LoginDto(TestUtils.USER_NAME, TestUtils.USER_PASSWORD);
-        final var expectedMessage = "User signed-in successfully.";
+    void login_returnTokensAuthenticatingRequests_whenCredentialsAreValid() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
 
-        restClient.post()
-                .body(request)
-                .exchange()
+        final var tokens = login();
+
+        assertThat(tokens.expiresIn()).isEqualTo(accessTokenValidity.toSeconds());
+        assertThat(refreshTokenRepository.findByTokenHash(SecureTokens.hash(tokens.refreshToken())))
+                .get().extracting(token -> token.getUser().getId()).isEqualTo(tester.getId());
+        getMe(tokens.accessToken())
                 .expectStatus().isOk()
-                .expectBody(String.class)
-                .isEqualTo(expectedMessage);
+                .expectBody()
+                .jsonPath("$.userName").isEqualTo(tester.getUserName());
     }
 
     @Test
@@ -200,6 +214,66 @@ public class AuthControllerTest {
                 .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.detail").isEqualTo(expectedMessage);
+    }
+
+    @Test
+    void refresh_returnNewTokensAuthenticatingRequests_whenRefreshTokenIsValid() {
+        userRepository.save(UserTestData.createTestUserPippin());
+        final var signedIn = login();
+
+        final var refreshed = refreshTokens(signedIn.refreshToken());
+
+        assertThat(refreshed.refreshToken()).isNotEqualTo(signedIn.refreshToken());
+        assertThat(refreshed.expiresIn()).isEqualTo(accessTokenValidity.toSeconds());
+        getMe(refreshed.accessToken())
+                .expectStatus().isOk();
+    }
+
+    @Test
+    void refresh_returnUnauthorized_whenRefreshTokenIsUsedTwice() {
+        userRepository.save(UserTestData.createTestUserPippin());
+        final var signedIn = login();
+        refreshTokens(signedIn.refreshToken());
+
+        assertRefreshUnauthorized(signedIn.refreshToken());
+    }
+
+    @Test
+    void refresh_revokeAllRefreshTokensOfUser_whenUsedTokenIsReused() {
+        userRepository.save(UserTestData.createTestUserPippin());
+        final var otherClient = login();
+        final var signedIn = login();
+        final var refreshed = refreshTokens(signedIn.refreshToken());
+
+        assertRefreshUnauthorized(signedIn.refreshToken());
+
+        assertRefreshUnauthorized(refreshed.refreshToken());
+        assertRefreshUnauthorized(otherClient.refreshToken());
+    }
+
+    @Test
+    void refresh_returnUnauthorized_whenRefreshTokenIsExpired() {
+        userRepository.save(UserTestData.createTestUserPippin());
+        final var signedIn = login();
+        final var token = refreshTokenRepository.findByTokenHash(SecureTokens.hash(signedIn.refreshToken()))
+                .orElseThrow();
+        refreshTokenRepository.save(token.setExpires(Instant.now()));
+
+        assertRefreshUnauthorized(signedIn.refreshToken());
+    }
+
+    @Test
+    void refresh_returnUnauthorized_whenRefreshTokenIsUnknown() {
+        assertRefreshUnauthorized("unknownToken");
+    }
+
+    @Test
+    void refresh_returnBadRequest_whenRefreshTokenIsBlank() {
+        refresh(" ")
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
+                .jsonPath("$.details.refreshToken").isEqualTo("Token is required.");
     }
 
     @Test
@@ -486,6 +560,45 @@ public class AuthControllerTest {
                 .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
                 .jsonPath("$.details.email").isEqualTo("Email format is not valid.");
         verifyNoInteractions(mailSender);
+    }
+
+    private AuthTokensDto login() {
+        return restClient.post()
+                .body(new LoginDto(TestUtils.USER_NAME, TestUtils.USER_PASSWORD))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AuthTokensDto.class)
+                .returnResult()
+                .getResponseBody();
+    }
+
+    private RestTestClient.ResponseSpec refresh(final String refreshToken) {
+        return restClient.post()
+                .uri(ApiConstants.REFRESH)
+                .body(new RefreshTokenRequest(refreshToken))
+                .exchange();
+    }
+
+    private AuthTokensDto refreshTokens(final String refreshToken) {
+        return refresh(refreshToken)
+                .expectStatus().isOk()
+                .expectBody(AuthTokensDto.class)
+                .returnResult()
+                .getResponseBody();
+    }
+
+    private void assertRefreshUnauthorized(final String refreshToken) {
+        refresh(refreshToken)
+                .expectStatus().isUnauthorized()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(RefreshTokenTestData.INVALID_REFRESH_TOKEN);
+    }
+
+    private RestTestClient.ResponseSpec getMe(final String accessToken) {
+        return TestUtils.createRestTestClient(port, ApiConstants.USERS_BASE_URL + ApiConstants.ME)
+                .get()
+                .headers(headers -> headers.setBearerAuth(accessToken))
+                .exchange();
     }
 
     private String requestVerificationToken(final String email) {

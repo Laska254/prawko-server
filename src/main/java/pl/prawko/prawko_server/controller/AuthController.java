@@ -12,21 +12,25 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.dto.AuthTokensDto;
 import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
+import pl.prawko.prawko_server.dto.RefreshTokenRequest;
 import pl.prawko.prawko_server.dto.ResendVerificationRequest;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.VerifyEmailRequest;
 import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
 import pl.prawko.prawko_server.service.implementation.PasswordResetService;
+import pl.prawko.prawko_server.service.implementation.RefreshTokenService;
 
 /**
  * REST controller for authentication operations.
  *
- * <p>Provides endpoints for user login, verifying email addresses and resetting forgotten passwords.
- * Authentication is performed using Spring Security's authentication manager.
- * The API is stateless, so nothing is stored between requests.
+ * <p>Provides endpoints for user login, refreshing tokens, verifying email addresses and resetting forgotten
+ * passwords. Authentication is performed using Spring Security's authentication manager.
+ * The API is stateless: signing in issues tokens, and only refresh tokens are stored.
  */
 @Tag(name = "Auth", description = "Authentication management endpoints")
 @RestController
@@ -34,28 +38,31 @@ import pl.prawko.prawko_server.service.implementation.PasswordResetService;
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
+    private final RefreshTokenService refreshTokenService;
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
 
     public AuthController(final AuthenticationManager authenticationManager,
+                          final RefreshTokenService refreshTokenService,
                           final PasswordResetService passwordResetService,
                           final EmailVerificationService emailVerificationService) {
         this.authenticationManager = authenticationManager;
+        this.refreshTokenService = refreshTokenService;
         this.passwordResetService = passwordResetService;
         this.emailVerificationService = emailVerificationService;
     }
 
     /**
-     * Authenticates a user with provided credentials.
+     * Authenticates a user with provided credentials and issues tokens.
      *
-     * <p>Only verifies the credentials. The API is stateless, so no session is created and
-     * every subsequent request must carry its own HTTP Basic credentials. Accounts whose email isn't verified yet
-     * are rejected.
+     * <p>No session is created: subsequent requests carry the access token, and the refresh token gets a new pair
+     * once it expires. Accounts whose email isn't verified yet are rejected.
      *
      * @param request the {@link LoginDto} containing username and password
-     * @return a {@link ResponseEntity} with HTTP 200 Ok and success message
+     * @return a {@link ResponseEntity} with HTTP 200 Ok and the issued {@link AuthTokensDto}
      */
-    @Operation(summary = "Sign-in", description = "Authenticates a user with username and password.")
+    @Operation(summary = "Sign-in",
+            description = "Authenticates a user with username or email and password, returns access and refresh tokens.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User signed-in successfully"),
             @ApiResponse(responseCode = "401", description = "Authentication failed"),
@@ -63,12 +70,33 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
     })
     @PostMapping
-    public ResponseEntity<String> login(@Valid @RequestBody final LoginDto request) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+    public ResponseEntity<AuthTokensDto> login(@Valid @RequestBody final LoginDto request) {
+        final var authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 request.userName(),
                 request.password()
         ));
-        return ResponseEntity.ok("User signed-in successfully.");
+        return ResponseEntity.ok(refreshTokenService.issueTokens((AuthenticatedUser) authentication.getPrincipal()));
+    }
+
+    /**
+     * Exchanges a refresh token for a new token pair.
+     *
+     * <p>The refresh token can be used only once. Using it again revokes all refresh tokens of the user, so clients
+     * must not refresh concurrently.
+     *
+     * @param request the {@link RefreshTokenRequest} containing the refresh token
+     * @return a {@link ResponseEntity} with HTTP 200 Ok and the issued {@link AuthTokensDto}
+     */
+    @Operation(summary = "Refresh tokens",
+            description = "Returns a new token pair for a refresh token, which can't be used again.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Tokens refreshed successfully"),
+            @ApiResponse(responseCode = "401", description = "Invalid, expired or revoked refresh token"),
+            @ApiResponse(responseCode = "400", description = "Invalid argument"),
+    })
+    @PostMapping(ApiConstants.REFRESH)
+    public ResponseEntity<AuthTokensDto> refresh(@Valid @RequestBody final RefreshTokenRequest request) {
+        return ResponseEntity.ok(refreshTokenService.refresh(request.refreshToken()));
     }
 
     /**

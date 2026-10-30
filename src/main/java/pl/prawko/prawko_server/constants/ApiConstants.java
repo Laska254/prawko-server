@@ -107,6 +107,15 @@ public final class ApiConstants {
     public static final String STATS = ME + "/stats";
 
     /**
+     * Path segment for exchanging a refresh token for a new token pair.
+     *
+     * <p>Example: {@code /auth/refresh}
+     *
+     * @see pl.prawko.prawko_server.controller.AuthController
+     */
+    public static final String REFRESH = "/refresh";
+
+    /**
      * Path segment for requesting a password reset link by email.
      *
      * <p>Example: {@code /auth/password/forgot}

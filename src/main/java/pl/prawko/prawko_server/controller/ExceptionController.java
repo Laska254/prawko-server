@@ -25,6 +25,7 @@ import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
+import pl.prawko.prawko_server.exception.InvalidRefreshTokenException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.exception.TooManyRequestsException;
 
@@ -73,6 +74,12 @@ public class ExceptionController {
     @ExceptionHandler(InvalidTokenException.class)
     public ProblemDetail handleInvalidToken(final InvalidTokenException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "401", description = "Invalid, expired or revoked refresh token")
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ProblemDetail handleInvalidRefreshToken(final InvalidRefreshTokenException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
     }
 
     @ApiResponse(responseCode = "429", description = "Requested again within the cooldown")
