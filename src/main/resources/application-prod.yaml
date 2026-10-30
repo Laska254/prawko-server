@@ -27,6 +27,9 @@ spring:
 mail:
   from: ${MAIL_FROM}
 
+access-token:
+  secret: ${ACCESS_TOKEN_SECRET}
+
 password-reset:
   url: ${PASSWORD_RESET_URL}
 

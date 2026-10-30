@@ -3,11 +3,17 @@ package pl.prawko.prawko_server.config;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.test.web.servlet.client.RestTestClient;
+import pl.prawko.prawko_server.model.Role;
+import pl.prawko.prawko_server.service.IAccessTokenService;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -34,6 +40,8 @@ public class TestUtils {
 
     public static final long ASYNC_TIMEOUT_MS = 5_000;
 
+    public static final long PRINCIPAL_ID = 7L;
+
     // a fixed time in a zone far from UTC: the results must not depend on it
     public static final Clock CLOCK = Clock.fixed(Instant.now(), ZoneId.of("Pacific/Kiritimati"));
 
@@ -47,6 +55,33 @@ public class TestUtils {
 
     public static void authUnverified(final HttpHeaders headers) {
         headers.setBasicAuth(UNVERIFIED_NAME, UNVERIFIED_PASSWORD);
+    }
+
+    public static AuthenticatedUser createUserPrincipal() {
+        return new AuthenticatedUser(
+                PRINCIPAL_ID, USER_NAME, USER_PASSWORD, true, AuthorityUtils.createAuthorityList(Role.USER.getAuthority()));
+    }
+
+    public static AuthenticatedUser createAdminPrincipal() {
+        return new AuthenticatedUser(
+                PRINCIPAL_ID, ADMIN_NAME, ADMIN_PASSWORD, true, AuthorityUtils.createAuthorityList(Role.ADMIN.getAuthority()));
+    }
+
+    public static JwtClaimsSet adminClaims(final Instant expiresAt) {
+        return JwtClaimsSet.builder()
+                .subject(String.valueOf(PRINCIPAL_ID))
+                .claim(JwtConfig.USERNAME_CLAIM, ADMIN_NAME)
+                .claim(JwtConfig.AUTHORITIES_CLAIM, List.of(Role.ADMIN.getAuthority()))
+                .expiresAt(expiresAt)
+                .build();
+    }
+
+    public static String issueAccessToken(final IAccessTokenService accessTokenService,
+                                          final UserDetailsService userDetailsService,
+                                          final String username) {
+        final var principal = (AuthenticatedUser) userDetailsService.loadUserByUsername(username);
+        return accessTokenService.issue(principal)
+                .getTokenValue();
     }
 
     public static String invalidValueMessage(final String value, final String parameter) {

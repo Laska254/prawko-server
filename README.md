@@ -77,6 +77,8 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
     + `CORS_ALLOWED_ORIGIN_PATTERNS` comma-separated, e.g. `https://prawko.pl`
     + `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` SMTP server (with auth and STARTTLS)
     + `MAIL_FROM` sender address, e.g. `no-reply@prawko.pl`
+    + `ACCESS_TOKEN_SECRET` Base64-encoded key signing access tokens, at least 256 bits, e.g. from
+      `openssl rand -base64 32`
     + `PASSWORD_RESET_URL` frontend page the reset link points to, e.g. `https://prawko.pl/auth/password/reset`
     + `EMAIL_VERIFICATION_URL` frontend page the email verification link points to, e.g. `https://prawko.pl/auth/verify`
     + `MEDIA_DIRECTORY` directory with question media files, e.g. `/media` (a Docker volume)
@@ -162,8 +164,14 @@ a controller, so it's documented only here.
 
 ### Authentication
 
-The API is stateless and uses HTTP Basic - every request that requires authentication must carry the
-`Authorization: Basic ...` header. You can sign in with either the username or the email address.
+The API is stateless - every request that requires authentication must carry an `Authorization` header, either HTTP
+Basic (`Basic ...`) or an access token (`Bearer ...`, see below). With Basic you can sign in with either the username
+or the email address.
+
+Signed JWT access tokens are accepted alongside Basic as `Authorization: Bearer ...`. A token is valid for
+`access-token.validity` (15 minutes) and carries the user's role, so a role change or account deletion applies only
+once it expires. An invalid or expired token is answered with `401` and
+`WWW-Authenticate: Bearer error="invalid_token"`.
 
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 

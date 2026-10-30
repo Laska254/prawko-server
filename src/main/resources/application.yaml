@@ -45,6 +45,9 @@ media:
   directory: media
   cache-max-age: 1d
 
+access-token:
+  validity: 15m
+
 password-reset:
   token-validity: 15m
   cooldown: 1m

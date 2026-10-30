@@ -18,6 +18,8 @@ import java.util.Optional;
  * and injectable into controllers via {@link org.springframework.security.core.annotation.AuthenticationPrincipal}.
  *
  * <p>Disabled until the user verifies their email address, which blocks authentication.
+ *
+ * <p>Has no password when authenticated with an access token, see {@link JwtConfig#toAuthentication}.
  */
 public class AuthenticatedUser extends User {
 
@@ -28,7 +30,7 @@ public class AuthenticatedUser extends User {
 
     public AuthenticatedUser(final long id,
                              final String username,
-                             final String password,
+                             @Nullable final String password,
                              final boolean enabled,
                              final Collection<? extends GrantedAuthority> authorities) {
         super(username, password, enabled, true, true, true, authorities);
