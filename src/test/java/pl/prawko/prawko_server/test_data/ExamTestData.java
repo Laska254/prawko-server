@@ -21,6 +21,9 @@ import java.util.stream.Stream;
 
 public class ExamTestData {
 
+    // the maximum score, so counting an exam with it would change every stat
+    private static final int MAX_SCORE = 74;
+
     public static final UserStatsDto EMPTY_STATS = new UserStatsDto(0, 0, null, null, List.of());
 
     // matches createExamsForStats
@@ -107,7 +110,9 @@ public class ExamTestData {
     }
 
     public static Exam finish(final Exam exam, final int score) {
-        return exam.setActive(false).setScore(score);
+        return exam
+                .setActive(false)
+                .setScore(score);
     }
 
     // finished exams in two categories, passed (one exactly at the threshold) and failed, plus an active one
@@ -115,8 +120,15 @@ public class ExamTestData {
         return List.of(
                 finish(createExamWithoutQuestions(user), 70),
                 finish(createExamWithoutQuestions(user), 60),
-                finish(createExamWithoutQuestions(user).setCategory(CategoryTestData.CATEGORY_A), Exam.PASSING_SCORE),
-                createExamWithoutQuestions(user).setScore(74));
+                finish(createExamWithoutQuestions(user)
+                        .setCategory(CategoryTestData.CATEGORY_A), Exam.PASSING_SCORE),
+                createExamWithoutQuestions(user)
+                        .setScore(MAX_SCORE));
+    }
+
+    // an exam of another user that must not count towards createExamsForStats
+    public static Exam createFinishedExamWithMaxScore(final User user) {
+        return finish(createExamWithoutQuestions(user), MAX_SCORE);
     }
 
     public static Exam expire(final Exam exam) {

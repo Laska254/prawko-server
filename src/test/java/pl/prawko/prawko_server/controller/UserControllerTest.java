@@ -365,7 +365,7 @@ public class UserControllerTest {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var other = userRepository.save(UserTestData.createMerry());
             examRepository.saveAll(ExamTestData.createExamsForStats(tester));
-            examRepository.save(ExamTestData.finish(ExamTestData.createExamWithoutQuestions(other), 74));
+            examRepository.save(ExamTestData.createFinishedExamWithMaxScore(other));
 
             restClient.get()
                     .uri(ApiConstants.STATS)

@@ -98,7 +98,7 @@ class ExamRepositoryTest {
         final var other = UserTestData.createMerry();
         entityManager.persist(other);
         repository.saveAll(ExamTestData.createExamsForStats(user));
-        repository.save(ExamTestData.finish(ExamTestData.createExamWithoutQuestions(other), 74));
+        repository.save(ExamTestData.createFinishedExamWithMaxScore(other));
         entityManager.clear();
 
         final var result = repository.findCategoryStatsByUserId(user.getId(), Exam.PASSING_SCORE);
