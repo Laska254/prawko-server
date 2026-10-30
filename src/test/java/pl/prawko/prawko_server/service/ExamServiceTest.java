@@ -272,6 +272,32 @@ public class ExamServiceTest {
     }
 
     @Nested
+    class GetStats {
+
+        @Test
+        void deriveTotalsFromCategoryStats_whenUserHasFinishedExams() {
+            final var userId = 44L;
+            final var expected = ExamTestData.STATS;
+            when(repository.findCategoryStatsByUserId(userId, Exam.PASSING_SCORE)).thenReturn(expected.categories());
+
+            final var result = service.getStats(userId);
+
+            assertThat(result).isEqualTo(expected);
+        }
+
+        @Test
+        void returnEmptyStats_whenUserHasNoFinishedExams() {
+            final var userId = 44L;
+            when(repository.findCategoryStatsByUserId(userId, Exam.PASSING_SCORE)).thenReturn(List.of());
+
+            final var result = service.getStats(userId);
+
+            assertThat(result).isEqualTo(ExamTestData.EMPTY_STATS);
+        }
+
+    }
+
+    @Nested
     class SubmitAnswer {
 
         @Test

@@ -10,8 +10,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.prawko.prawko_server.dto.CategoryStatsDto;
 import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
+import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.mapper.ExamMapper;
 import pl.prawko.prawko_server.model.Answer;
@@ -24,6 +26,7 @@ import pl.prawko.prawko_server.util.ExamGenerator;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of {@link IExamService} that manages {@link Exam} entities.
@@ -113,6 +116,31 @@ public class ExamService implements IExamService {
         final var exams = findExams(userId, category, pageable).map(examMapper::toSummaryDto);
         log.info("Found {} exam(s) for user with id: {}", exams.getTotalElements(), userId);
         return exams;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserStatsDto getStats(final long userId) {
+        log.info("Computing exam statistics of user with id: {}", userId);
+        // totals are derived from the categories, so both come from one query and always agree
+        final var categories = repository.findCategoryStatsByUserId(userId, Exam.PASSING_SCORE);
+        if (categories.isEmpty()) {
+            return new UserStatsDto(0, 0, null, null, List.of());
+        }
+        final var examsTaken = categories.stream()
+                .mapToLong(CategoryStatsDto::examsTaken)
+                .sum();
+        final var examsPassed = categories.stream()
+                .mapToLong(CategoryStatsDto::examsPassed)
+                .sum();
+        final var averageScore = categories.stream()
+                .mapToDouble(stats -> stats.averageScore() * stats.examsTaken())
+                .sum() / examsTaken;
+        final var bestScore = categories.stream()
+                .mapToInt(CategoryStatsDto::bestScore)
+                .max()
+                .orElseThrow();
+        return new UserStatsDto(examsTaken, examsPassed, averageScore, bestScore, categories);
     }
 
     /**
