@@ -167,6 +167,11 @@ a controller, so it's documented only here.
 The API is stateless and uses HTTP Basic - every request that requires authentication must carry the
 `Authorization: Basic ...` header. You can sign in with either the username or the email address.
 
+Signed JWT access tokens are accepted alongside Basic as `Authorization: Bearer ...`. A token is valid for
+`access-token.validity` (15 minutes) and carries the user's role, so a role change or account deletion applies only
+once it expires. An invalid or expired token is answered with `401` and
+`WWW-Authenticate: Bearer error="invalid_token"`.
+
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 
 A new account must verify its email address before signing in. Registration emails a link to the frontend page
