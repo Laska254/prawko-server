@@ -39,8 +39,7 @@ import java.util.List;
  *
  * <p>This configuration enables HTTP Basic Authentication and JWT access tokens ({@code Authorization: Bearer ...},
  * see {@link JwtConfig}) for stateless REST API access (no HTTP session is created) with role-based authorization
- * (RBAC). It defines which endpoints
- * are public and which require specific roles (ADMIN, USER) for access.
+ * (RBAC). It defines which endpoints are public and which require specific roles (ADMIN, USER) for access.
  *
  * <p>Resource ownership (e.g. a user may only modify their own account) is enforced by method security
  * ({@link org.springframework.security.access.prepost.PreAuthorize} and annotations templated on it, like
