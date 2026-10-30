@@ -2,24 +2,21 @@ package pl.prawko.prawko_server.config;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.AuthorityUtils;
-import pl.prawko.prawko_server.model.Role;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AuthenticatedUserTest {
 
-    private final AuthenticatedUser principal =
-            new AuthenticatedUser(7L, "pippin", "lembasy", true, AuthorityUtils.createAuthorityList(Role.USER.getAuthority()));
+    private final AuthenticatedUser principal = TestUtils.createUserPrincipal();
 
     @Test
     void isSelf_returnTrue_whenIdMatches() {
-        assertThat(principal.isSelf(7L)).isTrue();
+        assertThat(principal.isSelf(principal.getId())).isTrue();
     }
 
     @Test
     void isSelf_returnFalse_whenIdDiffers() {
-        assertThat(principal.isSelf(8L)).isFalse();
+        assertThat(principal.isSelf(principal.getId() + 1)).isFalse();
     }
 
     @Test
@@ -29,10 +26,7 @@ class AuthenticatedUserTest {
 
     @Test
     void isAdmin_returnTrue_whenRoleIsAdmin() {
-        final var admin =
-                new AuthenticatedUser(1L, TestUtils.ADMIN_NAME, TestUtils.ADMIN_PASSWORD, true, AuthorityUtils.createAuthorityList(Role.ADMIN.getAuthority()));
-
-        assertThat(admin.isAdmin()).isTrue();
+        assertThat(TestUtils.createAdminPrincipal().isAdmin()).isTrue();
     }
 
     @Test

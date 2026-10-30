@@ -63,8 +63,7 @@ class LoggingFilterTest {
     @Test
     void doFilterInternal_logUserIdOnly_whenRequestHasBearerToken(final CapturedOutput output) {
         final var tester = userRepository.save(UserTestData.createTestUserPippin());
-        final var principal = (AuthenticatedUser) userDetailsService.loadUserByUsername(tester.getUserName());
-        final var token = accessTokenService.issue(principal).getTokenValue();
+        final var token = TestUtils.issueAccessToken(accessTokenService, userDetailsService, tester.getUserName());
 
         restClient.get()
                 .uri(ApiConstants.ME)

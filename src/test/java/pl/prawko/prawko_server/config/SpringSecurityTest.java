@@ -10,7 +10,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.web.servlet.client.RestTestClient;
@@ -22,7 +21,6 @@ import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -128,9 +126,11 @@ class SpringSecurityTest {
 
     @Test
     void filterChain_returnUnauthorized_whenBearerTokenIsExpired() {
-        final var claims = adminClaims(Instant.now().minus(Duration.ofMinutes(5)));
+        final var claims = TestUtils.adminClaims(Instant.now().minus(Duration.ofMinutes(5)));
+        final var token = jwtEncoder.encode(JwtEncoderParameters.from(claims))
+                .getTokenValue();
 
-        expectInvalidToken(jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue());
+        expectInvalidToken(token);
     }
 
     @Test
@@ -142,9 +142,11 @@ class SpringSecurityTest {
     void filterChain_returnUnauthorized_whenBearerTokenIsSignedWithAnotherKey() {
         final var config = new JwtConfig();
         final var otherEncoder = config.jwtEncoder(config.accessTokenKey(null));
-        final var claims = adminClaims(Instant.now().plus(Duration.ofMinutes(5)));
+        final var claims = TestUtils.adminClaims(Instant.now().plus(Duration.ofMinutes(5)));
+        final var token = otherEncoder.encode(JwtEncoderParameters.from(claims))
+                .getTokenValue();
 
-        expectInvalidToken(otherEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue());
+        expectInvalidToken(token);
     }
 
     @Test
@@ -194,18 +196,8 @@ class SpringSecurityTest {
                 .containsExactlyInAnyOrder(Role.ADMIN.getAuthority(), Role.USER.getAuthority());
     }
 
-    private static JwtClaimsSet adminClaims(final Instant expiresAt) {
-        return JwtClaimsSet.builder()
-                .subject("1")
-                .claim(JwtConfig.USERNAME_CLAIM, TestUtils.ADMIN_NAME)
-                .claim(JwtConfig.AUTHORITIES_CLAIM, List.of(Role.ADMIN.getAuthority()))
-                .expiresAt(expiresAt)
-                .build();
-    }
-
     private String issueToken(final String username) {
-        return accessTokenService.issue((AuthenticatedUser) userDetailsService.loadUserByUsername(username))
-                .getTokenValue();
+        return TestUtils.issueAccessToken(accessTokenService, userDetailsService, username);
     }
 
     private void expectInvalidToken(final String token) {

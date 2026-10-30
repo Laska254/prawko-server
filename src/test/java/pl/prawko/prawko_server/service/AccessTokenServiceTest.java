@@ -1,7 +1,6 @@
 package pl.prawko.prawko_server.service;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.security.core.authority.AuthorityUtils;
 import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.config.JwtConfig;
 import pl.prawko.prawko_server.config.TestUtils;
@@ -20,8 +19,7 @@ class AccessTokenServiceTest {
     private final JwtConfig config = new JwtConfig();
     private final SecretKey key = config.accessTokenKey(null);
     private final AccessTokenService service = new AccessTokenService(config.jwtEncoder(key), VALIDITY, TestUtils.CLOCK);
-    private final AuthenticatedUser user = new AuthenticatedUser(
-            7L, TestUtils.USER_NAME, null, true, AuthorityUtils.createAuthorityList(Role.USER.getAuthority()));
+    private final AuthenticatedUser user = TestUtils.createUserPrincipal();
 
     @Test
     void issue_putUserIdUsernameAndAuthoritiesIntoClaims_whenUserIsAuthenticated() {
@@ -44,7 +42,8 @@ class AccessTokenServiceTest {
     void issue_returnTokenAcceptedByDecoder_whenUserIsAuthenticated() {
         final var token = service.issue(user);
 
-        final var decoded = config.jwtDecoder(key, TestUtils.CLOCK).decode(token.getTokenValue());
+        final var decoded = config.jwtDecoder(key, TestUtils.CLOCK)
+                .decode(token.getTokenValue());
         assertThat(decoded.getSubject()).isEqualTo(token.getSubject());
     }
 
