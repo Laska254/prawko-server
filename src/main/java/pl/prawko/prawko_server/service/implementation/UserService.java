@@ -25,6 +25,7 @@ import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
+import pl.prawko.prawko_server.service.IRefreshTokenService;
 import pl.prawko.prawko_server.service.IUserService;
 
 import java.util.HashMap;
@@ -45,15 +46,18 @@ public class UserService implements IUserService, UserDetailsService {
     private final UserMapper mapper;
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationService emailVerificationService;
+    private final IRefreshTokenService refreshTokenService;
 
     public UserService(final UserRepository repository,
                        final UserMapper mapper,
                        final PasswordEncoder passwordEncoder,
-                       final EmailVerificationService emailVerificationService) {
+                       final EmailVerificationService emailVerificationService,
+                       final IRefreshTokenService refreshTokenService) {
         this.repository = repository;
         this.mapper = mapper;
         this.passwordEncoder = passwordEncoder;
         this.emailVerificationService = emailVerificationService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     /**
@@ -196,6 +200,7 @@ public class UserService implements IUserService, UserDetailsService {
             log.info("Email change of user with id '{}' canceled by the password change.", userId);
         }
         repository.save(user);
+        refreshTokenService.revokeAll(userId);
         log.info("Successfully changed password for user with id '{}'", userId);
     }
 

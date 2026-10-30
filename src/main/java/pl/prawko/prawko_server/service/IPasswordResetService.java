@@ -24,7 +24,8 @@ public interface IPasswordResetService {
     /**
      * Sets a new password for the user owning a valid password reset token.
      * <p>
-     * The token is invalidated afterward.
+     * The token is invalidated afterward, and all refresh tokens of the user are revoked, signing out all their
+     * clients.
      * </p>
      *
      * @param request the request containing the token and new password

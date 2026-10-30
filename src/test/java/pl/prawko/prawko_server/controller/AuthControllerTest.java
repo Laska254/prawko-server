@@ -445,6 +445,17 @@ public class AuthControllerTest {
     }
 
     @Test
+    void resetPassword_revokeRefreshTokens_whenTokenIsValid() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+        final var signedIn = login();
+
+        resetPassword(UserTestData.createValidResetPasswordRequest(requestResetToken(tester.getEmail())))
+                .expectStatus().isNoContent();
+
+        assertRefreshUnauthorized(signedIn.refreshToken());
+    }
+
+    @Test
     void resetPassword_returnBadRequest_whenTokenIsAlreadyUsed() {
         final var tester = userRepository.save(UserTestData.createTestUserPippin());
         final var request = UserTestData.createValidResetPasswordRequest(requestResetToken(tester.getEmail()));

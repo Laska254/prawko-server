@@ -199,6 +199,22 @@ class RefreshTokenServiceTest {
     }
 
     @Nested
+    class RevokeAll {
+
+        @Test
+        void deleteAllTokensOfUser_whenCalled(final CapturedOutput output) {
+            when(repository.deleteAllByUserId(tester.getId())).thenReturn(2);
+
+            service.revokeAll(tester.getId());
+
+            verify(repository).deleteAllByUserId(tester.getId());
+            verifyNoMoreInteractions(repository);
+            assertThat(output).contains("Revoked 2 refresh tokens of user with id '" + tester.getId() + "'.");
+        }
+
+    }
+
+    @Nested
     class DeleteExpiredTokens {
 
         @Test

@@ -62,6 +62,9 @@ class UserServiceTest {
     @Mock
     private EmailVerificationService emailVerificationService;
 
+    @Mock
+    private IRefreshTokenService refreshTokenService;
+
     @InjectMocks
     private UserService service;
 
@@ -414,6 +417,20 @@ class UserServiceTest {
     }
 
     @Test
+    void changePassword_revokeAllRefreshTokensAfterSave_whenCurrentPasswordMatches() {
+        final var givenId = 44L;
+        final var request = UserTestData.createValidChangePasswordRequest();
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(passwordEncoder.matches(request.currentPassword(), tester.getPassword())).thenReturn(true);
+
+        service.changePassword(givenId, request);
+
+        final var inOrder = inOrder(repository, refreshTokenService);
+        inOrder.verify(repository).save(tester);
+        inOrder.verify(refreshTokenService).revokeAll(givenId);
+    }
+
+    @Test
     void changePassword_clearResetToken_whenResetTokenPending() {
         final var givenId = 44L;
         final var request = UserTestData.createValidChangePasswordRequest();
@@ -462,6 +479,7 @@ class UserServiceTest {
         verify(repository, never()).save(any());
         verify(passwordEncoder, never()).encode(any());
         verifyNoMoreInteractions(repository);
+        verifyNoInteractions(refreshTokenService);
     }
 
     @Test
@@ -479,6 +497,7 @@ class UserServiceTest {
         assertThat(tester.getPassword()).isEqualTo(oldEncoded);
         verify(repository, never()).save(any());
         verify(passwordEncoder, never()).encode(any());
+        verifyNoInteractions(refreshTokenService);
     }
 
     @Test

@@ -49,6 +49,9 @@ class PasswordResetServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
+    private IRefreshTokenService refreshTokenService;
+
+    @Mock
     private MailSender mailSender;
 
     private PasswordResetService service;
@@ -57,8 +60,8 @@ class PasswordResetServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PasswordResetService(repository, passwordEncoder, mailSender, RESET_URL, TOKEN_VALIDITY, COOLDOWN,
-                MAIL_FROM, TestUtils.CLOCK);
+        service = new PasswordResetService(repository, passwordEncoder, refreshTokenService, mailSender, RESET_URL,
+                TOKEN_VALIDITY, COOLDOWN, MAIL_FROM, TestUtils.CLOCK);
     }
 
     @Test
@@ -176,6 +179,7 @@ class PasswordResetServiceTest {
         assertThat(tester.getPasswordResetTokenHash()).isNull();
         assertThat(tester.getPasswordResetTokenExpires()).isNull();
         verify(repository, times(2)).save(tester);
+        verify(refreshTokenService).revokeAll(tester.getId());
     }
 
     @Test
@@ -202,7 +206,7 @@ class PasswordResetServiceTest {
                 .isInstanceOf(InvalidTokenException.class)
                 .hasMessage(UserTestData.INVALID_RESET_TOKEN);
         verify(repository, never()).save(any());
-        verifyNoInteractions(passwordEncoder);
+        verifyNoInteractions(passwordEncoder, refreshTokenService);
     }
 
     @Test
@@ -215,7 +219,7 @@ class PasswordResetServiceTest {
         assertThatThrownBy(() -> service.resetPassword(request))
                 .isInstanceOf(InvalidTokenException.class)
                 .hasMessage(UserTestData.INVALID_RESET_TOKEN);
-        verifyNoInteractions(passwordEncoder);
+        verifyNoInteractions(passwordEncoder, refreshTokenService);
     }
 
     /**

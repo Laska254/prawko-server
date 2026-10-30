@@ -30,12 +30,15 @@ import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.QuestionRepository;
+import pl.prawko.prawko_server.repository.RefreshTokenRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.ExamTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
+import pl.prawko.prawko_server.test_data.RefreshTokenTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -60,6 +63,9 @@ public class UserControllerTest {
 
     @Autowired
     private QuestionRepository questionRepository;
+
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -831,6 +837,26 @@ public class UserControllerTest {
             assertThat(updated.getPendingEmail()).isNull();
             assertThat(updated.getVerificationTokenHash()).isNull();
             assertThat(updated.getCurrentEmailTokenHash()).isNull();
+        }
+
+        @Test
+        void revokeOnlyOwnRefreshTokens_whenRequestIsValid() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var expires = Instant.now().plus(RefreshTokenTestData.VALIDITY);
+            refreshTokenRepository.save(
+                    RefreshTokenTestData.createRefreshToken(tester, RefreshTokenTestData.TOKEN, expires));
+            final var merry = userRepository.save(UserTestData.createMerry());
+            final var othersToken = refreshTokenRepository.save(
+                    RefreshTokenTestData.createRefreshToken(merry, "othersToken", expires));
+
+            restClient.patch()
+                    .uri(ApiConstants.PASSWORD)
+                    .headers(TestUtils::authUser)
+                    .body(UserTestData.createValidChangePasswordRequest())
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            assertThat(refreshTokenRepository.findAll()).containsExactly(othersToken);
         }
 
         @Test

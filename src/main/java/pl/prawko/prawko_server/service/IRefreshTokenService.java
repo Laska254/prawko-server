@@ -40,6 +40,14 @@ public interface IRefreshTokenService {
     void revoke(String refreshToken);
 
     /**
+     * Revokes all refresh tokens of the user, signing out all their clients. Their later use is answered like
+     * unknown tokens, so it doesn't revoke refresh tokens issued afterwards.
+     *
+     * @param userId the ID of the user whose refresh tokens are revoked
+     */
+    void revokeAll(long userId);
+
+    /**
      * Deletes refresh tokens that expired, revoked or not.
      */
     void deleteExpiredTokens();

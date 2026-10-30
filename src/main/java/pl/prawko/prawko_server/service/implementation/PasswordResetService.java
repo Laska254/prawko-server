@@ -18,6 +18,7 @@ import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IPasswordResetService;
+import pl.prawko.prawko_server.service.IRefreshTokenService;
 import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Clock;
@@ -36,6 +37,7 @@ public class PasswordResetService implements IPasswordResetService {
 
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
+    private final IRefreshTokenService refreshTokenService;
     private final MailSender mailSender;
     private final String resetUrl;
     private final Duration tokenValidity;
@@ -45,6 +47,7 @@ public class PasswordResetService implements IPasswordResetService {
 
     public PasswordResetService(final UserRepository repository,
                                 final PasswordEncoder passwordEncoder,
+                                final IRefreshTokenService refreshTokenService,
                                 final MailSender mailSender,
                                 @Value("${password-reset.url}") final String resetUrl,
                                 @Value("${password-reset.token-validity}") final Duration tokenValidity,
@@ -53,6 +56,7 @@ public class PasswordResetService implements IPasswordResetService {
                                 final Clock clock) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
+        this.refreshTokenService = refreshTokenService;
         this.mailSender = mailSender;
         this.resetUrl = resetUrl;
         this.tokenValidity = tokenValidity;
@@ -102,6 +106,7 @@ public class PasswordResetService implements IPasswordResetService {
             log.info("Email change of user with id '{}' canceled by the password reset.", user.getId());
         }
         repository.save(user);
+        refreshTokenService.revokeAll(user.getId());
         log.info("Successfully reset password for user with id '{}'", user.getId());
     }
 

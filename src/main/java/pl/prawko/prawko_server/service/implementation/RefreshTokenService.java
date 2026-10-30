@@ -110,6 +110,13 @@ public class RefreshTokenService implements IRefreshTokenService {
 
     @Override
     @Transactional
+    public void revokeAll(final long userId) {
+        final var revoked = repository.deleteAllByUserId(userId);
+        log.info("Revoked {} refresh tokens of user with id '{}'.", revoked, userId);
+    }
+
+    @Override
+    @Transactional
     @Scheduled(fixedDelayString = "${refresh-token.cleanup-interval}",
             initialDelayString = "${refresh-token.cleanup-interval}")
     public void deleteExpiredTokens() {

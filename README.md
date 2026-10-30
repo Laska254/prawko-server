@@ -189,6 +189,8 @@ deleted every `refresh-token.cleanup-interval`.
 
 Signing out with `POST /auth/logout` (`{"refreshToken": "..."}`) revokes the refresh token and answers `204`, also for
 an unknown one. The client's access token stays valid until it expires, so the client should discard it too.
+Changing (`PATCH /users/me/password`) or resetting (`POST /auth/password/reset`) the password revokes all refresh tokens
+of the user, signing out all their clients - including the one that changed it, which has to sign in again.
 
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 

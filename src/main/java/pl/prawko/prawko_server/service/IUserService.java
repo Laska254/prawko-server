@@ -80,7 +80,8 @@ public interface IUserService {
      * Changes a user's password.
      * <p>
      * Verifies the current password before encoding and persisting the new one.
-     * Invalidates any pending password reset token and cancels a pending email change.
+     * Invalidates any pending password reset token, cancels a pending email change and revokes all refresh tokens of
+     * the user, signing out all their clients.
      * </p>
      *
      * @param userId  the ID of the user whose password should be changed
