@@ -21,7 +21,8 @@ import java.time.Clock;
 import java.util.Base64;
 
 /**
- * Configures signing and validating JWT access tokens.
+ * Configures signing and validating JWT access tokens, issued by
+ * {@link pl.prawko.prawko_server.service.IAccessTokenService}.
  *
  * <p>Tokens are signed with HS256, as the server is the only party issuing and validating them. The key is the
  * Base64-encoded {@code access-token.secret}, at least 256 bits. Without it a random key is generated at startup, so
@@ -29,6 +30,9 @@ import java.util.Base64;
  */
 @Configuration
 public class JwtConfig {
+
+    public static final String USERNAME_CLAIM = "username";
+    public static final String AUTHORITIES_CLAIM = "authorities";
 
     private static final Logger log = LoggerFactory.getLogger(JwtConfig.class);
     private static final String KEY_ALGORITHM = "HmacSHA256";
