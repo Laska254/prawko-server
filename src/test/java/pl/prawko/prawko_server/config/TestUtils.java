@@ -1,16 +1,13 @@
 package pl.prawko.prawko_server.config;
 
 import org.springframework.core.task.TaskRejectedException;
-import org.springframework.http.HttpHeaders;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.model.Role;
-import pl.prawko.prawko_server.service.IAccessTokenService;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -50,18 +47,6 @@ public class TestUtils {
     // a fixed time in a zone far from UTC: the results must not depend on it
     public static final Clock CLOCK = Clock.fixed(Instant.now(), ZoneId.of("Pacific/Kiritimati"));
 
-    public static void authUser(final HttpHeaders headers) {
-        headers.setBasicAuth(USER_NAME, USER_PASSWORD);
-    }
-
-    public static void authAdmin(final HttpHeaders headers) {
-        headers.setBasicAuth(ADMIN_NAME, ADMIN_PASSWORD);
-    }
-
-    public static void authUnverified(final HttpHeaders headers) {
-        headers.setBasicAuth(UNVERIFIED_NAME, UNVERIFIED_PASSWORD);
-    }
-
     public static AuthenticatedUser createUserPrincipal() {
         return new AuthenticatedUser(
                 PRINCIPAL_ID, USER_NAME, USER_PASSWORD, true, AuthorityUtils.createAuthorityList(Role.USER.getAuthority()));
@@ -87,14 +72,6 @@ public class TestUtils {
 
     public static String expiredAccessToken(final JwtEncoder jwtEncoder) {
         return jwtEncoder.encode(JwtEncoderParameters.from(expiredAdminClaims()))
-                .getTokenValue();
-    }
-
-    public static String issueAccessToken(final IAccessTokenService accessTokenService,
-                                          final UserDetailsService userDetailsService,
-                                          final String username) {
-        final var principal = (AuthenticatedUser) userDetailsService.loadUserByUsername(username);
-        return accessTokenService.issue(principal)
                 .getTokenValue();
     }
 

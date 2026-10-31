@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.PageResponse;
+import pl.prawko.prawko_server.config.TestAuth;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
@@ -54,6 +55,9 @@ public class UserControllerTest {
     private static final String USERNAME_CONTAINS_AT_MSG = "Username must not contain '@'.";
     private static final String LAST_NAME_TOO_SHORT_MSG = "Last name must be at least 3 characters.";
     private static final String TOO_LONG_NAME = "Supercalifragilisticexpialidocious";
+
+    @Autowired
+    private TestAuth auth;
 
     @Autowired
     private UserRepository userRepository;
@@ -266,7 +270,7 @@ public class UserControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, id)
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserDto.class).isEqualTo(expectedUserDto);
@@ -287,7 +291,7 @@ public class UserControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, 0L)
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -301,7 +305,7 @@ public class UserControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, nonExistentId)
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isNotFound()
                     .expectBody()
@@ -315,7 +319,7 @@ public class UserControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, negativeId)
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -334,7 +338,7 @@ public class UserControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.ME)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserDto.class).isEqualTo(expectedUserDto);
@@ -347,7 +351,7 @@ public class UserControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.ME)
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserDto.class).isEqualTo(expectedUserDto);
@@ -375,7 +379,7 @@ public class UserControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.STATS)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserStatsDto.class).isEqualTo(ExamTestData.STATS);
@@ -387,7 +391,7 @@ public class UserControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.STATS)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserStatsDto.class).isEqualTo(ExamTestData.EMPTY_STATS);
@@ -399,7 +403,7 @@ public class UserControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.STATS)
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserStatsDto.class).isEqualTo(ExamTestData.EMPTY_STATS);
@@ -425,7 +429,7 @@ public class UserControllerTest {
             final var expected = List.of(expectedUserDto);
 
             final var result = restClient.get()
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(new ParameterizedTypeReference<PageResponse<UserDto>>() {
@@ -451,7 +455,7 @@ public class UserControllerTest {
                             .queryParam("size", 2)
                             .queryParam("sort", "userName,desc")
                             .build())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -465,7 +469,7 @@ public class UserControllerTest {
         void capPageSize_whenRequestedSizeExceedsMaximum() {
             restClient.get()
                     .uri(uri -> uri.queryParam("size", 1000).build())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -475,7 +479,7 @@ public class UserControllerTest {
         @Test
         void returnEmptyPage_whenNoUsersExist() {
             restClient.get()
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -487,7 +491,7 @@ public class UserControllerTest {
         void returnBadRequest_whenSortPropertyIsInvalid() {
             restClient.get()
                     .uri(uri -> uri.queryParam("sort", "nonExisting").build())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -514,7 +518,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, id)
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .body(validDto)
                     .exchange()
                     .expectStatus().isOk()
@@ -529,7 +533,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, id)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(validDto)
                     .exchange()
                     .expectStatus().isOk()
@@ -543,7 +547,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new UserUpdateRequest(null, null, null, newEmail))
                     .exchange()
                     .expectStatus().isOk()
@@ -574,7 +578,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .body(UserTestData.createValidUserUpdateRequest())
                     .exchange()
                     .expectStatus().isForbidden()
@@ -593,7 +597,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .body(new UserUpdateRequest(null, null, null, tester.getEmail()))
                     .exchange()
                     .expectStatus().isForbidden()
@@ -612,7 +616,7 @@ public class UserControllerTest {
             final var secondEmail = UserTestData.createMerry().getEmail();
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new UserUpdateRequest(null, null, null, firstEmail))
                     .exchange()
                     .expectStatus().isOk();
@@ -620,7 +624,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new UserUpdateRequest(null, null, null, secondEmail))
                     .exchange()
                     .expectStatus().isEqualTo(HttpStatus.TOO_MANY_REQUESTS)
@@ -637,7 +641,7 @@ public class UserControllerTest {
             final var newEmail = UserTestData.createValidUserUpdateRequest().email();
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new UserUpdateRequest(null, null, null, newEmail))
                     .exchange()
                     .expectStatus().isOk();
@@ -645,7 +649,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new UserUpdateRequest(null, null, null, tester.getEmail()))
                     .exchange()
                     .expectStatus().isOk()
@@ -666,7 +670,7 @@ public class UserControllerTest {
             try {
                 restClient.patch()
                         .uri(ApiConstants.BY_ID, tester.getId())
-                        .headers(TestUtils::authUser)
+                        .headers(auth::user)
                         .body(UserTestData.createValidUserUpdateRequest())
                         .exchange()
                         .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
@@ -687,7 +691,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, other.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(UserTestData.createValidUserUpdateRequest())
                     .exchange()
                     .expectStatus().isForbidden()
@@ -709,7 +713,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(invalidUpdateRequest)
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -724,7 +728,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(invalidUpdateRequest)
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -738,7 +742,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(invalidUpdateRequest)
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -754,7 +758,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, invalidId)
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .body(validDto)
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -770,7 +774,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, nonExistentId)
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .body(validDto)
                     .exchange()
                     .expectStatus().isNotFound()
@@ -784,7 +788,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -812,7 +816,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.PASSWORD)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(request)
                     .exchange()
                     .expectStatus().isNoContent();
@@ -827,7 +831,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.PASSWORD)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(UserTestData.createValidChangePasswordRequest())
                     .exchange()
                     .expectStatus().isNoContent();
@@ -851,7 +855,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.PASSWORD)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(UserTestData.createValidChangePasswordRequest())
                     .exchange()
                     .expectStatus().isNoContent();
@@ -867,7 +871,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.PASSWORD)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(request)
                     .exchange()
                     .expectStatus().isNoContent();
@@ -883,7 +887,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.PASSWORD)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(request)
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -898,7 +902,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.PASSWORD)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(request)
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -917,7 +921,7 @@ public class UserControllerTest {
 
             restClient.patch()
                     .uri(ApiConstants.PASSWORD)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(invalidRequest)
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -930,7 +934,7 @@ public class UserControllerTest {
         void returnBadRequest_whenBodyIsMissing() {
             restClient.patch()
                     .uri(ApiConstants.PASSWORD)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -958,7 +962,7 @@ public class UserControllerTest {
 
             restClient.method(HttpMethod.DELETE)
                     .uri(ApiConstants.ME)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(UserTestData.createValidDeleteAccountRequest())
                     .exchange()
                     .expectStatus().isNoContent();
@@ -980,7 +984,7 @@ public class UserControllerTest {
 
             restClient.method(HttpMethod.DELETE)
                     .uri(ApiConstants.ME)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(UserTestData.createValidDeleteAccountRequest())
                     .exchange()
                     .expectStatus().isNoContent();
@@ -994,7 +998,7 @@ public class UserControllerTest {
             userRepository.save(UserTestData.createTestUserPippin());
             restClient.method(HttpMethod.DELETE)
                     .uri(ApiConstants.ME)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(UserTestData.createValidDeleteAccountRequest())
                     .exchange()
                     .expectStatus().isNoContent();
@@ -1015,7 +1019,7 @@ public class UserControllerTest {
 
             restClient.method(HttpMethod.DELETE)
                     .uri(ApiConstants.ME)
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .body(new DeleteAccountRequest(TestUtils.ADMIN_PASSWORD))
                     .exchange()
                     .expectStatus().isNoContent();
@@ -1029,7 +1033,7 @@ public class UserControllerTest {
 
             restClient.method(HttpMethod.DELETE)
                     .uri(ApiConstants.ME)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(UserTestData.createWrongPasswordDeleteAccountRequest())
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -1043,7 +1047,7 @@ public class UserControllerTest {
         void returnBadRequest_whenPasswordIsBlank() {
             restClient.method(HttpMethod.DELETE)
                     .uri(ApiConstants.ME)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new DeleteAccountRequest(" "))
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -1056,7 +1060,7 @@ public class UserControllerTest {
         void returnBadRequest_whenBodyIsMissing() {
             restClient.delete()
                     .uri(ApiConstants.ME)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -1084,7 +1088,7 @@ public class UserControllerTest {
 
             restClient.delete()
                     .uri(ApiConstants.BY_ID, tester.getId())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isNoContent();
 
@@ -1098,7 +1102,7 @@ public class UserControllerTest {
 
             restClient.delete()
                     .uri(ApiConstants.BY_ID, tester.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isForbidden();
 
@@ -1120,7 +1124,7 @@ public class UserControllerTest {
 
             restClient.delete()
                     .uri(ApiConstants.BY_ID, nonExistentId)
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isNotFound()
                     .expectBody()
@@ -1134,7 +1138,7 @@ public class UserControllerTest {
 
             restClient.delete()
                     .uri(ApiConstants.BY_ID, invalidId)
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()

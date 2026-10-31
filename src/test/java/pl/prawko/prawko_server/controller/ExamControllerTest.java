@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.PageResponse;
+import pl.prawko.prawko_server.config.TestAuth;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.AnswerDto;
@@ -41,6 +42,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @IntegrationTest
 public class ExamControllerTest {
+
+    @Autowired
+    private TestAuth auth;
 
     @Autowired
     private UserRepository userRepository;
@@ -77,7 +81,7 @@ public class ExamControllerTest {
             final var validDto = new CreateExamDto(tester.getId(), CategoryVariant.B);
 
             restClient.post()
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(validDto)
                     .exchange()
                     .expectStatus().isCreated()
@@ -94,7 +98,7 @@ public class ExamControllerTest {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
 
             restClient.post()
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .body(new CreateExamDto(tester.getId(), CategoryVariant.B))
                     .exchange()
                     .expectStatus().isCreated();
@@ -106,7 +110,7 @@ public class ExamControllerTest {
             final var other = userRepository.save(UserTestData.createMerry());
 
             restClient.post()
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new CreateExamDto(other.getId(), CategoryVariant.B))
                     .exchange()
                     .expectStatus().isForbidden()
@@ -126,7 +130,7 @@ public class ExamControllerTest {
                             Map.entry("categoryName", "Category is required."))));
 
             restClient.post()
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(invalidDto)
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -157,7 +161,7 @@ public class ExamControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(ExamDto.class).isEqualTo(expected);
@@ -170,7 +174,7 @@ public class ExamControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -189,7 +193,7 @@ public class ExamControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -211,7 +215,7 @@ public class ExamControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -227,7 +231,7 @@ public class ExamControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, exam.getId())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -242,7 +246,7 @@ public class ExamControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isForbidden()
                     .expectBody()
@@ -256,7 +260,7 @@ public class ExamControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, nonExistingId)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isNotFound()
                     .expectBody()
@@ -270,7 +274,7 @@ public class ExamControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, invalidId)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -300,7 +304,7 @@ public class ExamControllerTest {
 
             final var result = restClient.get()
                     .uri(uri -> uri.queryParam("userId", tester.getId()).build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(new ParameterizedTypeReference<PageResponse<ExamSummaryDto>>() {
@@ -334,7 +338,7 @@ public class ExamControllerTest {
                             .queryParam("page", 1)
                             .queryParam("size", 2)
                             .build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -357,7 +361,7 @@ public class ExamControllerTest {
                             .queryParam("userId", tester.getId())
                             .queryParam("sort", "id,asc")
                             .build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -371,7 +375,7 @@ public class ExamControllerTest {
 
             restClient.get()
                     .uri(uri -> uri.queryParam("userId", tester.getId()).build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -388,7 +392,7 @@ public class ExamControllerTest {
                             .queryParam("userId", tester.getId())
                             .queryParam("sort", "nonExisting")
                             .build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -408,7 +412,7 @@ public class ExamControllerTest {
                             .queryParam("category", CategoryTestData.CATEGORY_B.getName())
                             .queryParam("size", 1)
                             .build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -429,7 +433,7 @@ public class ExamControllerTest {
                             .queryParam("userId", tester.getId())
                             .queryParam("category", invalidCategory)
                             .build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -443,7 +447,7 @@ public class ExamControllerTest {
 
             restClient.get()
                     .uri(uri -> uri.queryParam("userId", tester.getId()).build())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -457,7 +461,7 @@ public class ExamControllerTest {
 
             restClient.get()
                     .uri(uri -> uri.queryParam("userId", other.getId()).build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isForbidden()
                     .expectBody()
@@ -470,7 +474,7 @@ public class ExamControllerTest {
 
             restClient.get()
                     .uri(uri -> uri.queryParam("userId", nonExistentId).build())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isNotFound()
                     .expectBody()
@@ -482,7 +486,7 @@ public class ExamControllerTest {
         void returnBadRequest_whenUserIdIsNotPositive(final long invalidId) {
             restClient.get()
                     .uri(uri -> uri.queryParam("userId", invalidId).build())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -492,7 +496,7 @@ public class ExamControllerTest {
         @Test
         void returnBadRequest_whenUserIdIsMissing() {
             restClient.get()
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -521,7 +525,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.ANSWERS, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new SubmitAnswerRequest(answer.getId()))
                     .exchange()
                     .expectStatus().isNoContent()
@@ -543,7 +547,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.ANSWERS, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new SubmitAnswerRequest(newAnswer.getId()))
                     .exchange()
                     .expectStatus().isNoContent();
@@ -560,7 +564,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.ANSWERS, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new SubmitAnswerRequest(foreignAnswer.getId()))
                     .exchange()
                     .expectStatus().isNotFound()
@@ -580,7 +584,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.ANSWERS, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new SubmitAnswerRequest(question.getAnswers().getFirst().getId()))
                     .exchange()
                     .expectStatus().isEqualTo(HttpStatus.CONFLICT)
@@ -599,7 +603,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.ANSWERS, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new SubmitAnswerRequest(question.getAnswers().getFirst().getId()))
                     .exchange()
                     .expectStatus().isEqualTo(HttpStatus.CONFLICT)
@@ -618,7 +622,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.ANSWERS, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new SubmitAnswerRequest(question.getAnswers().getFirst().getId()))
                     .exchange()
                     .expectStatus().isForbidden()
@@ -636,7 +640,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.ANSWERS, exam.getId())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .body(new SubmitAnswerRequest(question.getAnswers().getFirst().getId()))
                     .exchange()
                     .expectStatus().isForbidden()
@@ -650,7 +654,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.ANSWERS, nonExistingId)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new SubmitAnswerRequest(1L))
                     .exchange()
                     .expectStatus().isNotFound()
@@ -662,7 +666,7 @@ public class ExamControllerTest {
         void returnBadRequest_whenAnswerIdIsMissing() {
             restClient.post()
                     .uri(ApiConstants.ANSWERS, 1L)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new SubmitAnswerRequest(null))
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -675,7 +679,7 @@ public class ExamControllerTest {
         void returnBadRequest_whenBodyIsMissing() {
             restClient.post()
                     .uri(ApiConstants.ANSWERS, 1L)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -687,7 +691,7 @@ public class ExamControllerTest {
         void returnBadRequest_whenIdIsNotPositive(final long invalidId) {
             restClient.post()
                     .uri(ApiConstants.ANSWERS, invalidId)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .body(new SubmitAnswerRequest(1L))
                     .exchange()
                     .expectStatus().isBadRequest()
@@ -707,7 +711,7 @@ public class ExamControllerTest {
         private void expectUserAnswerIds(final Exam exam, final Long... expectedIds) {
             final var result = restClient.get()
                     .uri(ApiConstants.BY_ID, exam.getId())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(ExamDto.class)
@@ -736,7 +740,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.FINISH, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -762,7 +766,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.FINISH, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isEqualTo(HttpStatus.CONFLICT)
                     .expectBody()
@@ -777,7 +781,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.FINISH, exam.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isForbidden()
                     .expectBody()
@@ -793,7 +797,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.FINISH, exam.getId())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isForbidden()
                     .expectBody()
@@ -806,7 +810,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .uri(ApiConstants.FINISH, nonExistingId)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isNotFound()
                     .expectBody()
@@ -818,7 +822,7 @@ public class ExamControllerTest {
         void returnBadRequest_whenIdIsNotPositive(final long invalidId) {
             restClient.post()
                     .uri(ApiConstants.FINISH, invalidId)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()

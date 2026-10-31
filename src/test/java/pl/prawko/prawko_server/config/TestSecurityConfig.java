@@ -9,13 +9,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.repository.UserRepository;
+import pl.prawko.prawko_server.service.IAccessTokenService;
 
 @TestConfiguration
 public class TestSecurityConfig {
 
     /**
-     * Fixed test accounts, authenticated as {@link AuthenticatedUser}. The ID is resolved on every authentication
-     * from a persisted user with the same username (0 if none), so ownership checks work against users saved by tests.
+     * Fixed test accounts, authenticated as {@link AuthenticatedUser}. The ID is resolved on every sign-in and
+     * {@link TestAuth} token from a persisted user with the same username (0 if none), so ownership checks work against
+     * users saved by tests.
      * {@code frodo} hasn't verified his email, so he's disabled.
      */
     @Bean
@@ -43,6 +45,11 @@ public class TestSecurityConfig {
             return new AuthenticatedUser(
                     id, account.getUsername(), account.getPassword(), account.isEnabled(), account.getAuthorities());
         };
+    }
+
+    @Bean
+    public TestAuth testAuth(final IAccessTokenService accessTokenService, final UserDetailsService userDetailsService) {
+        return new TestAuth(accessTokenService, userDetailsService);
     }
 
 }

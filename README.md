@@ -164,9 +164,8 @@ a controller, so it's documented only here.
 
 ### Authentication
 
-The API is stateless - every request that requires authentication must carry an `Authorization` header, either HTTP
-Basic (`Basic ...`) or an access token (`Bearer ...`, see below). With Basic you can sign in with either the username
-or the email address.
+The API is stateless - every request that requires authentication must carry an access token as
+`Authorization: Bearer ...`. HTTP Basic isn't supported - such a request counts as unauthenticated (`401`).
 
 Signing in with `POST /auth` (`{"userName": "...", "password": "..."}`, username or email) returns a token pair:
 
@@ -174,10 +173,9 @@ Signing in with `POST /auth` (`{"userName": "...", "password": "..."}`, username
 {"accessToken": "...", "refreshToken": "...", "expiresIn": 900}
 ```
 
-The access token is a signed JWT, accepted alongside Basic as `Authorization: Bearer ...`. It's valid for
-`access-token.validity` (15 minutes, `expiresIn` in seconds) and carries the user's role, so a role change or account
-deletion applies only once it expires. An invalid or expired token is answered with `401` and
-`WWW-Authenticate: Bearer error="invalid_token"`.
+The access token is a signed JWT, valid for `access-token.validity` (15 minutes, `expiresIn` in seconds). It carries
+the user's role, so a role change or account deletion applies only once it expires. An invalid or expired token is
+answered with `401` and `WWW-Authenticate: Bearer error="invalid_token"`.
 
 Once it expires, `POST /auth/refresh` with `{"refreshToken": "..."}` returns a new pair with the user's current role.
 Access tokens sent to `POST /auth/**` are ignored, so a client may keep attaching its expired one when refreshing.
@@ -196,8 +194,8 @@ There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` include
 
 A new account must verify its email address before signing in. Registration emails a link to the frontend page
 (`email-verification.url`) with a `token` query parameter, which the page sends to `POST /auth/verify` as
-`{"token": "..."}`. Until then `POST /auth` answers `403` (only with the correct password, otherwise `401`) and every
-other authenticated request `401`. Another link can be requested with `POST /auth/verify/resend`. Accounts not
+`{"token": "..."}`. Until then `POST /auth` answers `403` (only with the correct password, otherwise `401`), so the
+account gets no tokens. Another link can be requested with `POST /auth/verify/resend`. Accounts not
 verified before their link expires are deleted, so the username and email can be registered again.
 
 Changing the email with `PATCH /users/{id}` works the same way: the new address is only stored as pending and a link
