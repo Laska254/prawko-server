@@ -175,6 +175,46 @@ class RefreshTokenServiceTest {
     }
 
     @Nested
+    class Revoke {
+
+        @Test
+        void deleteToken_whenTokenExists(final CapturedOutput output) {
+            when(repository.deleteByTokenHash(SecureTokens.hash(RefreshTokenTestData.TOKEN))).thenReturn(1);
+
+            service.revoke(RefreshTokenTestData.TOKEN);
+
+            verify(repository).deleteByTokenHash(SecureTokens.hash(RefreshTokenTestData.TOKEN));
+            verifyNoMoreInteractions(repository);
+            assertThat(output).contains("Refresh token revoked.");
+        }
+
+        @Test
+        void notThrow_whenTokenIsUnknown(final CapturedOutput output) {
+            service.revoke(RefreshTokenTestData.TOKEN);
+
+            verify(repository).deleteByTokenHash(SecureTokens.hash(RefreshTokenTestData.TOKEN));
+            assertThat(output).contains("Unknown refresh token revoked");
+        }
+
+    }
+
+    @Nested
+    class RevokeAll {
+
+        @Test
+        void deleteAllTokensOfUser_whenCalled(final CapturedOutput output) {
+            when(repository.deleteAllByUserId(tester.getId())).thenReturn(2);
+
+            service.revokeAll(tester.getId());
+
+            verify(repository).deleteAllByUserId(tester.getId());
+            verifyNoMoreInteractions(repository);
+            assertThat(output).contains("Revoked 2 refresh tokens of user with id '" + tester.getId() + "'.");
+        }
+
+    }
+
+    @Nested
     class DeleteExpiredTokens {
 
         @Test

@@ -32,6 +32,22 @@ public interface IRefreshTokenService {
     AuthTokensDto refresh(String refreshToken);
 
     /**
+     * Revokes the refresh token, if it exists. Its later use is answered like an unknown token, without revoking the
+     * other refresh tokens of its user.
+     *
+     * @param refreshToken the refresh token to revoke
+     */
+    void revoke(String refreshToken);
+
+    /**
+     * Revokes all refresh tokens of the user, signing out all their clients. Their later use is answered like
+     * unknown tokens, so it doesn't revoke refresh tokens issued afterwards.
+     *
+     * @param userId the ID of the user whose refresh tokens are revoked
+     */
+    void revokeAll(long userId);
+
+    /**
      * Deletes refresh tokens that expired, revoked or not.
      */
     void deleteExpiredTokens();

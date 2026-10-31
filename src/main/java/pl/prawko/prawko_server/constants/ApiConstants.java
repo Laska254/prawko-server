@@ -123,6 +123,15 @@ public final class ApiConstants {
     public static final String REFRESH = "/refresh";
 
     /**
+     * Path segment for revoking a refresh token.
+     *
+     * <p>Example: {@code /auth/logout}
+     *
+     * @see pl.prawko.prawko_server.controller.AuthController
+     */
+    public static final String LOGOUT = "/logout";
+
+    /**
      * Path segment for requesting a password reset link by email.
      *
      * <p>Example: {@code /auth/password/forgot}

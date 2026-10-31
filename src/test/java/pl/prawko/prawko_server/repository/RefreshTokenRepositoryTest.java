@@ -80,6 +80,37 @@ class RefreshTokenRepositoryTest {
     }
 
     @Test
+    void deleteByTokenHash_deleteOnlyMatchingToken_whenHashExists() {
+        final var other = save(tester, "otherToken", now.plus(RefreshTokenTestData.VALIDITY));
+
+        final var result = repository.deleteByTokenHash(SecureTokens.hash(RefreshTokenTestData.TOKEN));
+
+        assertThat(result).isEqualTo(1);
+        assertThat(repository.findAll()).containsExactly(other);
+    }
+
+    @Test
+    void deleteByTokenHash_deleteNothing_whenHashDoesNotExist() {
+        final var result = repository.deleteByTokenHash(SecureTokens.hash("unknownToken"));
+
+        assertThat(result).isZero();
+        assertThat(repository.findAll()).containsExactly(token);
+    }
+
+    @Test
+    void deleteAllByUserId_deleteOnlyTokensOfUser_whenRevokedOrNot() {
+        final var revoked = save(tester, "revokedToken", now.plus(RefreshTokenTestData.VALIDITY));
+        repository.revokeIfActive(revoked.getId());
+        final var merry = userRepository.save(UserTestData.createMerry());
+        final var othersToken = save(merry, "othersToken", now.plus(RefreshTokenTestData.VALIDITY));
+
+        final var result = repository.deleteAllByUserId(tester.getId());
+
+        assertThat(result).isEqualTo(2);
+        assertThat(repository.findAll()).containsExactly(othersToken);
+    }
+
+    @Test
     void deleteExpiredBefore_deleteOnlyExpiredTokens_whenRevokedOrNot() {
         save(tester, "expiredToken", now.minus(Duration.ofMinutes(1)));
         final var expiredRevoked = save(tester, "expiredRevokedToken", now.minus(Duration.ofMinutes(1)));

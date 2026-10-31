@@ -28,7 +28,7 @@ import pl.prawko.prawko_server.service.implementation.RefreshTokenService;
 /**
  * REST controller for authentication operations.
  *
- * <p>Provides endpoints for user login, refreshing tokens, verifying email addresses and resetting forgotten
+ * <p>Provides endpoints for user login, refreshing tokens, logout, verifying email addresses and resetting forgotten
  * passwords. Authentication is performed using Spring Security's authentication manager.
  * The API is stateless: signing in issues tokens, and only refresh tokens are stored.
  */
@@ -97,6 +97,26 @@ public class AuthController {
     @PostMapping(ApiConstants.REFRESH)
     public ResponseEntity<AuthTokensDto> refresh(@Valid @RequestBody final RefreshTokenRequest request) {
         return ResponseEntity.ok(refreshTokenService.refresh(request.refreshToken()));
+    }
+
+    /**
+     * Signs out a client by revoking its refresh token.
+     *
+     * <p>Responds the same whether or not the token exists, as the client discards it either way. Access tokens
+     * already issued stay valid until they expire.
+     *
+     * @param request the {@link RefreshTokenRequest} containing the refresh token
+     * @return a {@link ResponseEntity} with HTTP 204 No Content
+     */
+    @Operation(summary = "Logout", description = "Revokes a refresh token.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Refresh token revoked or unknown"),
+            @ApiResponse(responseCode = "400", description = "Invalid argument"),
+    })
+    @PostMapping(ApiConstants.LOGOUT)
+    public ResponseEntity<Void> logout(@Valid @RequestBody final RefreshTokenRequest request) {
+        refreshTokenService.revoke(request.refreshToken());
+        return ResponseEntity.noContent().build();
     }
 
     /**
