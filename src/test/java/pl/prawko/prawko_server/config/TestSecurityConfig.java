@@ -48,7 +48,8 @@ public class TestSecurityConfig {
     }
 
     @Bean
-    public TestAuth testAuth(final IAccessTokenService accessTokenService, final UserDetailsService userDetailsService) {
+    public TestAuth testAuth(final IAccessTokenService accessTokenService,
+                             final UserDetailsService userDetailsService) {
         return new TestAuth(accessTokenService, userDetailsService);
     }
 
