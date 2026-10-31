@@ -172,6 +172,19 @@ class SpringSecurityTest {
     }
 
     @Test
+    void openApiDocs_declareBearerScheme_whenRequestedAnonymously() {
+        restClient.get()
+                .uri("/v3/api-docs")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.components.securitySchemes.bearer.type").isEqualTo("http")
+                .jsonPath("$.components.securitySchemes.bearer.scheme").isEqualTo("bearer")
+                .jsonPath("$.components.securitySchemes.bearer.bearerFormat").isEqualTo("JWT")
+                .jsonPath("$.security[0].bearer").exists();
+    }
+
+    @Test
     void corsConfigurationSource_allowPreflightWithoutCredentials_whenOriginIsAllowed() {
         restClient.options()
                 .uri(ApiConstants.USERS_BASE_URL)

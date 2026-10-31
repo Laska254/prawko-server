@@ -159,7 +159,8 @@ categories and languages once manually).
 Base URL: `http://localhost:8080/`
 
 Application has Swagger, so you can test out the REST API via `/swagger-ui/index.html` (OpenAPI docs at
-`/v3/api-docs`). Both are disabled in the `prod` profile. [`/media`](#endpoints) is served by a resource handler, not
+`/v3/api-docs`). Both are disabled in the `prod` profile. For protected endpoints, sign in with `POST /auth` and paste
+the access token into "Authorize". [`/media`](#endpoints) is served by a resource handler, not
 a controller, so it's documented only here.
 
 ### Authentication
