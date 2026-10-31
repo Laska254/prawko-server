@@ -40,9 +40,10 @@ import java.util.List;
 /**
  * Spring Security configuration class for the application.
  *
- * <p>This configuration enables HTTP Basic Authentication and JWT access tokens ({@code Authorization: Bearer ...},
- * see {@link JwtConfig}) for stateless REST API access (no HTTP session is created) with role-based authorization
- * (RBAC). It defines which endpoints are public and which require specific roles (ADMIN, USER) for access.
+ * <p>This configuration authenticates requests with JWT access tokens ({@code Authorization: Bearer ...}, see
+ * {@link JwtConfig}) issued by {@code POST /auth}, for stateless REST API access (no HTTP session is created) with
+ * role-based authorization (RBAC). It defines which endpoints are public and which require specific roles (ADMIN,
+ * USER) for access.
  *
  * <p>Resource ownership (e.g. a user may only modify their own account) is enforced by method security
  * ({@link org.springframework.security.access.prepost.PreAuthorize} and annotations templated on it, like
@@ -50,7 +51,7 @@ import java.util.List;
  *
  * <p>Roles are hierarchical: ADMIN implies USER, so an admin passes every USER rule.
  *
- * <p>Users can't authenticate until they verify their email address, so only verified users can access
+ * <p>Users can't sign in until they verify their email address, so only verified users get access tokens for
  * non-public endpoints.
  *
  * <p>Cross-origin requests are allowed from origins matching {@code cors.allowed-origin-patterns}.
@@ -180,9 +181,9 @@ public class SpringSecurity {
     /**
      * Configures the application's security filter chain.
      *
-     * <p>CSRF protection is disabled because this is a stateless REST API using HTTP Basic Authentication
-     * and Bearer tokens, which are inherently protected against CSRF attacks. CSRF protection is only
-     * necessary for form-based authentication in stateful sessions.
+     * <p>CSRF protection is disabled because this is a stateless REST API using Bearer tokens, which are inherently
+     * protected against CSRF attacks. CSRF protection is only necessary for form-based authentication in stateful
+     * sessions.
      *
      * @param http          the {@link HttpSecurity} instance to customize
      * @param loggingFilter the {@link LoggingFilter} for request/response logging
@@ -208,7 +209,6 @@ public class SpringSecurity {
                             .requestMatchers(HttpMethod.HEAD, ApiConstants.MEDIA_BASE_URL_ALL).permitAll();
                     authorize.anyRequest().denyAll();
                 })
-                .httpBasic(Customizer.withDefaults())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .bearerTokenResolver(bearerTokenResolver())
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(JwtConfig::toAuthentication)))

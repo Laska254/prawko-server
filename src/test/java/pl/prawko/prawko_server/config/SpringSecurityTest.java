@@ -9,14 +9,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.repository.UserRepository;
-import pl.prawko.prawko_server.service.IAccessTokenService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.time.Duration;
@@ -29,12 +27,10 @@ class SpringSecurityTest {
 
     private static final String ALLOWED_ORIGIN = "http://localhost:5173";
     private static final String INVALID_TOKEN = "invalid_token";
+    private static final String BEARER = "Bearer";
 
     @Autowired
-    private UserDetailsService userDetailsService;
-
-    @Autowired
-    private IAccessTokenService accessTokenService;
+    private TestAuth auth;
 
     @Autowired
     private JwtEncoder jwtEncoder;
@@ -61,7 +57,7 @@ class SpringSecurityTest {
     void filterChain_doNotCreateSession_whenRequestIsAuthenticated() {
         restClient.get()
                 .uri(ApiConstants.USERS_BASE_URL)
-                .headers(TestUtils::authAdmin)
+                .headers(auth::admin)
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().doesNotExist(HttpHeaders.SET_COOKIE);
@@ -77,19 +73,22 @@ class SpringSecurityTest {
     }
 
     @Test
-    void filterChain_returnUnauthorized_whenEmailIsNotVerified() {
+    void filterChain_returnUnauthorized_whenAuthorizationIsBasic() {
+        userRepository.save(UserTestData.createTestUserPippin());
+
         restClient.get()
                 .uri(ApiConstants.USERS_BASE_URL + ApiConstants.ME)
-                .headers(TestUtils::authUnverified)
+                .headers(headers -> headers.setBasicAuth(TestUtils.USER_NAME, TestUtils.USER_PASSWORD))
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().isUnauthorized()
+                .expectHeader().value(HttpHeaders.WWW_AUTHENTICATE, header -> assertThat(header).startsWith(BEARER));
     }
 
     @Test
     void filterChain_denyRequest_whenNoAuthorizationRuleMatches() {
         restClient.get()
                 .uri("/unmapped")
-                .headers(TestUtils::authAdmin)
+                .headers(auth::admin)
                 .exchange()
                 .expectStatus().isForbidden();
     }
@@ -100,7 +99,7 @@ class SpringSecurityTest {
 
         restClient.get()
                 .uri(ApiConstants.USERS_BASE_URL + ApiConstants.ME)
-                .headers(headers -> headers.setBearerAuth(issueToken(TestUtils.USER_NAME)))
+                .headers(auth::user)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody().jsonPath("$.id").isEqualTo(tester.getId());
@@ -110,7 +109,7 @@ class SpringSecurityTest {
     void filterChain_grantAdminEndpoint_whenBearerTokenHasAdminRole() {
         restClient.get()
                 .uri(ApiConstants.USERS_BASE_URL)
-                .headers(headers -> headers.setBearerAuth(issueToken(TestUtils.ADMIN_NAME)))
+                .headers(auth::admin)
                 .exchange()
                 .expectStatus().isOk();
     }
@@ -119,7 +118,7 @@ class SpringSecurityTest {
     void filterChain_denyAdminEndpoint_whenBearerTokenHasUserRole() {
         restClient.get()
                 .uri(ApiConstants.USERS_BASE_URL)
-                .headers(headers -> headers.setBearerAuth(issueToken(TestUtils.USER_NAME)))
+                .headers(auth::user)
                 .exchange()
                 .expectStatus().isForbidden();
     }
@@ -132,7 +131,7 @@ class SpringSecurityTest {
                 .uri(uri -> uri.path(ApiConstants.EXAMS_BASE_URL)
                         .queryParam("userId", tester.getId())
                         .build())
-                .headers(headers -> headers.setBearerAuth(issueToken(TestUtils.USER_NAME)))
+                .headers(auth::user)
                 .exchange()
                 .expectStatus().isOk();
     }
@@ -146,7 +145,7 @@ class SpringSecurityTest {
                 .uri(uri -> uri.path(ApiConstants.EXAMS_BASE_URL)
                         .queryParam("userId", other.getId())
                         .build())
-                .headers(headers -> headers.setBearerAuth(issueToken(TestUtils.USER_NAME)))
+                .headers(auth::user)
                 .exchange()
                 .expectStatus().isForbidden();
     }
@@ -170,6 +169,32 @@ class SpringSecurityTest {
                 .getTokenValue();
 
         expectInvalidToken(token);
+    }
+
+    @Test
+    void openApiDocs_declareBearerScheme_whenRequestedAnonymously() {
+        restClient.get()
+                .uri("/v3/api-docs")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.components.securitySchemes.bearer.type").isEqualTo("http")
+                .jsonPath("$.components.securitySchemes.bearer.scheme").isEqualTo("bearer")
+                .jsonPath("$.components.securitySchemes.bearer.bearerFormat").isEqualTo("JWT")
+                .jsonPath("$.security[0].bearer").exists();
+    }
+
+    @Test
+    void openApiDocs_exemptPublicOperationsFromBearer_whenRequestedAnonymously() {
+        restClient.get()
+                .uri("/v3/api-docs")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.paths['/auth'].post.security").isEmpty()
+                .jsonPath("$.paths['/auth/refresh'].post.security").isEmpty()
+                .jsonPath("$.paths['/users'].post.security").isEmpty()
+                .jsonPath("$.paths['/users'].get.security").doesNotExist();
     }
 
     @Test
@@ -199,7 +224,7 @@ class SpringSecurityTest {
     void corsConfigurationSource_exposeLocationAndDateHeaders_whenOriginIsAllowed() {
         restClient.get()
                 .uri(ApiConstants.USERS_BASE_URL)
-                .headers(TestUtils::authAdmin)
+                .headers(auth::admin)
                 .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
                 .exchange()
                 .expectStatus().isOk()
@@ -217,10 +242,6 @@ class SpringSecurityTest {
         assertThat(reachable)
                 .extracting(GrantedAuthority::getAuthority)
                 .containsExactlyInAnyOrder(Role.ADMIN.getAuthority(), Role.USER.getAuthority());
-    }
-
-    private String issueToken(final String username) {
-        return TestUtils.issueAccessToken(accessTokenService, userDetailsService, username);
     }
 
     private void expectInvalidToken(final String token) {
