@@ -185,6 +185,19 @@ class SpringSecurityTest {
     }
 
     @Test
+    void openApiDocs_exemptPublicOperationsFromBearer_whenRequestedAnonymously() {
+        restClient.get()
+                .uri("/v3/api-docs")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.paths['/auth'].post.security").isEmpty()
+                .jsonPath("$.paths['/auth/refresh'].post.security").isEmpty()
+                .jsonPath("$.paths['/users'].post.security").isEmpty()
+                .jsonPath("$.paths['/users'].get.security").doesNotExist();
+    }
+
+    @Test
     void corsConfigurationSource_allowPreflightWithoutCredentials_whenOriginIsAllowed() {
         restClient.options()
                 .uri(ApiConstants.USERS_BASE_URL)
