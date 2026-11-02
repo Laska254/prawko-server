@@ -89,11 +89,14 @@ public class UserService implements IUserService, UserDetailsService {
 
     /**
      * Load user-specific data during authentication.
+     * <p>
+     * A user without a password can't sign in with one, so it's reported as not found: the authentication then fails
+     * the same way as for a wrong password, including the time it takes.
      *
      * @param userNameOrEmail the userName or email identifying the user
      * @return {@link AuthenticatedUser} carrying the user's ID, with granted authority based on user's role,
      * disabled until the user's email is verified
-     * @throws UsernameNotFoundException if user have not been found with the provided details
+     * @throws UsernameNotFoundException if user have not been found with the provided details or has no password
      */
     @Override
     public UserDetails loadUserByUsername(final String userNameOrEmail) throws UsernameNotFoundException {
@@ -102,6 +105,10 @@ public class UserService implements IUserService, UserDetailsService {
                     log.warn("User not found by username or email.");
                     return new UsernameNotFoundException("Invalid login or password.");
                 });
+        if (user.getPassword() == null) {
+            log.warn("User with id '{}' has no password to sign in with.", user.getId());
+            throw new UsernameNotFoundException("Invalid login or password.");
+        }
         log.info("User with id '{}' loaded successfully.", user.getId());
         return AuthenticatedUser.of(user);
     }
@@ -236,7 +243,7 @@ public class UserService implements IUserService, UserDetailsService {
     }
 
     private void verifyPassword(final User user, final String password) {
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        if (user.getPassword() == null || !passwordEncoder.matches(password, user.getPassword())) {
             final var message = "Current password is incorrect.";
             log.warn("{} User id: {}", message, user.getId());
             throw new InvalidPasswordException(message);

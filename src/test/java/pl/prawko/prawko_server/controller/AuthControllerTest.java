@@ -445,6 +445,18 @@ public class AuthControllerTest {
     }
 
     @Test
+    void resetPassword_setPassword_whenUserHasNoPassword() {
+        final var tester = userRepository.save(UserTestData.createGooglePippin());
+        final var request = UserTestData.createValidResetPasswordRequest(requestResetToken(tester.getEmail()));
+
+        resetPassword(request)
+                .expectStatus().isNoContent();
+
+        final var updated = userRepository.findById(tester.getId()).orElseThrow();
+        assertThat(passwordEncoder.matches(request.newPassword(), updated.getPassword())).isTrue();
+    }
+
+    @Test
     void resetPassword_revokeRefreshTokens_whenTokenIsValid() {
         final var tester = userRepository.save(UserTestData.createTestUserPippin());
         final var signedIn = login();

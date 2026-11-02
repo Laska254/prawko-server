@@ -483,6 +483,22 @@ class UserServiceTest {
     }
 
     @Test
+    void changePassword_throwException_whenUserHasNoPassword() {
+        final var givenId = 44L;
+        final var passwordless = UserTestData.createGooglePippin();
+        when(repository.findById(givenId)).thenReturn(Optional.of(passwordless));
+
+        final ThrowableAssert.ThrowingCallable executable =
+                () -> service.changePassword(givenId, UserTestData.createValidChangePasswordRequest());
+        final var exception = catchThrowableOfType(InvalidPasswordException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.INCORRECT_PASSWORD);
+        assertThat(passwordless.getPassword()).isNull();
+        verify(repository, never()).save(any());
+        verifyNoInteractions(passwordEncoder, refreshTokenService);
+    }
+
+    @Test
     void changePassword_throwException_whenNewPasswordIsSameAsCurrent() {
         final var givenId = 44L;
         final var request = UserTestData.createSameAsCurrentPasswordRequest();
@@ -558,6 +574,20 @@ class UserServiceTest {
     }
 
     @Test
+    void deleteOwnAccount_throwException_whenUserHasNoPassword() {
+        final var givenId = 44L;
+        when(repository.findById(givenId)).thenReturn(Optional.of(UserTestData.createGooglePippin()));
+
+        final ThrowableAssert.ThrowingCallable executable =
+                () -> service.deleteOwnAccount(givenId, UserTestData.createValidDeleteAccountRequest());
+        final var exception = catchThrowableOfType(InvalidPasswordException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.INCORRECT_PASSWORD);
+        verify(repository, never()).delete(any());
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
     void deleteOwnAccount_throwException_whenUserNotFound() {
         final var givenId = 666L;
         when(repository.findById(givenId)).thenReturn(Optional.empty());
@@ -620,6 +650,19 @@ class UserServiceTest {
         when(repository.findByUserNameOrEmailIgnoreCase("nobody", "nobody")).thenReturn(Optional.empty());
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.loadUserByUsername("nobody");
+
+        assertThatThrownBy(executable)
+                .isInstanceOf(UsernameNotFoundException.class)
+                .hasMessage(TestUtils.INVALID_CREDENTIALS);
+    }
+
+    @Test
+    void loadUserByUsername_throwException_whenUserHasNoPassword() {
+        final var passwordless = UserTestData.createGooglePippin().setId(7L);
+        when(repository.findByUserNameOrEmailIgnoreCase(passwordless.getUserName(), passwordless.getUserName()))
+                .thenReturn(Optional.of(passwordless));
+
+        final ThrowableAssert.ThrowingCallable executable = () -> service.loadUserByUsername(passwordless.getUserName());
 
         assertThatThrownBy(executable)
                 .isInstanceOf(UsernameNotFoundException.class)
