@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -69,6 +70,7 @@ public class UserController {
             @ApiResponse(responseCode = "409", description = "User already exists"),
             @ApiResponse(responseCode = "503", description = "Too many requests pending")
     })
+    @SecurityRequirements
     @PostMapping
     public ResponseEntity<Void> registerUser(@Valid @RequestBody final RegisterDto dto) {
         final var location = ServletUriComponentsBuilder

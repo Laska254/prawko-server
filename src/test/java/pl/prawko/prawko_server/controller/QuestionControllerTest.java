@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.PageResponse;
+import pl.prawko.prawko_server.config.TestAuth;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.QuestionDto;
@@ -33,6 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @IntegrationTest
 public class QuestionControllerTest {
+
+    @Autowired
+    private TestAuth auth;
 
     @Autowired
     private QuestionRepository repository;
@@ -60,7 +64,7 @@ public class QuestionControllerTest {
             final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.CSV_FILE);
 
             restClient.post()
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(multipart)
                     .exchange()
@@ -73,7 +77,7 @@ public class QuestionControllerTest {
             final var expected = "Required part 'file' is not present.";
 
             restClient.post()
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(multipart)
                     .exchange()
@@ -88,7 +92,7 @@ public class QuestionControllerTest {
             final var expected = "Invalid file format.";
 
             restClient.post()
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(multipart)
                     .exchange()
@@ -102,7 +106,7 @@ public class QuestionControllerTest {
             final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.MALFORMED_CSV_FILE);
 
             restClient.post()
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(multipart)
                     .exchange()
@@ -115,7 +119,7 @@ public class QuestionControllerTest {
         @Test
         void returnForbidden_whenNotAdmin() {
             restClient.post()
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isForbidden();
         }
@@ -138,7 +142,7 @@ public class QuestionControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, question.getId())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -154,7 +158,7 @@ public class QuestionControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, expected.id())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(QuestionDto.class).isEqualTo(expected);
@@ -167,7 +171,7 @@ public class QuestionControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, nonExistentId)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isNotFound()
                     .expectBody()
@@ -181,7 +185,7 @@ public class QuestionControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, invalidId)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -194,7 +198,7 @@ public class QuestionControllerTest {
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, invalidId)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -225,7 +229,7 @@ public class QuestionControllerTest {
                             .queryParam("category", expected.categories().getFirst())
                             .queryParam("type", expected.type())
                             .build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(QuestionDto.class).isEqualTo(expected);
@@ -240,7 +244,7 @@ public class QuestionControllerTest {
                     .uri(uri -> uri.path(ApiConstants.RANDOM)
                             .queryParam("category", CategoryVariant.B)
                             .build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(QuestionDto.class)
@@ -261,7 +265,7 @@ public class QuestionControllerTest {
                             .queryParam("category", category)
                             .queryParam("type", type)
                             .build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isNotFound()
                     .expectBody()
@@ -280,7 +284,7 @@ public class QuestionControllerTest {
                     .uri(uri -> uri.path(ApiConstants.RANDOM)
                             .queryParam("type", type)
                             .build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isNotFound()
                     .expectBody()
@@ -296,7 +300,7 @@ public class QuestionControllerTest {
                             .queryParam("type", QuestionType.BASIC)
                             .replaceQueryParam(parameter, invalidValue)
                             .build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -312,7 +316,7 @@ public class QuestionControllerTest {
                     .uri(uri -> uri.path(ApiConstants.RANDOM)
                             .queryParam("type", special.getType())
                             .build())
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -326,7 +330,7 @@ public class QuestionControllerTest {
 
             final var result = restClient.get()
                     .uri(ApiConstants.RANDOM)
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(QuestionDto.class)
@@ -355,7 +359,7 @@ public class QuestionControllerTest {
             final var expected = List.of(QuestionTestData.createQuestionDto(question));
 
             final var result = restClient.get()
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(new ParameterizedTypeReference<PageResponse<QuestionDto>>() {
@@ -378,7 +382,7 @@ public class QuestionControllerTest {
 
             restClient.get()
                     .uri(uri -> uri.queryParam("page", 1).queryParam("size", 2).build())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -391,7 +395,7 @@ public class QuestionControllerTest {
         @Test
         void returnEmptyPage_whenNoQuestionsExist() {
             restClient.get()
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -403,7 +407,7 @@ public class QuestionControllerTest {
         void returnBadRequest_whenSortPropertyIsInvalid() {
             restClient.get()
                     .uri(uri -> uri.queryParam("sort", "nonExisting").build())
-                    .headers(TestUtils::authAdmin)
+                    .headers(auth::admin)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -420,7 +424,7 @@ public class QuestionControllerTest {
         @Test
         void returnForbidden_whenNotAdmin() {
             restClient.get()
-                    .headers(TestUtils::authUser)
+                    .headers(auth::user)
                     .exchange()
                     .expectStatus().isForbidden();
         }

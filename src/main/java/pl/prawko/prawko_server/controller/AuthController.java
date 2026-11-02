@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,7 @@ import pl.prawko.prawko_server.service.implementation.RefreshTokenService;
  * The API is stateless: signing in issues tokens, and only refresh tokens are stored.
  */
 @Tag(name = "Auth", description = "Authentication management endpoints")
+@SecurityRequirements
 @RestController
 @RequestMapping(ApiConstants.AUTH_BASE_URL)
 public class AuthController {

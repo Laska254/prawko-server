@@ -8,11 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.repository.UserRepository;
-import pl.prawko.prawko_server.service.IAccessTokenService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,13 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LoggingFilterTest {
 
     @Autowired
+    private TestAuth auth;
+
+    @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private UserDetailsService userDetailsService;
-
-    @Autowired
-    private IAccessTokenService accessTokenService;
 
     @LocalServerPort
     private int port;
@@ -51,23 +46,7 @@ class LoggingFilterTest {
 
         restClient.get()
                 .uri(ApiConstants.ME)
-                .headers(TestUtils::authUser)
-                .exchange()
-                .expectStatus().isOk();
-
-        assertThat(output)
-                .contains("status=200", "user=" + tester.getId(), "User with id '" + tester.getId() + "' logged successfully.")
-                .doesNotContain(tester.getUserName(), tester.getEmail());
-    }
-
-    @Test
-    void doFilterInternal_logUserIdOnly_whenRequestHasBearerToken(final CapturedOutput output) {
-        final var tester = userRepository.save(UserTestData.createTestUserPippin());
-        final var token = TestUtils.issueAccessToken(accessTokenService, userDetailsService, tester.getUserName());
-
-        restClient.get()
-                .uri(ApiConstants.ME)
-                .headers(headers -> headers.setBearerAuth(token))
+                .headers(auth::user)
                 .exchange()
                 .expectStatus().isOk();
 
