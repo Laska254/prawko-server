@@ -32,6 +32,7 @@ public class UserTestData {
     public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";
     public static final String VERIFICATION_COOLDOWN = "Verification email was sent recently, try again later.";
     public static final String INCORRECT_PASSWORD = "Current password is incorrect.";
+    public static final String PROVIDER_USER_ID = "109876543210";
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 

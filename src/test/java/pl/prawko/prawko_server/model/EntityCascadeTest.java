@@ -70,6 +70,32 @@ class EntityCascadeTest {
     }
 
     @Test
+    void removingUser_removesIdentities() {
+        entityManager.find(User.class, user.getId())
+                .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID);
+        flushAndClear();
+        assertThat(count(UserIdentity.class)).isOne();
+
+        entityManager.remove(entityManager.find(User.class, user.getId()));
+        flushAndClear();
+
+        assertThat(count(UserIdentity.class)).isZero();
+    }
+
+    @Test
+    void removingIdentityFromUser_deletesOrphan() {
+        entityManager.find(User.class, user.getId())
+                .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID);
+        flushAndClear();
+
+        entityManager.find(User.class, user.getId()).getIdentities().clear();
+        flushAndClear();
+
+        assertThat(count(UserIdentity.class)).isZero();
+        assertThat(entityManager.find(User.class, user.getId())).isNotNull();
+    }
+
+    @Test
     void removingExam_keepsQuestionsAndAnswers() {
         final var managedUser = entityManager.find(User.class, user.getId());
         managedUser.getExams().clear();

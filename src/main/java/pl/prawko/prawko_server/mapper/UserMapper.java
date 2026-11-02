@@ -42,6 +42,7 @@ public abstract class UserMapper {
     @Mapping(target = "verificationTokenHash", ignore = true)
     @Mapping(target = "verificationTokenExpires", ignore = true)
     @Mapping(target = "currentEmailTokenHash", ignore = true)
+    @Mapping(target = "identities", ignore = true)
     @Mapping(target = "enabled", constant = "false")
     public abstract User fromDto(RegisterDto registerDto);
 

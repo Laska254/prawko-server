@@ -2,7 +2,9 @@ package pl.prawko.prawko_server.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.model.UserIdentity;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -48,6 +50,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return a {@code user} when found
      */
     Optional<User> findByEmailIgnoreCase(final String email);
+
+    /**
+     * Retrieves {@code user} linked to the provider account through a {@link UserIdentity}.
+     *
+     * @param provider       the provider of the account
+     * @param providerUserId the provider's ID of the account
+     * @return a {@code user} when found
+     */
+    @Query("SELECT i.user FROM UserIdentity i WHERE i.provider = :provider AND i.providerUserId = :providerUserId")
+    Optional<User> findByIdentity(final IdentityProvider provider, final String providerUserId);
 
     /**
      * Retrieves {@code user} by the hash of its pending password reset token.
