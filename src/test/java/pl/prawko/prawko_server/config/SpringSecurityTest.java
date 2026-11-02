@@ -174,7 +174,7 @@ class SpringSecurityTest {
     @Test
     void openApiDocs_declareBearerScheme_whenRequestedAnonymously() {
         restClient.get()
-                .uri("/v3/api-docs")
+                .uri(ApiConstants.API_DOCS_BASE_URL)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -187,7 +187,7 @@ class SpringSecurityTest {
     @Test
     void openApiDocs_exemptPublicOperationsFromBearer_whenRequestedAnonymously() {
         restClient.get()
-                .uri("/v3/api-docs")
+                .uri(ApiConstants.API_DOCS_BASE_URL)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()

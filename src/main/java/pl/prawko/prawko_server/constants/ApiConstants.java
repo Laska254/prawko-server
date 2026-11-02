@@ -81,6 +81,21 @@ public final class ApiConstants {
     public static final String AUTH_BASE_URL_ALL = "/auth/**";
 
     /**
+     * Base URL for the generated OpenAPI document.
+     */
+    public static final String API_DOCS_BASE_URL = "/v3/api-docs";
+
+    /**
+     * Nested URL for the generated OpenAPI documents.
+     */
+    public static final String API_DOCS_BASE_URL_ALL = API_DOCS_BASE_URL + "/**";
+
+    /**
+     * Nested URL for the Swagger UI pages and assets.
+     */
+    public static final String SWAGGER_UI_BASE_URL_ALL = "/swagger-ui/**";
+
+    /**
      * Path variable template for resource identification.
      * Used with any of the base URLs to identify specific resources by ID.
      *

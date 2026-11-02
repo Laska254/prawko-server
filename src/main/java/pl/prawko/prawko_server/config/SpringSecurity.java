@@ -199,7 +199,7 @@ public class SpringSecurity {
                 .addFilterAfter(loggingFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize -> {
                     authorize
-                            .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll();
+                            .requestMatchers(ApiConstants.SWAGGER_UI_BASE_URL_ALL, ApiConstants.API_DOCS_BASE_URL_ALL).permitAll();
                     configureEndpoint_Auth(authorize);
                     configureEndpoint_Users(authorize);
                     configureEndpoint_Questions(authorize);
