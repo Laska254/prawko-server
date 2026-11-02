@@ -10,12 +10,14 @@ import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -72,6 +74,12 @@ public class UserTestData {
         return createTestUserPippin().setEnabled(false);
     }
 
+    public static User createGooglePippin() {
+        return createTestUserPippin()
+                .setPassword(null)
+                .addIdentity(IdentityProvider.GOOGLE, PROVIDER_USER_ID);
+    }
+
     public static User createPippinChangingEmail() {
         return createTestUserPippin()
                 .setPendingEmail(createValidUserUpdateRequest().email())
@@ -96,7 +104,9 @@ public class UserTestData {
                 null,
                 false,
                 false,
-                Role.USER);
+                Role.USER,
+                true,
+                List.of());
     }
 
     public static UserDto createAdminUserDto(final long id) {
@@ -109,7 +119,9 @@ public class UserTestData {
                 null,
                 false,
                 false,
-                Role.ADMIN);
+                Role.ADMIN,
+                true,
+                List.of());
     }
 
     public static UserDto createUpdatedUserDto(final long id) {
@@ -122,7 +134,9 @@ public class UserTestData {
                 createValidUserUpdateRequest().email(),
                 true,
                 true,
-                Role.USER
+                Role.USER,
+                true,
+                List.of()
         );
     }
 
@@ -137,7 +151,9 @@ public class UserTestData {
                 null,
                 false,
                 false,
-                updated.role()
+                updated.role(),
+                updated.hasPassword(),
+                updated.providers()
         );
     }
 

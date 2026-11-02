@@ -128,6 +128,7 @@ public class UserService implements IUserService, UserDetailsService {
      * @throws EntityNotFoundException if a user with provided id have not been found
      */
     @Override
+    @Transactional(readOnly = true)
     public UserDto getUserDtoById(final long userId) {
         log.info("Fetching userDto by id: {}", userId);
         return mapper.toDto(getById(userId));

@@ -28,6 +28,7 @@ import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.QuestionRepository;
@@ -355,6 +356,20 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserDto.class).isEqualTo(expectedUserDto);
+        }
+
+        @Test
+        void returnProvidersWithoutPassword_whenSignedUpWithProvider() {
+            userRepository.save(UserTestData.createGooglePippin());
+
+            restClient.get()
+                    .uri(ApiConstants.ME)
+                    .headers(auth::user)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.hasPassword").isEqualTo(false)
+                    .jsonPath("$.providers").isEqualTo(List.of(IdentityProvider.GOOGLE.name()));
         }
 
         @Test
