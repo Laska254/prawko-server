@@ -11,6 +11,7 @@ import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.IdentityProvider;
+import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 
@@ -78,6 +79,15 @@ public class UserTestData {
         return createTestUserPippin()
                 .setPassword(null)
                 .addIdentity(IdentityProvider.GOOGLE, PROVIDER_USER_ID);
+    }
+
+    /**
+     * Profile of Pippin's account at the provider, with his verified email.
+     */
+    public static ProviderProfile createPippinProfile(final IdentityProvider provider) {
+        final var pippin = createTestUserPippin();
+        return new ProviderProfile(provider, PROVIDER_USER_ID, pippin.getEmail(), true, pippin.getUserName(),
+                pippin.getFirstName(), pippin.getLastName());
     }
 
     public static User createPippinChangingEmail() {
