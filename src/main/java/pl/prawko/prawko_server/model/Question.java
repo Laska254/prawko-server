@@ -21,7 +21,8 @@ import java.util.List;
  *     <li>{@code id} - fixed unique identifier</li>
  *     <li>{@code name} - limited to 7 characters</li>
  *     <li>{@code points} - number of given points for correct answer to a question</li>
- *     <li>{@code media} - filename of media attached to a question</li>
+ *     <li>{@code media} - filename of media attached to a question - {@code .jpg} | {@code .webm}
+ *     (imported {@code .wmv} names point to the converted {@code .webm})</li>
  *     <li>{@code type} - type of question represented by {@link QuestionType}</li>
  * </ul>
  * <p>
