@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.core.task.TaskRejectedException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
@@ -28,8 +29,13 @@ import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.exception.InvalidRefreshTokenException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.exception.TooManyRequestsException;
+import pl.prawko.prawko_server.model.User;
 
 import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * Centralized exception handler for the entire REST API.
@@ -37,6 +43,10 @@ import java.util.HashMap;
 @Tag(name = "Exceptions", description = "Controller to handle exceptions")
 @RestControllerAdvice
 public class ExceptionController {
+
+    private static final Map<String, Map.Entry<String, String>> USER_CONSTRAINT_DETAILS = Map.ofEntries(
+            Map.entry(User.USER_NAME_CONSTRAINT, Map.entry("userName", "User with this username already exists.")),
+            Map.entry(User.EMAIL_CONSTRAINT, Map.entry("email", "User with this email already exists.")));
 
     @ApiResponse(responseCode = "400", description = "File is missing")
     @ExceptionHandler(MissingServletRequestPartException.class)
@@ -62,6 +72,37 @@ public class ExceptionController {
         final var problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
         problemDetail.setProperty("details", exception.getDetails());
         return problemDetail;
+    }
+
+    /**
+     * Handles a violated unique constraint on the username or email, when a concurrent request took it between the
+     * conflict check and the save. Any other violation is rethrown, so it isn't hidden as a conflict.
+     * <p>
+     * The constraint is matched as a whole word ignoring case, since databases report it differently, e.g. MariaDB
+     * as {@code uk_user_email}, H2 as {@code PUBLIC.UK_USER_EMAIL INDEX PUBLIC.UK_USER_EMAIL_INDEX_3}.
+     *
+     * @throws DataIntegrityViolationException if it violates another constraint
+     */
+    @ApiResponse(responseCode = "409", description = "Username or email taken concurrently")
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrityViolation(final DataIntegrityViolationException exception) {
+        final var detail = violatedUserDetail(exception).orElseThrow(() -> exception);
+        final var problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "User already exists.");
+        problemDetail.setProperty("details", Map.ofEntries(detail));
+        return problemDetail;
+    }
+
+    private static Optional<Map.Entry<String, String>> violatedUserDetail(
+            final DataIntegrityViolationException exception) {
+        if (!(exception.getCause() instanceof org.hibernate.exception.ConstraintViolationException violation)
+                || violation.getConstraintName() == null) {
+            return Optional.empty();
+        }
+        final var constraintName = violation.getConstraintName().toLowerCase(Locale.ROOT);
+        return USER_CONSTRAINT_DETAILS.entrySet().stream()
+                .filter(entry -> Pattern.compile("\\b" + entry.getKey() + "\\b").matcher(constraintName).find())
+                .map(Map.Entry::getValue)
+                .findFirst();
     }
 
     @ApiResponse(responseCode = "400", description = "Invalid password")

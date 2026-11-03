@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -28,8 +29,8 @@ import java.util.Locale;
  *  <ul>
  *     <li>first name - limited to 31 characters</li>
  *     <li>last name - limited to 31 characters</li>
- *     <li>username - limited to 31 characters</li>
- *     <li>email - limited to 254 characters, stored lowercased</li>
+ *     <li>username - limited to 31 characters, unique ignoring case</li>
+ *     <li>email - limited to 254 characters, stored lowercased and unique</li>
  *     <li>password - hashed and limited to 63 characters, {@code null} for users who only sign in with a linked
  *     {@link UserIdentity}</li>
  * </ul>
@@ -54,15 +55,24 @@ import java.util.Locale;
  *     <li>{@link UserIdentity}: A user can have one linked account per {@link IdentityProvider}, ordered by provider
  *     and deleted with the user.</li>
  * </ul>
- * The entity is mapped to the database table {@code user}. Emails, including the pending one, are lowercased by their
- * setters. Timestamps are {@link Instant}s, so they don't depend on the JVM's time zone; {@code created} and
- * {@code updated} are set automatically.
+ * The entity is mapped to the database table {@code user}. The unique constraints on the username and email are named
+ * {@value #USER_NAME_CONSTRAINT} and {@value #EMAIL_CONSTRAINT}. The database's collation decides whether the username
+ * constraint ignores case (MariaDB's default does, H2 doesn't); the services check it ignoring case either way.
+ * Emails, including the pending one, are lowercased by their setters, so their constraint behaves the same everywhere.
+ * Timestamps are {@link Instant}s, so they don't depend on the JVM's time zone; {@code created} and {@code updated} are
+ * set automatically.
  * All setters are returning {@code User} itself, enabling method chaining.
  * {@link #toString()} leaves out personal data and credentials, so it's safe to log.
  */
 @Entity
-@Table(name = "`user`")
+@Table(name = "`user`", uniqueConstraints = {
+        @UniqueConstraint(name = User.USER_NAME_CONSTRAINT, columnNames = "user_name"),
+        @UniqueConstraint(name = User.EMAIL_CONSTRAINT, columnNames = "email")
+})
 public class User {
+
+    public static final String USER_NAME_CONSTRAINT = "uk_user_user_name";
+    public static final String EMAIL_CONSTRAINT = "uk_user_email";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

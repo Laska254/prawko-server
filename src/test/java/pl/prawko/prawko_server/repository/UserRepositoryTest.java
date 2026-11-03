@@ -211,7 +211,8 @@ class UserRepositoryTest {
     @Test
     void deleteByEnabledFalseAndVerificationTokenExpiresBefore_deleteOnlyUnverifiedUsers_whenTokenExpired() {
         final var now = Instant.now();
-        final var expired = repository.save(UserTestData.createUnverifiedPippin()
+        final var expired = repository.save(UserTestData.createGimli()
+                .setEnabled(false)
                 .setVerificationTokenExpires(now.minus(Duration.ofMinutes(1))));
         final var pending = repository.save(UserTestData.createMerry()
                 .setEnabled(false)
@@ -250,6 +251,24 @@ class UserRepositoryTest {
     void existsByUserNameIgnoreCase_returnTrue_whenCaseDiffers() {
         final var result = repository.existsByUserNameIgnoreCase(tester.getUserName().toUpperCase());
         assertThat(result).isTrue();
+    }
+
+    @Test
+    void saveAndFlush_throwDataIntegrityViolation_whenUserNameIsTaken() {
+        final var merry = UserTestData.createMerry().setUserName(tester.getUserName());
+
+        assertThatThrownBy(() -> repository.saveAndFlush(merry))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining(User.USER_NAME_CONSTRAINT.toUpperCase());
+    }
+
+    @Test
+    void saveAndFlush_throwDataIntegrityViolation_whenEmailDiffersOnlyInCase() {
+        final var merry = UserTestData.createMerry().setEmail(tester.getEmail().toUpperCase());
+
+        assertThatThrownBy(() -> repository.saveAndFlush(merry))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining(User.EMAIL_CONSTRAINT.toUpperCase());
     }
 
     @Test
