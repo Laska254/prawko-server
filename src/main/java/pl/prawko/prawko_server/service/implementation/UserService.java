@@ -281,7 +281,7 @@ public class UserService implements IUserService, UserDetailsService {
         final var currentEmailToken = emailVerificationService.issueCurrentEmailToken(user);
         log.info("Email change of user with id '{}' awaiting verification.", user.getId());
         return () -> emailVerificationService.sendEmailChangeConfirmation(
-                user.getId(), user.getEmail(), email, token, currentEmailToken);
+                user.getId(), user.getEmail(), user.getPendingEmail(), token, currentEmailToken);
     }
 
 }

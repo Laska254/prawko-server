@@ -14,10 +14,12 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Represents a {@code User} entity within the application.
@@ -27,7 +29,7 @@ import java.util.List;
  *     <li>first name - limited to 31 characters</li>
  *     <li>last name - limited to 31 characters</li>
  *     <li>username - limited to 31 characters</li>
- *     <li>email - limited to 254 characters</li>
+ *     <li>email - limited to 254 characters, stored lowercased</li>
  *     <li>password - hashed and limited to 63 characters, {@code null} for users who only sign in with a linked
  *     {@link UserIdentity}</li>
  * </ul>
@@ -52,8 +54,9 @@ import java.util.List;
  *     <li>{@link UserIdentity}: A user can have one linked account per {@link IdentityProvider}, ordered by provider
  *     and deleted with the user.</li>
  * </ul>
- * The entity is mapped to the database table {@code user}. Timestamps are {@link Instant}s, so they don't depend on
- * the JVM's time zone; {@code created} and {@code updated} are set automatically.
+ * The entity is mapped to the database table {@code user}. Emails, including the pending one, are lowercased by their
+ * setters. Timestamps are {@link Instant}s, so they don't depend on the JVM's time zone; {@code created} and
+ * {@code updated} are set automatically.
  * All setters are returning {@code User} itself, enabling method chaining.
  * {@link #toString()} leaves out personal data and credentials, so it's safe to log.
  */
@@ -160,7 +163,7 @@ public class User {
     }
 
     public User setEmail(final String email) {
-        this.email = email;
+        this.email = lowercase(email);
         return this;
     }
 
@@ -169,7 +172,7 @@ public class User {
     }
 
     public User setPendingEmail(final String pendingEmail) {
-        this.pendingEmail = pendingEmail;
+        this.pendingEmail = lowercase(pendingEmail);
         return this;
     }
 
@@ -312,6 +315,10 @@ public class User {
         return identities.stream()
                 .map(UserIdentity::getProvider)
                 .anyMatch(provider::equals);
+    }
+
+    private static @Nullable String lowercase(@Nullable final String email) {
+        return email == null ? null : email.toLowerCase(Locale.ROOT);
     }
 
     @Override

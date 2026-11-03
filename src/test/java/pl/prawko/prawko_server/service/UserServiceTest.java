@@ -274,14 +274,14 @@ class UserServiceTest {
         service.updateUser(givenId, updateUserRequest);
 
         assertThat(tester.getEmail()).isEqualTo(email);
-        assertThat(tester.getPendingEmail()).isEqualTo(updateUserRequest.email());
+        assertThat(tester.getPendingEmail()).isEqualTo(UserTestData.STORED_UPDATED_EMAIL);
         assertThat(tester.getPasswordResetTokenHash()).isEqualTo(resetHash);
         final var order = inOrder(emailVerificationService, repository);
         order.verify(emailVerificationService).issueToken(tester);
         order.verify(emailVerificationService).issueCurrentEmailToken(tester);
         order.verify(repository).save(tester);
         order.verify(emailVerificationService)
-                .sendEmailChangeConfirmation(givenId, email, updateUserRequest.email(), token, currentEmailToken);
+                .sendEmailChangeConfirmation(givenId, email, UserTestData.STORED_UPDATED_EMAIL, token, currentEmailToken);
     }
 
     @Test

@@ -252,4 +252,17 @@ class UserRepositoryTest {
         assertThat(result).isTrue();
     }
 
+    @Test
+    void saveAndFlush_storeEmailsLowercased_whenGivenInMixedCase() {
+        final var merry = UserTestData.createMerry();
+        final var email = merry.getEmail();
+        repository.saveAndFlush(merry.setEmail(email.toUpperCase()).setPendingEmail(email.toUpperCase()));
+        entityManager.clear();
+
+        final var result = repository.findById(merry.getId()).orElseThrow();
+
+        assertThat(result.getEmail()).isEqualTo(email.toLowerCase());
+        assertThat(result.getPendingEmail()).isEqualTo(email.toLowerCase());
+    }
+
 }
