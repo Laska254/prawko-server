@@ -113,6 +113,8 @@ public class UserControllerTest {
                         final var expectedLocation = ApiConstants.USERS_BASE_URL + "/" + createdUser.getId();
                         assertThat(location).endsWith(expectedLocation);
                     });
+
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
         }
 
         @Test
@@ -193,12 +195,16 @@ public class UserControllerTest {
                     .body(dto)
                     .exchange()
                     .expectStatus().isCreated();
+
+            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());
+            assertThat(captor.getValue().getTo()).containsExactly(UserTestData.LONGEST_EMAIL);
         }
 
         @Test
         void returnBadRequest_whenEmailIsTooLong() {
             final var invalidDto = new RegisterDto(registerDto.firstName(), registerDto.lastName(), registerDto.userName(),
-                    UserTestData.TOO_LONG_EMAIL, registerDto.password());
+                    UserTestData.OVERLONG_EMAIL, registerDto.password());
 
             restClient.post()
                     .body(invalidDto)
@@ -802,11 +808,15 @@ public class UserControllerTest {
                     .expectStatus().isOk()
                     .expectBody()
                     .jsonPath("$.pendingEmail").isEqualTo(UserTestData.LONGEST_EMAIL);
+
+            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
+            assertThat(captor.getAllValues().getFirst().getTo()).containsExactly(UserTestData.LONGEST_EMAIL);
         }
 
         @Test
         void returnBadRequest_whenEmailIsTooLong() {
-            final var invalidUpdateRequest = new UserUpdateRequest(null, null, null, UserTestData.TOO_LONG_EMAIL);
+            final var invalidUpdateRequest = new UserUpdateRequest(null, null, null, UserTestData.OVERLONG_EMAIL);
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)

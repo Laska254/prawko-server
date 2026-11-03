@@ -423,7 +423,7 @@ public class AuthControllerTest {
     void forgotPassword_returnBadRequest_whenEmailIsTooLong() {
         restClient.post()
                 .uri(ApiConstants.FORGOT_PASSWORD)
-                .body(new ForgotPasswordRequest(UserTestData.TOO_LONG_EMAIL))
+                .body(new ForgotPasswordRequest(UserTestData.OVERLONG_EMAIL))
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody()
@@ -666,7 +666,7 @@ public class AuthControllerTest {
     void resendVerification_returnBadRequest_whenEmailIsTooLong() {
         restClient.post()
                 .uri(ApiConstants.RESEND_VERIFICATION)
-                .body(new ResendVerificationRequest(UserTestData.TOO_LONG_EMAIL))
+                .body(new ResendVerificationRequest(UserTestData.OVERLONG_EMAIL))
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody()
