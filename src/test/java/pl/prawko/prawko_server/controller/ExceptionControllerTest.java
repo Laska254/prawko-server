@@ -24,9 +24,8 @@ class ExceptionControllerTest {
     private static Stream<Arguments> userConstraintViolations() {
         return Stream.of(
                 Arguments.of(Named.of("username on H2", "PUBLIC.UK_USER_USER_NAME INDEX PUBLIC.UK_USER_USER_NAME_INDEX_3"),
-                        "userName", "User with this username already exists."),
-                Arguments.of(Named.of("email on MariaDB", "uk_user_email"),
-                        "email", "User with this email already exists.")
+                        "userName", UserTestData.USER_NAME_TAKEN),
+                Arguments.of(Named.of("email on MariaDB", "uk_user_email"), "email", UserTestData.EMAIL_TAKEN)
         );
     }
 

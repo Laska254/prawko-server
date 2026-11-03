@@ -328,7 +328,10 @@ public class User {
     }
 
     private static @Nullable String lowercase(@Nullable final String email) {
-        return email == null ? null : email.toLowerCase(Locale.ROOT);
+        if (email == null) {
+            return null;
+        }
+        return email.toLowerCase(Locale.ROOT);
     }
 
     @Override

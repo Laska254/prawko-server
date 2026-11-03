@@ -30,6 +30,8 @@ public class UserTestData {
     public static final Map<String, String> PIPPIN_CONFLICT_DETAILS = Map.ofEntries(
             Map.entry("userName", "User with username 'pippin' already exists."),
             Map.entry("email", "User with email 'pippin@shire.me' already exists."));
+    public static final String USER_NAME_TAKEN = "User with this username already exists.";
+    public static final String EMAIL_TAKEN = "User with this email already exists.";
 
     public static final String INVALID_RESET_TOKEN = "Password reset token is invalid or expired.";
     public static final String INVALID_VERIFICATION_TOKEN = "Email verification token is invalid or expired.";

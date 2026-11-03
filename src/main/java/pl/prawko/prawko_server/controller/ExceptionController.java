@@ -31,9 +31,11 @@ import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.exception.TooManyRequestsException;
 import pl.prawko.prawko_server.model.User;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -47,6 +49,7 @@ public class ExceptionController {
     private static final Map<String, Map.Entry<String, String>> USER_CONSTRAINT_DETAILS = Map.ofEntries(
             Map.entry(User.USER_NAME_CONSTRAINT, Map.entry("userName", "User with this username already exists.")),
             Map.entry(User.EMAIL_CONSTRAINT, Map.entry("email", "User with this email already exists.")));
+    private static final Pattern NON_WORD = Pattern.compile("\\W+");
 
     @ApiResponse(responseCode = "400", description = "File is missing")
     @ExceptionHandler(MissingServletRequestPartException.class)
@@ -90,19 +93,6 @@ public class ExceptionController {
         final var problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "User already exists.");
         problemDetail.setProperty("details", Map.ofEntries(detail));
         return problemDetail;
-    }
-
-    private static Optional<Map.Entry<String, String>> violatedUserDetail(
-            final DataIntegrityViolationException exception) {
-        if (!(exception.getCause() instanceof org.hibernate.exception.ConstraintViolationException violation)
-                || violation.getConstraintName() == null) {
-            return Optional.empty();
-        }
-        final var constraintName = violation.getConstraintName().toLowerCase(Locale.ROOT);
-        return USER_CONSTRAINT_DETAILS.entrySet().stream()
-                .filter(entry -> Pattern.compile("\\b" + entry.getKey() + "\\b").matcher(constraintName).find())
-                .map(Map.Entry::getValue)
-                .findFirst();
     }
 
     @ApiResponse(responseCode = "400", description = "Invalid password")
@@ -220,6 +210,19 @@ public class ExceptionController {
     @ExceptionHandler(TaskRejectedException.class)
     public ProblemDetail handleTaskRejected() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Server is busy, try again later.");
+    }
+
+    private static Optional<Map.Entry<String, String>> violatedUserDetail(
+            final DataIntegrityViolationException exception) {
+        if (!(exception.getCause() instanceof org.hibernate.exception.ConstraintViolationException violation)
+                || violation.getConstraintName() == null) {
+            return Optional.empty();
+        }
+        final var constraintName = violation.getConstraintName().toLowerCase(Locale.ROOT);
+        return Arrays.stream(NON_WORD.split(constraintName))
+                .map(USER_CONSTRAINT_DETAILS::get)
+                .filter(Objects::nonNull)
+                .findFirst();
     }
 
 }

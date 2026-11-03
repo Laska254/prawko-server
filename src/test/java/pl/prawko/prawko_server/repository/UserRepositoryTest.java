@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
+import pl.prawko.prawko_server.controller.ExceptionController;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.model.UserIdentity;
@@ -14,9 +15,11 @@ import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -254,21 +257,25 @@ class UserRepositoryTest {
     }
 
     @Test
-    void saveAndFlush_throwDataIntegrityViolation_whenUserNameIsTaken() {
+    void saveAndFlush_throwDataIntegrityViolationHandledAsConflict_whenUserNameIsTaken() {
         final var merry = UserTestData.createMerry().setUserName(tester.getUserName());
 
-        assertThatThrownBy(() -> repository.saveAndFlush(merry))
-                .isInstanceOf(DataIntegrityViolationException.class)
-                .hasMessageContaining(User.USER_NAME_CONSTRAINT.toUpperCase());
+        final var exception = catchThrowableOfType(DataIntegrityViolationException.class,
+                () -> repository.saveAndFlush(merry));
+
+        assertThat(new ExceptionController().handleDataIntegrityViolation(exception).getProperties())
+                .containsEntry("details", Map.ofEntries(Map.entry("userName", UserTestData.USER_NAME_TAKEN)));
     }
 
     @Test
-    void saveAndFlush_throwDataIntegrityViolation_whenEmailDiffersOnlyInCase() {
+    void saveAndFlush_throwDataIntegrityViolationHandledAsConflict_whenEmailDiffersOnlyInCase() {
         final var merry = UserTestData.createMerry().setEmail(tester.getEmail().toUpperCase());
 
-        assertThatThrownBy(() -> repository.saveAndFlush(merry))
-                .isInstanceOf(DataIntegrityViolationException.class)
-                .hasMessageContaining(User.EMAIL_CONSTRAINT.toUpperCase());
+        final var exception = catchThrowableOfType(DataIntegrityViolationException.class,
+                () -> repository.saveAndFlush(merry));
+
+        assertThat(new ExceptionController().handleDataIntegrityViolation(exception).getProperties())
+                .containsEntry("details", Map.ofEntries(Map.entry("email", UserTestData.EMAIL_TAKEN)));
     }
 
     @Test
