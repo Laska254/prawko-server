@@ -15,6 +15,7 @@ import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IUserIdentityService;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Implementation of {@link IUserIdentityService} resolving users from verified provider profiles.
@@ -99,8 +100,10 @@ public class UserIdentityService implements IUserIdentityService {
      * suffix, cutting the name further to fit.
      */
     private String generateUserName(@Nullable final String suggested) {
-        final var cleaned = suggested == null ? "" : suggested.replace("@", "").strip();
-        final var base = cleaned.length() < MIN_USER_NAME_LENGTH ? FALLBACK_USER_NAME : cleaned;
+        final var base = Optional.ofNullable(suggested)
+                .map(name -> name.replace("@", "").strip())
+                .filter(name -> name.length() >= MIN_USER_NAME_LENGTH)
+                .orElse(FALLBACK_USER_NAME);
         var userName = cut(base, MAX_NAME_LENGTH);
         for (var suffix = 1; repository.existsByUserName(userName); suffix++) {
             final var digits = String.valueOf(suffix);
@@ -116,8 +119,10 @@ public class UserIdentityService implements IUserIdentityService {
         if (text == null || text.length() <= maxLength) {
             return text;
         }
-        final var end = Character.isHighSurrogate(text.charAt(maxLength - 1)) ? maxLength - 1 : maxLength;
-        return text.substring(0, end);
+        if (Character.isHighSurrogate(text.charAt(maxLength - 1))) {
+            return text.substring(0, maxLength - 1);
+        }
+        return text.substring(0, maxLength);
     }
 
 }

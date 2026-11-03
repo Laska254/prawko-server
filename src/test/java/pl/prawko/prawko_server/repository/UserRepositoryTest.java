@@ -188,7 +188,7 @@ class UserRepositoryTest {
     @Test
     void saveAndFlush_throwDataIntegrityViolation_whenUserLinksTwoAccountsAtProvider() {
         tester.addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)
-                .addIdentity(IdentityProvider.GOOGLE, "otherAccountId");
+                .addIdentity(IdentityProvider.GOOGLE, UserTestData.OTHER_PROVIDER_USER_ID);
 
         assertThatThrownBy(() -> repository.saveAndFlush(tester))
                 .isInstanceOf(DataIntegrityViolationException.class);

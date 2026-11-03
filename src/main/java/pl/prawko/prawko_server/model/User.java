@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -115,6 +116,7 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("provider")
+    @BatchSize(size = 50)
     private List<UserIdentity> identities = new ArrayList<>();
 
     public long getId() {
@@ -308,7 +310,8 @@ public class User {
 
     public boolean hasIdentity(final IdentityProvider provider) {
         return identities.stream()
-                .anyMatch(identity -> identity.getProvider() == provider);
+                .map(UserIdentity::getProvider)
+                .anyMatch(provider::equals);
     }
 
     @Override

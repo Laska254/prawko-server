@@ -36,6 +36,7 @@ public class UserTestData {
     public static final String VERIFICATION_COOLDOWN = "Verification email was sent recently, try again later.";
     public static final String INCORRECT_PASSWORD = "Current password is incorrect.";
     public static final String PROVIDER_USER_ID = "109876543210";
+    public static final String OTHER_PROVIDER_USER_ID = "otherAccountId";
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 

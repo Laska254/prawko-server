@@ -134,7 +134,7 @@ class UserIdentityServiceTest {
     void resolveUser_throwAlreadyExistsAndNotSave_whenUserLinkedToOtherAccountOfProvider() {
         final var existing = UserTestData.createTestUserPippin()
                 .setId(7L)
-                .addIdentity(PROVIDER, "otherAccountId");
+                .addIdentity(PROVIDER, UserTestData.OTHER_PROVIDER_USER_ID);
         when(repository.findByEmailIgnoreCase(profile.email())).thenReturn(Optional.of(existing));
 
         assertThatThrownBy(() -> service.resolveUser(profile))
