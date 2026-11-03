@@ -76,7 +76,9 @@ class UserIdentityServiceRetryTest {
         final var profile = UserTestData.createPippinProfile(PROVIDER);
         doAnswer(invocation -> {
             final var stale = (Optional<?>) realMethod().answer(invocation);
-            stale.map(User.class::cast).map(User::getIdentities).ifPresent(Hibernate::initialize);
+            stale.map(User.class::cast)
+                    .map(User::getIdentities)
+                    .ifPresent(Hibernate::initialize);
             inNewTransaction(() -> repository.findById(pippin.getId())
                     .map(user -> repository.save(user.addIdentity(PROVIDER, profile.providerUserId()))));
             return stale;

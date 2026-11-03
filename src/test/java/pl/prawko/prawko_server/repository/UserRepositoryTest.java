@@ -263,7 +263,8 @@ class UserRepositoryTest {
         final var exception = catchThrowableOfType(DataIntegrityViolationException.class,
                 () -> repository.saveAndFlush(merry));
 
-        assertThat(new ExceptionController().handleDataIntegrityViolation(exception).getProperties())
+        final var problem = new ExceptionController().handleDataIntegrityViolation(exception);
+        assertThat(problem.getProperties())
                 .containsEntry("details", Map.ofEntries(Map.entry("userName", UserTestData.USER_NAME_TAKEN)));
     }
 
@@ -274,7 +275,8 @@ class UserRepositoryTest {
         final var exception = catchThrowableOfType(DataIntegrityViolationException.class,
                 () -> repository.saveAndFlush(merry));
 
-        assertThat(new ExceptionController().handleDataIntegrityViolation(exception).getProperties())
+        final var problem = new ExceptionController().handleDataIntegrityViolation(exception);
+        assertThat(problem.getProperties())
                 .containsEntry("details", Map.ofEntries(Map.entry("email", UserTestData.EMAIL_TAKEN)));
     }
 
