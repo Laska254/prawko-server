@@ -2,11 +2,11 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "epic/**" ]
     tags:
       [ "v*" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "epic/**" ]
 
 jobs:
   test:
