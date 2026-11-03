@@ -3,6 +3,8 @@ package pl.prawko.prawko_server.service.implementation;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,11 +43,16 @@ public class UserIdentityService implements IUserIdentityService {
      * <p>
      * A linked account signs in even if the provider no longer reports its email as verified, since the email isn't
      * used then.
+     * <p>
+     * A concurrent sign-in with the same account, or one creating a user with the same username or email, can win the
+     * race between the lookups and the save. The resulting {@link DataIntegrityViolationException} is retried once in a
+     * new transaction, which then finds the other request's identity or user, or picks another username.
      *
      * @throws DisabledException      if the account isn't linked yet and the provider hasn't verified its email
      * @throws AlreadyExistsException if the user with the email is already linked to another account at the provider
      */
     @Override
+    @Retryable(includes = DataIntegrityViolationException.class, maxRetries = 1, delay = 100)
     @Transactional
     public User resolveUser(final ProviderProfile profile) {
         final var provider = profile.provider();
