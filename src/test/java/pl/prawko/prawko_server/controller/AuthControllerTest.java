@@ -56,7 +56,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @IntegrationTest
 public class AuthControllerTest {
 
-    private static final String USERNAME_SIZE_MSG = "Username or email must not be blank and between 3 and 63 characters.";
+    private static final String USERNAME_SIZE_MSG = "Username or email must not be blank and between 3 and 254 characters.";
     private static final String PASSWORD_SIZE_MSG = "Password must not be blank and between 7 and 63 characters.";
     private static final long MAIL_SETTLE_MS = 500;
 
@@ -95,7 +95,7 @@ public class AuthControllerTest {
     private static Stream<Arguments> invalidLoginRequests() {
         return Stream.of(
                 Arguments.of("both too short", new LoginDto("a".repeat(2), "b".repeat(6)), USERNAME_SIZE_MSG, PASSWORD_SIZE_MSG),
-                Arguments.of("both too long", new LoginDto("a".repeat(64), "b".repeat(64)), USERNAME_SIZE_MSG, PASSWORD_SIZE_MSG),
+                Arguments.of("both too long", new LoginDto("a".repeat(255), "b".repeat(64)), USERNAME_SIZE_MSG, PASSWORD_SIZE_MSG),
                 Arguments.of("both null", new LoginDto(null, null), TestUtils.USERNAME_REQUIRED, TestUtils.PASSWORD_REQUIRED),
                 Arguments.of("username blank", new LoginDto("", "lembasy"), USERNAME_SIZE_MSG, null),
                 Arguments.of("username null", new LoginDto(null, "password"), TestUtils.USERNAME_REQUIRED, null),
@@ -173,8 +173,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void login_passValidation_whenEmailIsLongerThanUsernameLimit() {
-        final var request = new LoginDto("meriadoc.brandybuck@buckland.shire.me", "lembasy");
+    void login_passValidation_whenEmailHasMaximumLength() {
+        final var request = new LoginDto(UserTestData.LONGEST_EMAIL, "lembasy");
 
         restClient.post()
                 .body(request)
@@ -415,6 +415,22 @@ public class AuthControllerTest {
     }
 
     @Test
+    void forgotPassword_returnAccepted_whenEmailHasMaximumLength() {
+        forgotPassword(UserTestData.LONGEST_EMAIL);
+    }
+
+    @Test
+    void forgotPassword_returnBadRequest_whenEmailIsTooLong() {
+        restClient.post()
+                .uri(ApiConstants.FORGOT_PASSWORD)
+                .body(new ForgotPasswordRequest(UserTestData.OVERLONG_EMAIL))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.details.email").isEqualTo(UserTestData.EMAIL_TOO_LONG);
+    }
+
+    @Test
     void forgotPassword_returnServiceUnavailable_whenTaskQueueIsFull() {
         final var release = TestUtils.blockTaskExecutor(taskExecutor);
         try {
@@ -442,6 +458,18 @@ public class AuthControllerTest {
         assertThat(passwordEncoder.matches(request.newPassword(), updated.getPassword())).isTrue();
         assertThat(updated.getPasswordResetTokenHash()).isNull();
         assertThat(updated.getPasswordResetTokenExpires()).isNull();
+    }
+
+    @Test
+    void resetPassword_setPassword_whenUserHasNoPassword() {
+        final var tester = userRepository.save(UserTestData.createGooglePippin());
+        final var request = UserTestData.createValidResetPasswordRequest(requestResetToken(tester.getEmail()));
+
+        resetPassword(request)
+                .expectStatus().isNoContent();
+
+        final var updated = userRepository.findById(tester.getId()).orElseThrow();
+        assertThat(passwordEncoder.matches(request.newPassword(), updated.getPassword())).isTrue();
     }
 
     @Test
@@ -627,6 +655,22 @@ public class AuthControllerTest {
                 .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
                 .jsonPath("$.details.email").isEqualTo("Email format is not valid.");
         verifyNoInteractions(mailSender);
+    }
+
+    @Test
+    void resendVerification_returnAccepted_whenEmailHasMaximumLength() {
+        resendVerification(UserTestData.LONGEST_EMAIL);
+    }
+
+    @Test
+    void resendVerification_returnBadRequest_whenEmailIsTooLong() {
+        restClient.post()
+                .uri(ApiConstants.RESEND_VERIFICATION)
+                .body(new ResendVerificationRequest(UserTestData.OVERLONG_EMAIL))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.details.email").isEqualTo(UserTestData.EMAIL_TOO_LONG);
     }
 
     private AuthTokensDto login() {

@@ -8,7 +8,9 @@ import org.mapstruct.Named;
 import org.springframework.beans.factory.annotation.Autowired;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.model.UserIdentity;
 
 import java.time.Clock;
 
@@ -42,6 +44,7 @@ public abstract class UserMapper {
     @Mapping(target = "verificationTokenHash", ignore = true)
     @Mapping(target = "verificationTokenExpires", ignore = true)
     @Mapping(target = "currentEmailTokenHash", ignore = true)
+    @Mapping(target = "identities", ignore = true)
     @Mapping(target = "enabled", constant = "false")
     public abstract User fromDto(RegisterDto registerDto);
 
@@ -49,7 +52,13 @@ public abstract class UserMapper {
     @Mapping(target = "awaitingNewEmailConfirmation", source = "user", qualifiedByName = "awaitingNewEmailConfirmation")
     @Mapping(target = "awaitingCurrentEmailConfirmation", source = "user",
             qualifiedByName = "awaitingCurrentEmailConfirmation")
+    @Mapping(target = "hasPassword", expression = "java(user.getPassword() != null)")
+    @Mapping(target = "providers", source = "identities")
     public abstract UserDto toDto(User user);
+
+    protected IdentityProvider toProvider(final UserIdentity identity) {
+        return identity.getProvider();
+    }
 
     /**
      * The pending email is stale once its verification link expired, nothing clears it until the next change.

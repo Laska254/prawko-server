@@ -1,17 +1,22 @@
 package pl.prawko.prawko_server.repository;
 
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.model.UserIdentity;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.time.Duration;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -23,6 +28,9 @@ class UserRepositoryTest {
 
     @Autowired
     private UserRepository repository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private User tester;
 
@@ -134,6 +142,70 @@ class UserRepositoryTest {
     void findByVerificationOrCurrentEmailTokenHash_returnEmpty_whenNoTokenIssued() {
         final var result = repository.findByVerificationOrCurrentEmailTokenHash(tokenHash);
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findByIdentity_returnUser_whenIdentityIsLinked() {
+        repository.save(tester.addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+
+        final var result = repository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID);
+
+        assertThat(result).get().extracting(User::getId).isEqualTo(tester.getId());
+    }
+
+    @Test
+    void findByIdentity_returnEmpty_whenIdIsLinkedAtOtherProvider() {
+        repository.save(tester.addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+
+        final var result = repository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findById_returnIdentitiesOrderedByProvider_whenUserHasSeveral() {
+        repository.save(tester.addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)
+                .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));
+        entityManager.flush();
+        entityManager.clear();
+
+        final var result = repository.findById(tester.getId()).orElseThrow();
+
+        assertThat(result.getIdentities())
+                .extracting(UserIdentity::getProvider)
+                .containsExactly(IdentityProvider.GITHUB, IdentityProvider.GOOGLE);
+    }
+
+    @Test
+    void saveAndFlush_throwDataIntegrityViolation_whenProviderAccountIsLinkedTwice() {
+        repository.saveAndFlush(tester.addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+        final var merry = UserTestData.createMerry().addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID);
+
+        assertThatThrownBy(() -> repository.saveAndFlush(merry))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void saveAndFlush_throwDataIntegrityViolation_whenUserLinksTwoAccountsAtProvider() {
+        tester.addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)
+                .addIdentity(IdentityProvider.GOOGLE, UserTestData.OTHER_PROVIDER_USER_ID);
+
+        assertThatThrownBy(() -> repository.saveAndFlush(tester))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void saveAndFlush_storeEmail_whenEmailHasMaximumLength() {
+        final var merry = UserTestData.createMerry()
+                .setEmail(UserTestData.LONGEST_EMAIL)
+                .setPendingEmail(UserTestData.LONGEST_EMAIL);
+        repository.saveAndFlush(merry);
+        entityManager.clear();
+
+        final var result = repository.findById(merry.getId()).orElseThrow();
+
+        assertThat(result.getEmail()).isEqualTo(UserTestData.LONGEST_EMAIL);
+        assertThat(result.getPendingEmail()).isEqualTo(UserTestData.LONGEST_EMAIL);
     }
 
     @Test

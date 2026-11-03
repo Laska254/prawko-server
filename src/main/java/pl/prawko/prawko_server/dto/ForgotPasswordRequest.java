@@ -15,9 +15,9 @@ import jakarta.validation.constraints.Size;
 public record ForgotPasswordRequest(
 
         @NotBlank(message = "{email.required}")
-        @Size(max = 63, message = "{email.size.max}")
+        @Size(max = 254, message = "{email.size.max}")
         @Email(message = "{email.notvalid}")
-        @Schema(description = "Email address of the account", maxLength = 63, format = "email")
+        @Schema(description = "Email address of the account", maxLength = 254, format = "email")
         String email
 
 ) {

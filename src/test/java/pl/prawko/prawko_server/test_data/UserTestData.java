@@ -10,12 +10,15 @@ import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.model.IdentityProvider;
+import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -32,6 +35,12 @@ public class UserTestData {
     public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";
     public static final String VERIFICATION_COOLDOWN = "Verification email was sent recently, try again later.";
     public static final String INCORRECT_PASSWORD = "Current password is incorrect.";
+    public static final String PROVIDER_USER_ID = "109876543210";
+    public static final String OTHER_PROVIDER_USER_ID = "otherAccountId";
+    public static final String EMAIL_TOO_LONG = "Email must be at most 254 characters.";
+    // @Email allows at most 64 characters before the @ and 63 per domain label, so the length comes from several labels.
+    public static final String LONGEST_EMAIL = "a".repeat(64) + "@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(61);
+    public static final String OVERLONG_EMAIL = LONGEST_EMAIL + "d";
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 
@@ -71,6 +80,21 @@ public class UserTestData {
         return createTestUserPippin().setEnabled(false);
     }
 
+    public static User createGooglePippin() {
+        return createTestUserPippin()
+                .setPassword(null)
+                .addIdentity(IdentityProvider.GOOGLE, PROVIDER_USER_ID);
+    }
+
+    /**
+     * Profile of Pippin's account at the provider, with his verified email.
+     */
+    public static ProviderProfile createPippinProfile(final IdentityProvider provider) {
+        final var pippin = createTestUserPippin();
+        return new ProviderProfile(provider, PROVIDER_USER_ID, pippin.getEmail(), true, pippin.getUserName(),
+                pippin.getFirstName(), pippin.getLastName());
+    }
+
     public static User createPippinChangingEmail() {
         return createTestUserPippin()
                 .setPendingEmail(createValidUserUpdateRequest().email())
@@ -95,7 +119,9 @@ public class UserTestData {
                 null,
                 false,
                 false,
-                Role.USER);
+                Role.USER,
+                true,
+                List.of());
     }
 
     public static UserDto createAdminUserDto(final long id) {
@@ -108,7 +134,9 @@ public class UserTestData {
                 null,
                 false,
                 false,
-                Role.ADMIN);
+                Role.ADMIN,
+                true,
+                List.of());
     }
 
     public static UserDto createUpdatedUserDto(final long id) {
@@ -121,7 +149,9 @@ public class UserTestData {
                 createValidUserUpdateRequest().email(),
                 true,
                 true,
-                Role.USER
+                Role.USER,
+                true,
+                List.of()
         );
     }
 
@@ -136,7 +166,9 @@ public class UserTestData {
                 null,
                 false,
                 false,
-                updated.role()
+                updated.role(),
+                updated.hasPassword(),
+                updated.providers()
         );
     }
 

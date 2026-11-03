@@ -28,6 +28,7 @@ import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.QuestionRepository;
@@ -112,6 +113,8 @@ public class UserControllerTest {
                         final var expectedLocation = ApiConstants.USERS_BASE_URL + "/" + createdUser.getId();
                         assertThat(location).endsWith(expectedLocation);
                     });
+
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
         }
 
         @Test
@@ -181,6 +184,34 @@ public class UserControllerTest {
                     .expectStatus().isBadRequest()
                     .expectBody()
                     .jsonPath("$.details.lastName").isEqualTo("Last name must be at most 31 characters.");
+        }
+
+        @Test
+        void returnCreated_whenEmailHasMaximumLength() {
+            final var dto = new RegisterDto(registerDto.firstName(), registerDto.lastName(), registerDto.userName(),
+                    UserTestData.LONGEST_EMAIL, registerDto.password());
+
+            restClient.post()
+                    .body(dto)
+                    .exchange()
+                    .expectStatus().isCreated();
+
+            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());
+            assertThat(captor.getValue().getTo()).containsExactly(UserTestData.LONGEST_EMAIL);
+        }
+
+        @Test
+        void returnBadRequest_whenEmailIsTooLong() {
+            final var invalidDto = new RegisterDto(registerDto.firstName(), registerDto.lastName(), registerDto.userName(),
+                    UserTestData.OVERLONG_EMAIL, registerDto.password());
+
+            restClient.post()
+                    .body(invalidDto)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.details.email").isEqualTo(UserTestData.EMAIL_TOO_LONG);
         }
 
         @Test
@@ -355,6 +386,20 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserDto.class).isEqualTo(expectedUserDto);
+        }
+
+        @Test
+        void returnProvidersWithoutPassword_whenSignedUpWithProvider() {
+            userRepository.save(UserTestData.createGooglePippin());
+
+            restClient.get()
+                    .uri(ApiConstants.ME)
+                    .headers(auth::user)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.hasPassword").isEqualTo(false)
+                    .jsonPath("$.providers").isEqualTo(List.of(IdentityProvider.GOOGLE.name()));
         }
 
         @Test
@@ -748,6 +793,39 @@ public class UserControllerTest {
                     .expectStatus().isBadRequest()
                     .expectBody()
                     .jsonPath("$.details.email").isEqualTo("Email must be at least 5 characters.");
+        }
+
+        @Test
+        void success_whenEmailHasMaximumLength() {
+            final var id = userRepository.save(UserTestData.createTestUserPippin()).getId();
+            final var request = new UserUpdateRequest(null, null, null, UserTestData.LONGEST_EMAIL);
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, id)
+                    .headers(auth::user)
+                    .body(request)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.pendingEmail").isEqualTo(UserTestData.LONGEST_EMAIL);
+
+            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
+            assertThat(captor.getAllValues().getFirst().getTo()).containsExactly(UserTestData.LONGEST_EMAIL);
+        }
+
+        @Test
+        void returnBadRequest_whenEmailIsTooLong() {
+            final var invalidUpdateRequest = new UserUpdateRequest(null, null, null, UserTestData.OVERLONG_EMAIL);
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, 1L)
+                    .headers(auth::user)
+                    .body(invalidUpdateRequest)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.details.email").isEqualTo(UserTestData.EMAIL_TOO_LONG);
         }
 
         @ParameterizedTest

@@ -79,7 +79,8 @@ public interface IUserService {
     /**
      * Changes a user's password.
      * <p>
-     * Verifies the current password before encoding and persisting the new one.
+     * Verifies the current password before encoding and persisting the new one. A user without a password has to set
+     * one with a password reset instead.
      * Invalidates any pending password reset token, cancels a pending email change and revokes all refresh tokens of
      * the user, signing out all their clients.
      * </p>
@@ -102,7 +103,8 @@ public interface IUserService {
     /**
      * Deletes a user's own account.
      * <p>
-     * Verifies the current password before removing the user like {@link #deleteUser}.
+     * Verifies the current password before removing the user like {@link #deleteUser}. A user without a password has
+     * to set one with a password reset first.
      * </p>
      *
      * @param userId  the ID of the user deleting their account

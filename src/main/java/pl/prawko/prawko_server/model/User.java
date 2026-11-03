@@ -9,11 +9,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,8 +27,9 @@ import java.util.List;
  *     <li>first name - limited to 31 characters</li>
  *     <li>last name - limited to 31 characters</li>
  *     <li>username - limited to 31 characters</li>
- *     <li>email - limited to 63 characters</li>
- *     <li>password - hashed and limited to 63 characters</li>
+ *     <li>email - limited to 254 characters</li>
+ *     <li>password - hashed and limited to 63 characters, {@code null} for users who only sign in with a linked
+ *     {@link UserIdentity}</li>
  * </ul>
  * and system-related attributes like the {@link Role}, whether the account is enabled, the creation timestamp and the last
  * update timestamp.
@@ -45,6 +49,8 @@ import java.util.List;
  * <ul>
  *     <li>{@link Exam}: A user can be assigned to multiple exams.</li>
  *     <li>{@link RefreshToken}: A user can have multiple refresh tokens, deleted with the user.</li>
+ *     <li>{@link UserIdentity}: A user can have one linked account per {@link IdentityProvider}, ordered by provider
+ *     and deleted with the user.</li>
  * </ul>
  * The entity is mapped to the database table {@code user}. Timestamps are {@link Instant}s, so they don't depend on
  * the JVM's time zone; {@code created} and {@code updated} are set automatically.
@@ -68,10 +74,10 @@ public class User {
     @Column(length = 31)
     private String userName;
 
-    @Column(length = 63)
+    @Column(length = 254)
     private String email;
 
-    @Column(length = 63)
+    @Column(length = 254)
     private String pendingEmail;
 
     @Column(length = 63)
@@ -107,6 +113,11 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RefreshToken> refreshTokens;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("provider")
+    @BatchSize(size = 50)
+    private List<UserIdentity> identities = new ArrayList<>();
 
     public long getId() {
         return id;
@@ -276,6 +287,31 @@ public class User {
     public User setExams(final List<Exam> exams) {
         this.exams = exams;
         return this;
+    }
+
+    public List<UserIdentity> getIdentities() {
+        return identities;
+    }
+
+    /**
+     * Links an account at the provider to this user.
+     *
+     * @param provider       the provider of the account
+     * @param providerUserId the provider's ID of the account
+     * @return this user
+     */
+    public User addIdentity(final IdentityProvider provider, final String providerUserId) {
+        identities.add(new UserIdentity()
+                .setProvider(provider)
+                .setProviderUserId(providerUserId)
+                .setUser(this));
+        return this;
+    }
+
+    public boolean hasIdentity(final IdentityProvider provider) {
+        return identities.stream()
+                .map(UserIdentity::getProvider)
+                .anyMatch(provider::equals);
     }
 
     @Override

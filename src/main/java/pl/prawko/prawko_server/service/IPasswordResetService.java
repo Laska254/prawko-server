@@ -24,6 +24,8 @@ public interface IPasswordResetService {
     /**
      * Sets a new password for the user owning a valid password reset token.
      * <p>
+     * Also lets a user who signed up with a provider account and has no password yet set one, as the link proves they
+     * own the email.
      * The token is invalidated afterward, and all refresh tokens of the user are revoked, signing out all their
      * clients.
      * </p>
