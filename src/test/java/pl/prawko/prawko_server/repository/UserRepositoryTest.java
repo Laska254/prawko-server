@@ -195,6 +195,18 @@ class UserRepositoryTest {
     }
 
     @Test
+    void saveAndFlush_storeEmail_whenEmailHasMaximumLength() {
+        final var email = "a".repeat(64) + "@" + "b".repeat(185) + ".com";
+        final var merry = repository.saveAndFlush(UserTestData.createMerry().setEmail(email).setPendingEmail(email));
+        entityManager.clear();
+
+        final var result = repository.findById(merry.getId()).orElseThrow();
+
+        assertThat(result.getEmail()).hasSize(254).isEqualTo(email);
+        assertThat(result.getPendingEmail()).isEqualTo(email);
+    }
+
+    @Test
     void deleteByEnabledFalseAndVerificationTokenExpiresBefore_deleteOnlyUnverifiedUsers_whenTokenExpired() {
         final var now = Instant.now();
         final var expired = repository.save(UserTestData.createUnverifiedPippin()

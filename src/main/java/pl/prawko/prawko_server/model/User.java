@@ -26,7 +26,7 @@ import java.util.List;
  *     <li>first name - limited to 31 characters</li>
  *     <li>last name - limited to 31 characters</li>
  *     <li>username - limited to 31 characters</li>
- *     <li>email - limited to 63 characters</li>
+ *     <li>email - limited to 254 characters</li>
  *     <li>password - hashed and limited to 63 characters, {@code null} for users who only sign in with a linked
  *     {@link UserIdentity}</li>
  * </ul>
@@ -73,10 +73,10 @@ public class User {
     @Column(length = 31)
     private String userName;
 
-    @Column(length = 63)
+    @Column(length = 254)
     private String email;
 
-    @Column(length = 63)
+    @Column(length = 254)
     private String pendingEmail;
 
     @Column(length = 63)

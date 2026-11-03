@@ -56,7 +56,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @IntegrationTest
 public class AuthControllerTest {
 
-    private static final String USERNAME_SIZE_MSG = "Username or email must not be blank and between 3 and 63 characters.";
+    private static final String USERNAME_SIZE_MSG = "Username or email must not be blank and between 3 and 254 characters.";
     private static final String PASSWORD_SIZE_MSG = "Password must not be blank and between 7 and 63 characters.";
     private static final long MAIL_SETTLE_MS = 500;
 
@@ -95,7 +95,7 @@ public class AuthControllerTest {
     private static Stream<Arguments> invalidLoginRequests() {
         return Stream.of(
                 Arguments.of("both too short", new LoginDto("a".repeat(2), "b".repeat(6)), USERNAME_SIZE_MSG, PASSWORD_SIZE_MSG),
-                Arguments.of("both too long", new LoginDto("a".repeat(64), "b".repeat(64)), USERNAME_SIZE_MSG, PASSWORD_SIZE_MSG),
+                Arguments.of("both too long", new LoginDto("a".repeat(255), "b".repeat(64)), USERNAME_SIZE_MSG, PASSWORD_SIZE_MSG),
                 Arguments.of("both null", new LoginDto(null, null), TestUtils.USERNAME_REQUIRED, TestUtils.PASSWORD_REQUIRED),
                 Arguments.of("username blank", new LoginDto("", "lembasy"), USERNAME_SIZE_MSG, null),
                 Arguments.of("username null", new LoginDto(null, "password"), TestUtils.USERNAME_REQUIRED, null),
