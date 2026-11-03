@@ -100,7 +100,7 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Override
     public UserDetails loadUserByUsername(final String userNameOrEmail) throws UsernameNotFoundException {
-        final var user = repository.findByUserNameOrEmailIgnoreCase(userNameOrEmail, userNameOrEmail)
+        final var user = repository.findByUserNameOrEmailAllIgnoreCase(userNameOrEmail, userNameOrEmail)
                 .orElseThrow(() -> {
                     log.warn("User not found by username or email.");
                     return new UsernameNotFoundException("Invalid login or password.");
@@ -252,7 +252,7 @@ public class UserService implements IUserService, UserDetailsService {
 
     private void validateNoConflict(@Nullable final String userName, @Nullable final String email) {
         final Map<String, String> errorDetails = new HashMap<>();
-        if (userName != null && repository.existsByUserName(userName)) {
+        if (userName != null && repository.existsByUserNameIgnoreCase(userName)) {
             errorDetails.put("userName", "User with username '" + userName + "' already exists.");
         }
         if (email != null && repository.existsByEmailIgnoreCase(email)) {

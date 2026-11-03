@@ -199,8 +199,8 @@ class UserIdentityServiceTest {
     @Test
     void resolveUser_appendLowestFreeSuffix_whenUserNameIsTaken() {
         stubNewUser();
-        when(repository.existsByUserName("pippin")).thenReturn(true);
-        when(repository.existsByUserName("pippin1")).thenReturn(true);
+        when(repository.existsByUserNameIgnoreCase("pippin")).thenReturn(true);
+        when(repository.existsByUserNameIgnoreCase("pippin1")).thenReturn(true);
 
         final var result = service.resolveUser(profile);
 
@@ -211,7 +211,7 @@ class UserIdentityServiceTest {
     void resolveUser_cutNameToFitSuffix_whenUserNameOfMaxLengthIsTaken() {
         final var maxLength = "a".repeat(31);
         stubNewUser();
-        when(repository.existsByUserName(maxLength)).thenReturn(true);
+        when(repository.existsByUserNameIgnoreCase(maxLength)).thenReturn(true);
 
         final var result = service.resolveUser(withSuggestedUserName(maxLength));
 
@@ -231,7 +231,7 @@ class UserIdentityServiceTest {
 
     private void stubNewUser() {
         when(repository.findByEmailIgnoreCase(profile.email())).thenReturn(Optional.empty());
-        when(repository.existsByUserName(anyString())).thenReturn(false);
+        when(repository.existsByUserNameIgnoreCase(anyString())).thenReturn(false);
         when(repository.save(any(User.class))).thenAnswer(returnsFirstArg());
     }
 

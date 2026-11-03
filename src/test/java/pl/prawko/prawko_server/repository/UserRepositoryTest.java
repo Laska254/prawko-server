@@ -40,14 +40,14 @@ class UserRepositoryTest {
     }
 
     @Test
-    void existsByUserName_returnTrue_whenUserNameExists() {
-        final var result = repository.existsByUserName(tester.getUserName());
+    void existsByUserNameIgnoreCase_returnTrue_whenUserNameExists() {
+        final var result = repository.existsByUserNameIgnoreCase(tester.getUserName());
         assertThat(result).isTrue();
     }
 
     @Test
-    void existsByUserName_returnFalse_whenUserNameDoesNotExist() {
-        final var result = repository.existsByUserName(wrongUserName);
+    void existsByUserNameIgnoreCase_returnFalse_whenUserNameDoesNotExist() {
+        final var result = repository.existsByUserNameIgnoreCase(wrongUserName);
         assertThat(result).isFalse();
     }
 
@@ -64,26 +64,26 @@ class UserRepositoryTest {
     }
 
     @Test
-    void findByUserNameOrEmailIgnoreCase_returnUser_whenFoundByUserName() {
-        final var result = repository.findByUserNameOrEmailIgnoreCase(tester.getUserName(), tester.getUserName());
+    void findByUserNameOrEmailAllIgnoreCase_returnUser_whenFoundByUserName() {
+        final var result = repository.findByUserNameOrEmailAllIgnoreCase(tester.getUserName(), tester.getUserName());
         assertThat(result.get().getUserName()).isEqualTo(tester.getUserName());
     }
 
     @Test
-    void findByUserNameOrEmailIgnoreCase_returnUser_whenFoundByEmail() {
-        final var result = repository.findByUserNameOrEmailIgnoreCase(tester.getEmail(), tester.getEmail());
+    void findByUserNameOrEmailAllIgnoreCase_returnUser_whenFoundByEmail() {
+        final var result = repository.findByUserNameOrEmailAllIgnoreCase(tester.getEmail(), tester.getEmail());
         assertThat(result.get().getEmail()).isEqualTo(tester.getEmail());
     }
 
     @Test
-    void findByUserNameOrEmailIgnoreCase_returnEmpty_whenNotFoundByUserName() {
-        final var result = repository.findByUserNameOrEmailIgnoreCase(wrongUserName, wrongUserName);
+    void findByUserNameOrEmailAllIgnoreCase_returnEmpty_whenNotFoundByUserName() {
+        final var result = repository.findByUserNameOrEmailAllIgnoreCase(wrongUserName, wrongUserName);
         assertThat(result).isEmpty();
     }
 
     @Test
-    void findByUserNameOrEmailIgnoreCase_returnEmpty_whenNotFoundByEmail() {
-        final var result = repository.findByUserNameOrEmailIgnoreCase(wrongEmail, wrongEmail);
+    void findByUserNameOrEmailAllIgnoreCase_returnEmpty_whenNotFoundByEmail() {
+        final var result = repository.findByUserNameOrEmailAllIgnoreCase(wrongEmail, wrongEmail);
         assertThat(result).isEmpty();
     }
 
@@ -233,17 +233,23 @@ class UserRepositoryTest {
     }
 
     @Test
-    void findByUserNameOrEmailIgnoreCase_returnUser_whenEmailCaseDiffers() {
+    void findByUserNameOrEmailAllIgnoreCase_returnUser_whenEmailCaseDiffers() {
         final var input = "Pippin@Shire.ME";
-        final var result = repository.findByUserNameOrEmailIgnoreCase(input, input);
+        final var result = repository.findByUserNameOrEmailAllIgnoreCase(input, input);
         assertThat(result).get().extracting(User::getEmail).isEqualTo(tester.getEmail());
     }
 
     @Test
-    void findByUserNameOrEmailIgnoreCase_returnEmpty_whenUserNameCaseDiffers() {
+    void findByUserNameOrEmailAllIgnoreCase_returnUser_whenUserNameCaseDiffers() {
         final var input = tester.getUserName().toUpperCase();
-        final var result = repository.findByUserNameOrEmailIgnoreCase(input, input);
-        assertThat(result).isEmpty();
+        final var result = repository.findByUserNameOrEmailAllIgnoreCase(input, input);
+        assertThat(result).get().extracting(User::getId).isEqualTo(tester.getId());
+    }
+
+    @Test
+    void existsByUserNameIgnoreCase_returnTrue_whenCaseDiffers() {
+        final var result = repository.existsByUserNameIgnoreCase(tester.getUserName().toUpperCase());
+        assertThat(result).isTrue();
     }
 
 }

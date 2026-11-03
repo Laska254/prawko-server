@@ -168,7 +168,7 @@ documented only here.
 The API is stateless - every request that requires authentication must carry an access token as
 `Authorization: Bearer ...`. HTTP Basic isn't supported - such a request counts as unauthenticated (`401`).
 
-Signing in with `POST /auth` (`{"userName": "...", "password": "..."}`, username or email) returns a token pair:
+Signing in with `POST /auth` (`{"userName": "...", "password": "..."}`, username or email, both ignoring case) returns a token pair:
 
 ```json
 {"accessToken": "...", "refreshToken": "...", "expiresIn": 900}

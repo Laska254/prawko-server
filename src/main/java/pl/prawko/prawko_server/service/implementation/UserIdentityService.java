@@ -105,7 +105,7 @@ public class UserIdentityService implements IUserIdentityService {
                 .filter(name -> name.length() >= MIN_USER_NAME_LENGTH)
                 .orElse(FALLBACK_USER_NAME);
         var userName = cut(base, MAX_NAME_LENGTH);
-        for (var suffix = 1; repository.existsByUserName(userName); suffix++) {
+        for (var suffix = 1; repository.existsByUserNameIgnoreCase(userName); suffix++) {
             final var digits = String.valueOf(suffix);
             userName = cut(base, MAX_NAME_LENGTH - digits.length()) + digits;
         }

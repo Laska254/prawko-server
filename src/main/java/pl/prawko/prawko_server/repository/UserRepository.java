@@ -17,12 +17,12 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     /**
-     * Checks whether {@link User} already exists with specified username.
+     * Checks whether {@link User} already exists with specified username, ignoring case.
      *
      * @param userName provided username to check for existence
      * @return {@code true} if a user already exists, {@code false} otherwise
      */
-    boolean existsByUserName(final String userName);
+    boolean existsByUserNameIgnoreCase(final String userName);
 
     /**
      * Checks whether {@link User} already exists with specified email, ignoring case.
@@ -33,7 +33,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmailIgnoreCase(final String email);
 
     /**
-     * Retrieves {@code user} by its userName (exact match) or email (ignoring case).
+     * Retrieves {@code user} by its userName or email, both ignoring case.
      *
      * <p>Unambiguous, since usernames can't contain '@' and emails must.
      *
@@ -41,7 +41,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param email    provided email to look for
      * @return a {@code user} when found
      */
-    Optional<User> findByUserNameOrEmailIgnoreCase(final String userName, final String email);
+    Optional<User> findByUserNameOrEmailAllIgnoreCase(final String userName, final String email);
 
     /**
      * Retrieves {@code user} by its email, ignoring case.

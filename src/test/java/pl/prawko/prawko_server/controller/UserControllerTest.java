@@ -1087,7 +1087,7 @@ public class UserControllerTest {
                     .expectStatus().isCreated();
 
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
-            assertThat(userRepository.existsByUserName(registerDto.userName())).isTrue();
+            assertThat(userRepository.existsByUserNameIgnoreCase(registerDto.userName())).isTrue();
             assertThat(userRepository.existsByEmailIgnoreCase(registerDto.email())).isTrue();
         }
 
