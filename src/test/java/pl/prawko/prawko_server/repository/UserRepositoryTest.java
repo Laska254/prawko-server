@@ -196,14 +196,16 @@ class UserRepositoryTest {
 
     @Test
     void saveAndFlush_storeEmail_whenEmailHasMaximumLength() {
-        final var email = "a".repeat(64) + "@" + "b".repeat(185) + ".com";
-        final var merry = repository.saveAndFlush(UserTestData.createMerry().setEmail(email).setPendingEmail(email));
+        final var merry = UserTestData.createMerry()
+                .setEmail(UserTestData.LONGEST_EMAIL)
+                .setPendingEmail(UserTestData.LONGEST_EMAIL);
+        repository.saveAndFlush(merry);
         entityManager.clear();
 
         final var result = repository.findById(merry.getId()).orElseThrow();
 
-        assertThat(result.getEmail()).hasSize(254).isEqualTo(email);
-        assertThat(result.getPendingEmail()).isEqualTo(email);
+        assertThat(result.getEmail()).isEqualTo(UserTestData.LONGEST_EMAIL);
+        assertThat(result.getPendingEmail()).isEqualTo(UserTestData.LONGEST_EMAIL);
     }
 
     @Test

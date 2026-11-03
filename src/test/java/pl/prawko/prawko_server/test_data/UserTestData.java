@@ -37,6 +37,10 @@ public class UserTestData {
     public static final String INCORRECT_PASSWORD = "Current password is incorrect.";
     public static final String PROVIDER_USER_ID = "109876543210";
     public static final String OTHER_PROVIDER_USER_ID = "otherAccountId";
+    public static final String EMAIL_TOO_LONG = "Email must be at most 254 characters.";
+    // @Email caps the local part at 64 characters, so the length comes from several domain labels.
+    public static final String LONGEST_EMAIL = "a".repeat(64) + "@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(61);
+    public static final String TOO_LONG_EMAIL = "a".repeat(64) + "@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(62);
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 

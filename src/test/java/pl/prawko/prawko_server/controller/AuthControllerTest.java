@@ -173,8 +173,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    void login_passValidation_whenEmailIsLongerThanUsernameLimit() {
-        final var request = new LoginDto("meriadoc.brandybuck@buckland.shire.me", "lembasy");
+    void login_passValidation_whenEmailHasMaximumLength() {
+        final var request = new LoginDto(UserTestData.LONGEST_EMAIL, "lembasy");
 
         restClient.post()
                 .body(request)
@@ -415,6 +415,22 @@ public class AuthControllerTest {
     }
 
     @Test
+    void forgotPassword_returnAccepted_whenEmailHasMaximumLength() {
+        forgotPassword(UserTestData.LONGEST_EMAIL);
+    }
+
+    @Test
+    void forgotPassword_returnBadRequest_whenEmailIsTooLong() {
+        restClient.post()
+                .uri(ApiConstants.FORGOT_PASSWORD)
+                .body(new ForgotPasswordRequest(UserTestData.TOO_LONG_EMAIL))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.details.email").isEqualTo(UserTestData.EMAIL_TOO_LONG);
+    }
+
+    @Test
     void forgotPassword_returnServiceUnavailable_whenTaskQueueIsFull() {
         final var release = TestUtils.blockTaskExecutor(taskExecutor);
         try {
@@ -639,6 +655,22 @@ public class AuthControllerTest {
                 .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
                 .jsonPath("$.details.email").isEqualTo("Email format is not valid.");
         verifyNoInteractions(mailSender);
+    }
+
+    @Test
+    void resendVerification_returnAccepted_whenEmailHasMaximumLength() {
+        resendVerification(UserTestData.LONGEST_EMAIL);
+    }
+
+    @Test
+    void resendVerification_returnBadRequest_whenEmailIsTooLong() {
+        restClient.post()
+                .uri(ApiConstants.RESEND_VERIFICATION)
+                .body(new ResendVerificationRequest(UserTestData.TOO_LONG_EMAIL))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.details.email").isEqualTo(UserTestData.EMAIL_TOO_LONG);
     }
 
     private AuthTokensDto login() {
