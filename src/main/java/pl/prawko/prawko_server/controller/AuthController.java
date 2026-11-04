@@ -137,7 +137,8 @@ public class AuthController {
             @ApiResponse(responseCode = "404", description = "Sign-in with GitHub is not configured"),
             @ApiResponse(responseCode = "409", description = "A user with the email exists, and GitHub doesn't host "
                     + "the email, so it can't be linked"),
-            @ApiResponse(responseCode = "503", description = "GitHub can't be reached, try again later"),
+            @ApiResponse(responseCode = "503", description = "GitHub can't be reached or rate limits the app, try again "
+                    + "later"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
     })
     @PostMapping(ApiConstants.GITHUB)

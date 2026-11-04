@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.DisabledException;
@@ -43,6 +44,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class GitHubSignInServiceTest {
 
+    private static final String RATE_LIMIT_REMAINING = "x-ratelimit-remaining";
+
     @Mock
     private IUserIdentityService userIdentityService;
 
@@ -56,11 +59,29 @@ class GitHubSignInServiceTest {
         return Stream.of(
                 Arguments.of(Named.of("server error", MockRestResponseCreators.withServerError())),
                 Arguments.of(Named.of("bad gateway", MockRestResponseCreators.withStatus(HttpStatus.BAD_GATEWAY))),
+                Arguments.of(Named.of("too many requests",
+                        MockRestResponseCreators.withStatus(HttpStatus.TOO_MANY_REQUESTS))),
+                Arguments.of(Named.of("forbidden, no requests remaining",
+                        MockRestResponseCreators.withStatus(HttpStatus.FORBIDDEN)
+                                .header(RATE_LIMIT_REMAINING, "0"))),
+                Arguments.of(Named.of("forbidden, retry later",
+                        MockRestResponseCreators.withStatus(HttpStatus.FORBIDDEN)
+                                .header(HttpHeaders.RETRY_AFTER, "60"))),
                 Arguments.of(Named.of("connection failure",
                         MockRestResponseCreators.withException(new IOException("connection refused")))),
                 Arguments.of(Named.of("malformed body", GitHubTestData.json("{not json"))),
                 Arguments.of(Named.of("empty body", MockRestResponseCreators.withSuccess()
                         .contentType(MediaType.APPLICATION_JSON)))
+        );
+    }
+
+    private static Stream<Arguments> forbiddenResponses() {
+        return Stream.of(
+                Arguments.of(Named.of("no rate limit headers",
+                        MockRestResponseCreators.withStatus(HttpStatus.FORBIDDEN))),
+                Arguments.of(Named.of("requests remaining",
+                        MockRestResponseCreators.withStatus(HttpStatus.FORBIDDEN)
+                                .header(RATE_LIMIT_REMAINING, "59")))
         );
     }
 
@@ -152,6 +173,15 @@ class GitHubSignInServiceTest {
     void signIn_throwInvalidCredential_whenAccessTokenIsRejected() {
         GitHubTestData.expectTokenExchange(github);
         GitHubTestData.expectAccount(github, MockRestResponseCreators.withUnauthorizedRequest());
+
+        assertSignInFailsWithInvalidCode();
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("forbiddenResponses")
+    void signIn_throwInvalidCredential_whenForbiddenWithoutRateLimit(final ResponseCreator response) {
+        GitHubTestData.expectTokenExchange(github);
+        GitHubTestData.expectAccount(github, response);
 
         assertSignInFailsWithInvalidCode();
     }

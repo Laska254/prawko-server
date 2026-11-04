@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ import pl.prawko.prawko_server.service.IRefreshTokenService;
 import pl.prawko.prawko_server.service.IUserIdentityService;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Implementation of {@link IGitHubSignInService} reading the account from GitHub's API.
@@ -54,7 +57,9 @@ public class GitHubSignInService implements IGitHubSignInService {
     private static final MediaType API_MEDIA_TYPE = MediaType.parseMediaType("application/vnd.github+json");
     private static final String INCORRECT_CLIENT_CREDENTIALS = "incorrect_client_credentials";
     private static final String UNVERIFIED_USER_EMAIL = "unverified_user_email";
+    private static final String RATE_LIMIT_REMAINING_HEADER = "x-ratelimit-remaining";
     private static final String INVALID_CODE = "GitHub authorization code is invalid or expired.";
+    private static final String UNAVAILABLE = "Sign-in with GitHub is unavailable, try again later.";
 
     private final boolean configured;
     private final String clientId;
@@ -100,12 +105,32 @@ public class GitHubSignInService implements IGitHubSignInService {
             });
             return toProfile(account, emails);
         } catch (final HttpClientErrorException exception) {
+            if (isRateLimited(exception)) {
+                log.warn("GitHub rate limited a sign-in request with status {}.", exception.getStatusCode());
+                throw new ProviderUnavailableException(UNAVAILABLE, exception);
+            }
             log.warn("GitHub rejected a sign-in request with status {}.", exception.getStatusCode());
             throw new InvalidProviderCredentialException(INVALID_CODE);
         } catch (final RestClientException exception) {
             log.error("GitHub account couldn't be read.", exception);
-            throw new ProviderUnavailableException("Sign-in with GitHub is unavailable, try again later.", exception);
+            throw new ProviderUnavailableException(UNAVAILABLE, exception);
         }
+    }
+
+    /**
+     * GitHub answers a rate limit with {@code 429}, or with {@code 403} and a header saying so. Any other {@code 403}
+     * is a rejected request.
+     */
+    private static boolean isRateLimited(final HttpClientErrorException exception) {
+        final var status = exception.getStatusCode();
+        if (status.isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS)) {
+            return true;
+        }
+        return status.isSameCodeAs(HttpStatus.FORBIDDEN)
+                && Optional.ofNullable(exception.getResponseHeaders())
+                .filter(headers -> headers.containsHeaderValue(RATE_LIMIT_REMAINING_HEADER, "0")
+                        || headers.containsHeader(HttpHeaders.RETRY_AFTER))
+                .isPresent();
     }
 
     /**

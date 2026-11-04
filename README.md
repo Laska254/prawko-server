@@ -214,11 +214,12 @@ client ID of the GitHub OAuth app, and sends the result to `POST /auth/github` a
 `{"code": "...", "codeVerifier": "...", "redirectUri": "..."}`, which returns the same token pair as `POST /auth`. The
 server exchanges the code with the app's client secret and reads the account's ID and primary email from the GitHub API;
 the GitHub access token is used only for that and isn't stored. A code GitHub rejects is answered with `401`, without a
-configured client ID and secret the endpoint answers `404`, and if GitHub can't be reached or answers with a server error
-`503`. The first sign-in creates a user without a password, with the GitHub login as username. The primary email must be
-verified by GitHub (otherwise `403`). If a user with that email exists the answer is `409` and nothing is linked: GitHub
-doesn't host email addresses, it verified the address only once and it may belong to someone else by now. Later sign-ins
-find the user by the GitHub account's ID alone, so renaming the login or changing the email keeps them linked.
+configured client ID and secret the endpoint answers `404`, and if GitHub can't be reached, answers with a server error
+or rate limits the app `503`. The first sign-in creates a user without a password, with the GitHub login as username. The
+primary email must be verified by GitHub (otherwise `403`). If a user with that email exists the answer is `409` and
+nothing is linked: GitHub doesn't host email addresses, it verified the address only once and it may belong to someone
+else by now. Later sign-ins find the user by the GitHub account's ID alone, so renaming the login or changing the email
+keeps them linked.
 
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 
