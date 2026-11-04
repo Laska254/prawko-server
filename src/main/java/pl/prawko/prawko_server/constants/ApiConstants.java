@@ -129,6 +129,15 @@ public final class ApiConstants {
     public static final String STATS = ME + "/stats";
 
     /**
+     * Path segment for the accounts at identity providers linked to the currently authenticated user.
+     *
+     * <p>Example: {@code /users/me/identities}
+     *
+     * @see pl.prawko.prawko_server.controller.UserController
+     */
+    public static final String IDENTITIES = ME + "/identities";
+
+    /**
      * Path segment for exchanging a refresh token for a new token pair.
      *
      * <p>Example: {@code /auth/refresh}
@@ -147,20 +156,22 @@ public final class ApiConstants {
     public static final String LOGOUT = "/logout";
 
     /**
-     * Path segment for signing in with a Google ID token.
+     * Path segment for signing in with a Google ID token, or linking its account.
      *
-     * <p>Example: {@code /auth/google}
+     * <p>Example: {@code /auth/google}, {@code /users/me/identities/google}
      *
      * @see pl.prawko.prawko_server.controller.AuthController
+     * @see pl.prawko.prawko_server.controller.UserController
      */
     public static final String GOOGLE = "/google";
 
     /**
-     * Path segment for signing in with a GitHub authorization code.
+     * Path segment for signing in with a GitHub authorization code, or linking its account.
      *
-     * <p>Example: {@code /auth/github}
+     * <p>Example: {@code /auth/github}, {@code /users/me/identities/github}
      *
      * @see pl.prawko.prawko_server.controller.AuthController
+     * @see pl.prawko.prawko_server.controller.UserController
      */
     public static final String GITHUB = "/github";
 

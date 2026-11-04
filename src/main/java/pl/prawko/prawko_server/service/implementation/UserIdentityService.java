@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.service.implementation;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,16 +75,51 @@ public class UserIdentityService implements IUserIdentityService {
         return user;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * A concurrent request linking the same account, or another account of the provider to this user, can win the race
+     * between the checks and the save. The resulting {@link DataIntegrityViolationException} is retried once in a new
+     * transaction, whose checks then report the conflict.
+     *
+     * @throws EntityNotFoundException if the user doesn't exist
+     * @throws AlreadyExistsException  if the user already has an account of the provider linked, or the account is
+     *                                 linked to another user
+     */
+    @Override
+    @Retryable(includes = DataIntegrityViolationException.class, maxRetries = 1, delay = 100)
+    @Transactional
+    public void linkIdentity(final long userId, final ProviderProfile profile) {
+        final var provider = profile.provider();
+        final var user = repository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User with id '" + userId + "' not found."));
+        if (user.hasIdentity(provider)) {
+            throw providerConflict("User is already linked to a " + provider.getDisplayName() + " account.", userId);
+        }
+        if (repository.findByIdentity(provider, profile.providerUserId())
+                .isPresent()) {
+            throw providerConflict("This " + provider.getDisplayName() + " account is already linked to another user.",
+                    userId);
+        }
+        repository.save(user.addIdentity(provider, profile.providerUserId()));
+        log.info("{} account linked to user with id '{}'.", provider, userId);
+    }
+
+    private static AlreadyExistsException providerConflict(final String message, final long userId) {
+        log.warn("{} User id: {}", message, userId);
+        return new AlreadyExistsException(message, Map.ofEntries(Map.entry("provider", message)));
+    }
+
     private User prepareForLinking(final User user, final ProviderProfile profile) {
         final var provider = profile.provider();
         if (user.hasIdentity(provider)) {
-            final var message = "User is already linked to another " + provider.getDisplayName() + " account.";
-            log.warn("{} User id: {}", message, user.getId());
-            throw new AlreadyExistsException(message, Map.ofEntries(Map.entry("provider", message)));
+            throw providerConflict("User is already linked to another " + provider.getDisplayName() + " account.",
+                    user.getId());
         }
         if (!profile.emailStatus().isAuthoritative()) {
             final var message = "User with this email already exists, and " + provider.getDisplayName()
-                    + " doesn't host the email, so the account can't be linked to it.";
+                    + " doesn't host the email, so the account can't be linked to it. Sign in with your password and"
+                    + " link " + provider.getDisplayName() + " from the account settings.";
             log.warn("{} account not linked to user with id '{}', its email isn't hosted by {}.",
                     provider, user.getId(), provider);
             throw new AlreadyExistsException(message, Map.ofEntries(Map.entry("email", message)));

@@ -27,17 +27,23 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.DeleteAccountRequest;
+import pl.prawko.prawko_server.dto.GitHubSignInRequest;
+import pl.prawko.prawko_server.dto.GoogleSignInRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.service.implementation.ExamService;
+import pl.prawko.prawko_server.service.implementation.GitHubProfileService;
+import pl.prawko.prawko_server.service.implementation.GoogleProfileService;
+import pl.prawko.prawko_server.service.implementation.UserIdentityService;
 import pl.prawko.prawko_server.service.implementation.UserService;
 
 /**
  * REST controller for user management operations.
  *
- * <p>Provides endpoints for user registration, retrieval, updating, and deletion.
+ * <p>Provides endpoints for user registration, retrieval, updating, and deletion, and for linking accounts at identity
+ * providers.
  */
 @Tag(name = "Users", description = "User management endpoints")
 @Validated
@@ -47,10 +53,20 @@ public class UserController {
 
     private final UserService userService;
     private final ExamService examService;
+    private final GoogleProfileService googleProfileService;
+    private final GitHubProfileService gitHubProfileService;
+    private final UserIdentityService userIdentityService;
 
-    public UserController(final UserService userService, final ExamService examService) {
+    public UserController(final UserService userService,
+                          final ExamService examService,
+                          final GoogleProfileService googleProfileService,
+                          final GitHubProfileService gitHubProfileService,
+                          final UserIdentityService userIdentityService) {
         this.userService = userService;
         this.examService = examService;
+        this.googleProfileService = googleProfileService;
+        this.gitHubProfileService = gitHubProfileService;
+        this.userIdentityService = userIdentityService;
     }
 
     /**
@@ -222,6 +238,61 @@ public class UserController {
     public ResponseEntity<Void> deleteOwnAccount(@AuthenticationPrincipal(expression = "id") final long userId,
                                                  @Valid @RequestBody final DeleteAccountRequest request) {
         userService.deleteOwnAccount(userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Links a Google account to the currently authenticated user, who can then sign in with it.
+     *
+     * <p>The account's email doesn't have to match the user's.
+     *
+     * @param userId  the ID of the currently authenticated user
+     * @param request the {@link GoogleSignInRequest} containing the ID token
+     * @return a {@link ResponseEntity} with HTTP 204 No Content
+     */
+    @Operation(summary = "Link a Google account",
+            description = "Verifies a Google ID token and links its account to the authenticated user. The account's "
+                    + "email doesn't have to match the user's.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Google account linked successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid argument"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated, or invalid or expired ID token, or issued for another client"),
+            @ApiResponse(responseCode = "404", description = "Sign-in with Google is not configured"),
+            @ApiResponse(responseCode = "409", description = "The Google account is linked to another user, or the user already has one linked"),
+            @ApiResponse(responseCode = "503", description = "Google can't be reached, try again later")
+    })
+    @PostMapping(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
+    public ResponseEntity<Void> linkGoogle(@AuthenticationPrincipal(expression = "id") final long userId,
+                                           @Valid @RequestBody final GoogleSignInRequest request) {
+        userIdentityService.linkIdentity(userId, googleProfileService.fetchProfile(request.idToken()));
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Links a GitHub account to the currently authenticated user, who can then sign in with it.
+     *
+     * <p>The account's email doesn't have to match the user's.
+     *
+     * @param userId  the ID of the currently authenticated user
+     * @param request the {@link GitHubSignInRequest} containing the code, its PKCE verifier and redirect URI
+     * @return a {@link ResponseEntity} with HTTP 204 No Content
+     */
+    @Operation(summary = "Link a GitHub account",
+            description = "Exchanges a GitHub authorization code and links its account to the authenticated user. The "
+                    + "account's email doesn't have to match the user's.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "GitHub account linked successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid argument"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated, or invalid or used authorization code"),
+            @ApiResponse(responseCode = "403", description = "GitHub refused the code over an unverified primary email"),
+            @ApiResponse(responseCode = "404", description = "Sign-in with GitHub is not configured"),
+            @ApiResponse(responseCode = "409", description = "The GitHub account is linked to another user, or the user already has one linked"),
+            @ApiResponse(responseCode = "503", description = "GitHub can't be reached or rate limits the app, try again later")
+    })
+    @PostMapping(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
+    public ResponseEntity<Void> linkGitHub(@AuthenticationPrincipal(expression = "id") final long userId,
+                                           @Valid @RequestBody final GitHubSignInRequest request) {
+        userIdentityService.linkIdentity(userId, gitHubProfileService.fetchProfile(request));
         return ResponseEntity.noContent().build();
     }
 

@@ -23,7 +23,9 @@ public class GitHubTestData {
     public static final String GITHUB_NOT_AVAILABLE = "Sign-in with GitHub is not available.";
     public static final String GITHUB_UNAVAILABLE = "Sign-in with GitHub is unavailable, try again later.";
     public static final String EMAIL_NOT_HOSTED = "User with this email already exists, and GitHub doesn't host the "
-            + "email, so the account can't be linked to it.";
+            + "email, so the account can't be linked to it. Sign in with your password and link GitHub from the "
+            + "account settings.";
+    public static final String ALREADY_LINKED = "User is already linked to a GitHub account.";
     public static final String BAD_CODE_RESPONSE = """
             {"error": "bad_verification_code", "error_description": "The code passed is incorrect or expired."}""";
     public static final String BAD_CLIENT_RESPONSE = """

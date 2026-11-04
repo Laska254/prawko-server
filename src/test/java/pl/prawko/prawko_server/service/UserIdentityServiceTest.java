@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Named;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -263,6 +265,73 @@ class UserIdentityServiceTest {
 
         assertThat(output).contains("GOOGLE account linked to user with id")
                 .doesNotContain(profile.email(), profile.providerUserId(), profile.suggestedUserName());
+    }
+
+    @Test
+    void linkIdentity_addIdentityKeepingUser_whenEmailDiffersAndIsNotVerified() {
+        final var merry = UserTestData.createMerry().setId(7L);
+        final var email = merry.getEmail();
+        final var password = merry.getPassword();
+        when(repository.findById(merry.getId())).thenReturn(Optional.of(merry));
+
+        service.linkIdentity(merry.getId(), withEmail(profile.email(), EmailStatus.UNVERIFIED));
+
+        assertThat(merry.getEmail()).isEqualTo(email);
+        assertThat(merry.getPassword()).isEqualTo(password);
+        assertLinked(merry);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {UserTestData.PROVIDER_USER_ID, UserTestData.OTHER_PROVIDER_USER_ID})
+    void linkIdentity_throwAlreadyExistsAndNotSave_whenUserHasAccountOfProvider(final String linkedAccount) {
+        final var user = UserTestData.createTestUserPippin()
+                .setId(7L)
+                .addIdentity(PROVIDER, linkedAccount);
+        when(repository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.linkIdentity(user.getId(), profile))
+                .isInstanceOf(AlreadyExistsException.class)
+                .hasMessage(GoogleTestData.ALREADY_LINKED);
+
+        assertThat(user.getIdentities()).hasSize(1);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void linkIdentity_addIdentity_whenUserHasOnlyAccountOfOtherProvider() {
+        final var user = UserTestData.createTestUserPippin()
+                .setId(7L)
+                .addIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID);
+        when(repository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        service.linkIdentity(user.getId(), profile);
+
+        assertThat(user.hasIdentity(PROVIDER)).isTrue();
+        verify(repository).save(user);
+    }
+
+    @Test
+    void linkIdentity_throwAlreadyExistsAndNotSave_whenAccountIsLinkedToOtherUser() {
+        final var user = UserTestData.createTestUserPippin().setId(7L);
+        when(repository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(repository.findByIdentity(PROVIDER, profile.providerUserId()))
+                .thenReturn(Optional.of(UserTestData.createGooglePippin().setId(8L)));
+
+        assertThatThrownBy(() -> service.linkIdentity(user.getId(), profile))
+                .isInstanceOf(AlreadyExistsException.class)
+                .hasMessage(GoogleTestData.LINKED_TO_OTHER_USER);
+
+        assertThat(user.getIdentities()).isEmpty();
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void linkIdentity_throwEntityNotFound_whenUserDoesNotExist() {
+        when(repository.findById(7L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.linkIdentity(7L, profile))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage(UserTestData.userNotFoundMessage(7L));
     }
 
     private void stubNewUser() {

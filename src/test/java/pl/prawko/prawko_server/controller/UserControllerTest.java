@@ -16,25 +16,32 @@ import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestAuth;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.dto.AuthTokensDto;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.DeleteAccountRequest;
+import pl.prawko.prawko_server.dto.GitHubSignInRequest;
+import pl.prawko.prawko_server.dto.GoogleSignInRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.QuestionType;
+import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.repository.RefreshTokenRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.ExamTestData;
+import pl.prawko.prawko_server.test_data.GitHubTestData;
+import pl.prawko.prawko_server.test_data.GoogleTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.RefreshTokenTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
@@ -84,6 +91,9 @@ public class UserControllerTest {
 
     @LocalServerPort
     private int port;
+
+    @Autowired
+    private MockRestServiceServer github;
 
     private RestTestClient restClient;
 
@@ -1195,6 +1205,242 @@ public class UserControllerTest {
     }
 
     @Nested
+    class LinkGoogle {
+
+        private final String idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims());
+
+        @Test
+        void returnNoContentAndAllowSignIn_whenEmailDiffers() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin()
+                    .setEmail(UserTestData.createMerry().getEmail()));
+
+            link(idToken)
+                    .expectStatus().isNoContent();
+
+            final var tokens = signIn(ApiConstants.GOOGLE, new GoogleSignInRequest(idToken));
+            assertThat(tokenOwnerId(tokens)).isEqualTo(tester.getId());
+            assertThat(userRepository.count()).isOne();
+        }
+
+        @Test
+        void returnNoContent_whenAdmin() {
+            final var admin = userRepository.save(UserTestData.createGimli());
+
+            restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
+                    .headers(auth::admin)
+                    .body(new GoogleSignInRequest(idToken))
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .get().extracting(User::getId).isEqualTo(admin.getId());
+        }
+
+        @Test
+        void returnConflict_whenAccountIsLinkedToOtherUser() {
+            final var merry = userRepository.save(UserTestData.createMerry()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            link(idToken)
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GoogleTestData.LINKED_TO_OTHER_USER)
+                    .jsonPath("$.details.provider").isEqualTo(GoogleTestData.LINKED_TO_OTHER_USER);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .get().extracting(User::getId).isEqualTo(merry.getId());
+        }
+
+        @Test
+        void returnConflict_whenUserHasGoogleLinked() {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.OTHER_PROVIDER_USER_ID));
+
+            link(idToken)
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GoogleTestData.ALREADY_LINKED)
+                    .jsonPath("$.details.provider").isEqualTo(GoogleTestData.ALREADY_LINKED);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnUnauthorizedAndNotLink_whenIdTokenIsInvalid() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            link("not-a-jwt")
+                    .expectStatus().isUnauthorized()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GoogleTestData.INVALID_ID_TOKEN);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnBadRequest_whenBodyIsMissing() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
+                    .headers(auth::user)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+        }
+
+        @Test
+        void returnBadRequest_whenIdTokenIsBlank() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            link(" ")
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED);
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
+                    .body(new GoogleSignInRequest(idToken))
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+        private RestTestClient.ResponseSpec link(final String token) {
+            return restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
+                    .headers(auth::user)
+                    .body(new GoogleSignInRequest(token))
+                    .exchange();
+        }
+
+    }
+
+    @Nested
+    class LinkGitHub {
+
+        private final GitHubSignInRequest request = GitHubTestData.createValidRequest();
+
+        @Test
+        void returnNoContentAndAllowSignIn_whenEmailDiffers() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin()
+                    .setEmail(UserTestData.createMerry().getEmail()));
+            GitHubTestData.expectSignIn(github);
+            GitHubTestData.expectSignIn(github);
+
+            link()
+                    .expectStatus().isNoContent();
+
+            final var tokens = signIn(ApiConstants.GITHUB, request);
+            assertThat(tokenOwnerId(tokens)).isEqualTo(tester.getId());
+            assertThat(userRepository.count()).isOne();
+            github.verify();
+        }
+
+        @Test
+        void returnNoContent_whenPrimaryEmailIsNotVerified() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            GitHubTestData.expectSignInWithUnverifiedEmail(github);
+
+            link()
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID))
+                    .get().extracting(User::getId).isEqualTo(tester.getId());
+        }
+
+        @Test
+        void returnConflict_whenUserHasGitHubLinked() {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID));
+            GitHubTestData.expectSignIn(github);
+
+            link()
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GitHubTestData.ALREADY_LINKED);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnUnauthorizedAndNotLink_whenCodeIsRejected() {
+            userRepository.save(UserTestData.createTestUserPippin());
+            GitHubTestData.expectTokenExchange(github, GitHubTestData.json(GitHubTestData.BAD_CODE_RESPONSE));
+
+            link()
+                    .expectStatus().isUnauthorized()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GitHubTestData.INVALID_CODE);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnForbiddenAndNotLink_whenExchangeRefusesUnverifiedEmail() {
+            userRepository.save(UserTestData.createTestUserPippin());
+            GitHubTestData.expectTokenExchange(github, GitHubTestData.json(GitHubTestData.UNVERIFIED_EMAIL_RESPONSE));
+
+            link()
+                    .expectStatus().isForbidden()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.EMAIL_NOT_VERIFIED);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnBadRequest_whenBodyIsMissing() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
+                    .headers(auth::user)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+        }
+
+        @Test
+        void returnBadRequest_whenFieldsAreBlank() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
+                    .headers(auth::user)
+                    .body(new GitHubSignInRequest(" ", " ", " "))
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED);
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
+                    .body(request)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+        private RestTestClient.ResponseSpec link() {
+            return restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
+                    .headers(auth::user)
+                    .body(request)
+                    .exchange();
+        }
+
+    }
+
+    @Nested
     class DeleteUser {
 
         @Test
@@ -1268,6 +1514,25 @@ public class UserControllerTest {
                 .body(registerDto)
                 .exchangeSuccessfully();
         return userRepository.findAll().getFirst().getId();
+    }
+
+    private AuthTokensDto signIn(final String path, final Object request) {
+        return TestUtils.createRestTestClient(port, ApiConstants.AUTH_BASE_URL)
+                .post()
+                .uri(path)
+                .body(request)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AuthTokensDto.class)
+                .returnResult()
+                .getResponseBody();
+    }
+
+    private long tokenOwnerId(final AuthTokensDto tokens) {
+        return refreshTokenRepository.findByTokenHash(SecureTokens.hash(tokens.refreshToken()))
+                .orElseThrow()
+                .getUser()
+                .getId();
     }
 
 }
