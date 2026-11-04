@@ -70,3 +70,7 @@ email-verification:
 google:
   client-ids: ""
   jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+
+github:
+  client-id: ""
+  client-secret: ""
