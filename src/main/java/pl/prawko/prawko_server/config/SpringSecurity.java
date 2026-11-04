@@ -59,6 +59,7 @@ import java.util.List;
  * <p>Authorization rules:
  * <ul>
  *     <li>Public: {@code POST /auth} (login), {@code POST /auth/refresh} (new token pair), {@code POST /auth/logout},
+ *     {@code POST /auth/google} (sign-in with Google),
  *     {@code POST /auth/password/forgot} and {@code POST /auth/password/reset} (password reset),
  *     {@code POST /auth/verify} and {@code POST /auth/verify/resend} (email verification),
  *     {@code POST /users} (registration)</li>
@@ -242,6 +243,7 @@ public class SpringSecurity {
                         ApiConstants.AUTH_BASE_URL,
                         ApiConstants.AUTH_BASE_URL + ApiConstants.REFRESH,
                         ApiConstants.AUTH_BASE_URL + ApiConstants.LOGOUT,
+                        ApiConstants.AUTH_BASE_URL + ApiConstants.GOOGLE,
                         ApiConstants.AUTH_BASE_URL + ApiConstants.FORGOT_PASSWORD,
                         ApiConstants.AUTH_BASE_URL + ApiConstants.RESET_PASSWORD,
                         ApiConstants.AUTH_BASE_URL + ApiConstants.VERIFY_EMAIL,
