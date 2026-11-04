@@ -103,11 +103,13 @@ public class GitHubTestData {
     }
 
     public static void expectAccount(final MockRestServiceServer github, final ResponseCreator response) {
-        expectApiRequest(github, USER_URI).andRespond(response);
+        expectApiRequest(github, USER_URI)
+                .andRespond(response);
     }
 
     public static void expectEmails(final MockRestServiceServer github, final ResponseCreator response) {
-        expectApiRequest(github, EMAILS_URI).andRespond(response);
+        expectApiRequest(github, EMAILS_URI)
+                .andRespond(response);
     }
 
     /**
