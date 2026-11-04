@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.config;
 
+import org.springframework.boot.restclient.test.autoconfigure.AutoConfigureMockRestServiceServer;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.mail.MailSender;
@@ -13,6 +14,7 @@ import java.lang.annotation.RetentionPolicy;
 @ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
 @MockitoBean(types = MailSender.class)
+@AutoConfigureMockRestServiceServer
 @Retention(RetentionPolicy.RUNTIME)
 public @interface IntegrationTest {
 }

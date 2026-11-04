@@ -23,12 +23,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.AuthTokensDto;
 import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
+import pl.prawko.prawko_server.dto.GitHubSignInRequest;
 import pl.prawko.prawko_server.dto.GoogleSignInRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
 import pl.prawko.prawko_server.dto.RefreshTokenRequest;
@@ -40,6 +43,7 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.RefreshTokenRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
+import pl.prawko.prawko_server.test_data.GitHubTestData;
 import pl.prawko.prawko_server.test_data.GoogleTestData;
 import pl.prawko.prawko_server.test_data.RefreshTokenTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
@@ -88,6 +92,9 @@ public class AuthControllerTest {
 
     @Autowired
     private JwtEncoder jwtEncoder;
+
+    @Autowired
+    private MockRestServiceServer github;
 
     @Value("${password-reset.cooldown}")
     private Duration cooldown;
@@ -477,6 +484,125 @@ public class AuthControllerTest {
     }
 
     @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void signInWithGitHub_createUserAndReturnTokens_whenAccountIsNew(final CapturedOutput output) {
+        final var pippin = UserTestData.createTestUserPippin();
+        GitHubTestData.expectSignIn(github, true);
+
+        final var tokens = signInWithGitHub(GitHubTestData.createValidRequest())
+                .expectStatus().isOk()
+                .expectBody(AuthTokensDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        github.verify();
+        final var created = userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)
+                .orElseThrow();
+        assertThat(created.getUserName()).isEqualTo(pippin.getUserName());
+        assertThat(created.getEmail()).isEqualTo(pippin.getEmail());
+        assertThat(created.getFirstName()).isEqualTo(pippin.getFirstName());
+        assertThat(created.getLastName()).isEqualTo(pippin.getLastName());
+        assertThat(created.getPassword()).isNull();
+        assertThat(created.isEnabled()).isTrue();
+        getMe(tokens.accessToken())
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(created.getId());
+        assertThat(output).contains("user with id '" + created.getId() + "'")
+                .doesNotContain(pippin.getEmail(), GitHubTestData.ACCESS_TOKEN, GitHubTestData.CLIENT_SECRET);
+    }
+
+    @Test
+    void signInWithGitHub_returnTokensOfLinkedUser_whenEmailDiffers() {
+        final var merry = userRepository.save(UserTestData.createMerry()
+                .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));
+        GitHubTestData.expectSignIn(github, true);
+
+        final var tokens = signInWithGitHub(GitHubTestData.createValidRequest())
+                .expectStatus().isOk()
+                .expectBody(AuthTokensDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertThat(refreshTokenRepository.findByTokenHash(SecureTokens.hash(tokens.refreshToken())))
+                .get().extracting(token -> token.getUser().getId()).isEqualTo(merry.getId());
+        assertThat(userRepository.count()).isOne();
+    }
+
+    @Test
+    void signInWithGitHub_returnConflictAndNotLink_whenUserHasEmail() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+        GitHubTestData.expectSignIn(github, true);
+
+        signInWithGitHub(GitHubTestData.createValidRequest())
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(GitHubTestData.EMAIL_NOT_HOSTED)
+                .jsonPath("$.details.email").isEqualTo(GitHubTestData.EMAIL_NOT_HOSTED);
+
+        assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        assertThat(userRepository.findById(tester.getId()))
+                .get().extracting(User::getPassword).isEqualTo(tester.getPassword());
+    }
+
+    @Test
+    void signInWithGitHub_returnUnauthorized_whenCodeIsRejected() {
+        GitHubTestData.expectTokenExchange(github, GitHubTestData.json(GitHubTestData.BAD_CODE_RESPONSE));
+
+        signInWithGitHub(GitHubTestData.createValidRequest())
+                .expectStatus().isUnauthorized()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(GitHubTestData.INVALID_CODE);
+
+        assertThat(userRepository.count()).isZero();
+    }
+
+    @Test
+    void signInWithGitHub_returnForbidden_whenPrimaryEmailIsNotVerified() {
+        GitHubTestData.expectSignIn(github, false);
+
+        signInWithGitHub(GitHubTestData.createValidRequest())
+                .expectStatus().isForbidden()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(UserTestData.EMAIL_NOT_VERIFIED);
+
+        assertThat(userRepository.count()).isZero();
+    }
+
+    @Test
+    void signInWithGitHub_returnServiceUnavailable_whenGitHubFails() {
+        GitHubTestData.expectTokenExchange(github, MockRestResponseCreators.withServerError());
+
+        signInWithGitHub(GitHubTestData.createValidRequest())
+                .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(GitHubTestData.GITHUB_UNAVAILABLE);
+
+        assertThat(userRepository.count()).isZero();
+    }
+
+    @Test
+    void signInWithGitHub_returnBadRequest_whenBodyIsMissing() {
+        restClient.post()
+                .uri(ApiConstants.GITHUB)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+    }
+
+    @Test
+    void signInWithGitHub_returnBadRequest_whenFieldsAreBlank() {
+        signInWithGitHub(new GitHubSignInRequest(" ", " ", " "))
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
+                .jsonPath("$.details.code").isEqualTo("Authorization code is required.")
+                .jsonPath("$.details.codeVerifier").isEqualTo("Code verifier is required.")
+                .jsonPath("$.details.redirectUri").isEqualTo("Redirect URI is required.");
+    }
+
+    @Test
     void forgotPassword_returnAcceptedAndEmailResetLink_whenEmailExists() {
         final var tester = userRepository.save(UserTestData.createTestUserPippin());
 
@@ -860,6 +986,13 @@ public class AuthControllerTest {
         return restClient.post()
                 .uri(ApiConstants.GOOGLE)
                 .body(new GoogleSignInRequest(idToken))
+                .exchange();
+    }
+
+    private RestTestClient.ResponseSpec signInWithGitHub(final GitHubSignInRequest request) {
+        return restClient.post()
+                .uri(ApiConstants.GITHUB)
+                .body(request)
                 .exchange();
     }
 

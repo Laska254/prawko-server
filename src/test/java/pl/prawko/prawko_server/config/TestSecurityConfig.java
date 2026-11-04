@@ -11,6 +11,7 @@ import org.springframework.test.context.DynamicPropertyRegistrar;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IAccessTokenService;
+import pl.prawko.prawko_server.test_data.GitHubTestData;
 import pl.prawko.prawko_server.test_data.GoogleTestData;
 
 import java.io.IOException;
@@ -65,6 +66,18 @@ public class TestSecurityConfig {
             registry.add("google.jwk-set-uri", googleJwksStub::url);
             registry.add("google.client-ids",
                     () -> String.join(",", GoogleTestData.ANDROID_CLIENT_ID, GoogleTestData.WEB_CLIENT_ID));
+        };
+    }
+
+    /**
+     * Enables GitHub sign-in for the {@link GitHubTestData} client; its requests go to the auto-configured
+     * {@link org.springframework.test.web.client.MockRestServiceServer}.
+     */
+    @Bean
+    public DynamicPropertyRegistrar gitHubProperties() {
+        return registry -> {
+            registry.add("github.client-id", () -> GitHubTestData.CLIENT_ID);
+            registry.add("github.client-secret", () -> GitHubTestData.CLIENT_SECRET);
         };
     }
 
