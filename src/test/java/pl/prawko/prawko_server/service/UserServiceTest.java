@@ -74,7 +74,7 @@ class UserServiceTest {
     @Test
     void register_success_whenUserNotExists() {
         final var user = new User();
-        when(repository.existsByUserName(registerDto.userName())).thenReturn(false);
+        when(repository.existsByUserNameIgnoreCase(registerDto.userName())).thenReturn(false);
         when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(false);
         when(mapper.fromDto(registerDto)).thenReturn(user);
 
@@ -103,7 +103,7 @@ class UserServiceTest {
 
     @Test
     void register_notSendVerificationEmail_whenUserAlreadyExists() {
-        when(repository.existsByUserName(registerDto.userName())).thenReturn(true);
+        when(repository.existsByUserNameIgnoreCase(registerDto.userName())).thenReturn(true);
 
         assertThatThrownBy(() -> service.register(registerDto)).isInstanceOf(AlreadyExistsException.class);
 
@@ -113,7 +113,7 @@ class UserServiceTest {
     @Test
     void register_throwAlreadyExists_whenExistsByUserName() {
         final var field = "userName";
-        when(repository.existsByUserName(registerDto.userName())).thenReturn(true);
+        when(repository.existsByUserNameIgnoreCase(registerDto.userName())).thenReturn(true);
         when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(false);
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.register(registerDto);
@@ -130,7 +130,7 @@ class UserServiceTest {
     @Test
     void register_throwAlreadyExists_whenExistsByEmail() {
         final var field = "email";
-        when(repository.existsByUserName(registerDto.userName())).thenReturn(false);
+        when(repository.existsByUserNameIgnoreCase(registerDto.userName())).thenReturn(false);
         when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(true);
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.register(registerDto);
@@ -146,7 +146,7 @@ class UserServiceTest {
 
     @Test
     void register_throwAlreadyExists_whenUserNameAndEmailExists() {
-        when(repository.existsByUserName(registerDto.userName())).thenReturn(true);
+        when(repository.existsByUserNameIgnoreCase(registerDto.userName())).thenReturn(true);
         when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(true);
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.register(registerDto);
@@ -240,7 +240,7 @@ class UserServiceTest {
         final var updatedUserDto = UserTestData.createUpdatedUserDto(givenId);
         final var user = tester.setId(givenId);
         when(repository.findById(givenId)).thenReturn(Optional.of(user));
-        when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(false);
+        when(repository.existsByUserNameIgnoreCase(updateUserRequest.userName())).thenReturn(false);
         when(repository.existsByEmailIgnoreCase(updateUserRequest.email())).thenReturn(false);
         when(repository.save(user)).thenReturn(user);
         when(mapper.toDto(user)).thenReturn(updatedUserDto);
@@ -250,7 +250,7 @@ class UserServiceTest {
         assertThat(result).isEqualTo(updatedUserDto);
         verify(repository).findById(givenId);
         verify(repository).save(user);
-        verify(repository).existsByUserName(updateUserRequest.userName());
+        verify(repository).existsByUserNameIgnoreCase(updateUserRequest.userName());
         verify(repository).existsByEmailIgnoreCase(updateUserRequest.email());
         verify(mapper).toDto(user);
         verifyNoMoreInteractions(repository, mapper);
@@ -274,14 +274,14 @@ class UserServiceTest {
         service.updateUser(givenId, updateUserRequest);
 
         assertThat(tester.getEmail()).isEqualTo(email);
-        assertThat(tester.getPendingEmail()).isEqualTo(updateUserRequest.email());
+        assertThat(tester.getPendingEmail()).isEqualTo(UserTestData.STORED_UPDATED_EMAIL);
         assertThat(tester.getPasswordResetTokenHash()).isEqualTo(resetHash);
         final var order = inOrder(emailVerificationService, repository);
         order.verify(emailVerificationService).issueToken(tester);
         order.verify(emailVerificationService).issueCurrentEmailToken(tester);
         order.verify(repository).save(tester);
         order.verify(emailVerificationService)
-                .sendEmailChangeConfirmation(givenId, email, updateUserRequest.email(), token, currentEmailToken);
+                .sendEmailChangeConfirmation(givenId, email, UserTestData.STORED_UPDATED_EMAIL, token, currentEmailToken);
     }
 
     @Test
@@ -370,14 +370,14 @@ class UserServiceTest {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createInvalidUserUpdateRequest();
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
-        when(repository.existsByUserName(updateUserRequest.userName())).thenReturn(true);
+        when(repository.existsByUserNameIgnoreCase(updateUserRequest.userName())).thenReturn(true);
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
         verify(repository).findById(givenId);
-        verify(repository).existsByUserName(updateUserRequest.userName());
+        verify(repository).existsByUserNameIgnoreCase(updateUserRequest.userName());
         verifyNoInteractions(mapper);
     }
 
@@ -621,7 +621,7 @@ class UserServiceTest {
     @Test
     void loadUserByUsername_returnUserDetails_whenUserExists() {
         final var user = tester.setId(7L).setRole(Role.USER);
-        when(repository.findByUserNameOrEmailIgnoreCase("pippin", "pippin")).thenReturn(Optional.of(user));
+        when(repository.findByUserNameOrEmailAllIgnoreCase("pippin", "pippin")).thenReturn(Optional.of(user));
 
         final var result = service.loadUserByUsername("pippin");
 
@@ -638,7 +638,7 @@ class UserServiceTest {
     @Test
     void loadUserByUsername_returnDisabledUserDetails_whenEmailIsNotVerified() {
         final var user = UserTestData.createUnverifiedPippin().setId(7L);
-        when(repository.findByUserNameOrEmailIgnoreCase(user.getUserName(), user.getUserName())).thenReturn(Optional.of(user));
+        when(repository.findByUserNameOrEmailAllIgnoreCase(user.getUserName(), user.getUserName())).thenReturn(Optional.of(user));
 
         final var result = service.loadUserByUsername(user.getUserName());
 
@@ -647,7 +647,7 @@ class UserServiceTest {
 
     @Test
     void loadUserByUsername_throwException_whenUserNotExists() {
-        when(repository.findByUserNameOrEmailIgnoreCase("nobody", "nobody")).thenReturn(Optional.empty());
+        when(repository.findByUserNameOrEmailAllIgnoreCase("nobody", "nobody")).thenReturn(Optional.empty());
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.loadUserByUsername("nobody");
 
@@ -659,7 +659,7 @@ class UserServiceTest {
     @Test
     void loadUserByUsername_throwException_whenUserHasNoPassword() {
         final var passwordless = UserTestData.createGooglePippin().setId(7L);
-        when(repository.findByUserNameOrEmailIgnoreCase(passwordless.getUserName(), passwordless.getUserName()))
+        when(repository.findByUserNameOrEmailAllIgnoreCase(passwordless.getUserName(), passwordless.getUserName()))
                 .thenReturn(Optional.of(passwordless));
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.loadUserByUsername(passwordless.getUserName());
@@ -671,7 +671,7 @@ class UserServiceTest {
 
     @Test
     void loadUserByUsername_logUserIdOnly_whenLoggingInByEmail(final CapturedOutput output) {
-        when(repository.findByUserNameOrEmailIgnoreCase(tester.getEmail(), tester.getEmail()))
+        when(repository.findByUserNameOrEmailAllIgnoreCase(tester.getEmail(), tester.getEmail()))
                 .thenReturn(Optional.of(tester.setId(7L).setRole(Role.USER)));
 
         service.loadUserByUsername(tester.getEmail());
@@ -682,7 +682,7 @@ class UserServiceTest {
 
     @Test
     void loadUserByUsername_notLogAttemptedLogin_whenUserNotExists(final CapturedOutput output) {
-        when(repository.findByUserNameOrEmailIgnoreCase(tester.getEmail(), tester.getEmail())).thenReturn(Optional.empty());
+        when(repository.findByUserNameOrEmailAllIgnoreCase(tester.getEmail(), tester.getEmail())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.loadUserByUsername(tester.getEmail()))
                 .isInstanceOf(UsernameNotFoundException.class);

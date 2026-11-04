@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
+import pl.prawko.prawko_server.controller.ExceptionController;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.model.UserIdentity;
@@ -14,9 +15,11 @@ import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -40,14 +43,14 @@ class UserRepositoryTest {
     }
 
     @Test
-    void existsByUserName_returnTrue_whenUserNameExists() {
-        final var result = repository.existsByUserName(tester.getUserName());
+    void existsByUserNameIgnoreCase_returnTrue_whenUserNameExists() {
+        final var result = repository.existsByUserNameIgnoreCase(tester.getUserName());
         assertThat(result).isTrue();
     }
 
     @Test
-    void existsByUserName_returnFalse_whenUserNameDoesNotExist() {
-        final var result = repository.existsByUserName(wrongUserName);
+    void existsByUserNameIgnoreCase_returnFalse_whenUserNameDoesNotExist() {
+        final var result = repository.existsByUserNameIgnoreCase(wrongUserName);
         assertThat(result).isFalse();
     }
 
@@ -64,26 +67,26 @@ class UserRepositoryTest {
     }
 
     @Test
-    void findByUserNameOrEmailIgnoreCase_returnUser_whenFoundByUserName() {
-        final var result = repository.findByUserNameOrEmailIgnoreCase(tester.getUserName(), tester.getUserName());
+    void findByUserNameOrEmailAllIgnoreCase_returnUser_whenFoundByUserName() {
+        final var result = repository.findByUserNameOrEmailAllIgnoreCase(tester.getUserName(), tester.getUserName());
         assertThat(result.get().getUserName()).isEqualTo(tester.getUserName());
     }
 
     @Test
-    void findByUserNameOrEmailIgnoreCase_returnUser_whenFoundByEmail() {
-        final var result = repository.findByUserNameOrEmailIgnoreCase(tester.getEmail(), tester.getEmail());
+    void findByUserNameOrEmailAllIgnoreCase_returnUser_whenFoundByEmail() {
+        final var result = repository.findByUserNameOrEmailAllIgnoreCase(tester.getEmail(), tester.getEmail());
         assertThat(result.get().getEmail()).isEqualTo(tester.getEmail());
     }
 
     @Test
-    void findByUserNameOrEmailIgnoreCase_returnEmpty_whenNotFoundByUserName() {
-        final var result = repository.findByUserNameOrEmailIgnoreCase(wrongUserName, wrongUserName);
+    void findByUserNameOrEmailAllIgnoreCase_returnEmpty_whenNotFoundByUserName() {
+        final var result = repository.findByUserNameOrEmailAllIgnoreCase(wrongUserName, wrongUserName);
         assertThat(result).isEmpty();
     }
 
     @Test
-    void findByUserNameOrEmailIgnoreCase_returnEmpty_whenNotFoundByEmail() {
-        final var result = repository.findByUserNameOrEmailIgnoreCase(wrongEmail, wrongEmail);
+    void findByUserNameOrEmailAllIgnoreCase_returnEmpty_whenNotFoundByEmail() {
+        final var result = repository.findByUserNameOrEmailAllIgnoreCase(wrongEmail, wrongEmail);
         assertThat(result).isEmpty();
     }
 
@@ -211,7 +214,8 @@ class UserRepositoryTest {
     @Test
     void deleteByEnabledFalseAndVerificationTokenExpiresBefore_deleteOnlyUnverifiedUsers_whenTokenExpired() {
         final var now = Instant.now();
-        final var expired = repository.save(UserTestData.createUnverifiedPippin()
+        final var expired = repository.save(UserTestData.createGimli()
+                .setEnabled(false)
                 .setVerificationTokenExpires(now.minus(Duration.ofMinutes(1))));
         final var pending = repository.save(UserTestData.createMerry()
                 .setEnabled(false)
@@ -233,17 +237,60 @@ class UserRepositoryTest {
     }
 
     @Test
-    void findByUserNameOrEmailIgnoreCase_returnUser_whenEmailCaseDiffers() {
+    void findByUserNameOrEmailAllIgnoreCase_returnUser_whenEmailCaseDiffers() {
         final var input = "Pippin@Shire.ME";
-        final var result = repository.findByUserNameOrEmailIgnoreCase(input, input);
+        final var result = repository.findByUserNameOrEmailAllIgnoreCase(input, input);
         assertThat(result).get().extracting(User::getEmail).isEqualTo(tester.getEmail());
     }
 
     @Test
-    void findByUserNameOrEmailIgnoreCase_returnEmpty_whenUserNameCaseDiffers() {
+    void findByUserNameOrEmailAllIgnoreCase_returnUser_whenUserNameCaseDiffers() {
         final var input = tester.getUserName().toUpperCase();
-        final var result = repository.findByUserNameOrEmailIgnoreCase(input, input);
-        assertThat(result).isEmpty();
+        final var result = repository.findByUserNameOrEmailAllIgnoreCase(input, input);
+        assertThat(result).get().extracting(User::getId).isEqualTo(tester.getId());
+    }
+
+    @Test
+    void existsByUserNameIgnoreCase_returnTrue_whenCaseDiffers() {
+        final var result = repository.existsByUserNameIgnoreCase(tester.getUserName().toUpperCase());
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void saveAndFlush_throwDataIntegrityViolationHandledAsConflict_whenUserNameIsTaken() {
+        final var merry = UserTestData.createMerry().setUserName(tester.getUserName());
+
+        final var exception = catchThrowableOfType(DataIntegrityViolationException.class,
+                () -> repository.saveAndFlush(merry));
+
+        final var problem = new ExceptionController().handleDataIntegrityViolation(exception);
+        assertThat(problem.getProperties())
+                .containsEntry("details", Map.ofEntries(Map.entry("userName", UserTestData.USER_NAME_TAKEN)));
+    }
+
+    @Test
+    void saveAndFlush_throwDataIntegrityViolationHandledAsConflict_whenEmailDiffersOnlyInCase() {
+        final var merry = UserTestData.createMerry().setEmail(tester.getEmail().toUpperCase());
+
+        final var exception = catchThrowableOfType(DataIntegrityViolationException.class,
+                () -> repository.saveAndFlush(merry));
+
+        final var problem = new ExceptionController().handleDataIntegrityViolation(exception);
+        assertThat(problem.getProperties())
+                .containsEntry("details", Map.ofEntries(Map.entry("email", UserTestData.EMAIL_TAKEN)));
+    }
+
+    @Test
+    void saveAndFlush_storeEmailsLowercased_whenGivenInMixedCase() {
+        final var merry = UserTestData.createMerry();
+        final var email = merry.getEmail();
+        repository.saveAndFlush(merry.setEmail(email.toUpperCase()).setPendingEmail(email.toUpperCase()));
+        entityManager.clear();
+
+        final var result = repository.findById(merry.getId()).orElseThrow();
+
+        assertThat(result.getEmail()).isEqualTo(email.toLowerCase());
+        assertThat(result.getPendingEmail()).isEqualTo(email.toLowerCase());
     }
 
 }

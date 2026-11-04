@@ -168,7 +168,7 @@ documented only here.
 The API is stateless - every request that requires authentication must carry an access token as
 `Authorization: Bearer ...`. HTTP Basic isn't supported - such a request counts as unauthenticated (`401`).
 
-Signing in with `POST /auth` (`{"userName": "...", "password": "..."}`, username or email) returns a token pair:
+Signing in with `POST /auth` (`{"userName": "...", "password": "..."}`, username or email, both ignoring case) returns a token pair:
 
 ```json
 {"accessToken": "...", "refreshToken": "...", "expiresIn": 900}
@@ -242,6 +242,10 @@ own data (admins may act on any user), **admin** - admins only.
   | `GET`    | `/users/{id}`        | admin  | get a user                                                       |
   | `PATCH`  | `/users/{id}`        | self   | update a user (email: the user themselves only)                  |
   | `DELETE` | `/users/{id}`        | admin  | delete a user with their exams                                   |
+
+  Usernames and emails are unique ignoring case: registering or renaming to one that differs from a taken one only in
+  case returns `409`. Emails are stored lowercased, so responses return them lowercased and mails go to the lowercased
+  address.
 
 * `/questions`
 

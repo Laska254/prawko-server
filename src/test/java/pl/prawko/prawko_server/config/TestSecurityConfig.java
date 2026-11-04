@@ -39,7 +39,7 @@ public class TestSecurityConfig {
                         .build());
         return username -> {
             final var account = accounts.loadUserByUsername(username);
-            final var id = userRepository.findByUserNameOrEmailIgnoreCase(username, username)
+            final var id = userRepository.findByUserNameOrEmailAllIgnoreCase(username, username)
                     .map(pl.prawko.prawko_server.model.User::getId)
                     .orElse(0L);
             return new AuthenticatedUser(

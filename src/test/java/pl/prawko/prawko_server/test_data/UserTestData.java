@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -29,6 +30,8 @@ public class UserTestData {
     public static final Map<String, String> PIPPIN_CONFLICT_DETAILS = Map.ofEntries(
             Map.entry("userName", "User with username 'pippin' already exists."),
             Map.entry("email", "User with email 'pippin@shire.me' already exists."));
+    public static final String USER_NAME_TAKEN = "User with this username already exists.";
+    public static final String EMAIL_TAKEN = "User with this email already exists.";
 
     public static final String INVALID_RESET_TOKEN = "Password reset token is invalid or expired.";
     public static final String INVALID_VERIFICATION_TOKEN = "Email verification token is invalid or expired.";
@@ -41,6 +44,9 @@ public class UserTestData {
     // @Email allows at most 64 characters before the @ and 63 per domain label, so the length comes from several labels.
     public static final String LONGEST_EMAIL = "a".repeat(64) + "@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(61);
     public static final String OVERLONG_EMAIL = LONGEST_EMAIL + "d";
+    // The update request's email is in mixed case, users store emails lowercased.
+    public static final String UPDATED_EMAIL = "UpdatedEmail@shire.me";
+    public static final String STORED_UPDATED_EMAIL = UPDATED_EMAIL.toLowerCase(Locale.ROOT);
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 
@@ -146,7 +152,7 @@ public class UserTestData {
                 "UpdatedLastName",
                 "UpdatedUserName",
                 "pippin@shire.me",
-                createValidUserUpdateRequest().email(),
+                STORED_UPDATED_EMAIL,
                 true,
                 true,
                 Role.USER,
@@ -177,7 +183,7 @@ public class UserTestData {
                 "UpdatedFirstName",
                 "UpdatedLastName",
                 "UpdatedUserName",
-                "UpdatedEmail@shire.me");
+                UPDATED_EMAIL);
     }
 
     public static UserUpdateRequest createUserUpdateRequestWithoutEmail() {

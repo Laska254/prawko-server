@@ -598,7 +598,7 @@ public class UserControllerTest {
                     .expectStatus().isOk()
                     .expectBody()
                     .jsonPath("$.email").isEqualTo(tester.getEmail())
-                    .jsonPath("$.pendingEmail").isEqualTo(newEmail)
+                    .jsonPath("$.pendingEmail").isEqualTo(UserTestData.STORED_UPDATED_EMAIL)
                     .jsonPath("$.awaitingNewEmailConfirmation").isEqualTo(true)
                     .jsonPath("$.awaitingCurrentEmailConfirmation").isEqualTo(true);
 
@@ -606,11 +606,11 @@ public class UserControllerTest {
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
             final var link = captor.getAllValues().getFirst();
             final var confirmation = captor.getAllValues().getLast();
-            assertThat(link.getTo()).containsExactly(newEmail);
+            assertThat(link.getTo()).containsExactly(UserTestData.STORED_UPDATED_EMAIL);
             assertThat(confirmation.getTo()).containsExactly(tester.getEmail());
             final var updated = userRepository.findById(tester.getId()).orElseThrow();
             assertThat(updated.getEmail()).isEqualTo(tester.getEmail());
-            assertThat(updated.getPendingEmail()).isEqualTo(newEmail);
+            assertThat(updated.getPendingEmail()).isEqualTo(UserTestData.STORED_UPDATED_EMAIL);
             assertThat(updated.getVerificationTokenHash())
                     .isEqualTo(SecureTokens.hash(UserTestData.extractToken(link)));
             assertThat(updated.getCurrentEmailTokenHash())
@@ -676,7 +676,8 @@ public class UserControllerTest {
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(UserTestData.VERIFICATION_COOLDOWN);
 
-            assertThat(userRepository.findById(tester.getId()).orElseThrow().getPendingEmail()).isEqualTo(firstEmail);
+            assertThat(userRepository.findById(tester.getId()).orElseThrow().getPendingEmail())
+                    .isEqualTo(UserTestData.STORED_UPDATED_EMAIL);
             verifyNoMoreInteractions(mailSender);
         }
 
@@ -1087,7 +1088,7 @@ public class UserControllerTest {
                     .expectStatus().isCreated();
 
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
-            assertThat(userRepository.existsByUserName(registerDto.userName())).isTrue();
+            assertThat(userRepository.existsByUserNameIgnoreCase(registerDto.userName())).isTrue();
             assertThat(userRepository.existsByEmailIgnoreCase(registerDto.email())).isTrue();
         }
 
