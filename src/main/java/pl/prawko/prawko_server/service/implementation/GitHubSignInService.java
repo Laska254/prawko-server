@@ -197,8 +197,11 @@ public class GitHubSignInService implements IGitHubSignInService {
         return new ProviderProfile(
                 IdentityProvider.GITHUB,
                 account.id().toString(),
-                primary.map(GitHubEmail::email).orElse(null),
-                primary.filter(GitHubEmail::verified).isPresent() ? EmailStatus.VERIFIED : EmailStatus.UNVERIFIED,
+                primary.map(GitHubEmail::email)
+                        .orElse(null),
+                primary.filter(GitHubEmail::verified)
+                        .map(email -> EmailStatus.VERIFIED)
+                        .orElse(EmailStatus.UNVERIFIED),
                 account.login(),
                 StringUtils.trimToNull(StringUtils.substringBefore(name, " ")),
                 StringUtils.trimToNull(StringUtils.substringAfter(name, " ")));

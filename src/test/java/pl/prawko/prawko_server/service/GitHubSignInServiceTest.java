@@ -102,7 +102,8 @@ class GitHubSignInServiceTest {
     @BeforeEach
     void setUp() {
         final var builder = RestClient.builder();
-        github = MockRestServiceServer.bindTo(builder).build();
+        github = MockRestServiceServer.bindTo(builder)
+                .build();
         service = createService(GitHubTestData.CLIENT_ID, GitHubTestData.CLIENT_SECRET, builder);
     }
 
@@ -111,7 +112,8 @@ class GitHubSignInServiceTest {
     void signIn_throwProviderNotConfigured_whenClientCredentialsAreMissing(final String clientId,
                                                                            final String clientSecret) {
         final var builder = RestClient.builder();
-        final var server = MockRestServiceServer.bindTo(builder).build();
+        final var server = MockRestServiceServer.bindTo(builder)
+                .build();
         final var request = GitHubTestData.createValidRequest();
         final var disabled = createService(clientId, clientSecret, builder);
 
