@@ -156,6 +156,15 @@ public final class ApiConstants {
     public static final String GOOGLE = "/google";
 
     /**
+     * Path segment for signing in with a GitHub authorization code.
+     *
+     * <p>Example: {@code /auth/github}
+     *
+     * @see pl.prawko.prawko_server.controller.AuthController
+     */
+    public static final String GITHUB = "/github";
+
+    /**
      * Path segment for requesting a password reset link by email.
      *
      * <p>Example: {@code /auth/password/forgot}

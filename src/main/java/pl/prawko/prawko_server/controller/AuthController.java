@@ -17,6 +17,7 @@ import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.AuthTokensDto;
 import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
+import pl.prawko.prawko_server.dto.GitHubSignInRequest;
 import pl.prawko.prawko_server.dto.GoogleSignInRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
 import pl.prawko.prawko_server.dto.RefreshTokenRequest;
@@ -24,6 +25,7 @@ import pl.prawko.prawko_server.dto.ResendVerificationRequest;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.VerifyEmailRequest;
 import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
+import pl.prawko.prawko_server.service.implementation.GitHubSignInService;
 import pl.prawko.prawko_server.service.implementation.GoogleSignInService;
 import pl.prawko.prawko_server.service.implementation.PasswordResetService;
 import pl.prawko.prawko_server.service.implementation.RefreshTokenService;
@@ -31,8 +33,8 @@ import pl.prawko.prawko_server.service.implementation.RefreshTokenService;
 /**
  * REST controller for authentication operations.
  *
- * <p>Provides endpoints for user login (with a password or a Google account), refreshing tokens, logout, verifying
- * email addresses and resetting forgotten passwords. Authentication is performed using Spring Security's
+ * <p>Provides endpoints for user login (with a password, a Google or a GitHub account), refreshing tokens, logout,
+ * verifying email addresses and resetting forgotten passwords. Authentication is performed using Spring Security's
  * authentication manager.
  * The API is stateless: signing in issues tokens, and only refresh tokens are stored.
  */
@@ -47,17 +49,20 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
     private final GoogleSignInService googleSignInService;
+    private final GitHubSignInService gitHubSignInService;
 
     public AuthController(final AuthenticationManager authenticationManager,
                           final RefreshTokenService refreshTokenService,
                           final PasswordResetService passwordResetService,
                           final EmailVerificationService emailVerificationService,
-                          final GoogleSignInService googleSignInService) {
+                          final GoogleSignInService googleSignInService,
+                          final GitHubSignInService gitHubSignInService) {
         this.authenticationManager = authenticationManager;
         this.refreshTokenService = refreshTokenService;
         this.passwordResetService = passwordResetService;
         this.emailVerificationService = emailVerificationService;
         this.googleSignInService = googleSignInService;
+        this.gitHubSignInService = gitHubSignInService;
     }
 
     /**
@@ -111,6 +116,34 @@ public class AuthController {
     @PostMapping(ApiConstants.GOOGLE)
     public ResponseEntity<AuthTokensDto> signInWithGoogle(@Valid @RequestBody final GoogleSignInRequest request) {
         return ResponseEntity.ok(googleSignInService.signIn(request.idToken()));
+    }
+
+    /**
+     * Signs in with a GitHub account and issues tokens, creating the user on the first sign-in.
+     *
+     * <p>The client runs GitHub's authorization code flow with PKCE and the scope {@code user:email}. The server
+     * exchanges the code, since that takes the client secret.
+     *
+     * @param request the {@link GitHubSignInRequest} containing the code, its PKCE verifier and redirect URI
+     * @return a {@link ResponseEntity} with HTTP 200 Ok and the issued {@link AuthTokensDto}
+     */
+    @Operation(summary = "Sign-in with GitHub",
+            description = "Exchanges a GitHub authorization code and returns access and refresh tokens. The first "
+                    + "sign-in creates a user without a password.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User signed-in successfully"),
+            @ApiResponse(responseCode = "401", description = "Invalid or used authorization code"),
+            @ApiResponse(responseCode = "403", description = "Primary email address is not verified by GitHub"),
+            @ApiResponse(responseCode = "404", description = "Sign-in with GitHub is not configured"),
+            @ApiResponse(responseCode = "409", description = "A user with the email exists, and GitHub doesn't host "
+                    + "the email, so it can't be linked"),
+            @ApiResponse(responseCode = "503", description = "GitHub can't be reached or rate limits the app, try "
+                    + "again later"),
+            @ApiResponse(responseCode = "400", description = "Invalid argument"),
+    })
+    @PostMapping(ApiConstants.GITHUB)
+    public ResponseEntity<AuthTokensDto> signInWithGitHub(@Valid @RequestBody final GitHubSignInRequest request) {
+        return ResponseEntity.ok(gitHubSignInService.signIn(request));
     }
 
     /**
