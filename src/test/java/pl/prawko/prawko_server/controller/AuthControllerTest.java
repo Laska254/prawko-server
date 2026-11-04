@@ -119,7 +119,7 @@ public class AuthControllerTest {
                 Arguments.of(Named.of("for the Android client", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
                         .audience(List.of(GoogleTestData.ANDROID_CLIENT_ID))))),
                 Arguments.of(Named.of("for several audiences", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
-                        .audience(List.of("other-client", GoogleTestData.ANDROID_CLIENT_ID))))),
+                        .audience(List.of(GoogleTestData.OTHER_CLIENT_ID, GoogleTestData.ANDROID_CLIENT_ID))))),
                 Arguments.of(Named.of("issuer without scheme", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
                         .issuer("accounts.google.com"))))
         );
@@ -129,7 +129,7 @@ public class AuthControllerTest {
         final var expired = Instant.now().minus(Duration.ofHours(1));
         return Stream.of(
                 Arguments.of(Named.of("for another client", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
-                        .audience(List.of("other-client"))))),
+                        .audience(List.of(GoogleTestData.OTHER_CLIENT_ID))))),
                 Arguments.of(Named.of("other issuer", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
                         .issuer("https://accounts.example.com")))),
                 Arguments.of(Named.of("expired", GoogleTestData.idToken(GoogleTestData.createPippinClaims()

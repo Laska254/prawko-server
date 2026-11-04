@@ -23,6 +23,7 @@ public class GoogleTestData {
 
     public static final String ANDROID_CLIENT_ID = "android.apps.googleusercontent.com";
     public static final String WEB_CLIENT_ID = "web.apps.googleusercontent.com";
+    public static final String OTHER_CLIENT_ID = "other-client";
     public static final String ISSUER = "https://accounts.google.com";
     public static final String INVALID_ID_TOKEN = "Google ID token is invalid or expired.";
     public static final String GOOGLE_NOT_AVAILABLE = "Sign-in with Google is not available.";
