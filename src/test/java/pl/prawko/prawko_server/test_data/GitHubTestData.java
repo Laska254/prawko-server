@@ -19,9 +19,6 @@ public class GitHubTestData {
     public static final String CLIENT_ID = "github-client-id";
     public static final String CLIENT_SECRET = "github-client-secret";
     public static final String ACCESS_TOKEN = "github-access-token";
-    public static final String TOKEN_URI = "https://github.com/login/oauth/access_token";
-    public static final String USER_URI = "https://api.github.com/user";
-    public static final String EMAILS_URI = "https://api.github.com/user/emails";
     public static final String INVALID_CODE = "GitHub authorization code is invalid or expired.";
     public static final String GITHUB_NOT_AVAILABLE = "Sign-in with GitHub is not available.";
     public static final String GITHUB_UNAVAILABLE = "Sign-in with GitHub is unavailable, try again later.";
@@ -34,11 +31,18 @@ public class GitHubTestData {
     public static final String UNVERIFIED_EMAIL_RESPONSE = """
             {"error": "unverified_user_email", "error_description": "The user must have a verified primary email."}""";
 
+    private static final String TOKEN_URI = "https://github.com/login/oauth/access_token";
+    private static final String USER_URI = "https://api.github.com/user";
+    private static final String EMAILS_URI = "https://api.github.com/user/emails";
     private static final String CODE = "github-code";
     private static final String CODE_VERIFIER = "github-code-verifier";
     private static final String REDIRECT_URI = "prawko://auth/github";
+    private static final String OTHER_EMAIL = "other@shire.me";
     private static final String TOKEN_RESPONSE = """
             {"access_token": "%s", "scope": "user:email", "token_type": "bearer"}""".formatted(ACCESS_TOKEN);
+    private static final String EMAILS_TEMPLATE = """
+            [{"email": "%s", "primary": false, "verified": true, "visibility": null},
+             {"email": "%s", "primary": true, "verified": %s, "visibility": "private"}]""";
 
     private GitHubTestData() {
     }
@@ -62,13 +66,22 @@ public class GitHubTestData {
     }
 
     /**
-     * Pippin's primary email with the given verification, listed after a verified non-primary one.
+     * Pippin's verified primary email, listed after a verified non-primary one.
      */
-    public static String emailsJson(final boolean primaryVerified) {
+    public static String emailsJson() {
+        return EMAILS_TEMPLATE.formatted(OTHER_EMAIL, UserTestData.createTestUserPippin().getEmail(), true);
+    }
+
+    /**
+     * Pippin's unverified primary email, listed after a verified non-primary one.
+     */
+    public static String unverifiedEmailsJson() {
+        return EMAILS_TEMPLATE.formatted(OTHER_EMAIL, UserTestData.createTestUserPippin().getEmail(), false);
+    }
+
+    public static String noPrimaryEmailsJson() {
         return """
-                [{"email": "other@shire.me", "primary": false, "verified": true, "visibility": null},
-                 {"email": "%s", "primary": true, "verified": %s, "visibility": "private"}]"""
-                .formatted(UserTestData.createTestUserPippin().getEmail(), primaryVerified);
+                [{"email": "%s", "primary": false, "verified": true}]""".formatted(OTHER_EMAIL);
     }
 
     public static void expectTokenExchange(final MockRestServiceServer github, final ResponseCreator response) {
@@ -100,14 +113,25 @@ public class GitHubTestData {
     /**
      * Stubs a sign-in with a valid code of Pippin's GitHub account.
      */
-    public static void expectSignIn(final MockRestServiceServer github, final boolean primaryEmailVerified) {
-        expectTokenExchange(github);
-        expectAccount(github, json(accountJson()));
-        expectEmails(github, json(emailsJson(primaryEmailVerified)));
+    public static void expectSignIn(final MockRestServiceServer github) {
+        expectSignIn(github, emailsJson());
+    }
+
+    /**
+     * Stubs a sign-in with a valid code of Pippin's GitHub account, whose primary email isn't verified.
+     */
+    public static void expectSignInWithUnverifiedEmail(final MockRestServiceServer github) {
+        expectSignIn(github, unverifiedEmailsJson());
     }
 
     public static ResponseCreator json(final String body) {
         return MockRestResponseCreators.withSuccess(body, MediaType.APPLICATION_JSON);
+    }
+
+    private static void expectSignIn(final MockRestServiceServer github, final String emailsJson) {
+        expectTokenExchange(github);
+        expectAccount(github, json(accountJson()));
+        expectEmails(github, json(emailsJson));
     }
 
     private static ResponseActions expectApiRequest(final MockRestServiceServer github, final String uri) {

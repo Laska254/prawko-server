@@ -88,12 +88,11 @@ class GitHubSignInServiceTest {
     private static Stream<Arguments> emails() {
         final var email = UserTestData.createTestUserPippin().getEmail();
         return Stream.of(
-                Arguments.of(Named.of("primary verified", GitHubTestData.emailsJson(true)),
+                Arguments.of(Named.of("primary verified", GitHubTestData.emailsJson()),
                         email, EmailStatus.VERIFIED),
-                Arguments.of(Named.of("primary not verified", GitHubTestData.emailsJson(false)),
+                Arguments.of(Named.of("primary not verified", GitHubTestData.unverifiedEmailsJson()),
                         email, EmailStatus.UNVERIFIED),
-                Arguments.of(Named.of("no primary", """
-                        [{"email": "other@shire.me", "primary": false, "verified": true}]"""),
+                Arguments.of(Named.of("no primary", GitHubTestData.noPrimaryEmailsJson()),
                         null, EmailStatus.UNVERIFIED),
                 Arguments.of(Named.of("no emails", "[]"), null, EmailStatus.UNVERIFIED)
         );
@@ -220,7 +219,7 @@ class GitHubSignInServiceTest {
     void signIn_throwProviderUnavailable_whenAccountHasNoId() {
         GitHubTestData.expectTokenExchange(github);
         GitHubTestData.expectAccount(github, GitHubTestData.json("{}"));
-        GitHubTestData.expectEmails(github, GitHubTestData.json(GitHubTestData.emailsJson(true)));
+        GitHubTestData.expectEmails(github, GitHubTestData.json(GitHubTestData.emailsJson()));
 
         assertSignInFailsAsUnavailable();
     }
@@ -229,7 +228,7 @@ class GitHubSignInServiceTest {
     void signIn_returnTokensOfResolvedUser_whenCodeIsValid() {
         final var pippin = UserTestData.createTestUserPippin();
         final var tokens = new AuthTokensDto("access", "refresh", 900);
-        GitHubTestData.expectSignIn(github, true);
+        GitHubTestData.expectSignIn(github);
         when(userIdentityService.resolveUser(any())).thenReturn(pippin.setId(7L));
         when(refreshTokenService.issueTokens(any())).thenReturn(tokens);
 
@@ -249,7 +248,9 @@ class GitHubSignInServiceTest {
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("emails")
-    void signIn_resolveUserWithPrimaryEmail(final String emails, final String email, final EmailStatus status) {
+    void signIn_resolveUserWithPrimaryEmail_whenCodeIsValid(final String emails,
+                                                            final String email,
+                                                            final EmailStatus status) {
         GitHubTestData.expectTokenExchange(github);
         GitHubTestData.expectAccount(github, GitHubTestData.json(GitHubTestData.accountJson()));
         GitHubTestData.expectEmails(github, GitHubTestData.json(emails));
@@ -271,10 +272,12 @@ class GitHubSignInServiceTest {
             "'\"  Peregrin   Tuk \"' | Peregrin | Tuk",
             "'\"Jan van der Berg\"' | Jan    | van der Berg"
     })
-    void signIn_splitNameAtFirstSpace(final String nameJson, final String firstName, final String lastName) {
+    void signIn_splitNameAtFirstSpace_whenCodeIsValid(final String nameJson,
+                                                      final String firstName,
+                                                      final String lastName) {
         GitHubTestData.expectTokenExchange(github);
         GitHubTestData.expectAccount(github, GitHubTestData.json(GitHubTestData.accountJson(String.valueOf(nameJson))));
-        GitHubTestData.expectEmails(github, GitHubTestData.json(GitHubTestData.emailsJson(true)));
+        GitHubTestData.expectEmails(github, GitHubTestData.json(GitHubTestData.emailsJson()));
         when(userIdentityService.resolveUser(any())).thenReturn(UserTestData.createTestUserPippin().setId(7L));
 
         service.signIn(GitHubTestData.createValidRequest());

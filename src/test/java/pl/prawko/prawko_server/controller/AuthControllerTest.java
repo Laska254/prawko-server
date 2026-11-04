@@ -487,7 +487,7 @@ public class AuthControllerTest {
     @ExtendWith(OutputCaptureExtension.class)
     void signInWithGitHub_createUserAndReturnTokens_whenAccountIsNew(final CapturedOutput output) {
         final var pippin = UserTestData.createTestUserPippin();
-        GitHubTestData.expectSignIn(github, true);
+        GitHubTestData.expectSignIn(github);
 
         final var tokens = signInWithGitHub(GitHubTestData.createValidRequest())
                 .expectStatus().isOk()
@@ -516,7 +516,7 @@ public class AuthControllerTest {
     void signInWithGitHub_returnTokensOfLinkedUser_whenEmailDiffers() {
         final var merry = userRepository.save(UserTestData.createMerry()
                 .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));
-        GitHubTestData.expectSignIn(github, true);
+        GitHubTestData.expectSignIn(github);
 
         final var tokens = signInWithGitHub(GitHubTestData.createValidRequest())
                 .expectStatus().isOk()
@@ -532,7 +532,7 @@ public class AuthControllerTest {
     @Test
     void signInWithGitHub_returnConflictAndNotLink_whenUserHasEmail() {
         final var tester = userRepository.save(UserTestData.createTestUserPippin());
-        GitHubTestData.expectSignIn(github, true);
+        GitHubTestData.expectSignIn(github);
 
         signInWithGitHub(GitHubTestData.createValidRequest())
                 .expectStatus().isEqualTo(HttpStatus.CONFLICT)
@@ -559,7 +559,7 @@ public class AuthControllerTest {
 
     @Test
     void signInWithGitHub_returnForbidden_whenPrimaryEmailIsNotVerified() {
-        GitHubTestData.expectSignIn(github, false);
+        GitHubTestData.expectSignInWithUnverifiedEmail(github);
 
         signInWithGitHub(GitHubTestData.createValidRequest())
                 .expectStatus().isForbidden()
