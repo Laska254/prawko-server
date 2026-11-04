@@ -400,7 +400,7 @@ class EmailVerificationServiceTest {
 
             assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
             assertThat(exception.getDetails())
-                    .isEqualTo(Map.ofEntries(Map.entry("email", "User with email '" + newEmail + "' already exists.")));
+                    .isEqualTo(Map.ofEntries(Map.entry("email", UserTestData.emailConflictMessage(newEmail))));
             assertThat(changing.getEmail()).isEqualTo(email);
             assertThat(changing.getPendingEmail()).isEqualTo(newEmail);
             verify(repository, never()).save(any());

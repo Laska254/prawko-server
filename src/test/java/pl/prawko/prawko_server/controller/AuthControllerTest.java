@@ -580,7 +580,7 @@ public class AuthControllerTest {
                 .expectStatus().isEqualTo(HttpStatus.CONFLICT)
                 .expectBody()
                 .jsonPath("$.detail").isEqualTo(UserTestData.USER_ALREADY_EXISTS)
-                .jsonPath("$.details.email").isEqualTo("User with email '" + newEmail + "' already exists.");
+                .jsonPath("$.details.email").isEqualTo(UserTestData.emailConflictMessage(newEmail));
 
         final var unchanged = userRepository.findById(tester.getId()).orElseThrow();
         assertThat(unchanged.getEmail()).isEqualTo(email);
