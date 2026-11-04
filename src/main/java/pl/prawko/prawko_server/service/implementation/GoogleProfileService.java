@@ -16,17 +16,13 @@ import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Service;
-import pl.prawko.prawko_server.config.AuthenticatedUser;
-import pl.prawko.prawko_server.dto.AuthTokensDto;
 import pl.prawko.prawko_server.exception.InvalidProviderCredentialException;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
 import pl.prawko.prawko_server.exception.ProviderUnavailableException;
 import pl.prawko.prawko_server.model.EmailStatus;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
-import pl.prawko.prawko_server.service.IGoogleSignInService;
-import pl.prawko.prawko_server.service.IRefreshTokenService;
-import pl.prawko.prawko_server.service.IUserIdentityService;
+import pl.prawko.prawko_server.service.IGoogleProfileService;
 
 import java.time.Clock;
 import java.util.Collection;
@@ -34,7 +30,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Implementation of {@link IGoogleSignInService} verifying Google ID tokens.
+ * Implementation of {@link IGoogleProfileService} verifying Google ID tokens.
  * <p>
  * A token is accepted if it's signed with a key from Google's JWKS ({@code google.jwk-set-uri}), not expired, issued
  * by Google and for one of {@code google.client-ids} as audience. Every client, Android included, requests the token
@@ -44,45 +40,36 @@ import java.util.Set;
  * <p>
  * Google is authoritative for an email only if it hosts it: a Gmail address, or a Workspace one (with the {@code hd}
  * claim). Any other email was only verified when it was added to the Google account and may have changed hands since.
- * <p>
- * Not transactional, so a conflict in {@link IUserIdentityService#resolveUser} is retried in a new transaction.
  */
 @Service
-public class GoogleSignInService implements IGoogleSignInService {
+public class GoogleProfileService implements IGoogleProfileService {
 
-    private static final Logger log = LoggerFactory.getLogger(GoogleSignInService.class);
+    private static final Logger log = LoggerFactory.getLogger(GoogleProfileService.class);
     private static final Set<String> ISSUERS = Set.of("accounts.google.com", "https://accounts.google.com");
     private static final String INVALID_TOKEN = "Google ID token is invalid or expired.";
     private static final String HOSTED_DOMAIN = "hd";
     private static final String GMAIL_SUFFIX = "@gmail.com";
 
     private final @Nullable JwtDecoder decoder;
-    private final IUserIdentityService userIdentityService;
-    private final IRefreshTokenService refreshTokenService;
 
-    public GoogleSignInService(@Value("${google.client-ids}") final List<String> clientIds,
-                               @Value("${google.jwk-set-uri}") final String jwkSetUri,
-                               final Clock clock,
-                               final IUserIdentityService userIdentityService,
-                               final IRefreshTokenService refreshTokenService) {
+    public GoogleProfileService(@Value("${google.client-ids}") final List<String> clientIds,
+                                @Value("${google.jwk-set-uri}") final String jwkSetUri,
+                                final Clock clock) {
         if (clientIds.isEmpty()) {
             this.decoder = null;
             log.info("No Google client IDs configured, sign-in with Google is disabled.");
         } else {
             this.decoder = createDecoder(Set.copyOf(clientIds), jwkSetUri, clock);
         }
-        this.userIdentityService = userIdentityService;
-        this.refreshTokenService = refreshTokenService;
     }
 
     @Override
-    public AuthTokensDto signIn(final String idToken) {
+    public ProviderProfile fetchProfile(final String idToken) {
         if (decoder == null) {
             throw new ProviderNotConfiguredException("Sign-in with Google is not available.");
         }
-        final Jwt jwt;
         try {
-            jwt = decoder.decode(idToken);
+            return toProfile(decoder.decode(idToken));
         } catch (final BadJwtException exception) {
             log.warn("Google ID token rejected: {}", exception.getMessage());
             throw new InvalidProviderCredentialException(INVALID_TOKEN);
@@ -90,8 +77,6 @@ public class GoogleSignInService implements IGoogleSignInService {
             log.error("Google ID token couldn't be verified.", exception);
             throw new ProviderUnavailableException("Sign-in with Google is unavailable, try again later.", exception);
         }
-        final var user = userIdentityService.resolveUser(toProfile(jwt));
-        return refreshTokenService.issueTokens(AuthenticatedUser.of(user));
     }
 
     private static JwtDecoder createDecoder(final Set<String> clientIds, final String jwkSetUri, final Clock clock) {

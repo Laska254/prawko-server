@@ -16,8 +16,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import pl.prawko.prawko_server.config.AuthenticatedUser;
-import pl.prawko.prawko_server.dto.AuthTokensDto;
 import pl.prawko.prawko_server.dto.GitHubSignInRequest;
 import pl.prawko.prawko_server.exception.InvalidProviderCredentialException;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
@@ -25,15 +23,13 @@ import pl.prawko.prawko_server.exception.ProviderUnavailableException;
 import pl.prawko.prawko_server.model.EmailStatus;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
-import pl.prawko.prawko_server.service.IGitHubSignInService;
-import pl.prawko.prawko_server.service.IRefreshTokenService;
-import pl.prawko.prawko_server.service.IUserIdentityService;
+import pl.prawko.prawko_server.service.IGitHubProfileService;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Implementation of {@link IGitHubSignInService} reading the account from GitHub's API.
+ * Implementation of {@link IGitHubProfileService} reading the account from GitHub's API.
  * <p>
  * GitHub has no ID tokens, so the authorization code is exchanged for an access token using {@code github.client-id}
  * and {@code github.client-secret}. Without both, GitHub sign-in is disabled. The access token is only used to read the
@@ -42,13 +38,12 @@ import java.util.Optional;
  * GitHub doesn't host mailboxes, it only verifies an address when it's added, so its emails are never
  * {@link EmailStatus#AUTHORITATIVE}.
  * <p>
- * Not transactional, so a conflict in {@link IUserIdentityService#resolveUser} is retried in a new transaction, and no
- * database connection is held during the requests to GitHub.
+ * Not transactional, so no database connection is held during the requests to GitHub.
  */
 @Service
-public class GitHubSignInService implements IGitHubSignInService {
+public class GitHubProfileService implements IGitHubProfileService {
 
-    private static final Logger log = LoggerFactory.getLogger(GitHubSignInService.class);
+    private static final Logger log = LoggerFactory.getLogger(GitHubProfileService.class);
     private static final String TOKEN_URI = "https://github.com/login/oauth/access_token";
     private static final String USER_URI = "https://api.github.com/user";
     private static final String EMAILS_URI = "https://api.github.com/user/emails";
@@ -65,14 +60,10 @@ public class GitHubSignInService implements IGitHubSignInService {
     private final String clientId;
     private final String clientSecret;
     private final RestClient restClient;
-    private final IUserIdentityService userIdentityService;
-    private final IRefreshTokenService refreshTokenService;
 
-    public GitHubSignInService(@Value("${github.client-id}") final String clientId,
-                               @Value("${github.client-secret}") final String clientSecret,
-                               final RestClient.Builder restClientBuilder,
-                               final IUserIdentityService userIdentityService,
-                               final IRefreshTokenService refreshTokenService) {
+    public GitHubProfileService(@Value("${github.client-id}") final String clientId,
+                                @Value("${github.client-secret}") final String clientSecret,
+                                final RestClient.Builder restClientBuilder) {
         this.configured = StringUtils.isNoneBlank(clientId, clientSecret);
         if (!configured) {
             log.info("GitHub client ID or secret not configured, sign-in with GitHub is disabled.");
@@ -80,23 +71,18 @@ public class GitHubSignInService implements IGitHubSignInService {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.restClient = restClientBuilder.build();
-        this.userIdentityService = userIdentityService;
-        this.refreshTokenService = refreshTokenService;
-    }
-
-    @Override
-    public AuthTokensDto signIn(final GitHubSignInRequest request) {
-        if (!configured) {
-            throw new ProviderNotConfiguredException("Sign-in with GitHub is not available.");
-        }
-        final var user = userIdentityService.resolveUser(fetchProfile(request));
-        return refreshTokenService.issueTokens(AuthenticatedUser.of(user));
     }
 
     /**
+     * {@inheritDoc}
+     * <p>
      * Logs only the response status of a rejected request, as its message contains the response body.
      */
-    private ProviderProfile fetchProfile(final GitHubSignInRequest request) {
+    @Override
+    public ProviderProfile fetchProfile(final GitHubSignInRequest request) {
+        if (!configured) {
+            throw new ProviderNotConfiguredException("Sign-in with GitHub is not available.");
+        }
         try {
             final var accessToken = exchangeCode(request);
             final var account = fetch(USER_URI, accessToken, new ParameterizedTypeReference<GitHubAccount>() {
@@ -106,10 +92,10 @@ public class GitHubSignInService implements IGitHubSignInService {
             return toProfile(account, emails);
         } catch (final HttpClientErrorException exception) {
             if (isRateLimited(exception)) {
-                log.warn("GitHub rate limited a sign-in request with status {}.", exception.getStatusCode());
+                log.warn("GitHub rate limited a request with status {}.", exception.getStatusCode());
                 throw new ProviderUnavailableException(UNAVAILABLE, exception);
             }
-            log.warn("GitHub rejected a sign-in request with status {}.", exception.getStatusCode());
+            log.warn("GitHub rejected a request with status {}.", exception.getStatusCode());
             throw new InvalidProviderCredentialException(INVALID_CODE);
         } catch (final RestClientException exception) {
             log.error("GitHub account couldn't be read.", exception);
