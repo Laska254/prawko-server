@@ -56,12 +56,14 @@ public class GoogleSignInService implements IGoogleSignInService {
                                final Clock clock,
                                final IUserIdentityService userIdentityService,
                                final IRefreshTokenService refreshTokenService) {
-        this.decoder = clientIds.isEmpty() ? null : createDecoder(Set.copyOf(clientIds), jwkSetUri, clock);
+        if (clientIds.isEmpty()) {
+            this.decoder = null;
+            log.info("No Google client IDs configured, sign-in with Google is disabled.");
+        } else {
+            this.decoder = createDecoder(Set.copyOf(clientIds), jwkSetUri, clock);
+        }
         this.userIdentityService = userIdentityService;
         this.refreshTokenService = refreshTokenService;
-        if (decoder == null) {
-            log.info("No Google client IDs configured, sign-in with Google is disabled.");
-        }
     }
 
     /**
