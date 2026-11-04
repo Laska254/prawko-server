@@ -154,7 +154,8 @@ public class UserService implements IUserService, UserDetailsService {
      * Like in {@link #register}, the tokens are issued before the save and the emails to the new and current address
      * are dispatched after it, inside the transaction, so the update is rolled back if they can't be queued. Email
      * changes are subject to the verification email cooldown. Sending the current email cancels a pending change and
-     * invalidates its links, without a cooldown since no email is sent.
+     * invalidates its links, without a cooldown since no email is sent. A username equal to the current one ignoring
+     * case isn't checked for conflicts, so users can change its capitalization.
      *
      * @throws EntityNotFoundException  if user with the given ID have not been found
      * @throws AlreadyExistsException   if the new username or email conflicts with another user
@@ -165,10 +166,12 @@ public class UserService implements IUserService, UserDetailsService {
     public UserDto updateUser(final long userId, final UserUpdateRequest updateRequest) {
         log.info("Updating user with id: {}", userId);
         final var user = getById(userId);
+        final var userName = updateRequest.userName();
+        final var keepsUserName = userName != null && userName.equalsIgnoreCase(user.getUserName());
         final var email = updateRequest.email();
         final var cancelsEmailChange = email != null && email.equalsIgnoreCase(user.getEmail());
         final var newEmail = cancelsEmailChange ? null : email;
-        validateNoConflict(updateRequest.userName(), newEmail);
+        validateNoConflict(keepsUserName ? null : userName, newEmail);
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
         Optional.ofNullable(updateRequest.userName()).ifPresent(user::setUserName);
