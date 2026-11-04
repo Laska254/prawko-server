@@ -270,7 +270,7 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isEqualTo(HttpStatus.CONFLICT)
                     .expectBody()
-                    .jsonPath("$.details.email").isEqualTo("User with email 'Pippin@Shire.ME' already exists.")
+                    .jsonPath("$.details.email").isEqualTo(UserTestData.emailConflictMessage(dto.email()))
                     .jsonPath("$.details.userName").doesNotExist();
         }
 
@@ -597,8 +597,7 @@ public class UserControllerTest {
                     .body(new UserUpdateRequest(null, null, userName, null))
                     .exchange()
                     .expectStatus().isOk()
-                    .expectBody()
-                    .jsonPath("$.userName").isEqualTo(userName);
+                    .expectBody(UserDto.class).isEqualTo(UserTestData.createUserDto(tester.getId(), userName));
 
             assertThat(userRepository.findById(tester.getId()).orElseThrow().getUserName()).isEqualTo(userName);
         }
@@ -617,7 +616,7 @@ public class UserControllerTest {
                     .expectStatus().isEqualTo(HttpStatus.CONFLICT)
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(UserTestData.USER_ALREADY_EXISTS)
-                    .jsonPath("$.details.userName").isEqualTo("User with username '" + userName + "' already exists.");
+                    .jsonPath("$.details.userName").isEqualTo(UserTestData.userNameConflictMessage(userName));
 
             assertThat(userRepository.findById(tester.getId()).orElseThrow().getUserName())
                     .isEqualTo(tester.getUserName());

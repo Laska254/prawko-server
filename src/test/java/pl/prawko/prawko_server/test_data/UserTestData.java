@@ -28,8 +28,8 @@ public class UserTestData {
     public static final String USER_ALREADY_EXISTS = "User already exists.";
 
     public static final Map<String, String> PIPPIN_CONFLICT_DETAILS = Map.ofEntries(
-            Map.entry("userName", "User with username 'pippin' already exists."),
-            Map.entry("email", "User with email 'pippin@shire.me' already exists."));
+            Map.entry("userName", userNameConflictMessage("pippin")),
+            Map.entry("email", emailConflictMessage("pippin@shire.me")));
     public static final String USER_NAME_TAKEN = "User with this username already exists.";
     public static final String EMAIL_TAKEN = "User with this email already exists.";
 
@@ -55,6 +55,14 @@ public class UserTestData {
 
     public static String userNotFoundMessage(final long id) {
         return "User with id '" + id + "' not found.";
+    }
+
+    public static String userNameConflictMessage(final String userName) {
+        return "User with username '" + userName + "' already exists.";
+    }
+
+    public static String emailConflictMessage(final String email) {
+        return "User with email '" + email + "' already exists.";
     }
 
     public static User createTestUser(@NonNull final String firstName,
@@ -116,11 +124,15 @@ public class UserTestData {
     }
 
     public static UserDto createUserDto(final long id) {
+        return createUserDto(id, "pippin");
+    }
+
+    public static UserDto createUserDto(final long id, final String userName) {
         return new UserDto(
                 id,
                 "Peregrin",
                 "Tuk",
-                "pippin",
+                userName,
                 "pippin@shire.me",
                 null,
                 false,

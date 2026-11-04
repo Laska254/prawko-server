@@ -167,14 +167,16 @@ public class UserService implements IUserService, UserDetailsService {
         log.info("Updating user with id: {}", userId);
         final var user = getById(userId);
         final var userName = updateRequest.userName();
-        final var keepsUserName = userName != null && userName.equalsIgnoreCase(user.getUserName());
+        final var newUserName = Optional.ofNullable(userName)
+                .filter(name -> !name.equalsIgnoreCase(user.getUserName()))
+                .orElse(null);
         final var email = updateRequest.email();
         final var cancelsEmailChange = email != null && email.equalsIgnoreCase(user.getEmail());
         final var newEmail = cancelsEmailChange ? null : email;
-        validateNoConflict(keepsUserName ? null : userName, newEmail);
+        validateNoConflict(newUserName, newEmail);
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
-        Optional.ofNullable(updateRequest.userName()).ifPresent(user::setUserName);
+        Optional.ofNullable(userName).ifPresent(user::setUserName);
         if (cancelsEmailChange) {
             if (user.cancelEmailChange()) {
                 log.info("Email change of user with id '{}' canceled.", userId);
