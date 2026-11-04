@@ -14,11 +14,6 @@ public enum IdentityProvider {
         this.displayName = displayName;
     }
 
-    /**
-     * Returns the provider's name as shown to users, e.g. {@code GitHub}.
-     *
-     * @return the display name
-     */
     public String getDisplayName() {
         return displayName;
     }

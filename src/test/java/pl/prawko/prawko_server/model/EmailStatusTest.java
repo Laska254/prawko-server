@@ -9,13 +9,13 @@ class EmailStatusTest {
 
     @ParameterizedTest
     @CsvSource({"UNVERIFIED, false", "VERIFIED, true", "AUTHORITATIVE, true"})
-    void isVerified_returnTrue_unlessStatusIsUnverified(final EmailStatus status, final boolean expected) {
+    void isVerified_returnExpected_whenStatusIsGiven(final EmailStatus status, final boolean expected) {
         assertThat(status.isVerified()).isEqualTo(expected);
     }
 
     @ParameterizedTest
     @CsvSource({"UNVERIFIED, false", "VERIFIED, false", "AUTHORITATIVE, true"})
-    void isAuthoritative_returnTrue_onlyWhenStatusIsAuthoritative(final EmailStatus status, final boolean expected) {
+    void isAuthoritative_returnExpected_whenStatusIsGiven(final EmailStatus status, final boolean expected) {
         assertThat(status.isAuthoritative()).isEqualTo(expected);
     }
 
