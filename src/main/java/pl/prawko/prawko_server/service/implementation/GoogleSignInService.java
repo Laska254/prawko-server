@@ -21,6 +21,7 @@ import pl.prawko.prawko_server.dto.AuthTokensDto;
 import pl.prawko.prawko_server.exception.InvalidProviderCredentialException;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
 import pl.prawko.prawko_server.exception.ProviderUnavailableException;
+import pl.prawko.prawko_server.model.EmailStatus;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.service.IGoogleSignInService;
@@ -117,12 +118,21 @@ public class GoogleSignInService implements IGoogleSignInService {
                 IdentityProvider.GOOGLE,
                 jwt.getSubject(),
                 email,
-                Boolean.TRUE.equals(jwt.getClaimAsBoolean(StandardClaimNames.EMAIL_VERIFIED)),
-                StringUtils.endsWithIgnoreCase(email, GMAIL_SUFFIX)
-                        || StringUtils.isNotBlank(jwt.getClaimAsString(HOSTED_DOMAIN)),
+                emailStatus(jwt, email),
                 StringUtils.substringBefore(email, "@"),
                 jwt.getClaimAsString(StandardClaimNames.GIVEN_NAME),
                 jwt.getClaimAsString(StandardClaimNames.FAMILY_NAME));
+    }
+
+    private static EmailStatus emailStatus(final Jwt jwt, @Nullable final String email) {
+        if (email == null || !Boolean.TRUE.equals(jwt.getClaimAsBoolean(StandardClaimNames.EMAIL_VERIFIED))) {
+            return EmailStatus.UNVERIFIED;
+        }
+        if (StringUtils.endsWithIgnoreCase(email, GMAIL_SUFFIX)
+                || StringUtils.isNotBlank(jwt.getClaimAsString(HOSTED_DOMAIN))) {
+            return EmailStatus.AUTHORITATIVE;
+        }
+        return EmailStatus.VERIFIED;
     }
 
 }

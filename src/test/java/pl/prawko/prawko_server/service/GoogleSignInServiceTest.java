@@ -19,6 +19,7 @@ import pl.prawko.prawko_server.config.GoogleJwksStub;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
 import pl.prawko.prawko_server.exception.ProviderUnavailableException;
+import pl.prawko.prawko_server.model.EmailStatus;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.service.implementation.GoogleSignInService;
 import pl.prawko.prawko_server.test_data.GoogleTestData;
@@ -58,21 +59,26 @@ class GoogleSignInServiceTest {
         jwksStub.close();
     }
 
-    private static Stream<Arguments> emailHosting() {
+    private static Stream<Arguments> emailStatuses() {
         return Stream.of(
-                Arguments.of(Named.of("Workspace email", GoogleTestData.createPippinClaims()), true),
-                Arguments.of(Named.of("Gmail address", withoutHostedDomain("pippin@gmail.com")), true),
-                Arguments.of(Named.of("Gmail address in upper case", withoutHostedDomain("PIPPIN@GMAIL.COM")), true),
+                Arguments.of(Named.of("Workspace email", GoogleTestData.createPippinClaims()),
+                        EmailStatus.AUTHORITATIVE),
+                Arguments.of(Named.of("Gmail address", withoutHostedDomain("pippin@gmail.com")),
+                        EmailStatus.AUTHORITATIVE),
+                Arguments.of(Named.of("Gmail address in upper case", withoutHostedDomain("PIPPIN@GMAIL.COM")),
+                        EmailStatus.AUTHORITATIVE),
                 Arguments.of(Named.of("other email", withoutHostedDomain(UserTestData.createTestUserPippin().getEmail())),
-                        false),
-                Arguments.of(Named.of("only ending like Gmail", withoutHostedDomain("pippin@notgmail.com")), false),
+                        EmailStatus.VERIFIED),
+                Arguments.of(Named.of("only ending like Gmail", withoutHostedDomain("pippin@notgmail.com")),
+                        EmailStatus.VERIFIED),
                 Arguments.of(Named.of("blank hosted domain", GoogleTestData.createPippinClaims()
-                        .claim(GoogleTestData.HOSTED_DOMAIN, " ")), false),
+                        .claim(GoogleTestData.HOSTED_DOMAIN, " ")), EmailStatus.VERIFIED),
+                Arguments.of(Named.of("unverified Workspace email", GoogleTestData.createPippinClaims()
+                        .claim(StandardClaimNames.EMAIL_VERIFIED, false)), EmailStatus.UNVERIFIED),
+                Arguments.of(Named.of("without verification claim", GoogleTestData.createPippinClaims()
+                        .claims(claims -> claims.remove(StandardClaimNames.EMAIL_VERIFIED))), EmailStatus.UNVERIFIED),
                 Arguments.of(Named.of("without email", GoogleTestData.createPippinClaims()
-                        .claims(claims -> {
-                            claims.remove(StandardClaimNames.EMAIL);
-                            claims.remove(GoogleTestData.HOSTED_DOMAIN);
-                        })), false)
+                        .claims(claims -> claims.remove(StandardClaimNames.EMAIL))), EmailStatus.UNVERIFIED)
         );
     }
 
@@ -108,9 +114,9 @@ class GoogleSignInServiceTest {
     }
 
     @ParameterizedTest
-    @MethodSource("emailHosting")
-    void signIn_resolveUserWithEmailAuthority_whenTokenIsValid(final JwtClaimsSet.Builder claims,
-                                                               final boolean authoritative) {
+    @MethodSource("emailStatuses")
+    void signIn_resolveUserWithEmailStatus_whenTokenIsValid(final JwtClaimsSet.Builder claims,
+                                                            final EmailStatus status) {
         final var service = createService(List.of(GoogleTestData.WEB_CLIENT_ID), jwksStub.url());
         final var profile = ArgumentCaptor.forClass(ProviderProfile.class);
         when(userIdentityService.resolveUser(any())).thenReturn(UserTestData.createTestUserPippin().setId(7L));
@@ -118,7 +124,7 @@ class GoogleSignInServiceTest {
         service.signIn(GoogleTestData.idToken(claims));
 
         verify(userIdentityService).resolveUser(profile.capture());
-        assertThat(profile.getValue().emailAuthoritative()).isEqualTo(authoritative);
+        assertThat(profile.getValue().emailStatus()).isEqualTo(status);
     }
 
     private GoogleSignInService createService(final List<String> clientIds, final String jwkSetUri) {

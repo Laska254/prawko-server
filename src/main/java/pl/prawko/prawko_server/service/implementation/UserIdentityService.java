@@ -62,7 +62,7 @@ public class UserIdentityService implements IUserIdentityService {
             return linked.get();
         }
         final var email = profile.email();
-        if (email == null || !profile.emailVerified()) {
+        if (email == null || !profile.emailStatus().isVerified()) {
             log.warn("{} account without a verified email rejected.", provider);
             throw new DisabledException("Email address is not verified by " + provider.getDisplayName() + ".");
         }
@@ -81,7 +81,7 @@ public class UserIdentityService implements IUserIdentityService {
             log.warn("{} User id: {}", message, user.getId());
             throw new AlreadyExistsException(message, Map.ofEntries(Map.entry("provider", message)));
         }
-        if (!profile.emailAuthoritative()) {
+        if (!profile.emailStatus().isAuthoritative()) {
             final var message = "User with this email already exists, and " + provider.getDisplayName()
                     + " doesn't host the email, so the account can't be linked to it.";
             log.warn("{} account not linked to user with id '{}', its email isn't hosted by {}.",
