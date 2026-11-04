@@ -441,6 +441,16 @@ public class AuthControllerTest {
     }
 
     @Test
+    void signInWithGoogle_returnBadRequest_whenBodyIsMissing() {
+        restClient.post()
+                .uri(ApiConstants.GOOGLE)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+    }
+
+    @Test
     void signInWithGoogle_returnBadRequest_whenIdTokenIsBlank() {
         signInWithGoogle(" ")
                 .expectStatus().isBadRequest()
