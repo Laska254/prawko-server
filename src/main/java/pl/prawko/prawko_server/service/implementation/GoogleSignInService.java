@@ -35,9 +35,10 @@ import java.util.Set;
  * Implementation of {@link IGoogleSignInService} verifying Google ID tokens.
  * <p>
  * A token is accepted if it's signed with a key from Google's JWKS ({@code google.jwk-set-uri}), not expired, issued
- * by Google and for one of {@code google.client-ids} as audience. Android and web clients have different client IDs,
- * so several can be configured. Without any, Google sign-in is disabled; the JWKS is only fetched on the first
- * sign-in, so startup doesn't depend on it either way.
+ * by Google and for one of {@code google.client-ids} as audience. Every client, Android included, requests the token
+ * for the web (server) client ID, which then is the audience; several can be configured, e.g. one per Google Cloud
+ * project. Without any, Google sign-in is disabled; the JWKS is only fetched on the first sign-in, so startup doesn't
+ * depend on it either way.
  * <p>
  * Not transactional, so a conflict in {@link IUserIdentityService#resolveUser} is retried in a new transaction.
  */

@@ -90,7 +90,7 @@ public class AuthController {
      * Signs in with a Google account and issues tokens, creating or linking the user on the first sign-in.
      *
      * <p>The client gets the ID token from Google, e.g. with Credential Manager on Android or Google Identity Services
-     * on the web, using one of the server's configured client IDs.
+     * on the web, requested for the server's (web) client ID.
      *
      * @param request the {@link GoogleSignInRequest} containing the ID token
      * @return a {@link ResponseEntity} with HTTP 200 Ok and the issued {@link AuthTokensDto}

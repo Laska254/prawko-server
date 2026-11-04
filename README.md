@@ -81,8 +81,8 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
       `openssl rand -base64 32`
     + `PASSWORD_RESET_URL` frontend page the reset link points to, e.g. `https://prawko.pl/auth/password/reset`
     + `EMAIL_VERIFICATION_URL` frontend page the email verification link points to, e.g. `https://prawko.pl/auth/verify`
-    + `GOOGLE_CLIENT_IDS` optional, comma-separated OAuth client IDs of the Android and web apps
-      ([Google sign-in](#authentication)); without it `POST /auth/google` answers `404`
+    + `GOOGLE_CLIENT_IDS` optional, comma-separated web (server) OAuth client IDs the apps request Google ID tokens
+      for ([Google sign-in](#authentication)); without it `POST /auth/google` answers `404`
     + `MEDIA_DIRECTORY` directory with question media files, e.g. `/media` (a Docker volume)
     + `MEDIA_BASE_URL` public URL the media files are served from, e.g. `https://api.prawko.pl/media`
 
@@ -194,15 +194,16 @@ Changing (`PATCH /users/me/password`) or resetting (`POST /auth/password/reset`)
 of the user, signing out all their clients - including the one that changed it, which has to sign in again.
 
 Signing in with Google: the client gets an ID token from Google (Credential Manager on Android, Google Identity
-Services on the web) for one of its OAuth client IDs and sends it to `POST /auth/google` as `{"idToken": "..."}`,
-which returns the same token pair as `POST /auth`. The server checks the token's signature against Google's keys, its
-expiry, the issuer and that its audience is one of `google.client-ids` - all the Android and web client IDs, created
-in the Google Cloud console. An invalid token is answered with `401`, and without configured client IDs the endpoint
-answers `404`. The Google account is linked to a user on its first sign-in, looked up by its email, which Google must
-have verified (otherwise `403`): an existing user gets it linked, an unverified one is verified and its password
-cleared (it may have been registered by someone else with that email), and otherwise a new user without a password is
-created, with a username from the email's local part. Later sign-ins find the user by the Google account alone, so
-changing the email on either side keeps them linked.
+Services on the web) and sends it to `POST /auth/google` as `{"idToken": "..."}`, which returns the same token pair as
+`POST /auth`. Every client requests the token for the web (server) OAuth client ID, created in the Google Cloud console;
+on Android it's passed to `GetGoogleIdOption.Builder.setServerClientId`, not the Android client ID. The server checks
+the token's signature against Google's keys, its expiry, the issuer and that its audience is one of
+`google.client-ids`. An invalid token is answered with `401`, and without configured client IDs the endpoint answers
+`404`. The Google account is linked to a user on its first sign-in, looked up by its email, which Google must have
+verified (otherwise `403`): an existing user gets it linked (`409` if it's linked to another Google account already),
+an unverified one is verified and its password cleared (it may have been registered by someone else with that email),
+and otherwise a new user without a password is created, with a username from the email's local part. Later sign-ins
+find the user by the Google account alone, so changing the email on either side keeps them linked.
 
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 
