@@ -33,8 +33,8 @@ import pl.prawko.prawko_server.service.implementation.RefreshTokenService;
 /**
  * REST controller for authentication operations.
  *
- * <p>Provides endpoints for user login (with a password, a Google or a GitHub account), refreshing tokens, logout, verifying
- * email addresses and resetting forgotten passwords. Authentication is performed using Spring Security's
+ * <p>Provides endpoints for user login (with a password, a Google or a GitHub account), refreshing tokens, logout,
+ * verifying email addresses and resetting forgotten passwords. Authentication is performed using Spring Security's
  * authentication manager.
  * The API is stateless: signing in issues tokens, and only refresh tokens are stored.
  */
@@ -137,8 +137,8 @@ public class AuthController {
             @ApiResponse(responseCode = "404", description = "Sign-in with GitHub is not configured"),
             @ApiResponse(responseCode = "409", description = "A user with the email exists, and GitHub doesn't host "
                     + "the email, so it can't be linked"),
-            @ApiResponse(responseCode = "503", description = "GitHub can't be reached or rate limits the app, try again "
-                    + "later"),
+            @ApiResponse(responseCode = "503", description = "GitHub can't be reached or rate limits the app, try "
+                    + "again later"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
     })
     @PostMapping(ApiConstants.GITHUB)
