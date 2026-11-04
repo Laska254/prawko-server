@@ -441,6 +441,23 @@ public class AuthControllerTest {
     }
 
     @Test
+    void signInWithGoogle_returnConflictAndNotLink_whenGoogleDoesNotHostEmailOfUser() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+        final var idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                .claims(claims -> claims.remove(GoogleTestData.HOSTED_DOMAIN)));
+
+        signInWithGoogle(idToken)
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(GoogleTestData.EMAIL_NOT_HOSTED)
+                .jsonPath("$.details.email").isEqualTo(GoogleTestData.EMAIL_NOT_HOSTED);
+
+        assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        assertThat(userRepository.findById(tester.getId()))
+                .get().extracting(User::getPassword).isEqualTo(tester.getPassword());
+    }
+
+    @Test
     void signInWithGoogle_returnBadRequest_whenBodyIsMissing() {
         restClient.post()
                 .uri(ApiConstants.GOOGLE)

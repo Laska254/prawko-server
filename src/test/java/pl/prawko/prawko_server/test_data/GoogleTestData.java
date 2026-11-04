@@ -5,6 +5,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
@@ -24,10 +25,13 @@ public class GoogleTestData {
     public static final String ANDROID_CLIENT_ID = "android.apps.googleusercontent.com";
     public static final String WEB_CLIENT_ID = "web.apps.googleusercontent.com";
     public static final String OTHER_CLIENT_ID = "other-client";
+    public static final String HOSTED_DOMAIN = "hd";
     public static final String ISSUER = "https://accounts.google.com";
     public static final String INVALID_ID_TOKEN = "Google ID token is invalid or expired.";
     public static final String GOOGLE_NOT_AVAILABLE = "Sign-in with Google is not available.";
     public static final String GOOGLE_UNAVAILABLE = "Sign-in with Google is unavailable, try again later.";
+    public static final String EMAIL_NOT_HOSTED = "User with this email already exists, and GOOGLE doesn't host the "
+            + "email, so the account can't be linked to it.";
 
     private static final String KEY_ID = "google-test-key";
     private static final RSAKey SIGNING_KEY = generateKey();
@@ -41,7 +45,7 @@ public class GoogleTestData {
     }
 
     /**
-     * Claims of a valid ID token for Pippin's Google account, with his verified email.
+     * Claims of a valid ID token for Pippin's Google Workspace account, with his verified email hosted by Google.
      */
     public static JwtClaimsSet.Builder createPippinClaims() {
         final var pippin = UserTestData.createTestUserPippin();
@@ -54,6 +58,7 @@ public class GoogleTestData {
                 .expiresAt(now.plus(Duration.ofHours(1)))
                 .claim(StandardClaimNames.EMAIL, pippin.getEmail())
                 .claim(StandardClaimNames.EMAIL_VERIFIED, true)
+                .claim(HOSTED_DOMAIN, StringUtils.substringAfter(pippin.getEmail(), "@"))
                 .claim(StandardClaimNames.GIVEN_NAME, pippin.getFirstName())
                 .claim(StandardClaimNames.FAMILY_NAME, pippin.getLastName());
     }

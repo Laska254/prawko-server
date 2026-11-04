@@ -9,7 +9,6 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
-import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
@@ -49,7 +48,8 @@ public class UserIdentityService implements IUserIdentityService {
      * new transaction, which then finds the other request's identity or user, or picks another username.
      *
      * @throws DisabledException      if the account isn't linked yet and the provider hasn't verified its email
-     * @throws AlreadyExistsException if the user with the email is already linked to another account at the provider
+     * @throws AlreadyExistsException if the user with the email is already linked to another account at the provider,
+     *                                or the provider isn't authoritative for the email
      */
     @Override
     @Retryable(includes = DataIntegrityViolationException.class, maxRetries = 1, delay = 100)
@@ -67,18 +67,26 @@ public class UserIdentityService implements IUserIdentityService {
             throw new DisabledException("Email address is not verified by " + provider + ".");
         }
         final var user = repository.findByEmailIgnoreCase(email)
-                .map(existing -> prepareForLinking(existing, provider))
+                .map(existing -> prepareForLinking(existing, profile))
                 .orElseGet(() -> createUser(profile, email));
         repository.save(user.addIdentity(provider, profile.providerUserId()));
         log.info("{} account linked to user with id '{}'.", provider, user.getId());
         return user;
     }
 
-    private User prepareForLinking(final User user, final IdentityProvider provider) {
+    private User prepareForLinking(final User user, final ProviderProfile profile) {
+        final var provider = profile.provider();
         if (user.hasIdentity(provider)) {
             final var message = "User is already linked to another " + provider + " account.";
             log.warn("{} User id: {}", message, user.getId());
             throw new AlreadyExistsException(message, Map.ofEntries(Map.entry("provider", message)));
+        }
+        if (!profile.emailAuthoritative()) {
+            final var message = "User with this email already exists, and " + provider
+                    + " doesn't host the email, so the account can't be linked to it.";
+            log.warn("{} account not linked to user with id '{}', its email isn't hosted by {}.",
+                    provider, user.getId(), provider);
+            throw new AlreadyExistsException(message, Map.ofEntries(Map.entry("email", message)));
         }
         if (!user.isEnabled()) {
             user.setPassword(null)

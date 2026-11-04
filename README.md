@@ -203,8 +203,9 @@ and if Google's keys can't be fetched `503`. The Google account is linked to a u
 its email, which Google must have verified (otherwise `403`): an existing user gets it linked (`409` if it's linked to
 another Google account already), an unverified one is verified and its password cleared (it may have been registered
 by someone else with that email), and otherwise a new user without a password is created, with a username from the
-email's local part. Later sign-ins find the user by the Google account alone, so changing the email on either side
-keeps them linked.
+email's local part. An existing user is only linked if Google hosts the email (Gmail or Google Workspace), otherwise
+`409`: any other address was verified by Google only once and may belong to someone else by now. Later sign-ins find
+the user by the Google account alone, so changing the email on either side keeps them linked.
 
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 

@@ -22,6 +22,7 @@ import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.UserIdentityService;
+import pl.prawko.prawko_server.test_data.GoogleTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.time.Duration;
@@ -52,6 +53,13 @@ class UserIdentityServiceTest {
     private UserIdentityService service;
 
     private final ProviderProfile profile = UserTestData.createPippinProfile(PROVIDER);
+
+    private static Stream<Arguments> usersWithEmail() {
+        return Stream.of(
+                Arguments.of(Named.of("verified", UserTestData.createTestUserPippin().setId(7L))),
+                Arguments.of(Named.of("unverified", UserTestData.createUnverifiedPippin().setId(7L)))
+        );
+    }
 
     private static Stream<Arguments> suggestedUserNames() {
         final var maxLength = "a".repeat(31);
@@ -145,6 +153,33 @@ class UserIdentityServiceTest {
         verify(repository, never()).save(any());
     }
 
+    @ParameterizedTest
+    @MethodSource("usersWithEmail")
+    void resolveUser_throwAlreadyExistsAndChangeNothing_whenProviderDoesNotHostEmailOfUser(final User existing) {
+        final var password = existing.getPassword();
+        final var enabled = existing.isEnabled();
+        when(repository.findByEmailIgnoreCase(profile.email())).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.resolveUser(notHosted()))
+                .isInstanceOf(AlreadyExistsException.class)
+                .hasMessage(GoogleTestData.EMAIL_NOT_HOSTED);
+
+        assertThat(existing.getIdentities()).isEmpty();
+        assertThat(existing.getPassword()).isEqualTo(password);
+        assertThat(existing.isEnabled()).isEqualTo(enabled);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void resolveUser_createUser_whenProviderDoesNotHostEmailAndNoUserHasIt() {
+        stubNewUser();
+
+        final var result = service.resolveUser(notHosted());
+
+        assertThat(result.getEmail()).isEqualTo(profile.email());
+        assertLinked(result);
+    }
+
     @Test
     void resolveUser_createEnabledUserWithoutPassword_whenNoUserHasEmail() {
         final var pippin = UserTestData.createTestUserPippin();
@@ -168,7 +203,7 @@ class UserIdentityServiceTest {
         stubNewUser();
 
         final var result = service.resolveUser(new ProviderProfile(PROVIDER, profile.providerUserId(),
-                profile.email(), true, profile.suggestedUserName(), longName, longName));
+                profile.email(), true, true, profile.suggestedUserName(), longName, longName));
 
         assertThat(result.getFirstName()).isEqualTo(longName.substring(0, 31));
         assertThat(result.getLastName()).isEqualTo(longName.substring(0, 31));
@@ -179,7 +214,7 @@ class UserIdentityServiceTest {
         stubNewUser();
 
         final var result = service.resolveUser(new ProviderProfile(PROVIDER, profile.providerUserId(),
-                profile.email(), true, profile.suggestedUserName(), null, null));
+                profile.email(), true, true, profile.suggestedUserName(), null, null));
 
         assertThat(result.getFirstName()).isNull();
         assertThat(result.getLastName()).isNull();
@@ -247,12 +282,17 @@ class UserIdentityServiceTest {
     }
 
     private ProviderProfile withEmail(final String email, final boolean verified) {
-        return new ProviderProfile(PROVIDER, profile.providerUserId(), email, verified, profile.suggestedUserName(),
-                profile.firstName(), profile.lastName());
+        return new ProviderProfile(PROVIDER, profile.providerUserId(), email, verified, true,
+                profile.suggestedUserName(), profile.firstName(), profile.lastName());
+    }
+
+    private ProviderProfile notHosted() {
+        return new ProviderProfile(PROVIDER, profile.providerUserId(), profile.email(), true, false,
+                profile.suggestedUserName(), profile.firstName(), profile.lastName());
     }
 
     private ProviderProfile withSuggestedUserName(final String suggested) {
-        return new ProviderProfile(PROVIDER, profile.providerUserId(), profile.email(), true, suggested,
+        return new ProviderProfile(PROVIDER, profile.providerUserId(), profile.email(), true, true, suggested,
                 profile.firstName(), profile.lastName());
     }
 

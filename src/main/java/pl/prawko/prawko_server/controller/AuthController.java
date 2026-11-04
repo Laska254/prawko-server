@@ -103,7 +103,8 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Invalid or expired ID token, or issued for another client"),
             @ApiResponse(responseCode = "403", description = "Email address is not verified by Google"),
             @ApiResponse(responseCode = "404", description = "Sign-in with Google is not configured"),
-            @ApiResponse(responseCode = "409", description = "The user with the email is linked to another Google account"),
+            @ApiResponse(responseCode = "409", description = "The user with the email is linked to another Google "
+                    + "account, or Google doesn't host the email, so it can't be linked"),
             @ApiResponse(responseCode = "503", description = "Google can't be reached, try again later"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
     })

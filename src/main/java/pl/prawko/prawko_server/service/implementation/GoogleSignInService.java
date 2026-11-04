@@ -41,6 +41,9 @@ import java.util.Set;
  * project. Without any, Google sign-in is disabled; the JWKS is only fetched on the first sign-in, so startup doesn't
  * depend on it either way.
  * <p>
+ * Google is authoritative for an email only if it hosts it: a Gmail address, or a Workspace one (with the {@code hd}
+ * claim). Any other email was only verified when it was added to the Google account and may have changed hands since.
+ * <p>
  * Not transactional, so a conflict in {@link IUserIdentityService#resolveUser} is retried in a new transaction.
  */
 @Service
@@ -49,6 +52,8 @@ public class GoogleSignInService implements IGoogleSignInService {
     private static final Logger log = LoggerFactory.getLogger(GoogleSignInService.class);
     private static final Set<String> ISSUERS = Set.of("accounts.google.com", "https://accounts.google.com");
     private static final String INVALID_TOKEN = "Google ID token is invalid or expired.";
+    private static final String HOSTED_DOMAIN = "hd";
+    private static final String GMAIL_SUFFIX = "@gmail.com";
 
     private final @Nullable JwtDecoder decoder;
     private final IUserIdentityService userIdentityService;
@@ -113,6 +118,8 @@ public class GoogleSignInService implements IGoogleSignInService {
                 jwt.getSubject(),
                 email,
                 Boolean.TRUE.equals(jwt.getClaimAsBoolean(StandardClaimNames.EMAIL_VERIFIED)),
+                StringUtils.endsWithIgnoreCase(email, GMAIL_SUFFIX)
+                        || StringUtils.isNotBlank(jwt.getClaimAsString(HOSTED_DOMAIN)),
                 StringUtils.substringBefore(email, "@"),
                 jwt.getClaimAsString(StandardClaimNames.GIVEN_NAME),
                 jwt.getClaimAsString(StandardClaimNames.FAMILY_NAME));

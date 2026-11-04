@@ -101,11 +101,11 @@ public class UserTestData {
     }
 
     /**
-     * Profile of Pippin's account at the provider, with his verified email.
+     * Profile of Pippin's account at the provider, with his verified email hosted by the provider.
      */
     public static ProviderProfile createPippinProfile(final IdentityProvider provider) {
         final var pippin = createTestUserPippin();
-        return new ProviderProfile(provider, PROVIDER_USER_ID, pippin.getEmail(), true, pippin.getUserName(),
+        return new ProviderProfile(provider, PROVIDER_USER_ID, pippin.getEmail(), true, true, pippin.getUserName(),
                 pippin.getFirstName(), pippin.getLastName());
     }
 
