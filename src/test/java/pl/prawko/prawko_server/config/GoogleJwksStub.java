@@ -26,7 +26,8 @@ public class GoogleJwksStub implements AutoCloseable {
                 .getBytes(StandardCharsets.UTF_8);
         server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
         server.createContext(PATH, exchange -> {
-            exchange.getResponseHeaders().set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+            exchange.getResponseHeaders()
+                    .set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
             exchange.sendResponseHeaders(HttpStatus.OK.value(), body.length);
             try (var response = exchange.getResponseBody()) {
                 response.write(body);
@@ -36,7 +37,8 @@ public class GoogleJwksStub implements AutoCloseable {
     }
 
     public String url() {
-        return "http://" + server.getAddress().getHostString() + ":" + server.getAddress().getPort() + PATH;
+        final var address = server.getAddress();
+        return "http://" + address.getHostString() + ":" + address.getPort() + PATH;
     }
 
     @Override
