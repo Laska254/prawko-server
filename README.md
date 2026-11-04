@@ -83,6 +83,8 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
     + `EMAIL_VERIFICATION_URL` frontend page the email verification link points to, e.g. `https://prawko.pl/auth/verify`
     + `GOOGLE_CLIENT_IDS` optional, comma-separated web (server) OAuth client IDs the apps request Google ID tokens
       for ([Google sign-in](#authentication)); without it `POST /auth/google` answers `404`
+    + `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` optional, credentials of the GitHub OAuth app
+      ([GitHub sign-in](#authentication)); without them `POST /auth/github` answers `404`
     + `MEDIA_DIRECTORY` directory with question media files, e.g. `/media` (a Docker volume)
     + `MEDIA_BASE_URL` public URL the media files are served from, e.g. `https://api.prawko.pl/media`
 
@@ -207,6 +209,17 @@ email's local part. An existing user is only linked if Google hosts the email (G
 `409`: any other address was verified by Google only once and may belong to someone else by now. Later sign-ins find
 the user by the Google account alone, so changing the email on either side keeps them linked.
 
+Signing in with GitHub: the client runs GitHub's authorization code flow with PKCE and the scope `user:email`, using the
+client ID of the GitHub OAuth app, and sends the result to `POST /auth/github` as
+`{"code": "...", "codeVerifier": "...", "redirectUri": "..."}`, which returns the same token pair as `POST /auth`. The
+server exchanges the code with the app's client secret and reads the account's ID and primary email from the GitHub API;
+the GitHub access token is used only for that and isn't stored. A code GitHub rejects is answered with `401`, without a
+configured client ID and secret the endpoint answers `404`, and if GitHub can't be reached or answers with a server error
+`503`. The first sign-in creates a user without a password, with the GitHub login as username. The primary email must be
+verified by GitHub (otherwise `403`). If a user with that email exists the answer is `409` and nothing is linked: GitHub
+doesn't host email addresses, it verified the address only once and it may belong to someone else by now. Later sign-ins
+find the user by the GitHub account's ID alone, so renaming the login or changing the email keeps them linked.
+
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 
 A new account must verify its email address before signing in. Registration emails a link to the frontend page
@@ -241,6 +254,7 @@ own data (admins may act on any user), **admin** - admins only.
   | `POST` | `/auth/refresh`         | public | exchange a refresh token for a new token pair, the used one is revoked                         |
   | `POST` | `/auth/logout`          | public | revoke a refresh token                                                                         |
   | `POST` | `/auth/google`          | public | sign in with a Google ID token, returns an access and a refresh token                          |
+  | `POST` | `/auth/github`          | public | sign in with a GitHub authorization code, returns an access and a refresh token                |
   | `POST` | `/auth/password/forgot` | public | email a password reset link, returns `202` whether the account exists or not                   |
   | `POST` | `/auth/password/reset`  | public | set a new password with the token from the reset link                                          |
   | `POST` | `/auth/verify`          | public | verify an email with a link's token, returns `202` while an email change awaits the other link |
