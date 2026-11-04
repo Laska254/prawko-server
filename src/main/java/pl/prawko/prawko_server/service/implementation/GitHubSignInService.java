@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
@@ -52,6 +53,7 @@ public class GitHubSignInService implements IGitHubSignInService {
     private static final String API_VERSION = "2022-11-28";
     private static final MediaType API_MEDIA_TYPE = MediaType.parseMediaType("application/vnd.github+json");
     private static final String INCORRECT_CLIENT_CREDENTIALS = "incorrect_client_credentials";
+    private static final String UNVERIFIED_USER_EMAIL = "unverified_user_email";
     private static final String INVALID_CODE = "GitHub authorization code is invalid or expired.";
 
     private final boolean configured;
@@ -108,7 +110,8 @@ public class GitHubSignInService implements IGitHubSignInService {
 
     /**
      * GitHub answers a failed exchange with {@code 200} and an error code. Only rejected client credentials aren't the
-     * client's fault.
+     * client's fault. GitHub can also refuse an account with an unverified primary email here, before its emails can be
+     * read.
      */
     private String exchangeCode(final GitHubSignInRequest request) {
         final var form = new LinkedMultiValueMap<String, String>();
@@ -132,6 +135,9 @@ public class GitHubSignInService implements IGitHubSignInService {
         }
         if (INCORRECT_CLIENT_CREDENTIALS.equals(response.error())) {
             throw new RestClientException("GitHub rejected the configured client ID or secret.");
+        }
+        if (UNVERIFIED_USER_EMAIL.equals(response.error())) {
+            throw new DisabledException("Email address is not verified by GitHub.");
         }
         log.warn("GitHub rejected an authorization code: {}.", response.error());
         throw new InvalidProviderCredentialException(INVALID_CODE);

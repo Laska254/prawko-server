@@ -31,6 +31,8 @@ public class GitHubTestData {
             {"error": "bad_verification_code", "error_description": "The code passed is incorrect or expired."}""";
     public static final String BAD_CLIENT_RESPONSE = """
             {"error": "incorrect_client_credentials", "error_description": "The client_id or client_secret is wrong."}""";
+    public static final String UNVERIFIED_EMAIL_RESPONSE = """
+            {"error": "unverified_user_email", "error_description": "The user must have a verified primary email."}""";
 
     private static final String CODE = "github-code";
     private static final String CODE_VERIFIER = "github-code-verifier";

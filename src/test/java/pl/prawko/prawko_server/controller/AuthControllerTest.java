@@ -570,6 +570,18 @@ public class AuthControllerTest {
     }
 
     @Test
+    void signInWithGitHub_returnForbidden_whenExchangeRefusesUnverifiedEmail() {
+        GitHubTestData.expectTokenExchange(github, GitHubTestData.json(GitHubTestData.UNVERIFIED_EMAIL_RESPONSE));
+
+        signInWithGitHub(GitHubTestData.createValidRequest())
+                .expectStatus().isForbidden()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(UserTestData.EMAIL_NOT_VERIFIED);
+
+        assertThat(userRepository.count()).isZero();
+    }
+
+    @Test
     void signInWithGitHub_returnServiceUnavailable_whenGitHubFails() {
         GitHubTestData.expectTokenExchange(github, MockRestResponseCreators.withServerError());
 

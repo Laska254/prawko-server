@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.ResponseCreator;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
@@ -112,6 +113,17 @@ class GitHubSignInServiceTest {
         GitHubTestData.expectTokenExchange(github, GitHubTestData.json(GitHubTestData.BAD_CLIENT_RESPONSE));
 
         assertSignInFailsAsUnavailable();
+    }
+
+    @Test
+    void signIn_throwDisabled_whenExchangeRefusesUnverifiedEmail() {
+        GitHubTestData.expectTokenExchange(github, GitHubTestData.json(GitHubTestData.UNVERIFIED_EMAIL_RESPONSE));
+        final var request = GitHubTestData.createValidRequest();
+
+        assertThatThrownBy(() -> service.signIn(request))
+                .isInstanceOf(DisabledException.class);
+        github.verify();
+        verifyNoInteractions(userIdentityService, refreshTokenService);
     }
 
     @Test
