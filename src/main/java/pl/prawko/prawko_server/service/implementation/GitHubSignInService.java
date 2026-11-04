@@ -162,6 +162,7 @@ public class GitHubSignInService implements IGitHubSignInService {
             throw new RestClientException("GitHub rejected the configured client ID or secret.");
         }
         if (UNVERIFIED_USER_EMAIL.equals(response.error())) {
+            log.warn("GitHub refused the code exchange for an account without a verified email.");
             throw new DisabledException("Email address is not verified by GitHub.");
         }
         log.warn("GitHub rejected an authorization code: {}.", response.error());
