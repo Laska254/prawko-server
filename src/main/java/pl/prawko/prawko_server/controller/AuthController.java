@@ -31,8 +31,9 @@ import pl.prawko.prawko_server.service.implementation.RefreshTokenService;
 /**
  * REST controller for authentication operations.
  *
- * <p>Provides endpoints for user login (with a password or a Google account), refreshing tokens, logout, verifying email addresses and resetting forgotten
- * passwords. Authentication is performed using Spring Security's authentication manager.
+ * <p>Provides endpoints for user login (with a password or a Google account), refreshing tokens, logout, verifying
+ * email addresses and resetting forgotten passwords. Authentication is performed using Spring Security's
+ * authentication manager.
  * The API is stateless: signing in issues tokens, and only refresh tokens are stored.
  */
 @Tag(name = "Auth", description = "Authentication management endpoints")
