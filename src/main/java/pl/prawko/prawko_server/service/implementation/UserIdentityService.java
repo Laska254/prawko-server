@@ -64,7 +64,7 @@ public class UserIdentityService implements IUserIdentityService {
         final var email = profile.email();
         if (email == null || !profile.emailVerified()) {
             log.warn("{} account without a verified email rejected.", provider);
-            throw new DisabledException("Email address is not verified by " + provider + ".");
+            throw new DisabledException("Email address is not verified by " + provider.getDisplayName() + ".");
         }
         final var user = repository.findByEmailIgnoreCase(email)
                 .map(existing -> prepareForLinking(existing, profile))
@@ -77,12 +77,12 @@ public class UserIdentityService implements IUserIdentityService {
     private User prepareForLinking(final User user, final ProviderProfile profile) {
         final var provider = profile.provider();
         if (user.hasIdentity(provider)) {
-            final var message = "User is already linked to another " + provider + " account.";
+            final var message = "User is already linked to another " + provider.getDisplayName() + " account.";
             log.warn("{} User id: {}", message, user.getId());
             throw new AlreadyExistsException(message, Map.ofEntries(Map.entry("provider", message)));
         }
         if (!profile.emailAuthoritative()) {
-            final var message = "User with this email already exists, and " + provider
+            final var message = "User with this email already exists, and " + provider.getDisplayName()
                     + " doesn't host the email, so the account can't be linked to it.";
             log.warn("{} account not linked to user with id '{}', its email isn't hosted by {}.",
                     provider, user.getId(), provider);

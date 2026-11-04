@@ -147,7 +147,7 @@ class UserIdentityServiceTest {
 
         assertThatThrownBy(() -> service.resolveUser(profile))
                 .isInstanceOf(AlreadyExistsException.class)
-                .hasMessage("User is already linked to another GOOGLE account.");
+                .hasMessage("User is already linked to another Google account.");
 
         assertThat(existing.getIdentities()).hasSize(1);
         verify(repository, never()).save(any());
