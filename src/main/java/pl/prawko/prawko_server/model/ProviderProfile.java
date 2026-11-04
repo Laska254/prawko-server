@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
  * @param provider          the provider of the account
  * @param providerUserId    the provider's stable ID of the account
  * @param email             the account's email, {@code null} if the provider didn't share any
- * @param emailVerified     whether the provider verified that the account owns the email
+ * @param emailStatus       how far the provider vouches for the email
  * @param suggestedUserName a name to derive the username of a new user from, e.g. the provider's login
  * @param firstName         the first name, {@code null} if unknown
  * @param lastName          the last name, {@code null} if unknown
@@ -19,7 +19,7 @@ public record ProviderProfile(
         IdentityProvider provider,
         String providerUserId,
         @Nullable String email,
-        boolean emailVerified,
+        EmailStatus emailStatus,
         @Nullable String suggestedUserName,
         @Nullable String firstName,
         @Nullable String lastName

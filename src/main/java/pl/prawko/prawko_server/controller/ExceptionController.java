@@ -26,8 +26,11 @@ import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
 import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
+import pl.prawko.prawko_server.exception.InvalidProviderCredentialException;
 import pl.prawko.prawko_server.exception.InvalidRefreshTokenException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
+import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
+import pl.prawko.prawko_server.exception.ProviderUnavailableException;
 import pl.prawko.prawko_server.exception.TooManyRequestsException;
 import pl.prawko.prawko_server.model.User;
 
@@ -111,6 +114,24 @@ public class ExceptionController {
     @ExceptionHandler(InvalidRefreshTokenException.class)
     public ProblemDetail handleInvalidRefreshToken(final InvalidRefreshTokenException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "401", description = "Invalid or expired identity provider credential")
+    @ExceptionHandler(InvalidProviderCredentialException.class)
+    public ProblemDetail handleInvalidProviderCredential(final InvalidProviderCredentialException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "404", description = "Identity provider is not configured")
+    @ExceptionHandler(ProviderNotConfiguredException.class)
+    public ProblemDetail handleProviderNotConfigured(final ProviderNotConfiguredException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "503", description = "Identity provider can't be reached")
+    @ExceptionHandler(ProviderUnavailableException.class)
+    public ProblemDetail handleProviderUnavailable(final ProviderUnavailableException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, exception.getMessage());
     }
 
     @ApiResponse(responseCode = "429", description = "Requested again within the cooldown")

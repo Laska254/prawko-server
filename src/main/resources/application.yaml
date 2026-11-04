@@ -60,3 +60,7 @@ email-verification:
   token-validity: 24h
   cooldown: 1m
   cleanup-interval: 1h
+
+google:
+  client-ids: ""
+  jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs

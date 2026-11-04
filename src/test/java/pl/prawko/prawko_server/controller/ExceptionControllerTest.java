@@ -8,6 +8,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.oauth2.jwt.JwtException;
+import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
+import pl.prawko.prawko_server.exception.ProviderUnavailableException;
+import pl.prawko.prawko_server.test_data.GoogleTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.sql.SQLException;
@@ -41,6 +45,24 @@ class ExceptionControllerTest {
     private static DataIntegrityViolationException violation(final String constraintName) {
         return new DataIntegrityViolationException("Constraint violated",
                 new ConstraintViolationException("Constraint violated", new SQLException(), constraintName));
+    }
+
+    @Test
+    void handleProviderNotConfigured_returnNotFound() {
+        final var result = controller.handleProviderNotConfigured(
+                new ProviderNotConfiguredException(GoogleTestData.GOOGLE_NOT_AVAILABLE));
+
+        assertThat(result.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        assertThat(result.getDetail()).isEqualTo(GoogleTestData.GOOGLE_NOT_AVAILABLE);
+    }
+
+    @Test
+    void handleProviderUnavailable_returnServiceUnavailable() {
+        final var result = controller.handleProviderUnavailable(new ProviderUnavailableException(
+                GoogleTestData.GOOGLE_UNAVAILABLE, new JwtException("Couldn't retrieve remote JWK set")));
+
+        assertThat(result.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
+        assertThat(result.getDetail()).isEqualTo(GoogleTestData.GOOGLE_UNAVAILABLE);
     }
 
     @Test

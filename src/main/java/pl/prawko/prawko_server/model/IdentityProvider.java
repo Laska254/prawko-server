@@ -5,7 +5,17 @@ package pl.prawko.prawko_server.model;
  */
 public enum IdentityProvider {
 
-    GOOGLE,
-    GITHUB
+    GOOGLE("Google"),
+    GITHUB("GitHub");
+
+    private final String displayName;
+
+    IdentityProvider(final String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
 
 }

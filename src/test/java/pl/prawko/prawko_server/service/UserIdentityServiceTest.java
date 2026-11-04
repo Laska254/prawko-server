@@ -16,12 +16,14 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.security.authentication.DisabledException;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
+import pl.prawko.prawko_server.model.EmailStatus;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.UserIdentityService;
+import pl.prawko.prawko_server.test_data.GoogleTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.time.Duration;
@@ -53,6 +55,13 @@ class UserIdentityServiceTest {
 
     private final ProviderProfile profile = UserTestData.createPippinProfile(PROVIDER);
 
+    private static Stream<Arguments> usersWithEmail() {
+        return Stream.of(
+                Arguments.of(Named.of("verified", UserTestData.createTestUserPippin().setId(7L))),
+                Arguments.of(Named.of("unverified", UserTestData.createUnverifiedPippin().setId(7L)))
+        );
+    }
+
     private static Stream<Arguments> suggestedUserNames() {
         final var maxLength = "a".repeat(31);
         return Stream.of(
@@ -72,7 +81,7 @@ class UserIdentityServiceTest {
         final var linked = UserTestData.createGooglePippin().setId(7L);
         when(repository.findByIdentity(PROVIDER, profile.providerUserId())).thenReturn(Optional.of(linked));
 
-        final var result = service.resolveUser(withEmail(null, false));
+        final var result = service.resolveUser(withEmail(null, EmailStatus.UNVERIFIED));
 
         assertThat(result).isSameAs(linked);
         assertThat(linked.getIdentities()).hasSize(1);
@@ -81,7 +90,7 @@ class UserIdentityServiceTest {
 
     @Test
     void resolveUser_throwDisabledAndChangeNothing_whenEmailNotVerified() {
-        assertThatThrownBy(() -> service.resolveUser(withEmail(profile.email(), false)))
+        assertThatThrownBy(() -> service.resolveUser(withEmail(profile.email(), EmailStatus.UNVERIFIED)))
                 .isInstanceOf(DisabledException.class);
 
         verify(repository).findByIdentity(PROVIDER, profile.providerUserId());
@@ -90,7 +99,7 @@ class UserIdentityServiceTest {
 
     @Test
     void resolveUser_throwDisabledAndChangeNothing_whenEmailMissing() {
-        assertThatThrownBy(() -> service.resolveUser(withEmail(null, true)))
+        assertThatThrownBy(() -> service.resolveUser(withEmail(null, EmailStatus.AUTHORITATIVE)))
                 .isInstanceOf(DisabledException.class);
 
         verify(repository).findByIdentity(PROVIDER, profile.providerUserId());
@@ -139,10 +148,37 @@ class UserIdentityServiceTest {
 
         assertThatThrownBy(() -> service.resolveUser(profile))
                 .isInstanceOf(AlreadyExistsException.class)
-                .hasMessage("User is already linked to another GOOGLE account.");
+                .hasMessage("User is already linked to another Google account.");
 
         assertThat(existing.getIdentities()).hasSize(1);
         verify(repository, never()).save(any());
+    }
+
+    @ParameterizedTest
+    @MethodSource("usersWithEmail")
+    void resolveUser_throwAlreadyExistsAndChangeNothing_whenProviderDoesNotHostEmailOfUser(final User existing) {
+        final var password = existing.getPassword();
+        final var enabled = existing.isEnabled();
+        when(repository.findByEmailIgnoreCase(profile.email())).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.resolveUser(withEmail(profile.email(), EmailStatus.VERIFIED)))
+                .isInstanceOf(AlreadyExistsException.class)
+                .hasMessage(GoogleTestData.EMAIL_NOT_HOSTED);
+
+        assertThat(existing.getIdentities()).isEmpty();
+        assertThat(existing.getPassword()).isEqualTo(password);
+        assertThat(existing.isEnabled()).isEqualTo(enabled);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void resolveUser_createUser_whenProviderDoesNotHostEmailAndNoUserHasIt() {
+        stubNewUser();
+
+        final var result = service.resolveUser(withEmail(profile.email(), EmailStatus.VERIFIED));
+
+        assertThat(result.getEmail()).isEqualTo(profile.email());
+        assertLinked(result);
     }
 
     @Test
@@ -168,7 +204,7 @@ class UserIdentityServiceTest {
         stubNewUser();
 
         final var result = service.resolveUser(new ProviderProfile(PROVIDER, profile.providerUserId(),
-                profile.email(), true, profile.suggestedUserName(), longName, longName));
+                profile.email(), profile.emailStatus(), profile.suggestedUserName(), longName, longName));
 
         assertThat(result.getFirstName()).isEqualTo(longName.substring(0, 31));
         assertThat(result.getLastName()).isEqualTo(longName.substring(0, 31));
@@ -179,7 +215,7 @@ class UserIdentityServiceTest {
         stubNewUser();
 
         final var result = service.resolveUser(new ProviderProfile(PROVIDER, profile.providerUserId(),
-                profile.email(), true, profile.suggestedUserName(), null, null));
+                profile.email(), profile.emailStatus(), profile.suggestedUserName(), null, null));
 
         assertThat(result.getFirstName()).isNull();
         assertThat(result.getLastName()).isNull();
@@ -246,14 +282,14 @@ class UserIdentityServiceTest {
         verify(repository).save(user);
     }
 
-    private ProviderProfile withEmail(final String email, final boolean verified) {
-        return new ProviderProfile(PROVIDER, profile.providerUserId(), email, verified, profile.suggestedUserName(),
+    private ProviderProfile withEmail(final String email, final EmailStatus status) {
+        return new ProviderProfile(PROVIDER, profile.providerUserId(), email, status, profile.suggestedUserName(),
                 profile.firstName(), profile.lastName());
     }
 
     private ProviderProfile withSuggestedUserName(final String suggested) {
-        return new ProviderProfile(PROVIDER, profile.providerUserId(), profile.email(), true, suggested,
-                profile.firstName(), profile.lastName());
+        return new ProviderProfile(PROVIDER, profile.providerUserId(), profile.email(), profile.emailStatus(),
+                suggested, profile.firstName(), profile.lastName());
     }
 
 }

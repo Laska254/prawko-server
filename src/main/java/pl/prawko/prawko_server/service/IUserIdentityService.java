@@ -21,6 +21,9 @@ public interface IUserIdentityService {
      *     <li>otherwise a new enabled user without a password is created, with a unique username derived from the
      *     profile.</li>
      * </ul>
+     * <p>
+     * An existing user is only linked if the provider is authoritative for the email, since otherwise it may have
+     * changed hands after the provider verified it.
      *
      * @param profile the profile of the provider account, read from a verified credential
      * @return the user to sign in

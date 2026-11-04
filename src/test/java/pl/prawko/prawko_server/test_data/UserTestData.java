@@ -10,6 +10,7 @@ import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.model.EmailStatus;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.model.Role;
@@ -101,12 +102,12 @@ public class UserTestData {
     }
 
     /**
-     * Profile of Pippin's account at the provider, with his verified email.
+     * Profile of Pippin's account at the provider, with his verified email hosted by the provider.
      */
     public static ProviderProfile createPippinProfile(final IdentityProvider provider) {
         final var pippin = createTestUserPippin();
-        return new ProviderProfile(provider, PROVIDER_USER_ID, pippin.getEmail(), true, pippin.getUserName(),
-                pippin.getFirstName(), pippin.getLastName());
+        return new ProviderProfile(provider, PROVIDER_USER_ID, pippin.getEmail(), EmailStatus.AUTHORITATIVE,
+                pippin.getUserName(), pippin.getFirstName(), pippin.getLastName());
     }
 
     public static User createPippinChangingEmail() {

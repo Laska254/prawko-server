@@ -147,6 +147,15 @@ public final class ApiConstants {
     public static final String LOGOUT = "/logout";
 
     /**
+     * Path segment for signing in with a Google ID token.
+     *
+     * <p>Example: {@code /auth/google}
+     *
+     * @see pl.prawko.prawko_server.controller.AuthController
+     */
+    public static final String GOOGLE = "/google";
+
+    /**
      * Path segment for requesting a password reset link by email.
      *
      * <p>Example: {@code /auth/password/forgot}

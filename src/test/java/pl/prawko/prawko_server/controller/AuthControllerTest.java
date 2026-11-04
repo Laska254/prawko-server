@@ -1,7 +1,9 @@
 package pl.prawko.prawko_server.controller;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,6 +20,8 @@ import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
@@ -25,21 +29,25 @@ import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.AuthTokensDto;
 import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
+import pl.prawko.prawko_server.dto.GoogleSignInRequest;
 import pl.prawko.prawko_server.dto.LoginDto;
 import pl.prawko.prawko_server.dto.RefreshTokenRequest;
 import pl.prawko.prawko_server.dto.ResendVerificationRequest;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.VerifyEmailRequest;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.RefreshTokenRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
+import pl.prawko.prawko_server.test_data.GoogleTestData;
 import pl.prawko.prawko_server.test_data.RefreshTokenTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -101,6 +109,39 @@ public class AuthControllerTest {
                 Arguments.of("username null", new LoginDto(null, "password"), TestUtils.USERNAME_REQUIRED, null),
                 Arguments.of("password blank", new LoginDto("pippin", "  "), null, PASSWORD_SIZE_MSG),
                 Arguments.of("password null", new LoginDto("pippin", null), null, TestUtils.PASSWORD_REQUIRED)
+        );
+    }
+
+    private static Stream<Arguments> acceptedGoogleIdTokens() {
+        return Stream.of(
+                Arguments.of(Named.of("for the web client",
+                        GoogleTestData.idToken(GoogleTestData.createPippinClaims()))),
+                Arguments.of(Named.of("for the Android client", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                        .audience(List.of(GoogleTestData.ANDROID_CLIENT_ID))))),
+                Arguments.of(Named.of("for several audiences", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                        .audience(List.of(GoogleTestData.OTHER_CLIENT_ID, GoogleTestData.ANDROID_CLIENT_ID))))),
+                Arguments.of(Named.of("issuer without scheme", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                        .issuer("accounts.google.com"))))
+        );
+    }
+
+    private static Stream<Arguments> invalidGoogleIdTokens() {
+        final var expired = Instant.now().minus(Duration.ofHours(1));
+        return Stream.of(
+                Arguments.of(Named.of("for another client", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                        .audience(List.of(GoogleTestData.OTHER_CLIENT_ID))))),
+                Arguments.of(Named.of("other issuer", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                        .issuer("https://accounts.example.com")))),
+                Arguments.of(Named.of("expired", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                        .issuedAt(expired.minus(Duration.ofHours(1)))
+                        .expiresAt(expired)))),
+                Arguments.of(Named.of("without expiry", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                        .claims(claims -> claims.remove(JwtClaimNames.EXP))))),
+                Arguments.of(Named.of("without subject", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                        .claims(claims -> claims.remove(JwtClaimNames.SUB))))),
+                Arguments.of(Named.of("signed by another key",
+                        GoogleTestData.idTokenSignedByOtherKey(GoogleTestData.createPippinClaims()))),
+                Arguments.of(Named.of("malformed", "not-a-jwt"))
         );
     }
 
@@ -330,6 +371,109 @@ public class AuthControllerTest {
                 .expectBody()
                 .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
                 .jsonPath("$.details.refreshToken").isEqualTo("Token is required.");
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void signInWithGoogle_createUserAndReturnTokens_whenAccountIsNew(final CapturedOutput output) {
+        final var pippin = UserTestData.createTestUserPippin();
+
+        final var tokens = signInWithGoogle(GoogleTestData.idToken(GoogleTestData.createPippinClaims()))
+                .expectStatus().isOk()
+                .expectBody(AuthTokensDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        final var created = userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)
+                .orElseThrow();
+        assertThat(created.getUserName()).isEqualTo(StringUtils.substringBefore(pippin.getEmail(), "@"));
+        assertThat(created.getEmail()).isEqualTo(pippin.getEmail());
+        assertThat(created.getFirstName()).isEqualTo(pippin.getFirstName());
+        assertThat(created.getLastName()).isEqualTo(pippin.getLastName());
+        assertThat(created.getPassword()).isNull();
+        assertThat(created.isEnabled()).isTrue();
+        getMe(tokens.accessToken())
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(created.getId());
+        assertThat(output).contains("user with id '" + created.getId() + "'")
+                .doesNotContain(pippin.getEmail());
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("acceptedGoogleIdTokens")
+    void signInWithGoogle_returnTokensOfUserWithEmail_whenIdTokenIsValid(final String idToken) {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+
+        final var tokens = signInWithGoogle(idToken)
+                .expectStatus().isOk()
+                .expectBody(AuthTokensDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertThat(refreshTokenRepository.findByTokenHash(SecureTokens.hash(tokens.refreshToken())))
+                .get().extracting(token -> token.getUser().getId()).isEqualTo(tester.getId());
+        assertThat(userRepository.count()).isOne();
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("invalidGoogleIdTokens")
+    void signInWithGoogle_returnUnauthorized_whenIdTokenIsInvalid(final String idToken) {
+        signInWithGoogle(idToken)
+                .expectStatus().isUnauthorized()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(GoogleTestData.INVALID_ID_TOKEN);
+
+        assertThat(userRepository.count()).isZero();
+    }
+
+    @Test
+    void signInWithGoogle_returnForbidden_whenEmailIsNotVerified() {
+        final var idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                .claim(StandardClaimNames.EMAIL_VERIFIED, false));
+
+        signInWithGoogle(idToken)
+                .expectStatus().isForbidden()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(UserTestData.EMAIL_NOT_VERIFIED);
+
+        assertThat(userRepository.count()).isZero();
+    }
+
+    @Test
+    void signInWithGoogle_returnConflictAndNotLink_whenGoogleDoesNotHostEmailOfUser() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin());
+        final var idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                .claims(claims -> claims.remove(GoogleTestData.HOSTED_DOMAIN)));
+
+        signInWithGoogle(idToken)
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(GoogleTestData.EMAIL_NOT_HOSTED)
+                .jsonPath("$.details.email").isEqualTo(GoogleTestData.EMAIL_NOT_HOSTED);
+
+        assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        assertThat(userRepository.findById(tester.getId()))
+                .get().extracting(User::getPassword).isEqualTo(tester.getPassword());
+    }
+
+    @Test
+    void signInWithGoogle_returnBadRequest_whenBodyIsMissing() {
+        restClient.post()
+                .uri(ApiConstants.GOOGLE)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+    }
+
+    @Test
+    void signInWithGoogle_returnBadRequest_whenIdTokenIsBlank() {
+        signInWithGoogle(" ")
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED)
+                .jsonPath("$.details.idToken").isEqualTo("Token is required.");
     }
 
     @Test
@@ -709,6 +853,13 @@ public class AuthControllerTest {
         return restClient.post()
                 .uri(ApiConstants.LOGOUT)
                 .body(new RefreshTokenRequest(refreshToken))
+                .exchange();
+    }
+
+    private RestTestClient.ResponseSpec signInWithGoogle(final String idToken) {
+        return restClient.post()
+                .uri(ApiConstants.GOOGLE)
+                .body(new GoogleSignInRequest(idToken))
                 .exchange();
     }
 
