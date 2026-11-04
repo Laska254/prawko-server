@@ -27,6 +27,7 @@ public class GoogleTestData {
     public static final String ISSUER = "https://accounts.google.com";
     public static final String INVALID_ID_TOKEN = "Google ID token is invalid or expired.";
     public static final String GOOGLE_NOT_AVAILABLE = "Sign-in with Google is not available.";
+    public static final String GOOGLE_UNAVAILABLE = "Sign-in with Google is unavailable, try again later.";
 
     private static final String KEY_ID = "google-test-key";
     private static final RSAKey SIGNING_KEY = generateKey();

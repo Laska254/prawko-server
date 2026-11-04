@@ -20,6 +20,7 @@ import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.dto.AuthTokensDto;
 import pl.prawko.prawko_server.exception.InvalidProviderCredentialException;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
+import pl.prawko.prawko_server.exception.ProviderUnavailableException;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.service.IGoogleSignInService;
@@ -68,12 +69,6 @@ public class GoogleSignInService implements IGoogleSignInService {
         this.refreshTokenService = refreshTokenService;
     }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * A token that can't be checked because the JWKS can't be fetched isn't taken for an invalid one: the
-     * {@link JwtException} is thrown.
-     */
     @Override
     public AuthTokensDto signIn(final String idToken) {
         if (decoder == null) {
@@ -85,6 +80,9 @@ public class GoogleSignInService implements IGoogleSignInService {
         } catch (final BadJwtException exception) {
             log.warn("Google ID token rejected: {}", exception.getMessage());
             throw new InvalidProviderCredentialException(INVALID_TOKEN);
+        } catch (final JwtException exception) {
+            log.error("Google ID token couldn't be verified.", exception);
+            throw new ProviderUnavailableException("Sign-in with Google is unavailable, try again later.", exception);
         }
         final var user = userIdentityService.resolveUser(toProfile(jwt));
         return refreshTokenService.issueTokens(AuthenticatedUser.of(user));

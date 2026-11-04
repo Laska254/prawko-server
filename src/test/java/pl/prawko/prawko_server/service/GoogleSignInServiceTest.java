@@ -8,6 +8,7 @@ import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.JwtException;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
+import pl.prawko.prawko_server.exception.ProviderUnavailableException;
 import pl.prawko.prawko_server.service.implementation.GoogleSignInService;
 import pl.prawko.prawko_server.test_data.GoogleTestData;
 
@@ -39,11 +40,14 @@ class GoogleSignInServiceTest {
     }
 
     @Test
-    void signIn_throwJwtException_whenJwksIsUnavailable() {
+    void signIn_throwProviderUnavailable_whenJwksIsUnavailable() {
         final var service = createService(List.of(GoogleTestData.WEB_CLIENT_ID));
         final var idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims());
 
         assertThatThrownBy(() -> service.signIn(idToken))
+                .isInstanceOf(ProviderUnavailableException.class)
+                .hasMessage(GoogleTestData.GOOGLE_UNAVAILABLE)
+                .cause()
                 .isInstanceOf(JwtException.class)
                 .isNotInstanceOf(BadJwtException.class);
         verifyNoInteractions(userIdentityService, refreshTokenService);
