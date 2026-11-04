@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
@@ -107,15 +108,15 @@ public class GoogleSignInService implements IGoogleSignInService {
      * Maps the token's claims, suggesting the email's local part as username.
      */
     private static ProviderProfile toProfile(final Jwt jwt) {
-        final var email = jwt.getClaimAsString("email");
+        final var email = jwt.getClaimAsString(StandardClaimNames.EMAIL);
         return new ProviderProfile(
                 IdentityProvider.GOOGLE,
                 jwt.getSubject(),
                 email,
-                Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified")),
+                Boolean.TRUE.equals(jwt.getClaimAsBoolean(StandardClaimNames.EMAIL_VERIFIED)),
                 StringUtils.substringBefore(email, "@"),
-                jwt.getClaimAsString("given_name"),
-                jwt.getClaimAsString("family_name"));
+                jwt.getClaimAsString(StandardClaimNames.GIVEN_NAME),
+                jwt.getClaimAsString(StandardClaimNames.FAMILY_NAME));
     }
 
 }

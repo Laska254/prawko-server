@@ -20,6 +20,7 @@ import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.test.web.servlet.client.RestTestClient;
@@ -429,7 +430,7 @@ public class AuthControllerTest {
     @Test
     void signInWithGoogle_returnForbidden_whenEmailIsNotVerified() {
         final var idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims()
-                .claim("email_verified", false));
+                .claim(StandardClaimNames.EMAIL_VERIFIED, false));
 
         signInWithGoogle(idToken)
                 .expectStatus().isForbidden()

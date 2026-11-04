@@ -5,6 +5,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -49,10 +50,10 @@ public class GoogleTestData {
                 .subject(UserTestData.PROVIDER_USER_ID)
                 .issuedAt(now)
                 .expiresAt(now.plus(Duration.ofHours(1)))
-                .claim("email", pippin.getEmail())
-                .claim("email_verified", true)
-                .claim("given_name", pippin.getFirstName())
-                .claim("family_name", pippin.getLastName());
+                .claim(StandardClaimNames.EMAIL, pippin.getEmail())
+                .claim(StandardClaimNames.EMAIL_VERIFIED, true)
+                .claim(StandardClaimNames.GIVEN_NAME, pippin.getFirstName())
+                .claim(StandardClaimNames.FAMILY_NAME, pippin.getLastName());
     }
 
     public static String idToken(final JwtClaimsSet.Builder claims) {
