@@ -35,8 +35,7 @@ import java.util.List;
  *     <li>{@link User}: Each {@code User} can have multiple exams</li>
  *     <li>{@link Question}: Each exam contains 20 basic questions and  12 specialized questions</li>
  *     <li>{@link Answer}: Answers submitted so far, at most one per question; a new one replaces the previous answer to that question</li>
- *     <li>{@link Language}: Each exam have single language</li>
- *     <li>{@link Category}: Each exam have single category or multiple categories</li>
+ *     <li>{@link Category}: Each exam has a single category</li>
  * </ul>
  * The entity is mapped to the database table {@code exam}. Timestamps are {@link Instant}s, so they don't depend on
  * the JVM's time zone; {@code created} and {@code expires} are set together when the exam is created (so
@@ -85,10 +84,6 @@ public class Exam {
             inverseJoinColumns = @JoinColumn(name = "answer_id")
     )
     private List<Answer> userAnswers;
-
-    @ManyToOne
-    @JoinColumn(name = "language_id")
-    private Language language;
 
     @ManyToOne
     @JoinColumn(name = "category_id")
@@ -157,15 +152,6 @@ public class Exam {
         return this;
     }
 
-    public Language getLanguage() {
-        return language;
-    }
-
-    public Exam setLanguage(final Language language) {
-        this.language = language;
-        return this;
-    }
-
     public Category getCategory() {
         return category;
     }
@@ -219,7 +205,6 @@ public class Exam {
                 ", updated=" + updated +
                 ", expires=" + expires +
                 ", user=" + (user == null ? null : user.getId()) +
-                ", language=" + (language == null ? null : language.getCode()) +
                 ", category=" + (category == null ? null : category.getName()) +
                 '}';
     }

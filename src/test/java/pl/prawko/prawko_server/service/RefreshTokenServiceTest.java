@@ -91,6 +91,16 @@ class RefreshTokenServiceTest {
             assertThat(result.expiresIn()).isEqualTo(TestUtils.ACCESS_TOKEN_VALIDITY.toSeconds());
         }
 
+        @Test
+        void logUserIdOnly_whenUserIsAuthenticated(final CapturedOutput output) {
+            when(userRepository.getReferenceById(tester.getId())).thenReturn(tester);
+
+            service.issueTokens(TestUtils.createUserPrincipal());
+
+            assertThat(output).contains("Refresh token issued for user with id '" + tester.getId() + "'")
+                    .doesNotContain(tester.getEmail(), tester.getUserName());
+        }
+
     }
 
     @Nested

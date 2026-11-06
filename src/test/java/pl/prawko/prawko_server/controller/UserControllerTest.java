@@ -245,7 +245,7 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenBodyIsMissing() {
-            final var expectedMessage = TestUtils.BODY_MISSING;
+            final var expectedMessage = TestUtils.BODY_UNREADABLE;
 
             restClient.post()
                     .exchange()
@@ -916,7 +916,7 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenBodyIsMissing() {
-            final var expectedMessage = TestUtils.BODY_MISSING;
+            final var expectedMessage = TestUtils.BODY_UNREADABLE;
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)
@@ -1070,7 +1070,7 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_UNREADABLE);
         }
 
         @Test
@@ -1196,7 +1196,7 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_UNREADABLE);
         }
 
         @Test
@@ -1352,7 +1352,7 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_UNREADABLE);
         }
 
         @Test
@@ -1512,7 +1512,7 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_UNREADABLE);
         }
 
         @Test
