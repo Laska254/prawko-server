@@ -238,6 +238,11 @@ An unlinked account no longer finds the user by its ID, so its next sign-in coun
 is one the provider hosts it's linked again, since whoever holds that account controls the mailbox and could reset the
 password anyway. Unlinking doesn't revoke refresh tokens, so clients already signed in stay signed in.
 
+Users without a password: a user created by a provider has none, and `hasPassword` in the user response is `false`, so
+a client can offer to set one. Until then `POST /auth` answers `401`, and `PATCH /users/me/password` and
+`DELETE /users/me` answer `400` `"Current password is incorrect."`. `POST /auth/password/forgot` and
+`POST /auth/password/reset` work without a current password and set the first one, after which all three work as usual.
+
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 
 A new account must verify its email address before signing in. Registration emails a link to the frontend page
@@ -280,21 +285,21 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/users`
 
-  | Method   | Path                          | Access | Description                                                      |
-  |----------|-------------------------------|--------|------------------------------------------------------------------|
-  | `POST`   | `/users`                      | public | register a new user, emails a verification link                  |
-  | `GET`    | `/users/me`                   | user   | get the signed-in user (e.g. their ID and role)                  |
-  | `GET`    | `/users/me/stats`             | user   | get own exam statistics, see [Exam statistics](#exam-statistics) |
-  | `DELETE` | `/users/me`                   | user   | delete own account with its exams (requires current password)    |
-  | `PATCH`  | `/users/me/password`          | user   | change own password (requires current password)                  |
-  | `POST`   | `/users/me/identities/google` | user   | link a Google account (requires current password)                |
-  | `DELETE` | `/users/me/identities/google` | user   | unlink the Google account (requires current password)            |
-  | `POST`   | `/users/me/identities/github` | user   | link a GitHub account (requires current password)                |
-  | `DELETE` | `/users/me/identities/github` | user   | unlink the GitHub account (requires current password)            |
-  | `GET`    | `/users`                      | admin  | get a page of users                                              |
-  | `GET`    | `/users/{id}`                 | admin  | get a user                                                       |
-  | `PATCH`  | `/users/{id}`                 | self   | update a user (email: the user themselves only)                  |
-  | `DELETE` | `/users/{id}`                 | admin  | delete a user with their exams                                   |
+  | Method   | Path                          | Access | Description                                                                                          |
+  |----------|-------------------------------|--------|------------------------------------------------------------------------------------------------------|
+  | `POST`   | `/users`                      | public | register a new user, emails a verification link                                                      |
+  | `GET`    | `/users/me`                   | user   | get the signed-in user (e.g. their ID and role)                                                      |
+  | `GET`    | `/users/me/stats`             | user   | get own exam statistics, see [Exam statistics](#exam-statistics)                                     |
+  | `DELETE` | `/users/me`                   | user   | delete own account with its exams (requires current password, if none set one with a password reset) |
+  | `PATCH`  | `/users/me/password`          | user   | change own password (requires current password, if none set one with a password reset)               |
+  | `POST`   | `/users/me/identities/google` | user   | link a Google account (requires current password)                                                    |
+  | `DELETE` | `/users/me/identities/google` | user   | unlink the Google account (requires current password)                                                |
+  | `POST`   | `/users/me/identities/github` | user   | link a GitHub account (requires current password)                                                    |
+  | `DELETE` | `/users/me/identities/github` | user   | unlink the GitHub account (requires current password)                                                |
+  | `GET`    | `/users`                      | admin  | get a page of users                                                                                  |
+  | `GET`    | `/users/{id}`                 | admin  | get a user                                                                                           |
+  | `PATCH`  | `/users/{id}`                 | self   | update a user (email: the user themselves only)                                                      |
+  | `DELETE` | `/users/{id}`                 | admin  | delete a user with their exams                                                                       |
 
   Usernames and emails are unique ignoring case: registering or renaming to one that differs from a taken one only in
   case returns `409`. Users can still change the capitalization of their own username. Emails are stored lowercased,
