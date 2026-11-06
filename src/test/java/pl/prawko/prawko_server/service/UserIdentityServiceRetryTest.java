@@ -101,6 +101,24 @@ class UserIdentityServiceRetryTest {
     }
 
     @Test
+    void resolveUser_generateOtherUserName_whenUserNameIsTakenConcurrently() {
+        final var profile = UserTestData.createPippinProfile(PROVIDER);
+        final var takenName = profile.suggestedUserName();
+        doAnswer(invocation -> {
+            final var free = realMethod().answer(invocation);
+            inNewTransaction(() -> repository.save(UserTestData.createMerry()
+                    .setUserName(takenName)));
+            return free;
+        }).doAnswer(realMethod()).when(repository).existsByUserNameIgnoreCase(takenName);
+
+        final var result = service.resolveUser(profile);
+
+        assertThat(result.getUserName()).isEqualTo(takenName + 1);
+        assertThat(result.getEmail()).isEqualTo(profile.email());
+        assertThat(repository.count()).isEqualTo(2);
+    }
+
+    @Test
     void linkIdentity_throwAlreadyExists_whenSameAccountIsLinkedConcurrently() {
         final var pippin = repository.save(UserTestData.createTestUserPippin());
         final var profile = UserTestData.createPippinProfile(PROVIDER);
@@ -116,6 +134,27 @@ class UserIdentityServiceRetryTest {
                 .hasMessage(GoogleTestData.LINKED_TO_OTHER_USER);
 
         verify(repository, times(2)).findByIdentity(PROVIDER, profile.providerUserId());
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void linkIdentity_throwAlreadyExists_whenUserLinksOtherAccountConcurrently() {
+        final var pippin = repository.save(UserTestData.createTestUserPippin());
+        final var profile = UserTestData.createPippinProfile(PROVIDER);
+        doAnswer(invocation -> {
+            final var free = realMethod().answer(invocation);
+            inNewTransaction(() -> repository.findById(pippin.getId())
+                    .map(user -> repository.save(user.addIdentity(PROVIDER, UserTestData.OTHER_PROVIDER_USER_ID))));
+            return free;
+        }).doAnswer(realMethod()).when(repository).findByIdentity(PROVIDER, profile.providerUserId());
+
+        assertThatThrownBy(() -> service.linkIdentity(pippin.getId(), profile))
+                .isInstanceOf(AlreadyExistsException.class)
+                .hasMessage(GoogleTestData.ALREADY_LINKED);
+
+        assertThat(repository.findByIdentity(PROVIDER, profile.providerUserId())).isEmpty();
+        assertThat(repository.findByIdentity(PROVIDER, UserTestData.OTHER_PROVIDER_USER_ID))
+                .get().extracting(User::getId).isEqualTo(pippin.getId());
         verifyNoInteractions(notificationService);
     }
 
