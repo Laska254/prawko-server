@@ -25,7 +25,6 @@ import java.util.List;
  * <ul>
  *     <li>{@link QuestionTranslation}: Each language is assigned to multiple question translations.</li>
  *     <li>{@link AnswerTranslation}: Each language is assigned to multiple answer translations.</li>
- *     <li>{@link Exam}: Each language is assigned to multiple exams.</li>
  * </ul>
  * <p>
  * The entity is mapped do the database table {@code question}.
@@ -65,9 +64,6 @@ public class Language {
 
     @OneToMany(mappedBy = "language")
     private List<AnswerTranslation> answerTranslations;
-
-    @OneToMany(mappedBy = "language")
-    private List<Exam> exams;
 
     public long getId() {
         return id;
@@ -120,15 +116,6 @@ public class Language {
 
     public Language setAnswerTranslations(final List<AnswerTranslation> answerTranslations) {
         this.answerTranslations = answerTranslations;
-        return this;
-    }
-
-    public List<Exam> getExams() {
-        return exams;
-    }
-
-    public Language setExams(final List<Exam> exams) {
-        this.exams = exams;
         return this;
     }
 
