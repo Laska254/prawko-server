@@ -31,7 +31,7 @@ public class GoogleTestData {
     public static final String GOOGLE_NOT_AVAILABLE = "Sign-in with Google is not available.";
     public static final String GOOGLE_UNAVAILABLE = "Sign-in with Google is unavailable, try again later.";
     public static final String EMAIL_NOT_HOSTED = "User with this email already exists, and Google doesn't host the "
-            + "email, so the account can't be linked to it. Sign in with your password and link Google from the "
+            + "email, so the account can't be linked to it. Sign in to that account and link Google from the "
             + "account settings.";
     public static final String ALREADY_LINKED = "User is already linked to a Google account.";
     public static final String LINKED_TO_OTHER_USER = "This Google account is already linked to another user.";

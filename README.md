@@ -224,7 +224,7 @@ keeps them linked.
 Linking and unlinking: a signed-in user links a provider account with `POST /users/me/identities/google` or
 `POST /users/me/identities/github`, with the same body and the same errors for a bad credential as the matching `/auth`
 endpoint, and `204` on success. The account's email doesn't have to match the user's, so this is the way forward after
-the `409` above: sign in with the password, then link. The answer is `409` if the account is linked to another user or
+the `409` above: sign in to that account, then link. The answer is `409` if the account is linked to another user or
 the user already has an account of that provider. `DELETE /users/me/identities/google` or
 `DELETE /users/me/identities/github` unlinks it and answers `204`, `404` if it isn't linked, and `409` if they have no
 password and no other linked account, as that would leave no way to sign in. `providers` in the user response lists the

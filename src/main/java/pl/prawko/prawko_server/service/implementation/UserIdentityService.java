@@ -146,7 +146,7 @@ public class UserIdentityService implements IUserIdentityService {
         }
         if (!profile.emailStatus().isAuthoritative()) {
             final var message = "User with this email already exists, and " + provider.getDisplayName()
-                    + " doesn't host the email, so the account can't be linked to it. Sign in with your password and"
+                    + " doesn't host the email, so the account can't be linked to it. Sign in to that account and"
                     + " link " + provider.getDisplayName() + " from the account settings.";
             log.warn("{} account not linked to user with id '{}', its email isn't hosted by {}.",
                     provider, user.getId(), provider);
