@@ -1,8 +1,8 @@
 package pl.prawko.prawko_server.service;
 
-import org.springframework.security.authentication.DisabledException;
 import pl.prawko.prawko_server.dto.GitHubSignInRequest;
 import pl.prawko.prawko_server.exception.InvalidProviderCredentialException;
+import pl.prawko.prawko_server.exception.ProviderEmailNotVerifiedException;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
 import pl.prawko.prawko_server.exception.ProviderUnavailableException;
 import pl.prawko.prawko_server.model.ProviderProfile;
@@ -17,7 +17,7 @@ public interface IGitHubProfileService {
      *
      * @param request the authorization code with the PKCE code verifier and redirect URI it was requested with
      * @return the profile of the GitHub account
-     * @throws DisabledException                  if GitHub refuses the exchange over an unverified primary email
+     * @throws ProviderEmailNotVerifiedException  if GitHub refuses the exchange over an unverified primary email
      * @throws InvalidProviderCredentialException if GitHub rejects the code or the access token issued for it
      * @throws ProviderNotConfiguredException     if the GitHub client ID or secret isn't configured
      * @throws ProviderUnavailableException       if GitHub can't be reached, answers with a server error, rate limits

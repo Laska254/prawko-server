@@ -1458,7 +1458,7 @@ public class UserControllerTest {
             link()
                     .expectStatus().isForbidden()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(UserTestData.EMAIL_NOT_VERIFIED);
+                    .jsonPath("$.detail").isEqualTo(GitHubTestData.EMAIL_NOT_VERIFIED);
 
             assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)).isEmpty();
         }

@@ -10,13 +10,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.ResponseCreator;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import pl.prawko.prawko_server.exception.InvalidProviderCredentialException;
+import pl.prawko.prawko_server.exception.ProviderEmailNotVerifiedException;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
 import pl.prawko.prawko_server.exception.ProviderUnavailableException;
 import pl.prawko.prawko_server.model.EmailStatus;
@@ -121,12 +121,13 @@ class GitHubProfileServiceTest {
     }
 
     @Test
-    void fetchProfile_throwDisabled_whenExchangeRefusesUnverifiedEmail() {
+    void fetchProfile_throwNotVerified_whenExchangeRefusesUnverifiedEmail() {
         GitHubTestData.expectTokenExchange(github, GitHubTestData.json(GitHubTestData.UNVERIFIED_EMAIL_RESPONSE));
         final var request = GitHubTestData.createValidRequest();
 
         assertThatThrownBy(() -> service.fetchProfile(request))
-                .isInstanceOf(DisabledException.class);
+                .isInstanceOf(ProviderEmailNotVerifiedException.class)
+                .hasMessage(GitHubTestData.EMAIL_NOT_VERIFIED);
         github.verify();
     }
 

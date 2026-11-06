@@ -30,6 +30,7 @@ public class GoogleTestData {
     public static final String INVALID_ID_TOKEN = "Google ID token is invalid or expired.";
     public static final String GOOGLE_NOT_AVAILABLE = "Sign-in with Google is not available.";
     public static final String GOOGLE_UNAVAILABLE = "Sign-in with Google is unavailable, try again later.";
+    public static final String EMAIL_NOT_VERIFIED = "Email address is not verified by Google.";
     public static final String EMAIL_NOT_HOSTED = "User with this email already exists, and Google doesn't host the "
             + "email, so the account can't be linked to it. Sign in as that user and link Google from the "
             + "account settings.";

@@ -10,7 +10,6 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
@@ -18,6 +17,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import pl.prawko.prawko_server.dto.GitHubSignInRequest;
 import pl.prawko.prawko_server.exception.InvalidProviderCredentialException;
+import pl.prawko.prawko_server.exception.ProviderEmailNotVerifiedException;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
 import pl.prawko.prawko_server.exception.ProviderUnavailableException;
 import pl.prawko.prawko_server.model.EmailStatus;
@@ -149,7 +149,7 @@ public class GitHubProfileService implements IGitHubProfileService {
         }
         if (UNVERIFIED_USER_EMAIL.equals(response.error())) {
             log.warn("GitHub refused the code exchange for an account without a verified email.");
-            throw new DisabledException("Email address is not verified by GitHub.");
+            throw new ProviderEmailNotVerifiedException("Email address is not verified by GitHub.");
         }
         log.warn("GitHub rejected an authorization code: {}.", response.error());
         throw new InvalidProviderCredentialException(INVALID_CODE);

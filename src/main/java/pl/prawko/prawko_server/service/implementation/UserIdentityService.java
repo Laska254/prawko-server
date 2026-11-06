@@ -6,11 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.resilience.annotation.Retryable;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.LastSignInMethodException;
+import pl.prawko.prawko_server.exception.ProviderEmailNotVerifiedException;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.model.Role;
@@ -58,9 +58,10 @@ public class UserIdentityService implements IUserIdentityService {
      * The notice about other linked accounts is queued inside the transaction, so the link is rolled back if it can't
      * be.
      *
-     * @throws DisabledException      if the account isn't linked yet and the provider hasn't verified its email
-     * @throws AlreadyExistsException if the user with the email is already linked to another account at the provider,
-     *                                or the provider isn't authoritative for the email
+     * @throws ProviderEmailNotVerifiedException if the account isn't linked yet and the provider hasn't verified its
+     *                                           email
+     * @throws AlreadyExistsException            if the user with the email is already linked to another account at the
+     *                                           provider, or the provider isn't authoritative for the email
      */
     @Override
     @Retryable(includes = DataIntegrityViolationException.class, maxRetries = 1, delay = 100)
@@ -75,7 +76,8 @@ public class UserIdentityService implements IUserIdentityService {
         final var email = profile.email();
         if (email == null || !profile.emailStatus().isVerified()) {
             log.warn("{} account without a verified email rejected.", provider);
-            throw new DisabledException("Email address is not verified by " + provider.getDisplayName() + ".");
+            throw new ProviderEmailNotVerifiedException("Email address is not verified by " + provider.getDisplayName()
+                    + ".");
         }
         final var user = repository.findByEmailIgnoreCase(email)
                 .map(existing -> prepareForLinking(existing, profile))

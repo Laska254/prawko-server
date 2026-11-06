@@ -442,7 +442,7 @@ public class AuthControllerTest {
         signInWithGoogle(idToken)
                 .expectStatus().isForbidden()
                 .expectBody()
-                .jsonPath("$.detail").isEqualTo(UserTestData.EMAIL_NOT_VERIFIED);
+                .jsonPath("$.detail").isEqualTo(GoogleTestData.EMAIL_NOT_VERIFIED);
 
         assertThat(userRepository.count()).isZero();
     }
@@ -595,7 +595,7 @@ public class AuthControllerTest {
         signInWithGitHub(GitHubTestData.createValidRequest())
                 .expectStatus().isForbidden()
                 .expectBody()
-                .jsonPath("$.detail").isEqualTo(UserTestData.EMAIL_NOT_VERIFIED);
+                .jsonPath("$.detail").isEqualTo(GitHubTestData.EMAIL_NOT_VERIFIED);
 
         assertThat(userRepository.count()).isZero();
     }
@@ -607,7 +607,7 @@ public class AuthControllerTest {
         signInWithGitHub(GitHubTestData.createValidRequest())
                 .expectStatus().isForbidden()
                 .expectBody()
-                .jsonPath("$.detail").isEqualTo(UserTestData.EMAIL_NOT_VERIFIED);
+                .jsonPath("$.detail").isEqualTo(GitHubTestData.EMAIL_NOT_VERIFIED);
 
         assertThat(userRepository.count()).isZero();
     }

@@ -30,6 +30,7 @@ import pl.prawko.prawko_server.exception.InvalidProviderCredentialException;
 import pl.prawko.prawko_server.exception.InvalidRefreshTokenException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.exception.LastSignInMethodException;
+import pl.prawko.prawko_server.exception.ProviderEmailNotVerifiedException;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
 import pl.prawko.prawko_server.exception.ProviderUnavailableException;
 import pl.prawko.prawko_server.exception.TooManyRequestsException;
@@ -193,6 +194,12 @@ public class ExceptionController {
     @ExceptionHandler(DisabledException.class)
     public ProblemDetail handleNotVerified() {
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Email address is not verified.");
+    }
+
+    @ApiResponse(responseCode = "403", description = "Email address is not verified by the provider")
+    @ExceptionHandler(ProviderEmailNotVerifiedException.class)
+    public ProblemDetail handleProviderEmailNotVerified(final ProviderEmailNotVerifiedException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, exception.getMessage());
     }
 
     @ApiResponse(responseCode = "403", description = "Access denied")

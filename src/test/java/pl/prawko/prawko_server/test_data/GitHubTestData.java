@@ -25,6 +25,7 @@ public class GitHubTestData {
     public static final String INVALID_CODE = "GitHub authorization code is invalid or expired.";
     public static final String GITHUB_NOT_AVAILABLE = "Sign-in with GitHub is not available.";
     public static final String GITHUB_UNAVAILABLE = "Sign-in with GitHub is unavailable, try again later.";
+    public static final String EMAIL_NOT_VERIFIED = "Email address is not verified by GitHub.";
     public static final String EMAIL_NOT_HOSTED = "User with this email already exists, and GitHub doesn't host the "
             + "email, so the account can't be linked to it. Sign in as that user and link GitHub from the "
             + "account settings.";

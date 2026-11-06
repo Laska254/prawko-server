@@ -15,10 +15,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.springframework.security.authentication.DisabledException;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.LastSignInMethodException;
+import pl.prawko.prawko_server.exception.ProviderEmailNotVerifiedException;
 import pl.prawko.prawko_server.model.EmailStatus;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
@@ -97,18 +97,20 @@ class UserIdentityServiceTest {
     }
 
     @Test
-    void resolveUser_throwDisabledAndChangeNothing_whenEmailNotVerified() {
+    void resolveUser_throwNotVerifiedAndChangeNothing_whenEmailNotVerified() {
         assertThatThrownBy(() -> service.resolveUser(withEmail(profile.email(), EmailStatus.UNVERIFIED)))
-                .isInstanceOf(DisabledException.class);
+                .isInstanceOf(ProviderEmailNotVerifiedException.class)
+                .hasMessage(GoogleTestData.EMAIL_NOT_VERIFIED);
 
         verify(repository).findByIdentity(PROVIDER, profile.providerUserId());
         verifyNoMoreInteractions(repository);
     }
 
     @Test
-    void resolveUser_throwDisabledAndChangeNothing_whenEmailMissing() {
+    void resolveUser_throwNotVerifiedAndChangeNothing_whenEmailMissing() {
         assertThatThrownBy(() -> service.resolveUser(withEmail(null, EmailStatus.AUTHORITATIVE)))
-                .isInstanceOf(DisabledException.class);
+                .isInstanceOf(ProviderEmailNotVerifiedException.class)
+                .hasMessage(GoogleTestData.EMAIL_NOT_VERIFIED);
 
         verify(repository).findByIdentity(PROVIDER, profile.providerUserId());
         verifyNoMoreInteractions(repository);
