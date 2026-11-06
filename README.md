@@ -156,6 +156,24 @@ To use a local MariaDB instead, replace the datasource, e.g. `url: jdbc:mariadb:
 username and password, and set `spring.jpa.hibernate.ddl-auto` to `update` (`data.sql` is then not run - seed
 categories and languages once manually).
 
+To test [signing in with Google](#authentication) locally, create an OAuth client ID of type *Web application* in the
+[Google Cloud console](https://console.cloud.google.com/apis/credentials). Under *Authorized JavaScript origins* add the
+client's origin, for prawko-web both `http://localhost` and `http://localhost:5173`. Add the ID to
+`application-dev.yaml` (`GOOGLE_CLIENT_IDS` is only read in `prod`) and restart the application:
+
+```yaml
+google:
+  client-ids: <client-id>.apps.googleusercontent.com
+```
+
+A made-up token then answers `401`; `404` means the ID isn't configured:
+
+`curl -i -X POST http://localhost:8080/auth/google -H 'Content-Type: application/json' -d '{"idToken":"x"}'`
+
+A real token needs a client: set the same ID as `VITE_GOOGLE_CLIENT_ID` in prawko-web's `.env.development.local` and use
+the Google button on its `/auth` page. While the app's consent screen is in *Testing* status, only its test users can
+sign in.
+
 ---
 
 ## Usage
