@@ -11,6 +11,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
+import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.service.implementation.IdentityNotificationService;
 import pl.prawko.prawko_server.test_data.UserTestData;
@@ -23,7 +24,6 @@ import static org.mockito.Mockito.verify;
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class IdentityNotificationServiceTest {
 
-    private static final String MAIL_FROM = "no-reply@prawko.local";
     private static final long USER_ID = 7L;
 
     @Mock
@@ -35,7 +35,7 @@ class IdentityNotificationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new IdentityNotificationService(mailSender, MAIL_FROM);
+        service = new IdentityNotificationService(mailSender, TestUtils.MAIL_FROM);
     }
 
     @Test
@@ -43,7 +43,7 @@ class IdentityNotificationServiceTest {
         service.sendLinkedNotice(USER_ID, email, IdentityProvider.GITHUB);
 
         final var message = sentMessage();
-        assertThat(message.getFrom()).isEqualTo(MAIL_FROM);
+        assertThat(message.getFrom()).isEqualTo(TestUtils.MAIL_FROM);
         assertThat(message.getTo()).containsExactly(email);
         assertThat(message.getSubject()).isEqualTo(UserTestData.identityLinkedSubject(IdentityProvider.GITHUB));
         assertThat(message.getText())
@@ -56,7 +56,7 @@ class IdentityNotificationServiceTest {
         service.sendUnlinkedNotice(USER_ID, email, IdentityProvider.GOOGLE);
 
         final var message = sentMessage();
-        assertThat(message.getFrom()).isEqualTo(MAIL_FROM);
+        assertThat(message.getFrom()).isEqualTo(TestUtils.MAIL_FROM);
         assertThat(message.getTo()).containsExactly(email);
         assertThat(message.getSubject()).isEqualTo(UserTestData.identityUnlinkedSubject(IdentityProvider.GOOGLE));
         assertThat(message.getText())
@@ -74,7 +74,7 @@ class IdentityNotificationServiceTest {
 
     @Test
     void sendLinkedNotice_notThrowAndLogUserIdOnly_whenSendingFails(final CapturedOutput output) {
-        doThrow(new MailSendException("SMTP down")).when(mailSender).send(any(SimpleMailMessage.class));
+        doThrow(new MailSendException(TestUtils.MAIL_FAILURE)).when(mailSender).send(any(SimpleMailMessage.class));
 
         service.sendLinkedNotice(USER_ID, email, IdentityProvider.GOOGLE);
 
@@ -84,7 +84,7 @@ class IdentityNotificationServiceTest {
 
     @Test
     void sendUnlinkedNotice_notThrowAndLogUserIdOnly_whenSendingFails(final CapturedOutput output) {
-        doThrow(new MailSendException("SMTP down")).when(mailSender).send(any(SimpleMailMessage.class));
+        doThrow(new MailSendException(TestUtils.MAIL_FAILURE)).when(mailSender).send(any(SimpleMailMessage.class));
 
         service.sendUnlinkedNotice(USER_ID, email, IdentityProvider.GOOGLE);
 

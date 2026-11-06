@@ -40,7 +40,6 @@ class PasswordResetServiceTest {
     private static final String RESET_URL = "http://localhost:5173/auth/password/reset";
     private static final Duration TOKEN_VALIDITY = Duration.ofMinutes(15);
     private static final Duration COOLDOWN = Duration.ofMinutes(30);
-    private static final String MAIL_FROM = "no-reply@prawko.local";
 
     @Mock
     private UserRepository repository;
@@ -61,7 +60,7 @@ class PasswordResetServiceTest {
     @BeforeEach
     void setUp() {
         service = new PasswordResetService(repository, passwordEncoder, refreshTokenService, mailSender, RESET_URL,
-                TOKEN_VALIDITY, COOLDOWN, MAIL_FROM, TestUtils.CLOCK);
+                TOKEN_VALIDITY, COOLDOWN, TestUtils.MAIL_FROM, TestUtils.CLOCK);
     }
 
     @Test
@@ -72,7 +71,7 @@ class PasswordResetServiceTest {
 
         final var message = captureSentMessage();
         final var token = UserTestData.extractToken(message);
-        assertThat(message.getFrom()).isEqualTo(MAIL_FROM);
+        assertThat(message.getFrom()).isEqualTo(TestUtils.MAIL_FROM);
         assertThat(message.getTo()).containsExactly(tester.getEmail());
         assertThat(message.getText())
                 .contains(RESET_URL + "?token=" + token)
@@ -146,7 +145,7 @@ class PasswordResetServiceTest {
     @Test
     void requestReset_logUserIdOnly_whenSendingEmailFails(final CapturedOutput output) {
         when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
-        doThrow(new MailSendException("SMTP down")).when(mailSender).send(any(SimpleMailMessage.class));
+        doThrow(new MailSendException(TestUtils.MAIL_FAILURE)).when(mailSender).send(any(SimpleMailMessage.class));
 
         service.requestReset(tester.getEmail());
 
@@ -157,7 +156,7 @@ class PasswordResetServiceTest {
     @Test
     void requestReset_notThrow_whenSendingEmailFails() {
         when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
-        doThrow(new MailSendException("SMTP down")).when(mailSender).send(any(SimpleMailMessage.class));
+        doThrow(new MailSendException(TestUtils.MAIL_FAILURE)).when(mailSender).send(any(SimpleMailMessage.class));
 
         service.requestReset(tester.getEmail());
 

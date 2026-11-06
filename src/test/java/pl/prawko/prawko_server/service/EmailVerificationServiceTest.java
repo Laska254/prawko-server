@@ -45,7 +45,6 @@ class EmailVerificationServiceTest {
     private static final String VERIFICATION_URL = "http://localhost:5173/auth/verify";
     private static final Duration TOKEN_VALIDITY = Duration.ofHours(24);
     private static final Duration COOLDOWN = Duration.ofMinutes(1);
-    private static final String MAIL_FROM = "no-reply@prawko.local";
 
     @Mock
     private UserRepository repository;
@@ -60,7 +59,7 @@ class EmailVerificationServiceTest {
     @BeforeEach
     void setUp() {
         service = new EmailVerificationService(repository, mailSender, VERIFICATION_URL, TOKEN_VALIDITY, COOLDOWN,
-                MAIL_FROM, TestUtils.CLOCK);
+                TestUtils.MAIL_FROM, TestUtils.CLOCK);
     }
 
     @Nested
@@ -115,7 +114,7 @@ class EmailVerificationServiceTest {
             service.sendVerificationEmail(tester.getId(), tester.getEmail(), "someToken");
 
             final var message = captureSentMessage();
-            assertThat(message.getFrom()).isEqualTo(MAIL_FROM);
+            assertThat(message.getFrom()).isEqualTo(TestUtils.MAIL_FROM);
             assertThat(message.getTo()).containsExactly(tester.getEmail());
             assertThat(message.getText())
                     .contains(VERIFICATION_URL + "?token=someToken")
@@ -133,7 +132,7 @@ class EmailVerificationServiceTest {
 
         @Test
         void notThrowAndLogUserIdOnly_whenSendingFails(final CapturedOutput output) {
-            doThrow(new MailSendException("SMTP down")).when(mailSender).send(any(SimpleMailMessage.class));
+            doThrow(new MailSendException(TestUtils.MAIL_FAILURE)).when(mailSender).send(any(SimpleMailMessage.class));
 
             service.sendVerificationEmail(tester.getId(), tester.getEmail(), "someToken");
 
@@ -159,7 +158,7 @@ class EmailVerificationServiceTest {
             final var confirmation = captor.getAllValues().getLast();
             assertThat(link.getTo()).containsExactly(newEmail);
             assertThat(UserTestData.extractToken(link)).isEqualTo("someToken");
-            assertThat(confirmation.getFrom()).isEqualTo(MAIL_FROM);
+            assertThat(confirmation.getFrom()).isEqualTo(TestUtils.MAIL_FROM);
             assertThat(confirmation.getTo()).containsExactly(tester.getEmail());
             assertThat(confirmation.getText())
                     .startsWith("A change of your account's email address to " + newEmail)
@@ -173,7 +172,7 @@ class EmailVerificationServiceTest {
         @Test
         void sendConfirmationAndLogUserIdOnly_whenSendingLinkFails(final CapturedOutput output) {
             final var newEmail = UserTestData.createMerry().getEmail();
-            doThrow(new MailSendException("SMTP down"))
+            doThrow(new MailSendException(TestUtils.MAIL_FAILURE))
                     .doNothing()
                     .when(mailSender).send(any(SimpleMailMessage.class));
 
