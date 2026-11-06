@@ -12,6 +12,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -59,6 +60,8 @@ import java.util.Locale;
  * {@value #USER_NAME_CONSTRAINT} and {@value #EMAIL_CONSTRAINT}. The database's collation decides whether the username
  * constraint ignores case (MariaDB's default does, H2 doesn't); the services check it ignoring case either way.
  * Emails, including the pending one, are lowercased by their setters, so their constraint behaves the same everywhere.
+ * The {@code version} is an optimistic lock, so concurrent changes fail instead of overwriting each other. Linking or
+ * unlinking an identity alone doesn't change it.
  * Timestamps are {@link Instant}s, so they don't depend on the JVM's time zone; {@code created} and {@code updated} are
  * set automatically.
  * All setters are returning {@code User} itself, enabling method chaining.
@@ -120,6 +123,9 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 5)
     private Role role;
+
+    @Version
+    private long version;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Exam> exams;

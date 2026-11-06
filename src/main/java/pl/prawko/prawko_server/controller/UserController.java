@@ -195,7 +195,7 @@ public class UserController {
             @ApiResponse(responseCode = "403", description = "Updating another user, or another user's email as an admin, is not allowed"),
             @ApiResponse(responseCode = "404", description = "User not found"),
             @ApiResponse(responseCode = "400", description = "Invalid update data or ID is negative or zero"),
-            @ApiResponse(responseCode = "409", description = "Username or email already exists"),
+            @ApiResponse(responseCode = "409", description = "Username or email already exists, or the user was modified concurrently"),
             @ApiResponse(responseCode = "429", description = "Email changed again within the verification email cooldown"),
             @ApiResponse(responseCode = "503", description = "Too many requests pending")
     })

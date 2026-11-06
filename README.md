@@ -306,7 +306,8 @@ own data (admins may act on any user), **admin** - admins only.
 
   Usernames and emails are unique ignoring case: registering or renaming to one that differs from a taken one only in
   case returns `409`. Users can still change the capitalization of their own username. Emails are stored lowercased,
-  so responses return them lowercased and mails go to the lowercased address.
+  so responses return them lowercased and mails go to the lowercased address. An update racing another change to the
+  same user returns `409`, retry it.
 
 * `/questions`
 

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.ActiveProfiles;
 import pl.prawko.prawko_server.controller.ExceptionController;
 import pl.prawko.prawko_server.model.IdentityProvider;
@@ -322,6 +323,27 @@ class UserRepositoryTest {
 
         assertThat(result.getEmail()).isEqualTo(email.toLowerCase());
         assertThat(result.getPendingEmail()).isEqualTo(email.toLowerCase());
+    }
+
+    @Test
+    void saveAndFlush_throwOptimisticLockingFailure_whenUserIsStale() {
+        entityManager.flush();
+        entityManager.clear();
+        final var stale = repository.findById(tester.getId()).orElseThrow();
+        entityManager.detach(stale);
+        final var newPassword = "newPasswordHash";
+        repository.findById(tester.getId())
+                .ifPresent(current -> current.setPassword(newPassword));
+        repository.flush();
+        entityManager.clear();
+
+        assertThatThrownBy(() -> repository.saveAndFlush(stale.setPasswordResetTokenHash(tokenHash)))
+                .isInstanceOf(ObjectOptimisticLockingFailureException.class);
+
+        entityManager.clear();
+        final var stored = repository.findById(tester.getId()).orElseThrow();
+        assertThat(stored.getPassword()).isEqualTo(newPassword);
+        assertThat(stored.getPasswordResetTokenHash()).isNull();
     }
 
 }

@@ -1,11 +1,13 @@
 package pl.prawko.prawko_server.service;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -20,12 +22,16 @@ import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.PasswordResetService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
+import java.util.function.UnaryOperator;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * Runs {@link PasswordResetService} in real transactions, letting a concurrent request commit right after its lookup.
@@ -35,11 +41,23 @@ import static org.mockito.Mockito.verify;
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class PasswordResetServiceConcurrencyTest {
 
+    private final MailSender mailSender = mock(MailSender.class);
+
     @MockitoSpyBean
     private UserRepository repository;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    private PasswordResetService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new PasswordResetService(repository, mock(PasswordEncoder.class),
+                mock(IRefreshTokenService.class), mailSender, UserTestData.PASSWORD_RESET_URL,
+                UserTestData.PASSWORD_RESET_TOKEN_VALIDITY, UserTestData.PASSWORD_RESET_COOLDOWN, TestUtils.MAIL_FROM,
+                TestUtils.CLOCK);
+    }
 
     @AfterEach
     void tearDown() {
@@ -50,19 +68,7 @@ class PasswordResetServiceConcurrencyTest {
     void requestReset_storeTokenAndSendMail_whenIdentityIsUnlinkedConcurrently() {
         final var pippin = repository.save(UserTestData.createTestUserPippin()
                 .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
-        final var mailSender = mock(MailSender.class);
-        final var service = new PasswordResetService(repository, mock(PasswordEncoder.class),
-                mock(IRefreshTokenService.class), mailSender, UserTestData.PASSWORD_RESET_URL,
-                UserTestData.PASSWORD_RESET_TOKEN_VALIDITY, UserTestData.PASSWORD_RESET_COOLDOWN, TestUtils.MAIL_FROM,
-                TestUtils.CLOCK);
-        final var realMethod = mockingDetails(repository).getMockCreationSettings().getDefaultAnswer();
-        doAnswer(invocation -> {
-            final var stale = realMethod.answer(invocation);
-            new TransactionTemplate(transactionManager)
-                    .executeWithoutResult(status -> repository.findById(pippin.getId())
-                            .ifPresent(user -> repository.save(user.removeIdentity(IdentityProvider.GOOGLE))));
-            return stale;
-        }).when(repository).findByEmailIgnoreCase(pippin.getEmail());
+        changeAfterLookup(pippin, user -> user.removeIdentity(IdentityProvider.GOOGLE));
 
         service.requestReset(pippin.getEmail());
 
@@ -70,6 +76,35 @@ class PasswordResetServiceConcurrencyTest {
         assertThat(repository.findById(pippin.getId()))
                 .get().extracting(User::getPasswordResetTokenHash).isNotNull();
         verify(mailSender).send(any(SimpleMailMessage.class));
+    }
+
+    @Test
+    void requestReset_keepNewPasswordAndSendNoMail_whenPasswordIsChangedConcurrently() {
+        final var pippin = repository.save(UserTestData.createTestUserPippin());
+        final var newPassword = "newPasswordHash";
+        changeAfterLookup(pippin, user -> user.setPassword(newPassword));
+
+        assertThatThrownBy(() -> service.requestReset(pippin.getEmail()))
+                .isInstanceOf(ObjectOptimisticLockingFailureException.class);
+
+        final var stored = repository.findById(pippin.getId()).orElseThrow();
+        assertThat(stored.getPassword()).isEqualTo(newPassword);
+        assertThat(stored.getPasswordResetTokenHash()).isNull();
+        verifyNoInteractions(mailSender);
+    }
+
+    /**
+     * Commits the change in a concurrent transaction right after the service looks the user up.
+     */
+    private void changeAfterLookup(final User user, final UnaryOperator<User> change) {
+        final var realMethod = mockingDetails(repository).getMockCreationSettings().getDefaultAnswer();
+        doAnswer(invocation -> {
+            final var stale = realMethod.answer(invocation);
+            new TransactionTemplate(transactionManager)
+                    .executeWithoutResult(status -> repository.findById(user.getId())
+                            .ifPresent(found -> repository.save(change.apply(found))));
+            return stale;
+        }).when(repository).findByEmailIgnoreCase(user.getEmail());
     }
 
 }
