@@ -7,8 +7,13 @@ on:
 
 jobs:
 
+  test:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
   javadoc:
     name: Publish JavaDoc on GitHub Pages
+    needs: test
     runs-on: ubuntu-latest
 
     permissions:
@@ -48,6 +53,7 @@ jobs:
 
   release:
     name: Build JAR & Docker Image
+    needs: test
     runs-on: ubuntu-latest
 
     permissions:
@@ -69,11 +75,10 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Build production JAR
+      - name: Build release JAR
         run: |
           mvn --batch-mode package \
             -DskipTests \
-            -Dspring.profiles.active=prod \
             -Drevision=${{ steps.version.outputs.VERSION }}
 
       - name: Log in to GitHub Container Registry

@@ -110,8 +110,10 @@ Run with Docker (after `./mvnw package`)
 
 `docker run -p 8080:8080 prawko-server`
 
-In the `prod` profile mount the media directory as a volume, e.g.
-`docker run -p 8080:8080 -v /srv/prawko/media:/media -e MEDIA_DIRECTORY=/media ... prawko-server`.
+With no profile the image falls back to `dev`, whose config only a local build packages, so a released image exits
+with status 1. For `prod`, set it at runtime and mount the media directory as a volume, e.g.
+`docker run -p 8080:8080 -v /srv/prawko/media:/media -e SPRING_PROFILES_ACTIVE=prod -e MEDIA_DIRECTORY=/media ... prawko-server`.
+The container runs as UID 1000, which must be able to read the files in the volume.
 
 ### Local configuration
 
