@@ -1,7 +1,6 @@
 package pl.prawko.prawko_server.repository;
 
 import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -10,6 +9,7 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.model.UserIdentity;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -47,12 +47,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUserNameOrEmailAllIgnoreCase(final String userName, final String email);
 
     /**
-     * Retrieves {@code user} by its email, ignoring case, with its identities loaded for callers outside a transaction.
+     * Retrieves {@code user} by its email, ignoring case.
      *
      * @param email provided email to look for
      * @return a {@code user} when found
      */
-    @EntityGraph(attributePaths = "identities")
     Optional<User> findByEmailIgnoreCase(final String email);
 
     /**
@@ -64,6 +63,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT i.user FROM UserIdentity i WHERE i.provider = :provider AND i.providerUserId = :providerUserId")
     Optional<User> findByIdentity(final IdentityProvider provider, final String providerUserId);
+
+    /**
+     * Retrieves the providers of the accounts linked to the user, for callers outside a transaction. Saving a detached
+     * user with its identities loaded would fail if one was unlinked in the meantime.
+     *
+     * @param userId the ID of the user
+     * @return the providers, in the order of {@link User#getLinkedProviders()}
+     */
+    @Query("SELECT i.provider FROM UserIdentity i WHERE i.user.id = :userId ORDER BY i.provider")
+    List<IdentityProvider> findProvidersByUserId(final long userId);
 
     /**
      * Retrieves {@code user} by its ID, locking its row until the end of the transaction.

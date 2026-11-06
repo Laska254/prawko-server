@@ -37,9 +37,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class PasswordResetServiceTest {
 
-    private static final String RESET_URL = "http://localhost:5173/auth/password/reset";
-    private static final Duration TOKEN_VALIDITY = Duration.ofMinutes(15);
-    private static final Duration COOLDOWN = Duration.ofMinutes(30);
+    static final String RESET_URL = "http://localhost:5173/auth/password/reset";
+    static final Duration TOKEN_VALIDITY = Duration.ofMinutes(15);
+    static final Duration COOLDOWN = Duration.ofMinutes(30);
 
     @Mock
     private UserRepository repository;

@@ -166,6 +166,23 @@ class UserRepositoryTest {
     }
 
     @Test
+    void findProvidersByUserId_returnProvidersOrderedByName_whenUserHasIdentities() {
+        repository.save(tester.addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)
+                .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));
+
+        final var result = repository.findProvidersByUserId(tester.getId());
+
+        assertThat(result).containsExactly(IdentityProvider.GITHUB, IdentityProvider.GOOGLE);
+    }
+
+    @Test
+    void findProvidersByUserId_returnEmpty_whenUserHasNoIdentities() {
+        final var result = repository.findProvidersByUserId(tester.getId());
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     void findWithLockById_returnUser_whenUserExists() {
         final var result = repository.findWithLockById(tester.getId());
 

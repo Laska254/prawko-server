@@ -147,8 +147,8 @@ public class PasswordResetService implements IPasswordResetService {
         }
     }
 
-    private static String linkedAccountsNote(final User user) {
-        final var providers = user.getLinkedProviders();
+    private String linkedAccountsNote(final User user) {
+        final var providers = repository.findProvidersByUserId(user.getId());
         if (providers.isEmpty()) {
             return "";
         }
