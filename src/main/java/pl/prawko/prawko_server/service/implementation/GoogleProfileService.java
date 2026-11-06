@@ -89,7 +89,8 @@ public class GoogleProfileService implements IGoogleProfileService {
                 timestampValidator,
                 new JwtClaimValidator<String>(JwtClaimNames.ISS, ISSUERS::contains),
                 new JwtClaimValidator<Collection<String>>(JwtClaimNames.AUD,
-                        audience -> audience.stream().anyMatch(clientIds::contains)),
+                        audience -> audience.stream()
+                                .anyMatch(clientIds::contains)),
                 new JwtClaimValidator<String>(JwtClaimNames.SUB, StringUtils::isNotBlank)));
         return decoder;
     }
