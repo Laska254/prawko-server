@@ -42,6 +42,8 @@ import pl.prawko.prawko_server.service.implementation.GoogleProfileService;
 import pl.prawko.prawko_server.service.implementation.UserIdentityService;
 import pl.prawko.prawko_server.service.implementation.UserService;
 
+import java.util.Optional;
+
 /**
  * REST controller for user management operations.
  *
@@ -380,7 +382,10 @@ public class UserController {
     private ResponseEntity<Void> unlink(final long userId,
                                         final IdentityProvider provider,
                                         @Nullable final UnlinkIdentityRequest request) {
-        userService.verifyPasswordIfSet(userId, request == null ? null : request.currentPassword());
+        final var currentPassword = Optional.ofNullable(request)
+                .map(UnlinkIdentityRequest::currentPassword)
+                .orElse(null);
+        userService.verifyPasswordIfSet(userId, currentPassword);
         userIdentityService.unlinkIdentity(userId, provider);
         return ResponseEntity.noContent().build();
     }
