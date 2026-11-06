@@ -51,6 +51,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -1551,6 +1552,11 @@ public class UserControllerTest {
 
             assertThat(statuses)
                     .containsExactlyInAnyOrder(HttpStatus.NO_CONTENT.value(), HttpStatus.CONFLICT.value());
+            assertThat(Stream.of(
+                            userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID),
+                            userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID))
+                    .flatMap(Optional::stream))
+                    .hasSize(1);
         }
 
         @Test
