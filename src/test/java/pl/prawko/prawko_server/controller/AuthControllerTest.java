@@ -190,7 +190,7 @@ public class AuthControllerTest {
     @Test
     void login_returnUnauthorized_whenEmailIsNotVerifiedAndPasswordIsWrong() {
         restClient.post()
-                .body(new LoginDto(TestUtils.UNVERIFIED_NAME, "wrongPassword"))
+                .body(new LoginDto(TestUtils.UNVERIFIED_NAME, UserTestData.WRONG_PASSWORD))
                 .exchange()
                 .expectStatus().isUnauthorized()
                 .expectBody()
@@ -236,7 +236,7 @@ public class AuthControllerTest {
         final var login = UserTestData.createMerry().getEmail();
 
         restClient.post()
-                .body(new LoginDto(login, "wrongPassword"))
+                .body(new LoginDto(login, UserTestData.WRONG_PASSWORD))
                 .exchange()
                 .expectStatus().isUnauthorized();
 
@@ -246,7 +246,7 @@ public class AuthControllerTest {
 
     @Test
     void login_returnUnauthorized_whenCredentialsAreInvalid() {
-        final var request = new LoginDto("nonExistentUser", "wrongPassword");
+        final var request = new LoginDto("nonExistentUser", UserTestData.WRONG_PASSWORD);
         final var expectedMessage = TestUtils.INVALID_CREDENTIALS;
 
         restClient.post()

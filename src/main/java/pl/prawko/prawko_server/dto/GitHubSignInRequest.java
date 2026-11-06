@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * DTO for signing in with a GitHub account, or linking one.
+ * DTO for signing in with a GitHub account.
  */
 @Schema(description = "GitHub sign-in request containing the result of GitHub's authorization code flow with PKCE")
 public record GitHubSignInRequest(

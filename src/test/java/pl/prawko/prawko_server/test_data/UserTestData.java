@@ -39,6 +39,7 @@ public class UserTestData {
     public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";
     public static final String VERIFICATION_COOLDOWN = "Verification email was sent recently, try again later.";
     public static final String INCORRECT_PASSWORD = "Current password is incorrect.";
+    public static final String WRONG_PASSWORD = "wrongPassword";
     public static final String LAST_SIGN_IN_METHOD = "Can't unlink the only way to sign in. Set a password or link another "
             + "account first.";
     public static final String PROVIDER_USER_ID = "109876543210";
@@ -58,6 +59,14 @@ public class UserTestData {
 
     public static String userNotFoundMessage(final long id) {
         return "User with id '" + id + "' not found.";
+    }
+
+    public static String identityLinkedSubject(final IdentityProvider provider) {
+        return provider.getDisplayName() + " account linked";
+    }
+
+    public static String identityUnlinkedSubject(final IdentityProvider provider) {
+        return provider.getDisplayName() + " account unlinked";
     }
 
     public static String userNameConflictMessage(final String userName) {
@@ -215,7 +224,7 @@ public class UserTestData {
     }
 
     public static ChangePasswordRequest createWrongCurrentPasswordRequest() {
-        return new ChangePasswordRequest("wrongPassword", "drugieSniadanie");
+        return new ChangePasswordRequest(WRONG_PASSWORD, "drugieSniadanie");
     }
 
     public static ChangePasswordRequest createSameAsCurrentPasswordRequest() {
@@ -227,7 +236,7 @@ public class UserTestData {
     }
 
     public static DeleteAccountRequest createWrongPasswordDeleteAccountRequest() {
-        return new DeleteAccountRequest("wrongPassword");
+        return new DeleteAccountRequest(WRONG_PASSWORD);
     }
 
     public static ResetPasswordRequest createValidResetPasswordRequest(final String token) {

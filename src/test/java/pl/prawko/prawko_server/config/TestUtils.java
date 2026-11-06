@@ -38,6 +38,9 @@ public class TestUtils {
     public static final String PASSWORD_REQUIRED = "Password is required.";
     public static final String SERVER_BUSY = "Server is busy, try again later.";
 
+    public static final String MAIL_FROM = "no-reply@prawko.local";
+    public static final String MAIL_FAILURE = "SMTP down";
+
     public static final long ASYNC_TIMEOUT_MS = 5_000;
 
     public static final long PRINCIPAL_ID = 7L;

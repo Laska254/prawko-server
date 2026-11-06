@@ -37,6 +37,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
@@ -619,6 +620,65 @@ class UserServiceTest {
         verify(repository).findById(givenId);
         verify(repository, never()).delete(any());
         verifyNoMoreInteractions(repository);
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void verifyPasswordIfSet_pass_whenPasswordMatches() {
+        final var givenId = 44L;
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(passwordEncoder.matches(TestUtils.USER_PASSWORD, tester.getPassword())).thenReturn(true);
+
+        assertThatNoException().isThrownBy(() -> service.verifyPasswordIfSet(givenId, TestUtils.USER_PASSWORD));
+
+        verify(passwordEncoder).matches(TestUtils.USER_PASSWORD, tester.getPassword());
+    }
+
+    @Test
+    void verifyPasswordIfSet_throwException_whenPasswordIsIncorrect() {
+        final var givenId = 44L;
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(passwordEncoder.matches(UserTestData.WRONG_PASSWORD, tester.getPassword())).thenReturn(false);
+
+        final ThrowableAssert.ThrowingCallable executable =
+                () -> service.verifyPasswordIfSet(givenId, UserTestData.WRONG_PASSWORD);
+        final var exception = catchThrowableOfType(InvalidPasswordException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.INCORRECT_PASSWORD);
+    }
+
+    @Test
+    void verifyPasswordIfSet_throwException_whenPasswordIsMissing() {
+        final var givenId = 44L;
+        when(repository.findById(givenId)).thenReturn(Optional.of(tester));
+        when(passwordEncoder.matches(null, tester.getPassword())).thenReturn(false);
+
+        final ThrowableAssert.ThrowingCallable executable = () -> service.verifyPasswordIfSet(givenId, null);
+        final var exception = catchThrowableOfType(InvalidPasswordException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.INCORRECT_PASSWORD);
+    }
+
+    @Test
+    void verifyPasswordIfSet_pass_whenUserHasNoPassword() {
+        final var givenId = 44L;
+        when(repository.findById(givenId)).thenReturn(Optional.of(UserTestData.createGooglePippin()));
+
+        assertThatNoException().isThrownBy(() -> service.verifyPasswordIfSet(givenId, null));
+
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void verifyPasswordIfSet_throwException_whenUserNotFound() {
+        final var givenId = 666L;
+        when(repository.findById(givenId)).thenReturn(Optional.empty());
+
+        final ThrowableAssert.ThrowingCallable executable =
+                () -> service.verifyPasswordIfSet(givenId, TestUtils.USER_PASSWORD);
+        final var exception = catchThrowableOfType(EntityNotFoundException.class, executable);
+
+        assertThat(exception.getMessage()).isEqualTo(UserTestData.userNotFoundMessage(givenId));
         verifyNoInteractions(passwordEncoder);
     }
 

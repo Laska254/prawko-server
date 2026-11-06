@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.test_data;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -9,7 +10,9 @@ import org.springframework.test.web.client.ResponseCreator;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.util.LinkedMultiValueMap;
+import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.dto.GitHubSignInRequest;
+import pl.prawko.prawko_server.dto.LinkGitHubRequest;
 
 /**
  * Requests and answers of GitHub's OAuth flow and API, stubbed on a {@link MockRestServiceServer}.
@@ -52,6 +55,14 @@ public class GitHubTestData {
 
     public static GitHubSignInRequest createValidRequest() {
         return new GitHubSignInRequest(CODE, CODE_VERIFIER, REDIRECT_URI);
+    }
+
+    public static LinkGitHubRequest createLinkRequest(@Nullable final String currentPassword) {
+        return new LinkGitHubRequest(CODE, CODE_VERIFIER, REDIRECT_URI, currentPassword);
+    }
+
+    public static LinkGitHubRequest createValidLinkRequest() {
+        return createLinkRequest(TestUtils.USER_PASSWORD);
     }
 
     /**
