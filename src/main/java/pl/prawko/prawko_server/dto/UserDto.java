@@ -18,10 +18,12 @@ public record UserDto(
         @Schema(description = "Unique user identifier")
         long id,
 
-        @Schema(description = "User's first name")
+        @Schema(description = "User's first name, null if the provider they signed up with didn't share it",
+                nullable = true)
         String firstName,
 
-        @Schema(description = "User's last name")
+        @Schema(description = "User's last name, null if the provider they signed up with didn't share it",
+                nullable = true)
         String lastName,
 
         @Schema(description = "Username for login")
