@@ -26,7 +26,6 @@ public class QuestionRepositoryTest {
             "answers.translations.id",
             "answers.translations.language.answerTranslations",
             "answers.translations.language.questionTranslations",
-            "answers.translations.language.exams",
             "translations.id",
             "translations.language",
             "categories.questions",
