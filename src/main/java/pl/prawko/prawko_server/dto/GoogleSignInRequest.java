@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * DTO for signing in with a Google account, or linking one.
+ * DTO for signing in with a Google account.
  */
 @Schema(description = "Google sign-in request containing the ID token the client got from Google")
 public record GoogleSignInRequest(

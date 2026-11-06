@@ -222,15 +222,18 @@ else by now. Later sign-ins find the user by the GitHub account's ID alone, so r
 keeps them linked.
 
 Linking and unlinking: a signed-in user links a provider account with `POST /users/me/identities/google` or
-`POST /users/me/identities/github`, with the same body and the same errors for a bad credential as the matching `/auth`
-endpoint, and `204` on success. The account's email doesn't have to match the user's, so this is the way forward after
-the `409` above: sign in as that user, then link. The answer is `409` if the account is linked to another user or
-the user already has an account of that provider. `DELETE /users/me/identities/google` or
-`DELETE /users/me/identities/github` unlinks it and answers `204`, `404` if it isn't linked, and `409` if they have no
-password and no other linked account, as that would leave no way to sign in. `providers` in the user response lists the
-linked ones. An unlinked account no longer finds the user by its ID, so its next sign-in counts as a first one: if the
-user's email is one the provider hosts it's linked again, since whoever holds that account controls the mailbox and
-could reset the password anyway. Unlinking doesn't revoke refresh tokens, so clients already signed in stay signed in.
+`POST /users/me/identities/github`, with the body of the matching `/auth` endpoint plus `currentPassword` and the same
+errors for a bad credential, and `204` on success. The account's email doesn't have to match the user's, so this is the
+way forward after the `409` above: sign in as that user, then link. The answer is `409` if the account is linked to
+another user or the user already has an account of that provider. `DELETE /users/me/identities/google` or
+`DELETE /users/me/identities/github` with `{"currentPassword": "..."}` unlinks it and answers `204`, `404` if it isn't
+linked, and `409` if they have no password and no other linked account, as that would leave no way to sign in. Requiring
+the password means a stolen access token alone can't add a lasting way in or remove the user's own: if it's missing or
+wrong the answer is `400` `"Current password is incorrect."`, nothing changes and a GitHub code isn't used up. A user
+without a password leaves it out, and can send no body when unlinking. `providers` in the user response lists the linked
+ones. An unlinked account no longer finds the user by its ID, so its next sign-in counts as a first one: if the user's
+email is one the provider hosts it's linked again, since whoever holds that account controls the mailbox and could reset
+the password anyway. Unlinking doesn't revoke refresh tokens, so clients already signed in stay signed in.
 
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 
@@ -281,10 +284,10 @@ own data (admins may act on any user), **admin** - admins only.
   | `GET`    | `/users/me/stats`             | user   | get own exam statistics, see [Exam statistics](#exam-statistics) |
   | `DELETE` | `/users/me`                   | user   | delete own account with its exams (requires current password)    |
   | `PATCH`  | `/users/me/password`          | user   | change own password (requires current password)                  |
-  | `POST`   | `/users/me/identities/google` | user   | link a Google account with an ID token                           |
-  | `DELETE` | `/users/me/identities/google` | user   | unlink the Google account, unless it's the only way to sign in   |
-  | `POST`   | `/users/me/identities/github` | user   | link a GitHub account with an authorization code                 |
-  | `DELETE` | `/users/me/identities/github` | user   | unlink the GitHub account, unless it's the only way to sign in   |
+  | `POST`   | `/users/me/identities/google` | user   | link a Google account (requires current password)                |
+  | `DELETE` | `/users/me/identities/google` | user   | unlink the Google account (requires current password)            |
+  | `POST`   | `/users/me/identities/github` | user   | link a GitHub account (requires current password)                |
+  | `DELETE` | `/users/me/identities/github` | user   | unlink the GitHub account (requires current password)            |
   | `GET`    | `/users`                      | admin  | get a page of users                                              |
   | `GET`    | `/users/{id}`                 | admin  | get a user                                                       |
   | `PATCH`  | `/users/{id}`                 | self   | update a user (email: the user themselves only)                  |

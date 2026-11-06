@@ -247,7 +247,21 @@ public class UserService implements IUserService, UserDetailsService {
         log.info("User with id '{}' deleted their account.", userId);
     }
 
-    private void verifyPassword(final User user, final String password) {
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException  if a user with provided id have not been found
+     * @throws InvalidPasswordException if the user has a password and the given one is missing or doesn't match
+     */
+    @Override
+    public void verifyPasswordIfSet(final long userId, @Nullable final String password) {
+        final var user = getById(userId);
+        if (user.getPassword() != null) {
+            verifyPassword(user, password);
+        }
+    }
+
+    private void verifyPassword(final User user, @Nullable final String password) {
         if (user.getPassword() == null || !passwordEncoder.matches(password, user.getPassword())) {
             final var message = "Current password is incorrect.";
             log.warn("{} User id: {}", message, user.getId());

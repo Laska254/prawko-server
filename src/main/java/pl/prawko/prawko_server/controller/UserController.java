@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import org.jspecify.annotations.Nullable;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
@@ -27,9 +28,10 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.DeleteAccountRequest;
-import pl.prawko.prawko_server.dto.GitHubSignInRequest;
-import pl.prawko.prawko_server.dto.GoogleSignInRequest;
+import pl.prawko.prawko_server.dto.LinkGitHubRequest;
+import pl.prawko.prawko_server.dto.LinkGoogleRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.UnlinkIdentityRequest;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
@@ -245,18 +247,19 @@ public class UserController {
     /**
      * Links a Google account to the currently authenticated user, who can then sign in with it.
      *
-     * <p>The account's email doesn't have to match the user's.
+     * <p>The account's email doesn't have to match the user's. Requires re-entering the current password if the user
+     * has one.
      *
      * @param userId  the ID of the currently authenticated user
-     * @param request the {@link GoogleSignInRequest} containing the ID token
+     * @param request the {@link LinkGoogleRequest} containing the ID token and the current password
      * @return a {@link ResponseEntity} with HTTP 204 No Content
      */
     @Operation(summary = "Link a Google account",
-            description = "Verifies a Google ID token and links its account to the authenticated user. The account's "
-                    + "email doesn't have to match the user's.")
+            description = "Verifies the current password, if the user has one, and a Google ID token, and links its "
+                    + "account to the authenticated user. The account's email doesn't have to match the user's.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Google account linked successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid argument"),
+            @ApiResponse(responseCode = "400", description = "Invalid argument, or missing or incorrect current password"),
             @ApiResponse(responseCode = "401", description = "Not authenticated, or invalid or expired ID token, or issued for another client"),
             @ApiResponse(responseCode = "404", description = "Sign-in with Google is not configured"),
             @ApiResponse(responseCode = "409", description = "The Google account is linked to another user, or the user already has one linked"),
@@ -264,7 +267,8 @@ public class UserController {
     })
     @PostMapping(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
     public ResponseEntity<Void> linkGoogle(@AuthenticationPrincipal(expression = "id") final long userId,
-                                           @Valid @RequestBody final GoogleSignInRequest request) {
+                                           @Valid @RequestBody final LinkGoogleRequest request) {
+        userService.verifyPasswordIfSet(userId, request.currentPassword());
         userIdentityService.linkIdentity(userId, googleProfileService.fetchProfile(request.idToken()));
         return ResponseEntity.noContent().build();
     }
@@ -272,18 +276,20 @@ public class UserController {
     /**
      * Links a GitHub account to the currently authenticated user, who can then sign in with it.
      *
-     * <p>The account's email doesn't have to match the user's.
+     * <p>The account's email doesn't have to match the user's. Requires re-entering the current password if the user
+     * has one, checked first so that a wrong one doesn't use up the code, which works only once.
      *
      * @param userId  the ID of the currently authenticated user
-     * @param request the {@link GitHubSignInRequest} containing the code, its PKCE verifier and redirect URI
+     * @param request the {@link LinkGitHubRequest} containing the code, its PKCE verifier and redirect URI, and the
+     *                current password
      * @return a {@link ResponseEntity} with HTTP 204 No Content
      */
     @Operation(summary = "Link a GitHub account",
-            description = "Exchanges a GitHub authorization code and links its account to the authenticated user. The "
-                    + "account's email doesn't have to match the user's.")
+            description = "Verifies the current password, if the user has one, exchanges a GitHub authorization code and "
+                    + "links its account to the authenticated user. The account's email doesn't have to match the user's.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "GitHub account linked successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid argument"),
+            @ApiResponse(responseCode = "400", description = "Invalid argument, or missing or incorrect current password"),
             @ApiResponse(responseCode = "401", description = "Not authenticated, or invalid or used authorization code"),
             @ApiResponse(responseCode = "403", description = "GitHub refused the code over an unverified primary email"),
             @ApiResponse(responseCode = "404", description = "Sign-in with GitHub is not configured"),
@@ -292,49 +298,60 @@ public class UserController {
     })
     @PostMapping(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
     public ResponseEntity<Void> linkGitHub(@AuthenticationPrincipal(expression = "id") final long userId,
-                                           @Valid @RequestBody final GitHubSignInRequest request) {
-        userIdentityService.linkIdentity(userId, gitHubProfileService.fetchProfile(request));
+                                           @Valid @RequestBody final LinkGitHubRequest request) {
+        userService.verifyPasswordIfSet(userId, request.currentPassword());
+        userIdentityService.linkIdentity(userId, gitHubProfileService.fetchProfile(request.toSignInRequest()));
         return ResponseEntity.noContent().build();
     }
 
     /**
      * Unlinks the Google account of the currently authenticated user.
      *
-     * @param userId the ID of the currently authenticated user
+     * <p>Requires re-entering the current password if the user has one.
+     *
+     * @param userId  the ID of the currently authenticated user
+     * @param request the {@link UnlinkIdentityRequest} containing the current password, optional without one
      * @return a {@link ResponseEntity} with HTTP 204 No Content
      */
     @Operation(summary = "Unlink the Google account",
-            description = "Unlinks the Google account of the authenticated user, unless it's their only way to sign in.")
+            description = "Verifies the current password, if the user has one, and unlinks the Google account of the "
+                    + "authenticated user, unless it's their only way to sign in.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Google account unlinked successfully"),
+            @ApiResponse(responseCode = "400", description = "Missing or incorrect current password"),
             @ApiResponse(responseCode = "401", description = "Not authenticated"),
             @ApiResponse(responseCode = "404", description = "The user has no Google account linked"),
             @ApiResponse(responseCode = "409", description = "The user has no password and no other linked account")
     })
     @DeleteMapping(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
-    public ResponseEntity<Void> unlinkGoogle(@AuthenticationPrincipal(expression = "id") final long userId) {
-        userIdentityService.unlinkIdentity(userId, IdentityProvider.GOOGLE);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> unlinkGoogle(@AuthenticationPrincipal(expression = "id") final long userId,
+                                             @RequestBody(required = false) @Nullable final UnlinkIdentityRequest request) {
+        return unlink(userId, IdentityProvider.GOOGLE, request);
     }
 
     /**
      * Unlinks the GitHub account of the currently authenticated user.
      *
-     * @param userId the ID of the currently authenticated user
+     * <p>Requires re-entering the current password if the user has one.
+     *
+     * @param userId  the ID of the currently authenticated user
+     * @param request the {@link UnlinkIdentityRequest} containing the current password, optional without one
      * @return a {@link ResponseEntity} with HTTP 204 No Content
      */
     @Operation(summary = "Unlink the GitHub account",
-            description = "Unlinks the GitHub account of the authenticated user, unless it's their only way to sign in.")
+            description = "Verifies the current password, if the user has one, and unlinks the GitHub account of the "
+                    + "authenticated user, unless it's their only way to sign in.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "GitHub account unlinked successfully"),
+            @ApiResponse(responseCode = "400", description = "Missing or incorrect current password"),
             @ApiResponse(responseCode = "401", description = "Not authenticated"),
             @ApiResponse(responseCode = "404", description = "The user has no GitHub account linked"),
             @ApiResponse(responseCode = "409", description = "The user has no password and no other linked account")
     })
     @DeleteMapping(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
-    public ResponseEntity<Void> unlinkGitHub(@AuthenticationPrincipal(expression = "id") final long userId) {
-        userIdentityService.unlinkIdentity(userId, IdentityProvider.GITHUB);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> unlinkGitHub(@AuthenticationPrincipal(expression = "id") final long userId,
+                                             @RequestBody(required = false) @Nullable final UnlinkIdentityRequest request) {
+        return unlink(userId, IdentityProvider.GITHUB, request);
     }
 
     /**
@@ -352,6 +369,14 @@ public class UserController {
     @DeleteMapping(ApiConstants.BY_ID)
     public ResponseEntity<Void> deleteUser(@PathVariable @Positive final long id) {
         userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    private ResponseEntity<Void> unlink(final long userId,
+                                        final IdentityProvider provider,
+                                        @Nullable final UnlinkIdentityRequest request) {
+        userService.verifyPasswordIfSet(userId, request == null ? null : request.currentPassword());
+        userIdentityService.unlinkIdentity(userId, provider);
         return ResponseEntity.noContent().build();
     }
 

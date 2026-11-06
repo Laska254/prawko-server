@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.service;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
@@ -111,5 +112,14 @@ public interface IUserService {
      * @param request the request containing the current password
      */
     void deleteOwnAccount(long userId, DeleteAccountRequest request);
+
+    /**
+     * Confirms an action with a user's current password. Passes without one for a user who has no password, since
+     * only they can't confirm it this way.
+     *
+     * @param userId   the ID of the user confirming the action
+     * @param password the current password, {@code null} if not provided
+     */
+    void verifyPasswordIfSet(long userId, @Nullable String password);
 
 }
