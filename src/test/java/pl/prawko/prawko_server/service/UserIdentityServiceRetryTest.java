@@ -88,7 +88,7 @@ class UserIdentityServiceRetryTest {
                     .map(User::getIdentities)
                     .ifPresent(Hibernate::initialize);
             inNewTransaction(() -> repository.findById(pippin.getId())
-                    .map(user -> repository.save(user.addIdentity(PROVIDER, profile.providerUserId()))));
+                    .ifPresent(user -> repository.save(user.addIdentity(PROVIDER, profile.providerUserId()))));
             return stale;
         }).doAnswer(realMethod()).when(repository).findByEmailIgnoreCase(profile.email());
 
@@ -144,7 +144,7 @@ class UserIdentityServiceRetryTest {
         doAnswer(invocation -> {
             final var free = realMethod().answer(invocation);
             inNewTransaction(() -> repository.findById(pippin.getId())
-                    .map(user -> repository.save(user.addIdentity(PROVIDER, UserTestData.OTHER_PROVIDER_USER_ID))));
+                    .ifPresent(user -> repository.save(user.addIdentity(PROVIDER, UserTestData.OTHER_PROVIDER_USER_ID))));
             return free;
         }).doAnswer(realMethod()).when(repository).findByIdentity(PROVIDER, profile.providerUserId());
 

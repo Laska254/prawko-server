@@ -60,7 +60,7 @@ class PasswordResetServiceConcurrencyTest {
             final var stale = realMethod.answer(invocation);
             new TransactionTemplate(transactionManager)
                     .executeWithoutResult(status -> repository.findById(pippin.getId())
-                            .map(user -> repository.save(user.removeIdentity(IdentityProvider.GOOGLE))));
+                            .ifPresent(user -> repository.save(user.removeIdentity(IdentityProvider.GOOGLE))));
             return stale;
         }).when(repository).findByEmailIgnoreCase(pippin.getEmail());
 
