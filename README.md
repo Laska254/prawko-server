@@ -230,12 +230,13 @@ another user or the user already has an account of that provider. `DELETE /users
 linked, and `409` if they have no password and no other linked account, as that would leave no way to sign in. Requiring
 the password means a stolen access token alone can't add a lasting way in or remove the user's own: if it's missing or
 wrong the answer is `400` `"Current password is incorrect."`, nothing changes and a GitHub code isn't used up. A user
-without a password leaves it out, and can send no body when unlinking. Every link and unlink emails a notice to the
-user's current address, so users without a password get warned too; if it can't be queued the answer is `503` and
-nothing changes. `providers` in the user response lists the linked ones. An unlinked account no longer finds the user by
-its ID, so its next sign-in counts as a first one: if the user's email is one the provider hosts it's linked again,
-since whoever holds that account controls the mailbox and could reset the password anyway. Unlinking doesn't revoke
-refresh tokens, so clients already signed in stay signed in.
+without a password leaves it out, and can send no body when unlinking. Every link and unlink through these endpoints
+emails a notice to the user's current address, so users without a password get warned too; if it can't be queued the
+answer is `503` and nothing changes. A link made by a first sign-in sends no notice: the provider hosts the email, so
+it would go to the mailbox of the account that just signed in. `providers` in the user response lists the linked ones.
+An unlinked account no longer finds the user by its ID, so its next sign-in counts as a first one: if the user's email
+is one the provider hosts it's linked again, since whoever holds that account controls the mailbox and could reset the
+password anyway. Unlinking doesn't revoke refresh tokens, so clients already signed in stay signed in.
 
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 
@@ -423,6 +424,6 @@ Password reset links are valid for 15 minutes; another reset email for the same 
 Email verification links are valid for 24 hours; another one can be requested after 1 minute. Unverified accounts
 with expired links are deleted every hour.
 
-Reset and verification emails are processed in the background on a bounded pool (`spring.task.execution.pool.*`: 8 threads, 100
-queued). When it's full, `/auth/password/forgot`, `/auth/verify/resend`, `/users` (registration) and email changes
-with `PATCH /users/{id}` answer `503`.
+Reset, verification and identity notice emails are processed in the background on a bounded pool
+(`spring.task.execution.pool.*`: 8 threads, 100 queued). When it's full, `/auth/password/forgot`, `/auth/verify/resend`,
+`/users` (registration), email changes with `PATCH /users/{id}` and `POST`/`DELETE /users/me/identities/*` answer `503`.
