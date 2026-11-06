@@ -103,7 +103,7 @@ public class ExamControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_UNREADABLE);
         }
 
         @Test
@@ -696,7 +696,7 @@ public class ExamControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_UNREADABLE);
         }
 
         @ParameterizedTest

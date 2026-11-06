@@ -260,7 +260,7 @@ public class AuthControllerTest {
 
     @Test
     void login_returnBadRequest_whenBodyIsMissing() {
-        final var expectedMessage = TestUtils.BODY_MISSING;
+        final var expectedMessage = TestUtils.BODY_UNREADABLE;
 
         restClient.post()
                 .exchange()
@@ -277,7 +277,7 @@ public class AuthControllerTest {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody()
-                .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+                .jsonPath("$.detail").isEqualTo(TestUtils.BODY_UNREADABLE);
     }
 
     @Test
@@ -514,7 +514,7 @@ public class AuthControllerTest {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody()
-                .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+                .jsonPath("$.detail").isEqualTo(TestUtils.BODY_UNREADABLE);
     }
 
     @Test
@@ -643,7 +643,7 @@ public class AuthControllerTest {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody()
-                .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+                .jsonPath("$.detail").isEqualTo(TestUtils.BODY_UNREADABLE);
     }
 
     @Test
