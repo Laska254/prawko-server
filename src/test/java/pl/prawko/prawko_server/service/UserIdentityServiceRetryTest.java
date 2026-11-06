@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * Runs {@link UserIdentityService} in real transactions, letting a concurrent request commit right after a lookup, as
@@ -45,6 +47,9 @@ class UserIdentityServiceRetryTest {
 
     @MockitoSpyBean
     private UserRepository repository;
+
+    @MockitoBean
+    private IIdentityNotificationService notificationService;
 
     @Autowired
     private IUserIdentityService service;
@@ -111,6 +116,7 @@ class UserIdentityServiceRetryTest {
                 .hasMessage(GoogleTestData.LINKED_TO_OTHER_USER);
 
         verify(repository, times(2)).findByIdentity(PROVIDER, profile.providerUserId());
+        verifyNoInteractions(notificationService);
     }
 
     /**

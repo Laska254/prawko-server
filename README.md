@@ -230,10 +230,12 @@ another user or the user already has an account of that provider. `DELETE /users
 linked, and `409` if they have no password and no other linked account, as that would leave no way to sign in. Requiring
 the password means a stolen access token alone can't add a lasting way in or remove the user's own: if it's missing or
 wrong the answer is `400` `"Current password is incorrect."`, nothing changes and a GitHub code isn't used up. A user
-without a password leaves it out, and can send no body when unlinking. `providers` in the user response lists the linked
-ones. An unlinked account no longer finds the user by its ID, so its next sign-in counts as a first one: if the user's
-email is one the provider hosts it's linked again, since whoever holds that account controls the mailbox and could reset
-the password anyway. Unlinking doesn't revoke refresh tokens, so clients already signed in stay signed in.
+without a password leaves it out, and can send no body when unlinking. Every link and unlink emails a notice to the
+user's current address, so users without a password get warned too; if it can't be queued the answer is `503` and
+nothing changes. `providers` in the user response lists the linked ones. An unlinked account no longer finds the user by
+its ID, so its next sign-in counts as a first one: if the user's email is one the provider hosts it's linked again,
+since whoever holds that account controls the mailbox and could reset the password anyway. Unlinking doesn't revoke
+refresh tokens, so clients already signed in stay signed in.
 
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 

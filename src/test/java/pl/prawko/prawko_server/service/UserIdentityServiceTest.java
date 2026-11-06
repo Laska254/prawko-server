@@ -41,6 +41,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -52,6 +53,9 @@ class UserIdentityServiceTest {
 
     @Mock
     private UserRepository repository;
+
+    @Mock
+    private IIdentityNotificationService notificationService;
 
     @InjectMocks
     private UserIdentityService service;
@@ -279,7 +283,9 @@ class UserIdentityServiceTest {
 
         assertThat(merry.getEmail()).isEqualTo(email);
         assertThat(merry.getPassword()).isEqualTo(password);
-        assertLinked(merry);
+        assertHasIdentity(merry);
+        verify(repository).save(merry);
+        verify(notificationService).sendLinkedNotice(merry.getId(), email, PROVIDER);
     }
 
     @ParameterizedTest
@@ -296,6 +302,7 @@ class UserIdentityServiceTest {
 
         assertThat(user.getIdentities()).hasSize(1);
         verify(repository, never()).save(any());
+        verifyNoInteractions(notificationService);
     }
 
     @Test
@@ -309,6 +316,7 @@ class UserIdentityServiceTest {
 
         assertThat(user.hasIdentity(PROVIDER)).isTrue();
         verify(repository).save(user);
+        verify(notificationService).sendLinkedNotice(user.getId(), user.getEmail(), PROVIDER);
     }
 
     @Test
@@ -324,6 +332,7 @@ class UserIdentityServiceTest {
 
         assertThat(user.getIdentities()).isEmpty();
         verify(repository, never()).save(any());
+        verifyNoInteractions(notificationService);
     }
 
     @Test
@@ -346,6 +355,7 @@ class UserIdentityServiceTest {
 
         assertThat(user.getIdentities()).isEmpty();
         verify(repository).save(user);
+        verify(notificationService).sendUnlinkedNotice(user.getId(), user.getEmail(), PROVIDER);
     }
 
     @Test
@@ -360,6 +370,7 @@ class UserIdentityServiceTest {
         assertThat(user.hasIdentity(PROVIDER)).isFalse();
         assertThat(user.hasIdentity(IdentityProvider.GITHUB)).isTrue();
         verify(repository).save(user);
+        verify(notificationService).sendUnlinkedNotice(user.getId(), user.getEmail(), PROVIDER);
     }
 
     @Test
@@ -373,6 +384,7 @@ class UserIdentityServiceTest {
 
         assertThat(user.hasIdentity(PROVIDER)).isTrue();
         verify(repository, never()).save(any());
+        verifyNoInteractions(notificationService);
     }
 
     @Test
@@ -387,6 +399,7 @@ class UserIdentityServiceTest {
                 .hasMessage(GoogleTestData.NOT_LINKED);
 
         verify(repository, never()).save(any());
+        verifyNoInteractions(notificationService);
     }
 
     @Test
@@ -404,7 +417,17 @@ class UserIdentityServiceTest {
         when(repository.save(any(User.class))).thenAnswer(returnsFirstArg());
     }
 
+    /**
+     * Linking on a first sign-in sends no notice: the provider hosts the email, so it would go to the mailbox of the
+     * account that just signed in.
+     */
     private void assertLinked(final User user) {
+        assertHasIdentity(user);
+        verify(repository).save(user);
+        verifyNoInteractions(notificationService);
+    }
+
+    private void assertHasIdentity(final User user) {
         assertThat(user.getIdentities())
                 .singleElement()
                 .satisfies(identity -> {
@@ -412,7 +435,6 @@ class UserIdentityServiceTest {
                     assertThat(identity.getProviderUserId()).isEqualTo(profile.providerUserId());
                     assertThat(identity.getUser()).isSameAs(user);
                 });
-        verify(repository).save(user);
     }
 
     private ProviderProfile withEmail(final String email, final EmailStatus status) {

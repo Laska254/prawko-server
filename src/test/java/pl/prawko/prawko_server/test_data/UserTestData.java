@@ -61,6 +61,14 @@ public class UserTestData {
         return "User with id '" + id + "' not found.";
     }
 
+    public static String identityLinkedSubject(final IdentityProvider provider) {
+        return provider.getDisplayName() + " account linked";
+    }
+
+    public static String identityUnlinkedSubject(final IdentityProvider provider) {
+        return provider.getDisplayName() + " account unlinked";
+    }
+
     public static String userNameConflictMessage(final String userName) {
         return "User with username '" + userName + "' already exists.";
     }

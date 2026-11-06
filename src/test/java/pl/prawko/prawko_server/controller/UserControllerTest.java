@@ -1226,6 +1226,7 @@ public class UserControllerTest {
             final var tokens = signIn(ApiConstants.GOOGLE, new GoogleSignInRequest(idToken));
             assertThat(tokenOwnerId(tokens)).isEqualTo(tester.getId());
             assertThat(userRepository.count()).isOne();
+            assertNoticeSent(tester, UserTestData.identityLinkedSubject(IdentityProvider.GOOGLE));
         }
 
         @Test
@@ -1241,6 +1242,7 @@ public class UserControllerTest {
 
             assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
                     .get().extracting(User::getId).isEqualTo(admin.getId());
+            assertNoticeSent(admin, UserTestData.identityLinkedSubject(IdentityProvider.GOOGLE));
         }
 
         @Test
@@ -1296,6 +1298,24 @@ public class UserControllerTest {
 
             assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
                     .get().extracting(User::getId).isEqualTo(tester.getId());
+            assertNoticeSent(tester, UserTestData.identityLinkedSubject(IdentityProvider.GOOGLE));
+        }
+
+        @Test
+        void returnServiceUnavailableAndNotLink_whenTaskQueueIsFull() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            final var release = TestUtils.blockTaskExecutor(taskExecutor);
+            try {
+                link(idToken)
+                        .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                        .expectBody()
+                        .jsonPath("$.detail").isEqualTo(TestUtils.SERVER_BUSY);
+            } finally {
+                release.countDown();
+            }
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
         }
 
         @Test
@@ -1387,6 +1407,7 @@ public class UserControllerTest {
             assertThat(tokenOwnerId(tokens)).isEqualTo(tester.getId());
             assertThat(userRepository.count()).isOne();
             github.verify();
+            assertNoticeSent(tester, UserTestData.identityLinkedSubject(IdentityProvider.GITHUB));
         }
 
         @Test
@@ -1399,6 +1420,7 @@ public class UserControllerTest {
 
             assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID))
                     .get().extracting(User::getId).isEqualTo(tester.getId());
+            assertNoticeSent(tester, UserTestData.identityLinkedSubject(IdentityProvider.GITHUB));
         }
 
         @Test
@@ -1452,6 +1474,7 @@ public class UserControllerTest {
             assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID))
                     .get().extracting(User::getId).isEqualTo(tester.getId());
             github.verify();
+            assertNoticeSent(tester, UserTestData.identityLinkedSubject(IdentityProvider.GITHUB));
         }
 
         // No GitHub requests are expected in these two, so one would fail the test: the code isn't used up.
@@ -1550,11 +1573,12 @@ public class UserControllerTest {
                     .expectStatus().isEqualTo(HttpStatus.CONFLICT)
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(GoogleTestData.EMAIL_NOT_HOSTED);
+            assertNoticeSent(tester, UserTestData.identityUnlinkedSubject(IdentityProvider.GOOGLE));
         }
 
         @Test
         void returnNoContentAndBlockSignIn_whenUnlinkingGitHub() {
-            userRepository.save(UserTestData.createTestUserPippin()
+            final var tester = userRepository.save(UserTestData.createTestUserPippin()
                     .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));
             GitHubTestData.expectSignIn(github);
 
@@ -1567,6 +1591,7 @@ public class UserControllerTest {
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(GitHubTestData.EMAIL_NOT_HOSTED);
             github.verify();
+            assertNoticeSent(tester, UserTestData.identityUnlinkedSubject(IdentityProvider.GITHUB));
         }
 
         @Test
@@ -1582,11 +1607,12 @@ public class UserControllerTest {
             assertThat(tokenOwnerId(tokens)).isEqualTo(tester.getId());
             assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
                     .isPresent();
+            assertNoticeSent(tester, UserTestData.identityUnlinkedSubject(IdentityProvider.GOOGLE));
         }
 
         @Test
         void returnNoContentAndKeepOtherIdentity_whenPasswordlessUserHasAnother() {
-            userRepository.save(UserTestData.createGooglePippin()
+            final var tester = userRepository.save(UserTestData.createGooglePippin()
                     .addIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID));
 
             unlinkWithoutBody(ApiConstants.GOOGLE)
@@ -1595,11 +1621,12 @@ public class UserControllerTest {
             assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
             assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID))
                     .isPresent();
+            assertNoticeSent(tester, UserTestData.identityUnlinkedSubject(IdentityProvider.GOOGLE));
         }
 
         @Test
         void returnNoContent_whenAdmin() {
-            userRepository.save(UserTestData.createGimli()
+            final var admin = userRepository.save(UserTestData.createGimli()
                     .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
 
             restClient.method(HttpMethod.DELETE)
@@ -1610,6 +1637,7 @@ public class UserControllerTest {
                     .expectStatus().isNoContent();
 
             assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+            assertNoticeSent(admin, UserTestData.identityUnlinkedSubject(IdentityProvider.GOOGLE));
         }
 
         @Test
@@ -1645,6 +1673,25 @@ public class UserControllerTest {
                             userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID))
                     .flatMap(Optional::stream))
                     .hasSize(1);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
+        }
+
+        @Test
+        void returnServiceUnavailableAndKeepIdentity_whenTaskQueueIsFull() {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+
+            final var release = TestUtils.blockTaskExecutor(taskExecutor);
+            try {
+                unlink(ApiConstants.GOOGLE)
+                        .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                        .expectBody()
+                        .jsonPath("$.detail").isEqualTo(TestUtils.SERVER_BUSY);
+            } finally {
+                release.countDown();
+            }
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isPresent();
         }
 
         @Test
@@ -1820,6 +1867,16 @@ public class UserControllerTest {
                 .body(registerDto)
                 .exchangeSuccessfully();
         return userRepository.findAll().getFirst().getId();
+    }
+
+    /**
+     * Also waits for the notice to be sent, so that it can't reach the shared mock during the next test.
+     */
+    private void assertNoticeSent(final User user, final String subject) {
+        final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());
+        assertThat(captor.getValue().getTo()).containsExactly(user.getEmail());
+        assertThat(captor.getValue().getSubject()).isEqualTo(subject);
     }
 
     private RestTestClient.ResponseSpec attemptSignIn(final String path, final Object request) {

@@ -248,7 +248,7 @@ public class UserController {
      * Links a Google account to the currently authenticated user, who can then sign in with it.
      *
      * <p>The account's email doesn't have to match the user's. Requires re-entering the current password if the user
-     * has one.
+     * has one. A notice is emailed to the user's current address.
      *
      * @param userId  the ID of the currently authenticated user
      * @param request the {@link LinkGoogleRequest} containing the ID token and the current password
@@ -263,7 +263,7 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Not authenticated, or invalid or expired ID token, or issued for another client"),
             @ApiResponse(responseCode = "404", description = "Sign-in with Google is not configured"),
             @ApiResponse(responseCode = "409", description = "The Google account is linked to another user, or the user already has one linked"),
-            @ApiResponse(responseCode = "503", description = "Google can't be reached, try again later")
+            @ApiResponse(responseCode = "503", description = "Google can't be reached, or too many requests pending, try again later")
     })
     @PostMapping(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
     public ResponseEntity<Void> linkGoogle(@AuthenticationPrincipal(expression = "id") final long userId,
@@ -277,7 +277,8 @@ public class UserController {
      * Links a GitHub account to the currently authenticated user, who can then sign in with it.
      *
      * <p>The account's email doesn't have to match the user's. Requires re-entering the current password if the user
-     * has one, checked first so that a wrong one doesn't use up the code, which works only once.
+     * has one, checked first so that a wrong one doesn't use up the code, which works only once. A notice is emailed
+     * to the user's current address.
      *
      * @param userId  the ID of the currently authenticated user
      * @param request the {@link LinkGitHubRequest} containing the code, its PKCE verifier and redirect URI, and the
@@ -294,7 +295,7 @@ public class UserController {
             @ApiResponse(responseCode = "403", description = "GitHub refused the code over an unverified primary email"),
             @ApiResponse(responseCode = "404", description = "Sign-in with GitHub is not configured"),
             @ApiResponse(responseCode = "409", description = "The GitHub account is linked to another user, or the user already has one linked"),
-            @ApiResponse(responseCode = "503", description = "GitHub can't be reached or rate limits the app, try again later")
+            @ApiResponse(responseCode = "503", description = "GitHub can't be reached or rate limits the app, or too many requests pending, try again later")
     })
     @PostMapping(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
     public ResponseEntity<Void> linkGitHub(@AuthenticationPrincipal(expression = "id") final long userId,
@@ -307,7 +308,8 @@ public class UserController {
     /**
      * Unlinks the Google account of the currently authenticated user.
      *
-     * <p>Requires re-entering the current password if the user has one.
+     * <p>Requires re-entering the current password if the user has one. A notice is emailed to the user's current
+     * address.
      *
      * @param userId  the ID of the currently authenticated user
      * @param request the {@link UnlinkIdentityRequest} containing the current password, optional without one
@@ -321,7 +323,8 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "Missing or incorrect current password"),
             @ApiResponse(responseCode = "401", description = "Not authenticated"),
             @ApiResponse(responseCode = "404", description = "The user has no Google account linked"),
-            @ApiResponse(responseCode = "409", description = "The user has no password and no other linked account")
+            @ApiResponse(responseCode = "409", description = "The user has no password and no other linked account"),
+            @ApiResponse(responseCode = "503", description = "Too many requests pending")
     })
     @DeleteMapping(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
     public ResponseEntity<Void> unlinkGoogle(@AuthenticationPrincipal(expression = "id") final long userId,
@@ -332,7 +335,8 @@ public class UserController {
     /**
      * Unlinks the GitHub account of the currently authenticated user.
      *
-     * <p>Requires re-entering the current password if the user has one.
+     * <p>Requires re-entering the current password if the user has one. A notice is emailed to the user's current
+     * address.
      *
      * @param userId  the ID of the currently authenticated user
      * @param request the {@link UnlinkIdentityRequest} containing the current password, optional without one
@@ -346,7 +350,8 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "Missing or incorrect current password"),
             @ApiResponse(responseCode = "401", description = "Not authenticated"),
             @ApiResponse(responseCode = "404", description = "The user has no GitHub account linked"),
-            @ApiResponse(responseCode = "409", description = "The user has no password and no other linked account")
+            @ApiResponse(responseCode = "409", description = "The user has no password and no other linked account"),
+            @ApiResponse(responseCode = "503", description = "Too many requests pending")
     })
     @DeleteMapping(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
     public ResponseEntity<Void> unlinkGitHub(@AuthenticationPrincipal(expression = "id") final long userId,
