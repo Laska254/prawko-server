@@ -18,6 +18,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.security.authentication.DisabledException;
 import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
+import pl.prawko.prawko_server.exception.LastSignInMethodException;
 import pl.prawko.prawko_server.model.EmailStatus;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
@@ -330,6 +331,69 @@ class UserIdentityServiceTest {
         when(repository.findById(7L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.linkIdentity(7L, profile))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage(UserTestData.userNotFoundMessage(7L));
+    }
+
+    @Test
+    void unlinkIdentity_removeIdentity_whenUserHasPassword() {
+        final var user = UserTestData.createTestUserPippin()
+                .setId(7L)
+                .addIdentity(PROVIDER, UserTestData.PROVIDER_USER_ID);
+        when(repository.findWithLockById(user.getId())).thenReturn(Optional.of(user));
+
+        service.unlinkIdentity(user.getId(), PROVIDER);
+
+        assertThat(user.getIdentities()).isEmpty();
+        verify(repository).save(user);
+    }
+
+    @Test
+    void unlinkIdentity_removeOnlyThatIdentity_whenPasswordlessUserHasAnother() {
+        final var user = UserTestData.createGooglePippin()
+                .setId(7L)
+                .addIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID);
+        when(repository.findWithLockById(user.getId())).thenReturn(Optional.of(user));
+
+        service.unlinkIdentity(user.getId(), PROVIDER);
+
+        assertThat(user.hasIdentity(PROVIDER)).isFalse();
+        assertThat(user.hasIdentity(IdentityProvider.GITHUB)).isTrue();
+        verify(repository).save(user);
+    }
+
+    @Test
+    void unlinkIdentity_throwLastSignInMethodAndNotSave_whenPasswordlessUserHasNoOtherIdentity() {
+        final var user = UserTestData.createGooglePippin().setId(7L);
+        when(repository.findWithLockById(user.getId())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.unlinkIdentity(user.getId(), PROVIDER))
+                .isInstanceOf(LastSignInMethodException.class)
+                .hasMessage(UserTestData.LAST_SIGN_IN_METHOD);
+
+        assertThat(user.hasIdentity(PROVIDER)).isTrue();
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void unlinkIdentity_throwEntityNotFound_whenProviderIsNotLinked() {
+        final var user = UserTestData.createTestUserPippin()
+                .setId(7L)
+                .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID);
+        when(repository.findWithLockById(user.getId())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.unlinkIdentity(user.getId(), PROVIDER))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage(GoogleTestData.NOT_LINKED);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void unlinkIdentity_throwEntityNotFound_whenUserDoesNotExist() {
+        when(repository.findWithLockById(7L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.unlinkIdentity(7L, PROVIDER))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage(UserTestData.userNotFoundMessage(7L));
     }

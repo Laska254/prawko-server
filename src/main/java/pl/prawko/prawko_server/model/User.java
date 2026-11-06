@@ -321,6 +321,11 @@ public class User {
         return this;
     }
 
+    public User removeIdentity(final IdentityProvider provider) {
+        identities.removeIf(identity -> identity.getProvider() == provider);
+        return this;
+    }
+
     public boolean hasIdentity(final IdentityProvider provider) {
         return identities.stream()
                 .map(UserIdentity::getProvider)

@@ -156,7 +156,7 @@ public final class ApiConstants {
     public static final String LOGOUT = "/logout";
 
     /**
-     * Path segment for signing in with a Google ID token, or linking its account.
+     * Path segment for signing in with a Google ID token, or linking or unlinking its account.
      *
      * <p>Example: {@code /auth/google}, {@code /users/me/identities/google}
      *
@@ -166,7 +166,7 @@ public final class ApiConstants {
     public static final String GOOGLE = "/google";
 
     /**
-     * Path segment for signing in with a GitHub authorization code, or linking its account.
+     * Path segment for signing in with a GitHub authorization code, or linking or unlinking its account.
      *
      * <p>Example: {@code /auth/github}, {@code /users/me/identities/github}
      *

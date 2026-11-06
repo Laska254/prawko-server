@@ -10,6 +10,8 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
+import pl.prawko.prawko_server.exception.LastSignInMethodException;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
@@ -103,6 +105,32 @@ public class UserIdentityService implements IUserIdentityService {
         }
         repository.save(user.addIdentity(provider, profile.providerUserId()));
         log.info("{} account linked to user with id '{}'.", provider, userId);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The user's row is locked, since two concurrent requests unlinking different providers would otherwise each see
+     * the other's account as left, and together remove the last way to sign in.
+     *
+     * @throws EntityNotFoundException   if the user doesn't exist or has no account of the provider linked
+     * @throws LastSignInMethodException if the user has no password and no other linked account
+     */
+    @Override
+    @Transactional
+    public void unlinkIdentity(final long userId, final IdentityProvider provider) {
+        final var user = repository.findWithLockById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User with id '" + userId + "' not found."));
+        if (!user.hasIdentity(provider)) {
+            throw new EntityNotFoundException("User has no " + provider.getDisplayName() + " account linked.");
+        }
+        if (user.getPassword() == null && user.getIdentities().size() == 1) {
+            log.warn("{} account not unlinked from user with id '{}', it's the last way to sign in.", provider, userId);
+            throw new LastSignInMethodException("Can't unlink the only way to sign in. Set a password or link another "
+                    + "account first.");
+        }
+        repository.save(user.removeIdentity(provider));
+        log.info("{} account unlinked from user with id '{}'.", provider, userId);
     }
 
     private static AlreadyExistsException providerConflict(final String message, final long userId) {

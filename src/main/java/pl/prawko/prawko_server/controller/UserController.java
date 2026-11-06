@@ -33,6 +33,7 @@ import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.service.implementation.ExamService;
 import pl.prawko.prawko_server.service.implementation.GitHubProfileService;
 import pl.prawko.prawko_server.service.implementation.GoogleProfileService;
@@ -42,8 +43,8 @@ import pl.prawko.prawko_server.service.implementation.UserService;
 /**
  * REST controller for user management operations.
  *
- * <p>Provides endpoints for user registration, retrieval, updating, and deletion, and for linking accounts at identity
- * providers.
+ * <p>Provides endpoints for user registration, retrieval, updating, and deletion, and for linking and unlinking accounts
+ * at identity providers.
  */
 @Tag(name = "Users", description = "User management endpoints")
 @Validated
@@ -293,6 +294,46 @@ public class UserController {
     public ResponseEntity<Void> linkGitHub(@AuthenticationPrincipal(expression = "id") final long userId,
                                            @Valid @RequestBody final GitHubSignInRequest request) {
         userIdentityService.linkIdentity(userId, gitHubProfileService.fetchProfile(request));
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Unlinks the Google account of the currently authenticated user.
+     *
+     * @param userId the ID of the currently authenticated user
+     * @return a {@link ResponseEntity} with HTTP 204 No Content
+     */
+    @Operation(summary = "Unlink the Google account",
+            description = "Unlinks the Google account of the authenticated user, unless it's their only way to sign in.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Google account unlinked successfully"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated"),
+            @ApiResponse(responseCode = "404", description = "The user has no Google account linked"),
+            @ApiResponse(responseCode = "409", description = "The user has no password and no other linked account")
+    })
+    @DeleteMapping(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
+    public ResponseEntity<Void> unlinkGoogle(@AuthenticationPrincipal(expression = "id") final long userId) {
+        userIdentityService.unlinkIdentity(userId, IdentityProvider.GOOGLE);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Unlinks the GitHub account of the currently authenticated user.
+     *
+     * @param userId the ID of the currently authenticated user
+     * @return a {@link ResponseEntity} with HTTP 204 No Content
+     */
+    @Operation(summary = "Unlink the GitHub account",
+            description = "Unlinks the GitHub account of the authenticated user, unless it's their only way to sign in.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "GitHub account unlinked successfully"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated"),
+            @ApiResponse(responseCode = "404", description = "The user has no GitHub account linked"),
+            @ApiResponse(responseCode = "409", description = "The user has no password and no other linked account")
+    })
+    @DeleteMapping(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
+    public ResponseEntity<Void> unlinkGitHub(@AuthenticationPrincipal(expression = "id") final long userId) {
+        userIdentityService.unlinkIdentity(userId, IdentityProvider.GITHUB);
         return ResponseEntity.noContent().build();
     }
 

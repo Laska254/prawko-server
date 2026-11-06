@@ -35,6 +35,7 @@ public class GoogleTestData {
             + "account settings.";
     public static final String ALREADY_LINKED = "User is already linked to a Google account.";
     public static final String LINKED_TO_OTHER_USER = "This Google account is already linked to another user.";
+    public static final String NOT_LINKED = "User has no Google account linked.";
 
     private static final String KEY_ID = "google-test-key";
     private static final RSAKey SIGNING_KEY = generateKey();

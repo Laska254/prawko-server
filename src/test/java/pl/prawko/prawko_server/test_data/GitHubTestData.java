@@ -26,6 +26,7 @@ public class GitHubTestData {
             + "email, so the account can't be linked to it. Sign in with your password and link GitHub from the "
             + "account settings.";
     public static final String ALREADY_LINKED = "User is already linked to a GitHub account.";
+    public static final String NOT_LINKED = "User has no GitHub account linked.";
     public static final String BAD_CODE_RESPONSE = """
             {"error": "bad_verification_code", "error_description": "The code passed is incorrect or expired."}""";
     public static final String BAD_CLIENT_RESPONSE = """

@@ -51,6 +51,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -1434,6 +1435,166 @@ public class UserControllerTest {
             return restClient.post()
                     .uri(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
                     .headers(auth::user)
+                    .body(request)
+                    .exchange();
+        }
+
+    }
+
+    @Nested
+    class UnlinkIdentity {
+
+        private final String notHostedIdToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                .claims(claims -> claims.remove(GoogleTestData.HOSTED_DOMAIN)));
+
+        @Test
+        void returnNoContentAndBlockSignIn_whenUnlinkingGoogle() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+            final var request = new GoogleSignInRequest(notHostedIdToken);
+            assertThat(tokenOwnerId(signIn(ApiConstants.GOOGLE, request))).isEqualTo(tester.getId());
+
+            unlink(ApiConstants.GOOGLE)
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+            attemptSignIn(ApiConstants.GOOGLE, request)
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GoogleTestData.EMAIL_NOT_HOSTED);
+        }
+
+        @Test
+        void returnNoContentAndBlockSignIn_whenUnlinkingGitHub() {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));
+            GitHubTestData.expectSignIn(github);
+
+            unlink(ApiConstants.GITHUB)
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)).isEmpty();
+            attemptSignIn(ApiConstants.GITHUB, GitHubTestData.createValidRequest())
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GitHubTestData.EMAIL_NOT_HOSTED);
+            github.verify();
+        }
+
+        @Test
+        void linkAgainOnNextSignIn_whenProviderHostsEmail() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+
+            unlink(ApiConstants.GOOGLE)
+                    .expectStatus().isNoContent();
+
+            final var idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims());
+            final var tokens = signIn(ApiConstants.GOOGLE, new GoogleSignInRequest(idToken));
+            assertThat(tokenOwnerId(tokens)).isEqualTo(tester.getId());
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .isPresent();
+        }
+
+        @Test
+        void returnNoContentAndKeepOtherIdentity_whenPasswordlessUserHasAnother() {
+            userRepository.save(UserTestData.createGooglePippin()
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID));
+
+            unlink(ApiConstants.GOOGLE)
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID))
+                    .isPresent();
+        }
+
+        @Test
+        void returnNoContent_whenAdmin() {
+            userRepository.save(UserTestData.createGimli()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+
+            restClient.delete()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
+                    .headers(auth::admin)
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnConflictAndKeepIdentity_whenItIsTheLastSignInMethod() {
+            userRepository.save(UserTestData.createGooglePippin());
+
+            unlink(ApiConstants.GOOGLE)
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.LAST_SIGN_IN_METHOD);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .isPresent();
+        }
+
+        @Test
+        void keepOneIdentity_whenPasswordlessUserUnlinksBothConcurrently() {
+            userRepository.save(UserTestData.createGooglePippin()
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID));
+
+            final var statuses = Stream.of(ApiConstants.GOOGLE, ApiConstants.GITHUB)
+                    .parallel()
+                    .map(provider -> unlink(provider)
+                            .returnResult(Void.class)
+                            .getStatus()
+                            .value())
+                    .toList();
+
+            assertThat(statuses)
+                    .containsExactlyInAnyOrder(HttpStatus.NO_CONTENT.value(), HttpStatus.CONFLICT.value());
+        }
+
+        @Test
+        void returnNotFound_whenGoogleIsNotLinked() {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));
+
+            unlink(ApiConstants.GOOGLE)
+                    .expectStatus().isNotFound()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GoogleTestData.NOT_LINKED);
+        }
+
+        @Test
+        void returnNotFound_whenGitHubIsNotLinked() {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+
+            unlink(ApiConstants.GITHUB)
+                    .expectStatus().isNotFound()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GitHubTestData.NOT_LINKED);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {ApiConstants.GOOGLE, ApiConstants.GITHUB})
+        void returnUnauthorized_whenNotAuthenticated(final String provider) {
+            restClient.delete()
+                    .uri(ApiConstants.IDENTITIES + provider)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+        private RestTestClient.ResponseSpec unlink(final String provider) {
+            return restClient.delete()
+                    .uri(ApiConstants.IDENTITIES + provider)
+                    .headers(auth::user)
+                    .exchange();
+        }
+
+        private RestTestClient.ResponseSpec attemptSignIn(final String path, final Object request) {
+            return TestUtils.createRestTestClient(port, ApiConstants.AUTH_BASE_URL)
+                    .post()
+                    .uri(path)
                     .body(request)
                     .exchange();
         }

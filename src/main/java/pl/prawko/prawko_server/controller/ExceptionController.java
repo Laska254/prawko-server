@@ -29,6 +29,7 @@ import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.exception.InvalidProviderCredentialException;
 import pl.prawko.prawko_server.exception.InvalidRefreshTokenException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
+import pl.prawko.prawko_server.exception.LastSignInMethodException;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
 import pl.prawko.prawko_server.exception.ProviderUnavailableException;
 import pl.prawko.prawko_server.exception.TooManyRequestsException;
@@ -143,6 +144,12 @@ public class ExceptionController {
     @ApiResponse(responseCode = "409", description = "Exam is already finished")
     @ExceptionHandler(ExamFinishedException.class)
     public ProblemDetail handleExamFinished(final ExamFinishedException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "409", description = "Provider account is the user's only way to sign in")
+    @ExceptionHandler(LastSignInMethodException.class)
+    public ProblemDetail handleLastSignInMethod(final LastSignInMethodException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
     }
 

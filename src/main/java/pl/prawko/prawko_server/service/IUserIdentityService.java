@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.service;
 
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.model.UserIdentity;
@@ -41,5 +42,16 @@ public interface IUserIdentityService {
      * @param profile the profile of the provider account, read from a verified credential
      */
     void linkIdentity(long userId, ProviderProfile profile);
+
+    /**
+     * Unlinks a provider account from a signed-in user. Refused if it's the user's only way to sign in.
+     * <p>
+     * If the provider is authoritative for the user's email, {@link #resolveUser} links the account again on its next
+     * sign-in, since whoever holds that account controls the mailbox and could reset the password anyway.
+     *
+     * @param userId   the ID of the signed-in user
+     * @param provider the provider whose account to unlink
+     */
+    void unlinkIdentity(long userId, IdentityProvider provider);
 
 }
