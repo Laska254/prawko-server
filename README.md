@@ -111,8 +111,10 @@ Run with Docker (after `./mvnw package`)
 
 `docker run -p 8080:8080 prawko-server`
 
-In the `prod` profile mount the media directory as a volume, e.g.
-`docker run -p 8080:8080 -v /srv/prawko/media:/media -e MEDIA_DIRECTORY=/media ... prawko-server`.
+With no profile the image falls back to `dev`, whose config only a local build packages, so a released image exits
+with status 1. For `prod`, set it at runtime and mount the media directory as a volume, e.g.
+`docker run -p 8080:8080 -v /srv/prawko/media:/media -e SPRING_PROFILES_ACTIVE=prod -e MEDIA_DIRECTORY=/media ... prawko-server`.
+The container runs as UID 1000, which must be able to read the files in the volume.
 
 ### Local configuration
 
@@ -331,10 +333,13 @@ own data (admins may act on any user), **admin** - admins only.
 
   | Method | Path                                                | Access | Description                                                                                               |
   |--------|-----------------------------------------------------|--------|-----------------------------------------------------------------------------------------------------------|
-  | `POST` | `/questions`                                        | admin  | upload a CSV file (`file` multipart part, max 5MB) with questions                                         |
+  | `POST` | `/questions`                                        | admin  | upload a CSV file (`file` multipart part, max 5MB, `413` above it) with questions                         |
   | `GET`  | `/questions`                                        | admin  | get a page of questions                                                                                   |
   | `GET`  | `/questions/random?category={category}&type={type}` | user   | random question for practice, with answers' `correct` flag; `category` and `type` are random when missing |
   | `GET`  | `/questions/{id}`                                   | user   | get a question; answers' `correct` flag is included only for admins                                       |
+
+  An upload over about 20MB (`server.tomcat.max-swallow-size`) loses the connection instead of getting the `413`, so a
+  rejected request can't hold a thread until an arbitrarily large body is read.
 
   Hiding the `correct` flag (here and on active exams) only keeps it out of those views, it isn't a security boundary:
   the question bank is public and `GET /questions/random` includes the flag for practice.
@@ -394,7 +399,7 @@ cross-origin scripts via CORS) to show the remaining time correctly.
 
 | Status | When                                                                                                                         |
 |--------|------------------------------------------------------------------------------------------------------------------------------|
-| `400`  | `answerId` or the body is missing (answers only), or the exam ID is not positive                                             |
+| `400`  | `answerId` is missing or the body is missing or malformed (answers only), or the exam ID is not positive                     |
 | `403`  | the exam belongs to another user                                                                                             |
 | `404`  | the exam doesn't exist, or the answer doesn't belong to any of its questions                                                 |
 | `409`  | the exam is no longer `active` or its time has expired (answers only), or it was modified by a concurrent request - retry it |

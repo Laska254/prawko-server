@@ -61,7 +61,8 @@ public class QuestionController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Questions from file added successfully"),
             @ApiResponse(responseCode = "400", description = "File is missing or invalid format"),
-            @ApiResponse(responseCode = "415", description = "Unsupported media type")
+            @ApiResponse(responseCode = "415", description = "Unsupported media type"),
+            @ApiResponse(responseCode = "413", description = "File or request is over the upload size limit")
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> addQuestions(@RequestPart final MultipartFile file) {

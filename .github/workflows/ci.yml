@@ -3,10 +3,9 @@ name: Java CI with Maven
 on:
   push:
     branches: [ "main", "epic/**" ]
-    tags:
-      [ "v*" ]
   pull_request:
     branches: [ "main", "epic/**" ]
+  workflow_call:
 
 jobs:
   test:

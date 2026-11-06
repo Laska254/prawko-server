@@ -14,21 +14,19 @@ import java.util.List;
  * <p>
  * A {@code Language} has:
  *  <ul>
- *     <li>{@code id} - fixed unique identifier</li>
- *     <li>{@code name} - limited to 7 characters</li>
- *     <li>{@code points} - number of given points for correct answer to a question</li>
- *     <li>{@code media} - filename of media attached to a question</li>
- *     <li>{@code type} - type of question represented by {@link QuestionType}</li>
+ *     <li>{@code id} - unique generated identifier</li>
+ *     <li>{@code name} - limited to 31 characters</li>
+ *     <li>{@code code} - two-letter language code, e.g. {@link #PL}</li>
+ *     <li>{@code icon} - limited to 3 characters</li>
  * </ul>
  * <p>
  * Relationships:
  * <ul>
  *     <li>{@link QuestionTranslation}: Each language is assigned to multiple question translations.</li>
  *     <li>{@link AnswerTranslation}: Each language is assigned to multiple answer translations.</li>
- *     <li>{@link Exam}: Each language is assigned to multiple exams.</li>
  * </ul>
  * <p>
- * The entity is mapped do the database table {@code question}.
+ * The entity is mapped to the database table {@code language}.
  * All setters are returning {@code  Language} itself, enabling method chaining.
  */
 @Entity
@@ -65,9 +63,6 @@ public class Language {
 
     @OneToMany(mappedBy = "language")
     private List<AnswerTranslation> answerTranslations;
-
-    @OneToMany(mappedBy = "language")
-    private List<Exam> exams;
 
     public long getId() {
         return id;
@@ -120,15 +115,6 @@ public class Language {
 
     public Language setAnswerTranslations(final List<AnswerTranslation> answerTranslations) {
         this.answerTranslations = answerTranslations;
-        return this;
-    }
-
-    public List<Exam> getExams() {
-        return exams;
-    }
-
-    public Language setExams(final List<Exam> exams) {
-        this.exams = exams;
         return this;
     }
 
