@@ -10,12 +10,17 @@ import pl.prawko.prawko_server.dto.RegisterDto;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.model.EmailStatus;
+import pl.prawko.prawko_server.model.IdentityProvider;
+import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -24,14 +29,32 @@ public class UserTestData {
     public static final String USER_ALREADY_EXISTS = "User already exists.";
 
     public static final Map<String, String> PIPPIN_CONFLICT_DETAILS = Map.ofEntries(
-            Map.entry("userName", "User with username 'pippin' already exists."),
-            Map.entry("email", "User with email 'pippin@shire.me' already exists."));
+            Map.entry("userName", userNameConflictMessage("pippin")),
+            Map.entry("email", emailConflictMessage("pippin@shire.me")));
+    public static final String USER_NAME_TAKEN = "User with this username already exists.";
+    public static final String EMAIL_TAKEN = "User with this email already exists.";
 
+    public static final String PASSWORD_RESET_URL = "http://localhost:5173/auth/password/reset";
+    public static final Duration PASSWORD_RESET_TOKEN_VALIDITY = Duration.ofMinutes(15);
+    public static final Duration PASSWORD_RESET_COOLDOWN = Duration.ofMinutes(30);
     public static final String INVALID_RESET_TOKEN = "Password reset token is invalid or expired.";
     public static final String INVALID_VERIFICATION_TOKEN = "Email verification token is invalid or expired.";
     public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";
+    public static final String LINKED_ACCOUNTS_NOTE = "can also sign in to your account: ";
     public static final String VERIFICATION_COOLDOWN = "Verification email was sent recently, try again later.";
     public static final String INCORRECT_PASSWORD = "Current password is incorrect.";
+    public static final String WRONG_PASSWORD = "wrongPassword";
+    public static final String LAST_SIGN_IN_METHOD = "Can't unlink the only way to sign in. Set a password or link another "
+            + "account first.";
+    public static final String PROVIDER_USER_ID = "109876543210";
+    public static final String OTHER_PROVIDER_USER_ID = "otherAccountId";
+    public static final String EMAIL_TOO_LONG = "Email must be at most 254 characters.";
+    // @Email allows at most 64 characters before the @ and 63 per domain label, so the length comes from several labels.
+    public static final String LONGEST_EMAIL = "a".repeat(64) + "@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(61);
+    public static final String OVERLONG_EMAIL = LONGEST_EMAIL + "d";
+    // The update request's email is in mixed case, users store emails lowercased.
+    public static final String UPDATED_EMAIL = "UpdatedEmail@shire.me";
+    public static final String STORED_UPDATED_EMAIL = UPDATED_EMAIL.toLowerCase(Locale.ROOT);
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 
@@ -40,6 +63,22 @@ public class UserTestData {
 
     public static String userNotFoundMessage(final long id) {
         return "User with id '" + id + "' not found.";
+    }
+
+    public static String identityLinkedSubject(final IdentityProvider provider) {
+        return provider.getDisplayName() + " account linked";
+    }
+
+    public static String identityUnlinkedSubject(final IdentityProvider provider) {
+        return provider.getDisplayName() + " account unlinked";
+    }
+
+    public static String userNameConflictMessage(final String userName) {
+        return "User with username '" + userName + "' already exists.";
+    }
+
+    public static String emailConflictMessage(final String email) {
+        return "User with email '" + email + "' already exists.";
     }
 
     public static User createTestUser(@NonNull final String firstName,
@@ -71,6 +110,21 @@ public class UserTestData {
         return createTestUserPippin().setEnabled(false);
     }
 
+    public static User createGooglePippin() {
+        return createTestUserPippin()
+                .setPassword(null)
+                .addIdentity(IdentityProvider.GOOGLE, PROVIDER_USER_ID);
+    }
+
+    /**
+     * Profile of Pippin's account at the provider, with his verified email hosted by the provider.
+     */
+    public static ProviderProfile createPippinProfile(final IdentityProvider provider) {
+        final var pippin = createTestUserPippin();
+        return new ProviderProfile(provider, PROVIDER_USER_ID, pippin.getEmail(), EmailStatus.AUTHORITATIVE,
+                pippin.getUserName(), pippin.getFirstName(), pippin.getLastName());
+    }
+
     public static User createPippinChangingEmail() {
         return createTestUserPippin()
                 .setPendingEmail(createValidUserUpdateRequest().email())
@@ -86,16 +140,22 @@ public class UserTestData {
     }
 
     public static UserDto createUserDto(final long id) {
+        return createUserDto(id, "pippin");
+    }
+
+    public static UserDto createUserDto(final long id, final String userName) {
         return new UserDto(
                 id,
                 "Peregrin",
                 "Tuk",
-                "pippin",
+                userName,
                 "pippin@shire.me",
                 null,
                 false,
                 false,
-                Role.USER);
+                Role.USER,
+                true,
+                List.of());
     }
 
     public static UserDto createAdminUserDto(final long id) {
@@ -108,7 +168,9 @@ public class UserTestData {
                 null,
                 false,
                 false,
-                Role.ADMIN);
+                Role.ADMIN,
+                true,
+                List.of());
     }
 
     public static UserDto createUpdatedUserDto(final long id) {
@@ -118,10 +180,12 @@ public class UserTestData {
                 "UpdatedLastName",
                 "UpdatedUserName",
                 "pippin@shire.me",
-                createValidUserUpdateRequest().email(),
+                STORED_UPDATED_EMAIL,
                 true,
                 true,
-                Role.USER
+                Role.USER,
+                true,
+                List.of()
         );
     }
 
@@ -136,7 +200,9 @@ public class UserTestData {
                 null,
                 false,
                 false,
-                updated.role()
+                updated.role(),
+                updated.hasPassword(),
+                updated.providers()
         );
     }
 
@@ -145,7 +211,7 @@ public class UserTestData {
                 "UpdatedFirstName",
                 "UpdatedLastName",
                 "UpdatedUserName",
-                "UpdatedEmail@shire.me");
+                UPDATED_EMAIL);
     }
 
     public static UserUpdateRequest createUserUpdateRequestWithoutEmail() {
@@ -162,7 +228,7 @@ public class UserTestData {
     }
 
     public static ChangePasswordRequest createWrongCurrentPasswordRequest() {
-        return new ChangePasswordRequest("wrongPassword", "drugieSniadanie");
+        return new ChangePasswordRequest(WRONG_PASSWORD, "drugieSniadanie");
     }
 
     public static ChangePasswordRequest createSameAsCurrentPasswordRequest() {
@@ -174,7 +240,7 @@ public class UserTestData {
     }
 
     public static DeleteAccountRequest createWrongPasswordDeleteAccountRequest() {
-        return new DeleteAccountRequest("wrongPassword");
+        return new DeleteAccountRequest(WRONG_PASSWORD);
     }
 
     public static ResetPasswordRequest createValidResetPasswordRequest(final String token) {

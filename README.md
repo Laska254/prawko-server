@@ -81,6 +81,10 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
       `openssl rand -base64 32`
     + `PASSWORD_RESET_URL` frontend page the reset link points to, e.g. `https://prawko.pl/auth/password/reset`
     + `EMAIL_VERIFICATION_URL` frontend page the email verification link points to, e.g. `https://prawko.pl/auth/verify`
+    + `GOOGLE_CLIENT_IDS` optional, comma-separated web (server) OAuth client IDs the apps request Google ID tokens
+      for ([Google sign-in](#authentication)); without it `POST /auth/google` answers `404`
+    + `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` optional, credentials of the GitHub OAuth app
+      ([GitHub sign-in](#authentication)); without them `POST /auth/github` answers `404`
     + `MEDIA_DIRECTORY` directory with question media files, e.g. `/media` (a Docker volume)
     + `MEDIA_BASE_URL` public URL the media files are served from, e.g. `https://api.prawko.pl/media`
 
@@ -168,7 +172,7 @@ documented only here.
 The API is stateless - every request that requires authentication must carry an access token as
 `Authorization: Bearer ...`. HTTP Basic isn't supported - such a request counts as unauthenticated (`401`).
 
-Signing in with `POST /auth` (`{"userName": "...", "password": "..."}`, username or email) returns a token pair:
+Signing in with `POST /auth` (`{"userName": "...", "password": "..."}`, username or email, both ignoring case) returns a token pair:
 
 ```json
 {"accessToken": "...", "refreshToken": "...", "expiresIn": 900}
@@ -190,6 +194,57 @@ Signing out with `POST /auth/logout` (`{"refreshToken": "..."}`) revokes the ref
 an unknown one. The client's access token stays valid until it expires, so the client should discard it too.
 Changing (`PATCH /users/me/password`) or resetting (`POST /auth/password/reset`) the password revokes all refresh tokens
 of the user, signing out all their clients - including the one that changed it, which has to sign in again.
+
+Signing in with Google: the client gets an ID token from Google (Credential Manager on Android, Google Identity
+Services on the web) and sends it to `POST /auth/google` as `{"idToken": "..."}`, which returns the same token pair as
+`POST /auth`. Every client requests the token for the web (server) OAuth client ID, created in the Google Cloud console;
+on Android it's passed to `GetGoogleIdOption.Builder.setServerClientId`, not the Android client ID. The server checks
+the token's signature against Google's keys, its expiry, the issuer and that its audience is one of
+`google.client-ids`. An invalid token is answered with `401`, without configured client IDs the endpoint answers `404`,
+and if Google's keys can't be fetched `503`. The Google account is linked to a user on its first sign-in, looked up by
+its email, which Google must have verified (otherwise `403`): an existing user gets it linked (`409` if it's linked to
+another Google account already), an unverified one is verified and its password cleared (it may have been registered
+by someone else with that email), and otherwise a new user without a password is created, with a username from the
+email's local part. An existing user is only linked if Google hosts the email (Gmail or Google Workspace), otherwise
+`409`: any other address was verified by Google only once and may belong to someone else by now. Later sign-ins find
+the user by the Google account alone, so changing the email on either side keeps them linked.
+
+Signing in with GitHub: the client runs GitHub's authorization code flow with PKCE and the scope `user:email`, using the
+client ID of the GitHub OAuth app, and sends the result to `POST /auth/github` as
+`{"code": "...", "codeVerifier": "...", "redirectUri": "..."}`, which returns the same token pair as `POST /auth`. The
+server exchanges the code with the app's client secret and reads the account's ID and primary email from the GitHub API;
+the GitHub access token is used only for that and isn't stored. A code GitHub rejects is answered with `401`, without a
+configured client ID and secret the endpoint answers `404`, and if GitHub can't be reached, answers with a server error
+or rate limits the app `503`. The first sign-in creates a user without a password, with the GitHub login as username.
+The primary email must be verified by GitHub (otherwise `403`). If a user with that email exists the answer is `409` and
+nothing is linked: GitHub doesn't host email addresses, it verified the address only once and it may belong to someone
+else by now. Later sign-ins find the user by the GitHub account's ID alone, so renaming the login or changing the email
+keeps them linked.
+
+Linking and unlinking: a signed-in user links a provider account with `POST /users/me/identities/google` or
+`POST /users/me/identities/github`, with the body of the matching `/auth` endpoint plus `currentPassword` and the same
+errors for a bad credential, and `204` on success. The account's email doesn't have to match the user's, so this is the
+way forward after the `409` above: sign in as that user, then link. The answer is `409` if the account is linked to
+another user or the user already has an account of that provider. `DELETE /users/me/identities/google` or
+`DELETE /users/me/identities/github` with `{"currentPassword": "..."}` unlinks it and answers `204`, `404` if it isn't
+linked, and `409` if they have no password and no other linked account, as that would leave no way to sign in. Requiring
+the password means a stolen access token alone can't add a lasting way in or remove the user's own: if it's missing or
+wrong the answer is `400` `"Current password is incorrect."`, nothing changes and a GitHub code isn't used up. A user
+without a password leaves it out, and can send no body when unlinking. Every link and unlink through these endpoints
+emails a notice to the user's current address, so users without a password get warned too; if it can't be queued the
+answer is `503` and nothing changes. A link made by a first sign-in sends no such notice: the provider hosts the email,
+so it would go to the mailbox of the account that just signed in. If the user already has other accounts linked, one of
+them may belong to someone who held the email earlier, so that mailbox gets a notice naming them (`503` and no link if
+it can't be queued), and the password reset email names the linked accounts too. Removing one is left to the user.
+`providers` in the user response lists the linked ones.
+An unlinked account no longer finds the user by its ID, so its next sign-in counts as a first one: if the user's email
+is one the provider hosts it's linked again, since whoever holds that account controls the mailbox and could reset the
+password anyway. Unlinking doesn't revoke refresh tokens, so clients already signed in stay signed in.
+
+Users without a password: a user created by a provider has none, and `hasPassword` in the user response is `false`, so
+a client can offer to set one. Until then `POST /auth` answers `401`, and `PATCH /users/me/password` and
+`DELETE /users/me` answer `400` `"Current password is incorrect."`. `POST /auth/password/forgot` and
+`POST /auth/password/reset` work without a current password and set the first one, after which all three work as usual.
 
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 
@@ -224,6 +279,8 @@ own data (admins may act on any user), **admin** - admins only.
   | `POST` | `/auth`                 | public | sign in, returns an access and a refresh token                                                 |
   | `POST` | `/auth/refresh`         | public | exchange a refresh token for a new token pair, the used one is revoked                         |
   | `POST` | `/auth/logout`          | public | revoke a refresh token                                                                         |
+  | `POST` | `/auth/google`          | public | sign in with a Google ID token, returns an access and a refresh token                          |
+  | `POST` | `/auth/github`          | public | sign in with a GitHub authorization code, returns an access and a refresh token                |
   | `POST` | `/auth/password/forgot` | public | email a password reset link, returns `202` whether the account exists or not                   |
   | `POST` | `/auth/password/reset`  | public | set a new password with the token from the reset link                                          |
   | `POST` | `/auth/verify`          | public | verify an email with a link's token, returns `202` while an email change awaits the other link |
@@ -231,17 +288,25 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/users`
 
-  | Method   | Path                 | Access | Description                                                      |
-  |----------|----------------------|--------|------------------------------------------------------------------|
-  | `POST`   | `/users`             | public | register a new user, emails a verification link                  |
-  | `GET`    | `/users/me`          | user   | get the signed-in user (e.g. their ID and role)                  |
-  | `GET`    | `/users/me/stats`    | user   | get own exam statistics, see [Exam statistics](#exam-statistics) |
-  | `DELETE` | `/users/me`          | user   | delete own account with its exams (requires current password)    |
-  | `PATCH`  | `/users/me/password` | user   | change own password (requires current password)                  |
-  | `GET`    | `/users`             | admin  | get a page of users                                              |
-  | `GET`    | `/users/{id}`        | admin  | get a user                                                       |
-  | `PATCH`  | `/users/{id}`        | self   | update a user (email: the user themselves only)                  |
-  | `DELETE` | `/users/{id}`        | admin  | delete a user with their exams                                   |
+  | Method   | Path                          | Access | Description                                                                                          |
+  |----------|-------------------------------|--------|------------------------------------------------------------------------------------------------------|
+  | `POST`   | `/users`                      | public | register a new user, emails a verification link                                                      |
+  | `GET`    | `/users/me`                   | user   | get the signed-in user (e.g. their ID and role)                                                      |
+  | `GET`    | `/users/me/stats`             | user   | get own exam statistics, see [Exam statistics](#exam-statistics)                                     |
+  | `DELETE` | `/users/me`                   | user   | delete own account with its exams (requires current password, if none set one with a password reset) |
+  | `PATCH`  | `/users/me/password`          | user   | change own password (requires current password, if none set one with a password reset)               |
+  | `POST`   | `/users/me/identities/google` | user   | link a Google account (requires current password)                                                    |
+  | `DELETE` | `/users/me/identities/google` | user   | unlink the Google account (requires current password)                                                |
+  | `POST`   | `/users/me/identities/github` | user   | link a GitHub account (requires current password)                                                    |
+  | `DELETE` | `/users/me/identities/github` | user   | unlink the GitHub account (requires current password)                                                |
+  | `GET`    | `/users`                      | admin  | get a page of users                                                                                  |
+  | `GET`    | `/users/{id}`                 | admin  | get a user                                                                                           |
+  | `PATCH`  | `/users/{id}`                 | self   | update a user (email: the user themselves only)                                                      |
+  | `DELETE` | `/users/{id}`                 | admin  | delete a user with their exams                                                                       |
+
+  Usernames and emails are unique ignoring case: registering or renaming to one that differs from a taken one only in
+  case returns `409`. Users can still change the capitalization of their own username. Emails are stored lowercased,
+  so responses return them lowercased and mails go to the lowercased address.
 
 * `/questions`
 
@@ -367,6 +432,7 @@ Password reset links are valid for 15 minutes; another reset email for the same 
 Email verification links are valid for 24 hours; another one can be requested after 1 minute. Unverified accounts
 with expired links are deleted every hour.
 
-Reset and verification emails are processed in the background on a bounded pool (`spring.task.execution.pool.*`: 8 threads, 100
-queued). When it's full, `/auth/password/forgot`, `/auth/verify/resend`, `/users` (registration) and email changes
-with `PATCH /users/{id}` answer `503`.
+Reset, verification and identity notice emails are processed in the background on a bounded pool
+(`spring.task.execution.pool.*`: 8 threads, 100 queued). When it's full, `/auth/password/forgot`, `/auth/verify/resend`,
+`/users` (registration), email changes with `PATCH /users/{id}`, `POST`/`DELETE /users/me/identities/*` and a first
+`/auth/google` sign-in that links an account to a user with other linked accounts answer `503`.

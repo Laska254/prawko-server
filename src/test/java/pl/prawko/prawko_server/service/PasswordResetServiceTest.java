@@ -20,7 +20,6 @@ import pl.prawko.prawko_server.service.implementation.PasswordResetService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
-import java.time.Duration;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,11 +35,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class PasswordResetServiceTest {
-
-    private static final String RESET_URL = "http://localhost:5173/auth/password/reset";
-    private static final Duration TOKEN_VALIDITY = Duration.ofMinutes(15);
-    private static final Duration COOLDOWN = Duration.ofMinutes(30);
-    private static final String MAIL_FROM = "no-reply@prawko.local";
 
     @Mock
     private UserRepository repository;
@@ -60,8 +54,9 @@ class PasswordResetServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PasswordResetService(repository, passwordEncoder, refreshTokenService, mailSender, RESET_URL,
-                TOKEN_VALIDITY, COOLDOWN, MAIL_FROM, TestUtils.CLOCK);
+        service = new PasswordResetService(repository, passwordEncoder, refreshTokenService, mailSender,
+                UserTestData.PASSWORD_RESET_URL, UserTestData.PASSWORD_RESET_TOKEN_VALIDITY,
+                UserTestData.PASSWORD_RESET_COOLDOWN, TestUtils.MAIL_FROM, TestUtils.CLOCK);
     }
 
     @Test
@@ -72,16 +67,26 @@ class PasswordResetServiceTest {
 
         final var message = captureSentMessage();
         final var token = UserTestData.extractToken(message);
-        assertThat(message.getFrom()).isEqualTo(MAIL_FROM);
+        assertThat(message.getFrom()).isEqualTo(TestUtils.MAIL_FROM);
         assertThat(message.getTo()).containsExactly(tester.getEmail());
         assertThat(message.getText())
-                .contains(RESET_URL + "?token=" + token)
+                .contains(UserTestData.PASSWORD_RESET_URL + "?token=" + token)
                 .contains("expires in 15m.");
         assertThat(tester.getPasswordResetTokenHash())
                 .hasSize(64)
                 .isNotEqualTo(token);
-        assertThat(tester.getPasswordResetTokenExpires()).isEqualTo(TestUtils.CLOCK.instant().plus(TOKEN_VALIDITY));
+        assertThat(tester.getPasswordResetTokenExpires())
+                .isEqualTo(TestUtils.CLOCK.instant().plus(UserTestData.PASSWORD_RESET_TOKEN_VALIDITY));
         verify(repository).save(tester);
+    }
+
+    @Test
+    void requestReset_notMentionLinkedAccounts_whenUserHasNone() {
+        when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
+
+        service.requestReset(tester.getEmail());
+
+        assertThat(captureSentMessage().getText()).doesNotContain(UserTestData.LINKED_ACCOUNTS_NOTE);
     }
 
     @Test
@@ -89,7 +94,7 @@ class PasswordResetServiceTest {
         when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
         service.requestReset(tester.getEmail());
         final var firstHash = tester.getPasswordResetTokenHash();
-        tester.setPasswordResetTokenExpires(tester.getPasswordResetTokenExpires().minus(COOLDOWN));
+        tester.setPasswordResetTokenExpires(tester.getPasswordResetTokenExpires().minus(UserTestData.PASSWORD_RESET_COOLDOWN));
 
         service.requestReset(tester.getEmail());
 
@@ -146,7 +151,7 @@ class PasswordResetServiceTest {
     @Test
     void requestReset_logUserIdOnly_whenSendingEmailFails(final CapturedOutput output) {
         when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
-        doThrow(new MailSendException("SMTP down")).when(mailSender).send(any(SimpleMailMessage.class));
+        doThrow(new MailSendException(TestUtils.MAIL_FAILURE)).when(mailSender).send(any(SimpleMailMessage.class));
 
         service.requestReset(tester.getEmail());
 
@@ -157,7 +162,7 @@ class PasswordResetServiceTest {
     @Test
     void requestReset_notThrow_whenSendingEmailFails() {
         when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
-        doThrow(new MailSendException("SMTP down")).when(mailSender).send(any(SimpleMailMessage.class));
+        doThrow(new MailSendException(TestUtils.MAIL_FAILURE)).when(mailSender).send(any(SimpleMailMessage.class));
 
         service.requestReset(tester.getEmail());
 

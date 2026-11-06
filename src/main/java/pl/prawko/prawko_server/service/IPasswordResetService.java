@@ -14,7 +14,8 @@ public interface IPasswordResetService {
      * Does nothing if no user has the given email. Returns without waiting for the outcome, so callers can't tell
      * whether an account exists, neither from the result nor from the response time.
      * A new request invalidates any previously issued token. Requests made within a cooldown after issuing a token are
-     * ignored, so the user can't be flooded with emails.
+     * ignored, so the user can't be flooded with emails. The email names the provider accounts linked to the user, as
+     * resetting the password doesn't remove them.
      * </p>
      *
      * @param email the email address of the account, case-insensitive
@@ -24,6 +25,8 @@ public interface IPasswordResetService {
     /**
      * Sets a new password for the user owning a valid password reset token.
      * <p>
+     * Also lets a user who signed up with a provider account and has no password yet set one, as the link proves they
+     * own the email.
      * The token is invalidated afterward, and all refresh tokens of the user are revoked, signing out all their
      * clients.
      * </p>

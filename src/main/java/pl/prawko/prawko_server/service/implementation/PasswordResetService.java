@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IPasswordResetService;
@@ -23,6 +24,7 @@ import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of {@link IPasswordResetService} sending reset links with {@link MailSender}.
@@ -135,6 +137,7 @@ public class PasswordResetService implements IPasswordResetService {
         message.setText("To reset your password, open the link below. It expires in "
                 + DurationFormatterUtils.print(tokenValidity, DurationFormat.Style.COMPOSITE) + ".\n\n"
                 + link + "\n\n"
+                + linkedAccountsNote(user)
                 + "If you didn't request a password reset, ignore this email.");
         try {
             mailSender.send(message);
@@ -142,6 +145,18 @@ public class PasswordResetService implements IPasswordResetService {
         } catch (final MailException exception) {
             log.error("Failed to send password reset email to user with id '{}'", user.getId(), exception);
         }
+    }
+
+    private String linkedAccountsNote(final User user) {
+        final var providers = repository.findProvidersByUserId(user.getId());
+        if (providers.isEmpty()) {
+            return "";
+        }
+        final var names = providers.stream()
+                .map(IdentityProvider::getDisplayName)
+                .collect(Collectors.joining(", "));
+        return "These accounts can also sign in to your account: " + names + ". If you don't recognize one of them, "
+                + "unlink it in your account settings after resetting your password.\n\n";
     }
 
     private void requestResetEmail(final User user) {

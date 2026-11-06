@@ -26,7 +26,8 @@ class EntityIdentityTest {
                 Named.of("Question", id -> new Question().setId(id)),
                 Named.of("QuestionTranslation", id -> new QuestionTranslation().setId(id)),
                 Named.of("RefreshToken", id -> new RefreshToken().setId(id)),
-                Named.of("User", id -> new User().setId(id))
+                Named.of("User", id -> new User().setId(id)),
+                Named.of("UserIdentity", id -> new UserIdentity().setId(id))
         );
     }
 
@@ -120,6 +121,19 @@ class EntityIdentityTest {
         assertThat(token.toString())
                 .contains("id=3", "user=1")
                 .doesNotContain("secret-hash");
+    }
+
+    @Test
+    void toString_excludeProviderUserId_whenIdentityHasUser() {
+        final var identity = new UserIdentity()
+                .setId(4)
+                .setProvider(IdentityProvider.GOOGLE)
+                .setProviderUserId(UserTestData.PROVIDER_USER_ID)
+                .setUser(new User().setId(1));
+
+        assertThat(identity.toString())
+                .contains("id=4", "provider=GOOGLE", "user=1")
+                .doesNotContain(UserTestData.PROVIDER_USER_ID);
     }
 
     @Test

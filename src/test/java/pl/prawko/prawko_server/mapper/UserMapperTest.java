@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.mapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.prawko.prawko_server.config.TestUtils;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
@@ -52,6 +53,17 @@ class UserMapperTest {
         final var result = mapper.toDto(user);
 
         assertThat(result).isEqualTo(expected);
+    }
+
+    @Test
+    void toDto_mapProvidersWithoutPassword_whenUserSignedUpWithProvider() {
+        final var user = UserTestData.createGooglePippin()
+                .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID);
+
+        final var result = mapper.toDto(user);
+
+        assertThat(result.hasPassword()).isFalse();
+        assertThat(result.providers()).containsExactly(IdentityProvider.GOOGLE, IdentityProvider.GITHUB);
     }
 
     @Test

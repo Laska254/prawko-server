@@ -9,12 +9,18 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Represents a {@code User} entity within the application.
@@ -23,9 +29,10 @@ import java.util.List;
  *  <ul>
  *     <li>first name - limited to 31 characters</li>
  *     <li>last name - limited to 31 characters</li>
- *     <li>username - limited to 31 characters</li>
- *     <li>email - limited to 63 characters</li>
- *     <li>password - hashed and limited to 63 characters</li>
+ *     <li>username - limited to 31 characters, unique ignoring case</li>
+ *     <li>email - limited to 254 characters, stored lowercased and unique</li>
+ *     <li>password - hashed and limited to 63 characters, {@code null} for users who only sign in with a linked
+ *     {@link UserIdentity}</li>
  * </ul>
  * and system-related attributes like the {@link Role}, whether the account is enabled, the creation timestamp and the last
  * update timestamp.
@@ -45,15 +52,27 @@ import java.util.List;
  * <ul>
  *     <li>{@link Exam}: A user can be assigned to multiple exams.</li>
  *     <li>{@link RefreshToken}: A user can have multiple refresh tokens, deleted with the user.</li>
+ *     <li>{@link UserIdentity}: A user can have one linked account per {@link IdentityProvider}, ordered by provider
+ *     and deleted with the user.</li>
  * </ul>
- * The entity is mapped to the database table {@code user}. Timestamps are {@link Instant}s, so they don't depend on
- * the JVM's time zone; {@code created} and {@code updated} are set automatically.
+ * The entity is mapped to the database table {@code user}. The unique constraints on the username and email are named
+ * {@value #USER_NAME_CONSTRAINT} and {@value #EMAIL_CONSTRAINT}. The database's collation decides whether the username
+ * constraint ignores case (MariaDB's default does, H2 doesn't); the services check it ignoring case either way.
+ * Emails, including the pending one, are lowercased by their setters, so their constraint behaves the same everywhere.
+ * Timestamps are {@link Instant}s, so they don't depend on the JVM's time zone; {@code created} and {@code updated} are
+ * set automatically.
  * All setters are returning {@code User} itself, enabling method chaining.
  * {@link #toString()} leaves out personal data and credentials, so it's safe to log.
  */
 @Entity
-@Table(name = "`user`")
+@Table(name = "`user`", uniqueConstraints = {
+        @UniqueConstraint(name = User.USER_NAME_CONSTRAINT, columnNames = "user_name"),
+        @UniqueConstraint(name = User.EMAIL_CONSTRAINT, columnNames = "email")
+})
 public class User {
+
+    public static final String USER_NAME_CONSTRAINT = "uk_user_user_name";
+    public static final String EMAIL_CONSTRAINT = "uk_user_email";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -68,10 +87,10 @@ public class User {
     @Column(length = 31)
     private String userName;
 
-    @Column(length = 63)
+    @Column(length = 254)
     private String email;
 
-    @Column(length = 63)
+    @Column(length = 254)
     private String pendingEmail;
 
     @Column(length = 63)
@@ -107,6 +126,11 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RefreshToken> refreshTokens;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("provider")
+    @BatchSize(size = 50)
+    private List<UserIdentity> identities = new ArrayList<>();
 
     public long getId() {
         return id;
@@ -149,7 +173,7 @@ public class User {
     }
 
     public User setEmail(final String email) {
-        this.email = email;
+        this.email = lowercase(email);
         return this;
     }
 
@@ -158,7 +182,7 @@ public class User {
     }
 
     public User setPendingEmail(final String pendingEmail) {
-        this.pendingEmail = pendingEmail;
+        this.pendingEmail = lowercase(pendingEmail);
         return this;
     }
 
@@ -276,6 +300,49 @@ public class User {
     public User setExams(final List<Exam> exams) {
         this.exams = exams;
         return this;
+    }
+
+    public List<UserIdentity> getIdentities() {
+        return identities;
+    }
+
+    /**
+     * Links an account at the provider to this user.
+     *
+     * @param provider       the provider of the account
+     * @param providerUserId the provider's ID of the account
+     * @return this user
+     */
+    public User addIdentity(final IdentityProvider provider, final String providerUserId) {
+        identities.add(new UserIdentity()
+                .setProvider(provider)
+                .setProviderUserId(providerUserId)
+                .setUser(this));
+        return this;
+    }
+
+    public User removeIdentity(final IdentityProvider provider) {
+        identities.removeIf(identity -> identity.getProvider() == provider);
+        return this;
+    }
+
+    public List<IdentityProvider> getLinkedProviders() {
+        return identities.stream()
+                .map(UserIdentity::getProvider)
+                .toList();
+    }
+
+    public boolean hasIdentity(final IdentityProvider provider) {
+        return identities.stream()
+                .map(UserIdentity::getProvider)
+                .anyMatch(provider::equals);
+    }
+
+    private static @Nullable String lowercase(@Nullable final String email) {
+        if (email == null) {
+            return null;
+        }
+        return email.toLowerCase(Locale.ROOT);
     }
 
     @Override

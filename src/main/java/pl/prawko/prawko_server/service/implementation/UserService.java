@@ -89,19 +89,26 @@ public class UserService implements IUserService, UserDetailsService {
 
     /**
      * Load user-specific data during authentication.
+     * <p>
+     * A user without a password can't sign in with one, so it's reported as not found: the authentication then fails
+     * the same way as for a wrong password, including the time it takes.
      *
      * @param userNameOrEmail the userName or email identifying the user
      * @return {@link AuthenticatedUser} carrying the user's ID, with granted authority based on user's role,
      * disabled until the user's email is verified
-     * @throws UsernameNotFoundException if user have not been found with the provided details
+     * @throws UsernameNotFoundException if user have not been found with the provided details or has no password
      */
     @Override
     public UserDetails loadUserByUsername(final String userNameOrEmail) throws UsernameNotFoundException {
-        final var user = repository.findByUserNameOrEmailIgnoreCase(userNameOrEmail, userNameOrEmail)
+        final var user = repository.findByUserNameOrEmailAllIgnoreCase(userNameOrEmail, userNameOrEmail)
                 .orElseThrow(() -> {
                     log.warn("User not found by username or email.");
                     return new UsernameNotFoundException("Invalid login or password.");
                 });
+        if (user.getPassword() == null) {
+            log.warn("User with id '{}' has no password to sign in with.", user.getId());
+            throw new UsernameNotFoundException("Invalid login or password.");
+        }
         log.info("User with id '{}' loaded successfully.", user.getId());
         return AuthenticatedUser.of(user);
     }
@@ -128,6 +135,7 @@ public class UserService implements IUserService, UserDetailsService {
      * @throws EntityNotFoundException if a user with provided id have not been found
      */
     @Override
+    @Transactional(readOnly = true)
     public UserDto getUserDtoById(final long userId) {
         log.info("Fetching userDto by id: {}", userId);
         return mapper.toDto(getById(userId));
@@ -146,7 +154,8 @@ public class UserService implements IUserService, UserDetailsService {
      * Like in {@link #register}, the tokens are issued before the save and the emails to the new and current address
      * are dispatched after it, inside the transaction, so the update is rolled back if they can't be queued. Email
      * changes are subject to the verification email cooldown. Sending the current email cancels a pending change and
-     * invalidates its links, without a cooldown since no email is sent.
+     * invalidates its links, without a cooldown since no email is sent. A username equal to the current one ignoring
+     * case isn't checked for conflicts, so users can change its capitalization.
      *
      * @throws EntityNotFoundException  if user with the given ID have not been found
      * @throws AlreadyExistsException   if the new username or email conflicts with another user
@@ -157,13 +166,17 @@ public class UserService implements IUserService, UserDetailsService {
     public UserDto updateUser(final long userId, final UserUpdateRequest updateRequest) {
         log.info("Updating user with id: {}", userId);
         final var user = getById(userId);
+        final var userName = updateRequest.userName();
+        final var newUserName = Optional.ofNullable(userName)
+                .filter(name -> !name.equalsIgnoreCase(user.getUserName()))
+                .orElse(null);
         final var email = updateRequest.email();
         final var cancelsEmailChange = email != null && email.equalsIgnoreCase(user.getEmail());
         final var newEmail = cancelsEmailChange ? null : email;
-        validateNoConflict(updateRequest.userName(), newEmail);
+        validateNoConflict(newUserName, newEmail);
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
-        Optional.ofNullable(updateRequest.userName()).ifPresent(user::setUserName);
+        Optional.ofNullable(userName).ifPresent(user::setUserName);
         if (cancelsEmailChange) {
             if (user.cancelEmailChange()) {
                 log.info("Email change of user with id '{}' canceled.", userId);
@@ -234,8 +247,22 @@ public class UserService implements IUserService, UserDetailsService {
         log.info("User with id '{}' deleted their account.", userId);
     }
 
-    private void verifyPassword(final User user, final String password) {
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+    /**
+     * {@inheritDoc}
+     *
+     * @throws EntityNotFoundException  if a user with provided id have not been found
+     * @throws InvalidPasswordException if the user has a password and the given one is missing or doesn't match
+     */
+    @Override
+    public void verifyPasswordIfSet(final long userId, @Nullable final String password) {
+        final var user = getById(userId);
+        if (user.getPassword() != null) {
+            verifyPassword(user, password);
+        }
+    }
+
+    private void verifyPassword(final User user, @Nullable final String password) {
+        if (user.getPassword() == null || !passwordEncoder.matches(password, user.getPassword())) {
             final var message = "Current password is incorrect.";
             log.warn("{} User id: {}", message, user.getId());
             throw new InvalidPasswordException(message);
@@ -244,7 +271,7 @@ public class UserService implements IUserService, UserDetailsService {
 
     private void validateNoConflict(@Nullable final String userName, @Nullable final String email) {
         final Map<String, String> errorDetails = new HashMap<>();
-        if (userName != null && repository.existsByUserName(userName)) {
+        if (userName != null && repository.existsByUserNameIgnoreCase(userName)) {
             errorDetails.put("userName", "User with username '" + userName + "' already exists.");
         }
         if (email != null && repository.existsByEmailIgnoreCase(email)) {
@@ -273,7 +300,7 @@ public class UserService implements IUserService, UserDetailsService {
         final var currentEmailToken = emailVerificationService.issueCurrentEmailToken(user);
         log.info("Email change of user with id '{}' awaiting verification.", user.getId());
         return () -> emailVerificationService.sendEmailChangeConfirmation(
-                user.getId(), user.getEmail(), email, token, currentEmailToken);
+                user.getId(), user.getEmail(), user.getPendingEmail(), token, currentEmailToken);
     }
 
 }

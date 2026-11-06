@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.controller;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -16,24 +17,35 @@ import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestAuth;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.dto.AuthTokensDto;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.DeleteAccountRequest;
+import pl.prawko.prawko_server.dto.GitHubSignInRequest;
+import pl.prawko.prawko_server.dto.GoogleSignInRequest;
+import pl.prawko.prawko_server.dto.LinkGitHubRequest;
+import pl.prawko.prawko_server.dto.LinkGoogleRequest;
 import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.UnlinkIdentityRequest;
 import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.QuestionType;
+import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.repository.RefreshTokenRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.test_data.ExamTestData;
+import pl.prawko.prawko_server.test_data.GitHubTestData;
+import pl.prawko.prawko_server.test_data.GoogleTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.RefreshTokenTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
@@ -41,7 +53,10 @@ import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -83,6 +98,9 @@ public class UserControllerTest {
     @LocalServerPort
     private int port;
 
+    @Autowired
+    private MockRestServiceServer github;
+
     private RestTestClient restClient;
 
     private final RegisterDto registerDto = UserTestData.createValidRegisterDto();
@@ -112,6 +130,8 @@ public class UserControllerTest {
                         final var expectedLocation = ApiConstants.USERS_BASE_URL + "/" + createdUser.getId();
                         assertThat(location).endsWith(expectedLocation);
                     });
+
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
         }
 
         @Test
@@ -184,6 +204,34 @@ public class UserControllerTest {
         }
 
         @Test
+        void returnCreated_whenEmailHasMaximumLength() {
+            final var dto = new RegisterDto(registerDto.firstName(), registerDto.lastName(), registerDto.userName(),
+                    UserTestData.LONGEST_EMAIL, registerDto.password());
+
+            restClient.post()
+                    .body(dto)
+                    .exchange()
+                    .expectStatus().isCreated();
+
+            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());
+            assertThat(captor.getValue().getTo()).containsExactly(UserTestData.LONGEST_EMAIL);
+        }
+
+        @Test
+        void returnBadRequest_whenEmailIsTooLong() {
+            final var invalidDto = new RegisterDto(registerDto.firstName(), registerDto.lastName(), registerDto.userName(),
+                    UserTestData.OVERLONG_EMAIL, registerDto.password());
+
+            restClient.post()
+                    .body(invalidDto)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.details.email").isEqualTo(UserTestData.EMAIL_TOO_LONG);
+        }
+
+        @Test
         void returnBadRequest_whenUserNameContainsAt() {
             final var invalidDto = new RegisterDto("Peregrin", "Tuk", "pippin@shire", "pippin@shire.me", "lembasy");
 
@@ -238,7 +286,7 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isEqualTo(HttpStatus.CONFLICT)
                     .expectBody()
-                    .jsonPath("$.details.email").isEqualTo("User with email 'Pippin@Shire.ME' already exists.")
+                    .jsonPath("$.details.email").isEqualTo(UserTestData.emailConflictMessage(dto.email()))
                     .jsonPath("$.details.userName").doesNotExist();
         }
 
@@ -355,6 +403,20 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserDto.class).isEqualTo(expectedUserDto);
+        }
+
+        @Test
+        void returnProvidersWithoutPassword_whenSignedUpWithProvider() {
+            userRepository.save(UserTestData.createGooglePippin());
+
+            restClient.get()
+                    .uri(ApiConstants.ME)
+                    .headers(auth::user)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.hasPassword").isEqualTo(false)
+                    .jsonPath("$.providers").isEqualTo(List.of(IdentityProvider.GOOGLE.name()));
         }
 
         @Test
@@ -541,6 +603,42 @@ public class UserControllerTest {
         }
 
         @Test
+        void success_whenUserChangesCaseOfOwnUserName() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var userName = tester.getUserName().toUpperCase(Locale.ROOT);
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(auth::user)
+                    .body(new UserUpdateRequest(null, null, userName, null))
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserDto.class).isEqualTo(UserTestData.createUserDto(tester.getId(), userName));
+
+            assertThat(userRepository.findById(tester.getId()).orElseThrow().getUserName()).isEqualTo(userName);
+        }
+
+        @Test
+        void returnConflict_whenUserNameDiffersOnlyInCaseFromAnotherUser() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var merry = userRepository.save(UserTestData.createMerry());
+            final var userName = merry.getUserName().toUpperCase(Locale.ROOT);
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(auth::user)
+                    .body(new UserUpdateRequest(null, null, userName, null))
+                    .exchange()
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.USER_ALREADY_EXISTS)
+                    .jsonPath("$.details.userName").isEqualTo(UserTestData.userNameConflictMessage(userName));
+
+            assertThat(userRepository.findById(tester.getId()).orElseThrow().getUserName())
+                    .isEqualTo(tester.getUserName());
+        }
+
+        @Test
         void keepEmailAndSendLinksToNewAndCurrentEmail_whenEmailChanged() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var newEmail = UserTestData.createValidUserUpdateRequest().email();
@@ -553,7 +651,7 @@ public class UserControllerTest {
                     .expectStatus().isOk()
                     .expectBody()
                     .jsonPath("$.email").isEqualTo(tester.getEmail())
-                    .jsonPath("$.pendingEmail").isEqualTo(newEmail)
+                    .jsonPath("$.pendingEmail").isEqualTo(UserTestData.STORED_UPDATED_EMAIL)
                     .jsonPath("$.awaitingNewEmailConfirmation").isEqualTo(true)
                     .jsonPath("$.awaitingCurrentEmailConfirmation").isEqualTo(true);
 
@@ -561,11 +659,11 @@ public class UserControllerTest {
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
             final var link = captor.getAllValues().getFirst();
             final var confirmation = captor.getAllValues().getLast();
-            assertThat(link.getTo()).containsExactly(newEmail);
+            assertThat(link.getTo()).containsExactly(UserTestData.STORED_UPDATED_EMAIL);
             assertThat(confirmation.getTo()).containsExactly(tester.getEmail());
             final var updated = userRepository.findById(tester.getId()).orElseThrow();
             assertThat(updated.getEmail()).isEqualTo(tester.getEmail());
-            assertThat(updated.getPendingEmail()).isEqualTo(newEmail);
+            assertThat(updated.getPendingEmail()).isEqualTo(UserTestData.STORED_UPDATED_EMAIL);
             assertThat(updated.getVerificationTokenHash())
                     .isEqualTo(SecureTokens.hash(UserTestData.extractToken(link)));
             assertThat(updated.getCurrentEmailTokenHash())
@@ -631,7 +729,8 @@ public class UserControllerTest {
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(UserTestData.VERIFICATION_COOLDOWN);
 
-            assertThat(userRepository.findById(tester.getId()).orElseThrow().getPendingEmail()).isEqualTo(firstEmail);
+            assertThat(userRepository.findById(tester.getId()).orElseThrow().getPendingEmail())
+                    .isEqualTo(UserTestData.STORED_UPDATED_EMAIL);
             verifyNoMoreInteractions(mailSender);
         }
 
@@ -748,6 +847,39 @@ public class UserControllerTest {
                     .expectStatus().isBadRequest()
                     .expectBody()
                     .jsonPath("$.details.email").isEqualTo("Email must be at least 5 characters.");
+        }
+
+        @Test
+        void success_whenEmailHasMaximumLength() {
+            final var id = userRepository.save(UserTestData.createTestUserPippin()).getId();
+            final var request = new UserUpdateRequest(null, null, null, UserTestData.LONGEST_EMAIL);
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, id)
+                    .headers(auth::user)
+                    .body(request)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.pendingEmail").isEqualTo(UserTestData.LONGEST_EMAIL);
+
+            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(captor.capture());
+            assertThat(captor.getAllValues().getFirst().getTo()).containsExactly(UserTestData.LONGEST_EMAIL);
+        }
+
+        @Test
+        void returnBadRequest_whenEmailIsTooLong() {
+            final var invalidUpdateRequest = new UserUpdateRequest(null, null, null, UserTestData.OVERLONG_EMAIL);
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, 1L)
+                    .headers(auth::user)
+                    .body(invalidUpdateRequest)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.details.email").isEqualTo(UserTestData.EMAIL_TOO_LONG);
         }
 
         @ParameterizedTest
@@ -1009,7 +1141,7 @@ public class UserControllerTest {
                     .expectStatus().isCreated();
 
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
-            assertThat(userRepository.existsByUserName(registerDto.userName())).isTrue();
+            assertThat(userRepository.existsByUserNameIgnoreCase(registerDto.userName())).isTrue();
             assertThat(userRepository.existsByEmailIgnoreCase(registerDto.email())).isTrue();
         }
 
@@ -1074,6 +1206,589 @@ public class UserControllerTest {
                     .body(UserTestData.createValidDeleteAccountRequest())
                     .exchange()
                     .expectStatus().isUnauthorized();
+        }
+
+    }
+
+    @Nested
+    class LinkGoogle {
+
+        private final String idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims());
+
+        @Test
+        void returnNoContentAndAllowSignIn_whenEmailDiffers() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin()
+                    .setEmail(UserTestData.createMerry().getEmail()));
+
+            link(idToken)
+                    .expectStatus().isNoContent();
+
+            final var tokens = signIn(ApiConstants.GOOGLE, new GoogleSignInRequest(idToken));
+            assertThat(tokenOwnerId(tokens)).isEqualTo(tester.getId());
+            assertThat(userRepository.count()).isOne();
+            assertNoticeSent(tester, UserTestData.identityLinkedSubject(IdentityProvider.GOOGLE));
+        }
+
+        @Test
+        void returnNoContent_whenAdmin() {
+            final var admin = userRepository.save(UserTestData.createGimli());
+
+            restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
+                    .headers(auth::admin)
+                    .body(new LinkGoogleRequest(idToken, TestUtils.ADMIN_PASSWORD))
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .get().extracting(User::getId).isEqualTo(admin.getId());
+            assertNoticeSent(admin, UserTestData.identityLinkedSubject(IdentityProvider.GOOGLE));
+        }
+
+        @Test
+        void returnConflict_whenAccountIsLinkedToOtherUser() {
+            final var merry = userRepository.save(UserTestData.createMerry()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            link(idToken)
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GoogleTestData.LINKED_TO_OTHER_USER)
+                    .jsonPath("$.details.provider").isEqualTo(GoogleTestData.LINKED_TO_OTHER_USER);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .get().extracting(User::getId).isEqualTo(merry.getId());
+        }
+
+        @Test
+        void returnConflict_whenUserHasGoogleLinked() {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.OTHER_PROVIDER_USER_ID));
+
+            link(idToken)
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GoogleTestData.ALREADY_LINKED)
+                    .jsonPath("$.details.provider").isEqualTo(GoogleTestData.ALREADY_LINKED);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnUnauthorizedAndNotLink_whenIdTokenIsInvalid() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            link("not-a-jwt")
+                    .expectStatus().isUnauthorized()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GoogleTestData.INVALID_ID_TOKEN);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnNoContent_whenUserHasNoPassword() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin()
+                    .setPassword(null)
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID));
+
+            link(idToken, null)
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .get().extracting(User::getId).isEqualTo(tester.getId());
+            assertNoticeSent(tester, UserTestData.identityLinkedSubject(IdentityProvider.GOOGLE));
+        }
+
+        @Test
+        void returnServiceUnavailableAndNotLink_whenTaskQueueIsFull() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            final var release = TestUtils.blockTaskExecutor(taskExecutor);
+            try {
+                link(idToken)
+                        .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                        .expectBody()
+                        .jsonPath("$.detail").isEqualTo(TestUtils.SERVER_BUSY);
+            } finally {
+                release.countDown();
+            }
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnBadRequestAndNotLink_whenPasswordIsIncorrect() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            link(idToken, UserTestData.WRONG_PASSWORD)
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnBadRequestAndNotLink_whenPasswordIsMissing() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            link(idToken, null)
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnBadRequest_whenBodyIsMissing() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
+                    .headers(auth::user)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+        }
+
+        @Test
+        void returnBadRequest_whenIdTokenIsBlank() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            link(" ")
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED);
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
+                    .body(new LinkGoogleRequest(idToken, TestUtils.USER_PASSWORD))
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+        private RestTestClient.ResponseSpec link(final String token) {
+            return link(token, TestUtils.USER_PASSWORD);
+        }
+
+        private RestTestClient.ResponseSpec link(final String token, @Nullable final String currentPassword) {
+            return restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
+                    .headers(auth::user)
+                    .body(new LinkGoogleRequest(token, currentPassword))
+                    .exchange();
+        }
+
+    }
+
+    @Nested
+    class LinkGitHub {
+
+        private final GitHubSignInRequest request = GitHubTestData.createValidRequest();
+
+        @Test
+        void returnNoContentAndAllowSignIn_whenEmailDiffers() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin()
+                    .setEmail(UserTestData.createMerry().getEmail()));
+            GitHubTestData.expectSignIn(github);
+            GitHubTestData.expectSignIn(github);
+
+            link()
+                    .expectStatus().isNoContent();
+
+            final var tokens = signIn(ApiConstants.GITHUB, request);
+            assertThat(tokenOwnerId(tokens)).isEqualTo(tester.getId());
+            assertThat(userRepository.count()).isOne();
+            github.verify();
+            assertNoticeSent(tester, UserTestData.identityLinkedSubject(IdentityProvider.GITHUB));
+        }
+
+        @Test
+        void returnNoContent_whenPrimaryEmailIsNotVerified() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            GitHubTestData.expectSignInWithUnverifiedEmail(github);
+
+            link()
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID))
+                    .get().extracting(User::getId).isEqualTo(tester.getId());
+            assertNoticeSent(tester, UserTestData.identityLinkedSubject(IdentityProvider.GITHUB));
+        }
+
+        @Test
+        void returnConflict_whenUserHasGitHubLinked() {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID));
+            GitHubTestData.expectSignIn(github);
+
+            link()
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GitHubTestData.ALREADY_LINKED);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnUnauthorizedAndNotLink_whenCodeIsRejected() {
+            userRepository.save(UserTestData.createTestUserPippin());
+            GitHubTestData.expectTokenExchange(github, GitHubTestData.json(GitHubTestData.BAD_CODE_RESPONSE));
+
+            link()
+                    .expectStatus().isUnauthorized()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GitHubTestData.INVALID_CODE);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnForbiddenAndNotLink_whenExchangeRefusesUnverifiedEmail() {
+            userRepository.save(UserTestData.createTestUserPippin());
+            GitHubTestData.expectTokenExchange(github, GitHubTestData.json(GitHubTestData.UNVERIFIED_EMAIL_RESPONSE));
+
+            link()
+                    .expectStatus().isForbidden()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GitHubTestData.EMAIL_NOT_VERIFIED);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnNoContent_whenUserHasNoPassword() {
+            final var tester = userRepository.save(UserTestData.createGooglePippin());
+            GitHubTestData.expectSignIn(github);
+
+            link(GitHubTestData.createLinkRequest(null))
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID))
+                    .get().extracting(User::getId).isEqualTo(tester.getId());
+            github.verify();
+            assertNoticeSent(tester, UserTestData.identityLinkedSubject(IdentityProvider.GITHUB));
+        }
+
+        // No GitHub requests are expected in these two, so one would fail the test: the code isn't used up.
+        @Test
+        void returnBadRequestAndNotCallGitHub_whenPasswordIsIncorrect() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            link(GitHubTestData.createLinkRequest(UserTestData.WRONG_PASSWORD))
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnBadRequestAndNotCallGitHub_whenPasswordIsMissing() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            link(GitHubTestData.createLinkRequest(null))
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)).isEmpty();
+        }
+
+        @Test
+        void returnBadRequest_whenBodyIsMissing() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
+                    .headers(auth::user)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+        }
+
+        @Test
+        void returnBadRequest_whenFieldsAreBlank() {
+            userRepository.save(UserTestData.createTestUserPippin());
+
+            restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
+                    .headers(auth::user)
+                    .body(new LinkGitHubRequest(" ", " ", " ", TestUtils.USER_PASSWORD))
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.VALIDATION_FAILED);
+        }
+
+        @Test
+        void returnUnauthorized_whenNotAuthenticated() {
+            restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
+                    .body(GitHubTestData.createValidLinkRequest())
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+        private RestTestClient.ResponseSpec link() {
+            return link(GitHubTestData.createValidLinkRequest());
+        }
+
+        private RestTestClient.ResponseSpec link(final LinkGitHubRequest linkRequest) {
+            return restClient.post()
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
+                    .headers(auth::user)
+                    .body(linkRequest)
+                    .exchange();
+        }
+
+    }
+
+    @Nested
+    class UnlinkIdentity {
+
+        private final String notHostedIdToken =
+                GoogleTestData.idToken(GoogleTestData.createPippinClaimsWithoutHostedDomain());
+
+        @Test
+        void returnNoContentAndBlockSignIn_whenUnlinkingGoogle() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+            final var request = new GoogleSignInRequest(notHostedIdToken);
+            assertThat(tokenOwnerId(signIn(ApiConstants.GOOGLE, request))).isEqualTo(tester.getId());
+
+            unlink(ApiConstants.GOOGLE)
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+            attemptSignIn(ApiConstants.GOOGLE, request)
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GoogleTestData.EMAIL_NOT_HOSTED);
+            assertNoticeSent(tester, UserTestData.identityUnlinkedSubject(IdentityProvider.GOOGLE));
+        }
+
+        @Test
+        void returnNoContentAndBlockSignIn_whenUnlinkingGitHub() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));
+            GitHubTestData.expectSignIn(github);
+
+            unlink(ApiConstants.GITHUB)
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID)).isEmpty();
+            attemptSignIn(ApiConstants.GITHUB, GitHubTestData.createValidRequest())
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GitHubTestData.EMAIL_NOT_HOSTED);
+            github.verify();
+            assertNoticeSent(tester, UserTestData.identityUnlinkedSubject(IdentityProvider.GITHUB));
+        }
+
+        @Test
+        void linkAgainOnNextSignIn_whenProviderHostsEmail() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+
+            unlink(ApiConstants.GOOGLE)
+                    .expectStatus().isNoContent();
+
+            final var idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims());
+            final var tokens = signIn(ApiConstants.GOOGLE, new GoogleSignInRequest(idToken));
+            assertThat(tokenOwnerId(tokens)).isEqualTo(tester.getId());
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .isPresent();
+            assertNoticeSent(tester, UserTestData.identityUnlinkedSubject(IdentityProvider.GOOGLE));
+        }
+
+        @Test
+        void returnNoContentAndKeepOtherIdentity_whenPasswordlessUserHasAnother() {
+            final var tester = userRepository.save(UserTestData.createGooglePippin()
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID));
+
+            unlinkWithoutBody(ApiConstants.GOOGLE)
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID))
+                    .isPresent();
+            assertNoticeSent(tester, UserTestData.identityUnlinkedSubject(IdentityProvider.GOOGLE));
+        }
+
+        @Test
+        void returnNoContent_whenAdmin() {
+            final var admin = userRepository.save(UserTestData.createGimli()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+
+            restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
+                    .headers(auth::admin)
+                    .body(new UnlinkIdentityRequest(TestUtils.ADMIN_PASSWORD))
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+            assertNoticeSent(admin, UserTestData.identityUnlinkedSubject(IdentityProvider.GOOGLE));
+        }
+
+        @Test
+        void returnConflictAndKeepIdentity_whenItIsTheLastSignInMethod() {
+            userRepository.save(UserTestData.createGooglePippin());
+
+            unlinkWithoutBody(ApiConstants.GOOGLE)
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.LAST_SIGN_IN_METHOD);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .isPresent();
+        }
+
+        @Test
+        void keepOneIdentity_whenPasswordlessUserUnlinksBothConcurrently() {
+            userRepository.save(UserTestData.createGooglePippin()
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID));
+
+            final var statuses = Stream.of(ApiConstants.GOOGLE, ApiConstants.GITHUB)
+                    .parallel()
+                    .map(provider -> unlinkWithoutBody(provider)
+                            .returnResult(Void.class)
+                            .getStatus()
+                            .value())
+                    .toList();
+
+            assertThat(statuses)
+                    .containsExactlyInAnyOrder(HttpStatus.NO_CONTENT.value(), HttpStatus.CONFLICT.value());
+            assertThat(Stream.of(
+                            userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID),
+                            userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID))
+                    .flatMap(Optional::stream))
+                    .hasSize(1);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
+        }
+
+        @Test
+        void returnServiceUnavailableAndKeepIdentity_whenTaskQueueIsFull() {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+
+            final var release = TestUtils.blockTaskExecutor(taskExecutor);
+            try {
+                unlink(ApiConstants.GOOGLE)
+                        .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                        .expectBody()
+                        .jsonPath("$.detail").isEqualTo(TestUtils.SERVER_BUSY);
+            } finally {
+                release.countDown();
+            }
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isPresent();
+        }
+
+        @Test
+        void returnNotFound_whenGoogleIsNotLinked() {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));
+
+            unlink(ApiConstants.GOOGLE)
+                    .expectStatus().isNotFound()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GoogleTestData.NOT_LINKED);
+        }
+
+        @Test
+        void returnNotFound_whenGitHubIsNotLinked() {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+
+            unlink(ApiConstants.GITHUB)
+                    .expectStatus().isNotFound()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(GitHubTestData.NOT_LINKED);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {ApiConstants.GOOGLE, ApiConstants.GITHUB})
+        void returnBadRequestAndKeepIdentities_whenPasswordIsIncorrect(final String provider) {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID));
+
+            unlink(provider, UserTestData.WRONG_PASSWORD)
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isPresent();
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID))
+                    .isPresent();
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {ApiConstants.GOOGLE, ApiConstants.GITHUB})
+        void returnBadRequestAndKeepIdentities_whenBodyIsMissing(final String provider) {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)
+                    .addIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID));
+
+            unlinkWithoutBody(provider)
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isPresent();
+            assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID))
+                    .isPresent();
+        }
+
+        @Test
+        void returnBadRequestAndKeepIdentity_whenPasswordIsNull() {
+            userRepository.save(UserTestData.createTestUserPippin()
+                    .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
+
+            unlink(ApiConstants.GOOGLE, null)
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
+
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isPresent();
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {ApiConstants.GOOGLE, ApiConstants.GITHUB})
+        void returnUnauthorized_whenNotAuthenticated(final String provider) {
+            restClient.delete()
+                    .uri(ApiConstants.IDENTITIES + provider)
+                    .exchange()
+                    .expectStatus().isUnauthorized();
+        }
+
+        private RestTestClient.ResponseSpec unlink(final String provider) {
+            return unlink(provider, TestUtils.USER_PASSWORD);
+        }
+
+        private RestTestClient.ResponseSpec unlink(final String provider, @Nullable final String currentPassword) {
+            return restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.IDENTITIES + provider)
+                    .headers(auth::user)
+                    .body(new UnlinkIdentityRequest(currentPassword))
+                    .exchange();
+        }
+
+        private RestTestClient.ResponseSpec unlinkWithoutBody(final String provider) {
+            return restClient.delete()
+                    .uri(ApiConstants.IDENTITIES + provider)
+                    .headers(auth::user)
+                    .exchange();
         }
 
     }
@@ -1152,6 +1867,39 @@ public class UserControllerTest {
                 .body(registerDto)
                 .exchangeSuccessfully();
         return userRepository.findAll().getFirst().getId();
+    }
+
+    /**
+     * Also waits for the notice to be sent, so that it can't reach the shared mock during the next test.
+     */
+    private void assertNoticeSent(final User user, final String subject) {
+        final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());
+        assertThat(captor.getValue().getTo()).containsExactly(user.getEmail());
+        assertThat(captor.getValue().getSubject()).isEqualTo(subject);
+    }
+
+    private RestTestClient.ResponseSpec attemptSignIn(final String path, final Object request) {
+        return TestUtils.createRestTestClient(port, ApiConstants.AUTH_BASE_URL)
+                .post()
+                .uri(path)
+                .body(request)
+                .exchange();
+    }
+
+    private AuthTokensDto signIn(final String path, final Object request) {
+        return attemptSignIn(path, request)
+                .expectStatus().isOk()
+                .expectBody(AuthTokensDto.class)
+                .returnResult()
+                .getResponseBody();
+    }
+
+    private long tokenOwnerId(final AuthTokensDto tokens) {
+        return refreshTokenRepository.findByTokenHash(SecureTokens.hash(tokens.refreshToken()))
+                .orElseThrow()
+                .getUser()
+                .getId();
     }
 
 }

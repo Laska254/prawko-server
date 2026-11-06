@@ -1,10 +1,15 @@
 package pl.prawko.prawko_server.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
+import pl.prawko.prawko_server.model.UserIdentity;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -15,12 +20,12 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     /**
-     * Checks whether {@link User} already exists with specified username.
+     * Checks whether {@link User} already exists with specified username, ignoring case.
      *
      * @param userName provided username to check for existence
      * @return {@code true} if a user already exists, {@code false} otherwise
      */
-    boolean existsByUserName(final String userName);
+    boolean existsByUserNameIgnoreCase(final String userName);
 
     /**
      * Checks whether {@link User} already exists with specified email, ignoring case.
@@ -31,7 +36,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmailIgnoreCase(final String email);
 
     /**
-     * Retrieves {@code user} by its userName (exact match) or email (ignoring case).
+     * Retrieves {@code user} by its userName or email, both ignoring case.
      *
      * <p>Unambiguous, since usernames can't contain '@' and emails must.
      *
@@ -39,7 +44,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param email    provided email to look for
      * @return a {@code user} when found
      */
-    Optional<User> findByUserNameOrEmailIgnoreCase(final String userName, final String email);
+    Optional<User> findByUserNameOrEmailAllIgnoreCase(final String userName, final String email);
 
     /**
      * Retrieves {@code user} by its email, ignoring case.
@@ -48,6 +53,35 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return a {@code user} when found
      */
     Optional<User> findByEmailIgnoreCase(final String email);
+
+    /**
+     * Retrieves {@code user} linked to the provider account through a {@link UserIdentity}.
+     *
+     * @param provider       the provider of the account
+     * @param providerUserId the provider's ID of the account
+     * @return a {@code user} when found
+     */
+    @Query("SELECT i.user FROM UserIdentity i WHERE i.provider = :provider AND i.providerUserId = :providerUserId")
+    Optional<User> findByIdentity(final IdentityProvider provider, final String providerUserId);
+
+    /**
+     * Retrieves the providers of the accounts linked to the user, for callers outside a transaction. Saving a detached
+     * user with its identities loaded would fail if one was unlinked in the meantime.
+     *
+     * @param userId the ID of the user
+     * @return the providers, in the order of {@link User#getLinkedProviders()}
+     */
+    @Query("SELECT i.provider FROM UserIdentity i WHERE i.user.id = :userId ORDER BY i.provider")
+    List<IdentityProvider> findProvidersByUserId(final long userId);
+
+    /**
+     * Retrieves {@code user} by its ID, locking its row until the end of the transaction.
+     *
+     * @param id the ID to look for
+     * @return a {@code user} when found
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<User> findWithLockById(final long id);
 
     /**
      * Retrieves {@code user} by the hash of its pending password reset token.

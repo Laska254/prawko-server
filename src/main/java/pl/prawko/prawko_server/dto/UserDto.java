@@ -1,7 +1,10 @@
 package pl.prawko.prawko_server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.Role;
+
+import java.util.List;
 
 /**
  * DTO for user responses.
@@ -15,10 +18,12 @@ public record UserDto(
         @Schema(description = "Unique user identifier")
         long id,
 
-        @Schema(description = "User's first name")
+        @Schema(description = "User's first name, null if the provider they signed up with didn't share it",
+                nullable = true)
         String firstName,
 
-        @Schema(description = "User's last name")
+        @Schema(description = "User's last name, null if the provider they signed up with didn't share it",
+                nullable = true)
         String lastName,
 
         @Schema(description = "Username for login")
@@ -38,7 +43,14 @@ public record UserDto(
         boolean awaitingCurrentEmailConfirmation,
 
         @Schema(description = "User's role")
-        Role role
+        Role role,
+
+        @Schema(description = "Whether the user can sign in with a password, false if they signed up with a provider "
+                + "and haven't set one")
+        boolean hasPassword,
+
+        @Schema(description = "Providers the user can sign in with, ordered by name")
+        List<IdentityProvider> providers
 
 ) {
 }

@@ -37,9 +37,9 @@ public record RegisterDto(
 
         @NotBlank(message = "{email.required}")
         @Size(min = 5, message = "{email.size.min}")
-        @Size(max = 63, message = "{email.size.max}")
+        @Size(max = 254, message = "{email.size.max}")
         @Email(message = "{email.notvalid}")
-        @Schema(description = "User's email address", minLength = 5, maxLength = 63, format = "email")
+        @Schema(description = "User's email address", minLength = 5, maxLength = 254, format = "email")
         String email,
 
         @NotBlank(message = "{password.required}")
