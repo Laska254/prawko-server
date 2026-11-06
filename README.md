@@ -378,7 +378,7 @@ cross-origin scripts via CORS) to show the remaining time correctly.
 
 | Status | When                                                                                                                         |
 |--------|------------------------------------------------------------------------------------------------------------------------------|
-| `400`  | `answerId` or the body is missing (answers only), or the exam ID is not positive                                             |
+| `400`  | `answerId` is missing or the body is missing or malformed (answers only), or the exam ID is not positive                     |
 | `403`  | the exam belongs to another user                                                                                             |
 | `404`  | the exam doesn't exist, or the answer doesn't belong to any of its questions                                                 |
 | `409`  | the exam is no longer `active` or its time has expired (answers only), or it was modified by a concurrent request - retry it |
