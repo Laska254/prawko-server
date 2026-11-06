@@ -23,7 +23,7 @@ public class GitHubTestData {
     public static final String GITHUB_NOT_AVAILABLE = "Sign-in with GitHub is not available.";
     public static final String GITHUB_UNAVAILABLE = "Sign-in with GitHub is unavailable, try again later.";
     public static final String EMAIL_NOT_HOSTED = "User with this email already exists, and GitHub doesn't host the "
-            + "email, so the account can't be linked to it. Sign in to that account and link GitHub from the "
+            + "email, so the account can't be linked to it. Sign in as that user and link GitHub from the "
             + "account settings.";
     public static final String ALREADY_LINKED = "User is already linked to a GitHub account.";
     public static final String NOT_LINKED = "User has no GitHub account linked.";
