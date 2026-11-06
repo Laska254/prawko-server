@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.JwtException;
+import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
 import pl.prawko.prawko_server.exception.ProviderUnavailableException;
 import pl.prawko.prawko_server.test_data.GoogleTestData;
@@ -70,7 +71,7 @@ class ExceptionControllerTest {
         final var result = controller.handleConcurrentModification();
 
         assertThat(result.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
-        assertThat(result.getDetail()).isEqualTo("Resource was modified concurrently, try again.");
+        assertThat(result.getDetail()).isEqualTo(TestUtils.CONCURRENT_MODIFICATION);
     }
 
     @ParameterizedTest

@@ -247,7 +247,7 @@ public class AuthController {
             @ApiResponse(responseCode = "202",
                     description = "Email change confirmed by this address, awaiting the link sent to the other one"),
             @ApiResponse(responseCode = "400", description = "Invalid argument or invalid/expired token"),
-            @ApiResponse(responseCode = "409", description = "The new email was taken by another user meanwhile"),
+            @ApiResponse(responseCode = "409", description = "The new email was taken by another user meanwhile, or the user was modified concurrently"),
     })
     @PostMapping(ApiConstants.VERIFY_EMAIL)
     public ResponseEntity<Void> verifyEmail(@Valid @RequestBody final VerifyEmailRequest request) {

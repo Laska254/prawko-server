@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.mail.MailSender;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import pl.prawko.prawko_server.repository.UserRepository;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -14,6 +16,7 @@ import java.lang.annotation.RetentionPolicy;
 @ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
 @MockitoBean(types = MailSender.class)
+@MockitoSpyBean(types = UserRepository.class)
 @AutoConfigureMockRestServiceServer
 @Retention(RetentionPolicy.RUNTIME)
 public @interface IntegrationTest {

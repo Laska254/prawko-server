@@ -74,7 +74,8 @@ public class PasswordResetService implements IPasswordResetService {
      * slower for existing accounts.
      * <p>
      * Not transactional, so the token is committed before the email goes out. A failure to send the email is only
-     * logged, as reporting it would reveal that the account exists.
+     * logged, as reporting it would reveal that the account exists. If the user is modified concurrently, saving the
+     * token fails, so no email goes out and the user can request another one.
      * <p>
      * The issue time isn't stored, it's derived from the expiry and the current token validity.
      */
