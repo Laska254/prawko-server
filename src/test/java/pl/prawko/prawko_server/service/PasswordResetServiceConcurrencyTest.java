@@ -52,8 +52,8 @@ class PasswordResetServiceConcurrencyTest {
                 .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
         final var mailSender = mock(MailSender.class);
         final var service = new PasswordResetService(repository, mock(PasswordEncoder.class),
-                mock(IRefreshTokenService.class), mailSender, PasswordResetServiceTest.RESET_URL,
-                PasswordResetServiceTest.TOKEN_VALIDITY, PasswordResetServiceTest.COOLDOWN, TestUtils.MAIL_FROM,
+                mock(IRefreshTokenService.class), mailSender, UserTestData.PASSWORD_RESET_URL,
+                UserTestData.PASSWORD_RESET_TOKEN_VALIDITY, UserTestData.PASSWORD_RESET_COOLDOWN, TestUtils.MAIL_FROM,
                 TestUtils.CLOCK);
         final var realMethod = mockingDetails(repository).getMockCreationSettings().getDefaultAnswer();
         doAnswer(invocation -> {

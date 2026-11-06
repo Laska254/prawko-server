@@ -34,6 +34,9 @@ public class UserTestData {
     public static final String USER_NAME_TAKEN = "User with this username already exists.";
     public static final String EMAIL_TAKEN = "User with this email already exists.";
 
+    public static final String PASSWORD_RESET_URL = "http://localhost:5173/auth/password/reset";
+    public static final Duration PASSWORD_RESET_TOKEN_VALIDITY = Duration.ofMinutes(15);
+    public static final Duration PASSWORD_RESET_COOLDOWN = Duration.ofMinutes(30);
     public static final String INVALID_RESET_TOKEN = "Password reset token is invalid or expired.";
     public static final String INVALID_VERIFICATION_TOKEN = "Email verification token is invalid or expired.";
     public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";
