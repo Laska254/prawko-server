@@ -93,7 +93,7 @@ class GitHubProfileServiceTest {
     @ParameterizedTest
     @CsvSource(value = {"'', secret", "id, ''", "'', ''"})
     void fetchProfile_throwProviderNotConfigured_whenClientCredentialsAreMissing(final String clientId,
-                                                                           final String clientSecret) {
+                                                                                 final String clientSecret) {
         final var builder = RestClient.builder();
         final var server = MockRestServiceServer.bindTo(builder)
                 .build();

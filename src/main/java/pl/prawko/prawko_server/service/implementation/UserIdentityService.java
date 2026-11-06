@@ -22,7 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Implementation of {@link IUserIdentityService} resolving users from verified provider profiles.
+ * Implementation of {@link IUserIdentityService} resolving users from verified provider profiles and linking and
+ * unlinking their accounts.
  * <p>
  * Generated usernames follow the registration rules: no {@code '@'}, 3 to 31 characters.
  */
