@@ -232,8 +232,11 @@ the password means a stolen access token alone can't add a lasting way in or rem
 wrong the answer is `400` `"Current password is incorrect."`, nothing changes and a GitHub code isn't used up. A user
 without a password leaves it out, and can send no body when unlinking. Every link and unlink through these endpoints
 emails a notice to the user's current address, so users without a password get warned too; if it can't be queued the
-answer is `503` and nothing changes. A link made by a first sign-in sends no notice: the provider hosts the email, so
-it would go to the mailbox of the account that just signed in. `providers` in the user response lists the linked ones.
+answer is `503` and nothing changes. A link made by a first sign-in sends no such notice: the provider hosts the email,
+so it would go to the mailbox of the account that just signed in. If the user already has other accounts linked, one of
+them may belong to someone who held the email earlier, so that mailbox gets a notice naming them (`503` and no link if
+it can't be queued), and the password reset email names the linked accounts too. Removing one is left to the user.
+`providers` in the user response lists the linked ones.
 An unlinked account no longer finds the user by its ID, so its next sign-in counts as a first one: if the user's email
 is one the provider hosts it's linked again, since whoever holds that account controls the mailbox and could reset the
 password anyway. Unlinking doesn't revoke refresh tokens, so clients already signed in stay signed in.
@@ -431,4 +434,5 @@ with expired links are deleted every hour.
 
 Reset, verification and identity notice emails are processed in the background on a bounded pool
 (`spring.task.execution.pool.*`: 8 threads, 100 queued). When it's full, `/auth/password/forgot`, `/auth/verify/resend`,
-`/users` (registration), email changes with `PATCH /users/{id}` and `POST`/`DELETE /users/me/identities/*` answer `503`.
+`/users` (registration), email changes with `PATCH /users/{id}`, `POST`/`DELETE /users/me/identities/*` and a first
+`/auth/google` sign-in that links an account to a user with other linked accounts answer `503`.

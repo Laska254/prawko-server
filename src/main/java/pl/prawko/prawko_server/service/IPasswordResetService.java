@@ -14,7 +14,8 @@ public interface IPasswordResetService {
      * Does nothing if no user has the given email. Returns without waiting for the outcome, so callers can't tell
      * whether an account exists, neither from the result nor from the response time.
      * A new request invalidates any previously issued token. Requests made within a cooldown after issuing a token are
-     * ignored, so the user can't be flooded with emails.
+     * ignored, so the user can't be flooded with emails. The email names the provider accounts linked to the user, as
+     * resetting the password doesn't remove them.
      * </p>
      *
      * @param email the email address of the account, case-insensitive

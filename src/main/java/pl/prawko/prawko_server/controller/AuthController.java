@@ -115,7 +115,8 @@ public class AuthController {
             @ApiResponse(responseCode = "404", description = "Sign-in with Google is not configured"),
             @ApiResponse(responseCode = "409", description = "The user with the email is linked to another Google "
                     + "account, or Google doesn't host the email, so it can't be linked"),
-            @ApiResponse(responseCode = "503", description = "Google can't be reached, try again later"),
+            @ApiResponse(responseCode = "503", description = "Google can't be reached or the notice about the user's "
+                    + "other linked accounts can't be queued, try again later"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
     })
     @PostMapping(ApiConstants.GOOGLE)

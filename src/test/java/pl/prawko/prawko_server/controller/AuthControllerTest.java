@@ -448,6 +448,38 @@ public class AuthControllerTest {
     }
 
     @Test
+    void signInWithGoogle_linkAndEmailNoticeNamingOtherProviders_whenUserHasOtherIdentity() {
+        final var tester = userRepository.save(UserTestData.createTestUserPippin()
+                .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));
+
+        signInWithGoogle(GoogleTestData.idToken(GoogleTestData.createPippinClaims()))
+                .expectStatus().isOk();
+
+        final var message = captureSentMessage();
+        assertThat(message.getTo()).containsExactly(tester.getEmail());
+        assertThat(message.getText()).contains(UserTestData.LINKED_ACCOUNTS_NOTE + "GitHub.");
+        assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                .get().extracting(User::getId).isEqualTo(tester.getId());
+    }
+
+    @Test
+    void signInWithGoogle_returnServiceUnavailableAndNotLink_whenNoticeCannotBeQueued() {
+        userRepository.save(UserTestData.createTestUserPippin()
+                .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));
+        final var release = TestUtils.blockTaskExecutor(taskExecutor);
+        try {
+            signInWithGoogle(GoogleTestData.idToken(GoogleTestData.createPippinClaims()))
+                    .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.SERVER_BUSY);
+        } finally {
+            release.countDown();
+        }
+
+        assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
+    }
+
+    @Test
     void signInWithGoogle_returnConflictAndNotLink_whenGoogleDoesNotHostEmailOfUser() {
         final var tester = userRepository.save(UserTestData.createTestUserPippin());
         final var idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaimsWithoutHostedDomain());
@@ -622,6 +654,16 @@ public class AuthControllerTest {
         assertThat(captureSentMessage().getTo()).containsExactly(tester.getEmail());
         assertThat(userRepository.findById(tester.getId()))
                 .get().extracting(User::getPasswordResetTokenHash).isNotNull();
+    }
+
+    @Test
+    void forgotPassword_emailNamingLinkedProviders_whenUserHasIdentities() {
+        final var tester = userRepository.save(UserTestData.createGooglePippin()
+                .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));
+
+        forgotPassword(tester.getEmail());
+
+        assertThat(captureSentMessage().getText()).contains(UserTestData.LINKED_ACCOUNTS_NOTE + "GitHub, Google.");
     }
 
     @Test

@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.repository;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -46,11 +47,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUserNameOrEmailAllIgnoreCase(final String userName, final String email);
 
     /**
-     * Retrieves {@code user} by its email, ignoring case.
+     * Retrieves {@code user} by its email, ignoring case, with its identities loaded for callers outside a transaction.
      *
      * @param email provided email to look for
      * @return a {@code user} when found
      */
+    @EntityGraph(attributePaths = "identities")
     Optional<User> findByEmailIgnoreCase(final String email);
 
     /**

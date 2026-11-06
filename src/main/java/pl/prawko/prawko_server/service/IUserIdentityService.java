@@ -25,7 +25,8 @@ public interface IUserIdentityService {
      * </ul>
      * <p>
      * An existing user is only linked if the provider is authoritative for the email, since otherwise it may have
-     * changed hands after the provider verified it.
+     * changed hands after the provider verified it. For the same reason, a user who already has other accounts linked
+     * gets a notice naming them, as one may belong to someone who held the email earlier.
      *
      * @param profile the profile of the provider account, read from a verified credential
      * @return the user to sign in

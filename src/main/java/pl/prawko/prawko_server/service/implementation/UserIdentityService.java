@@ -54,6 +54,9 @@ public class UserIdentityService implements IUserIdentityService {
      * A concurrent sign-in with the same account, or one creating a user with the same username or email, can win the
      * race between the lookups and the save. The resulting {@link DataIntegrityViolationException} is retried once in a
      * new transaction, which then finds the other request's identity or user, or picks another username.
+     * <p>
+     * The notice about other linked accounts is queued inside the transaction, so the link is rolled back if it can't
+     * be.
      *
      * @throws DisabledException      if the account isn't linked yet and the provider hasn't verified its email
      * @throws AlreadyExistsException if the user with the email is already linked to another account at the provider,
@@ -77,7 +80,11 @@ public class UserIdentityService implements IUserIdentityService {
         final var user = repository.findByEmailIgnoreCase(email)
                 .map(existing -> prepareForLinking(existing, profile))
                 .orElseGet(() -> createUser(profile, email));
+        final var otherProviders = user.getLinkedProviders();
         repository.save(user.addIdentity(provider, profile.providerUserId()));
+        if (!otherProviders.isEmpty()) {
+            notificationService.sendLinkedBySignInNotice(user.getId(), user.getEmail(), provider, otherProviders);
+        }
         log.info("{} account linked to user with id '{}'.", provider, user.getId());
         return user;
     }

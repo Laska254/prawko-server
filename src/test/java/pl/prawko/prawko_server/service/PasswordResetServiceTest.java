@@ -84,6 +84,15 @@ class PasswordResetServiceTest {
     }
 
     @Test
+    void requestReset_notMentionLinkedAccounts_whenUserHasNone() {
+        when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
+
+        service.requestReset(tester.getEmail());
+
+        assertThat(captureSentMessage().getText()).doesNotContain(UserTestData.LINKED_ACCOUNTS_NOTE);
+    }
+
+    @Test
     void requestReset_issueNewToken_whenCooldownHasPassed() {
         when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
         service.requestReset(tester.getEmail());

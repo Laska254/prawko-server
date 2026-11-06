@@ -16,6 +16,8 @@ import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.service.implementation.IdentityNotificationService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -48,6 +50,20 @@ class IdentityNotificationServiceTest {
         assertThat(message.getSubject()).isEqualTo(UserTestData.identityLinkedSubject(IdentityProvider.GITHUB));
         assertThat(message.getText())
                 .contains("A GitHub account was linked")
+                .contains("Reset your password");
+    }
+
+    @Test
+    void sendLinkedBySignInNotice_sendMailNamingOtherProviders_whenCalled() {
+        service.sendLinkedBySignInNotice(USER_ID, email, IdentityProvider.GOOGLE, List.of(IdentityProvider.GITHUB));
+
+        final var message = sentMessage();
+        assertThat(message.getFrom()).isEqualTo(TestUtils.MAIL_FROM);
+        assertThat(message.getTo()).containsExactly(email);
+        assertThat(message.getSubject()).isEqualTo(UserTestData.identityLinkedSubject(IdentityProvider.GOOGLE));
+        assertThat(message.getText())
+                .contains("The Google account you signed in with was linked")
+                .contains(UserTestData.LINKED_ACCOUNTS_NOTE + "GitHub.")
                 .contains("Reset your password");
     }
 

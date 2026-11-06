@@ -37,6 +37,7 @@ public class UserTestData {
     public static final String INVALID_RESET_TOKEN = "Password reset token is invalid or expired.";
     public static final String INVALID_VERIFICATION_TOKEN = "Email verification token is invalid or expired.";
     public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";
+    public static final String LINKED_ACCOUNTS_NOTE = "can also sign in to your account: ";
     public static final String VERIFICATION_COOLDOWN = "Verification email was sent recently, try again later.";
     public static final String INCORRECT_PASSWORD = "Current password is incorrect.";
     public static final String WRONG_PASSWORD = "wrongPassword";

@@ -31,6 +31,7 @@ import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -125,6 +126,21 @@ class UserIdentityServiceTest {
         assertThat(result).isSameAs(existing);
         assertThat(result.getPassword()).isEqualTo(password);
         assertLinked(result);
+    }
+
+    @Test
+    void resolveUser_sendNoticeNamingOtherProviders_whenLinkedUserHasOtherIdentity() {
+        final var existing = UserTestData.createTestUserPippin()
+                .setId(7L)
+                .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID);
+        when(repository.findByEmailIgnoreCase(profile.email())).thenReturn(Optional.of(existing));
+        when(repository.save(existing)).thenAnswer(returnsFirstArg());
+
+        service.resolveUser(profile);
+
+        assertThat(existing.hasIdentity(PROVIDER)).isTrue();
+        verify(notificationService).sendLinkedBySignInNotice(existing.getId(), existing.getEmail(), PROVIDER,
+                List.of(IdentityProvider.GITHUB));
     }
 
     @Test

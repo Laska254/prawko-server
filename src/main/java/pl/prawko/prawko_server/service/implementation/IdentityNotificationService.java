@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.service.IIdentityNotificationService;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * Implementation of {@link IIdentityNotificationService} sending notices with {@link MailSender}.
  * <p>
@@ -38,6 +41,23 @@ public class IdentityNotificationService implements IIdentityNotificationService
                 "A " + name + " account was linked to your account and can now be used to sign in.\n\n"
                         + "If this wasn't you, someone else has access to your account. Reset your password, then "
                         + "unlink the " + name + " account in your account settings.");
+    }
+
+    @Async
+    @Override
+    public void sendLinkedBySignInNotice(final long userId,
+                                         final String email,
+                                         final IdentityProvider provider,
+                                         final List<IdentityProvider> otherProviders) {
+        final var name = provider.getDisplayName();
+        final var otherNames = otherProviders.stream()
+                .map(IdentityProvider::getDisplayName)
+                .collect(Collectors.joining(", "));
+        send(userId, email, name + " account linked",
+                "The " + name + " account you signed in with was linked to your account. These accounts can also sign "
+                        + "in to your account: " + otherNames + ".\n\n"
+                        + "If you don't recognize one of them, someone else has access to your account. Reset your "
+                        + "password, then unlink it in your account settings.");
     }
 
     @Async

@@ -326,6 +326,12 @@ public class User {
         return this;
     }
 
+    public List<IdentityProvider> getLinkedProviders() {
+        return identities.stream()
+                .map(UserIdentity::getProvider)
+                .toList();
+    }
+
     public boolean hasIdentity(final IdentityProvider provider) {
         return identities.stream()
                 .map(UserIdentity::getProvider)
