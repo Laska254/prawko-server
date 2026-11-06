@@ -1445,8 +1445,8 @@ public class UserControllerTest {
     @Nested
     class UnlinkIdentity {
 
-        private final String notHostedIdToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims()
-                .claims(claims -> claims.remove(GoogleTestData.HOSTED_DOMAIN)));
+        private final String notHostedIdToken =
+                GoogleTestData.idToken(GoogleTestData.createPippinClaimsWithoutHostedDomain());
 
         @Test
         void returnNoContentAndBlockSignIn_whenUnlinkingGoogle() {
@@ -1597,14 +1597,6 @@ public class UserControllerTest {
                     .exchange();
         }
 
-        private RestTestClient.ResponseSpec attemptSignIn(final String path, final Object request) {
-            return TestUtils.createRestTestClient(port, ApiConstants.AUTH_BASE_URL)
-                    .post()
-                    .uri(path)
-                    .body(request)
-                    .exchange();
-        }
-
     }
 
     @Nested
@@ -1683,12 +1675,16 @@ public class UserControllerTest {
         return userRepository.findAll().getFirst().getId();
     }
 
-    private AuthTokensDto signIn(final String path, final Object request) {
+    private RestTestClient.ResponseSpec attemptSignIn(final String path, final Object request) {
         return TestUtils.createRestTestClient(port, ApiConstants.AUTH_BASE_URL)
                 .post()
                 .uri(path)
                 .body(request)
-                .exchange()
+                .exchange();
+    }
+
+    private AuthTokensDto signIn(final String path, final Object request) {
+        return attemptSignIn(path, request)
                 .expectStatus().isOk()
                 .expectBody(AuthTokensDto.class)
                 .returnResult()

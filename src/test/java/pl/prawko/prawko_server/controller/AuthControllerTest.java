@@ -450,8 +450,7 @@ public class AuthControllerTest {
     @Test
     void signInWithGoogle_returnConflictAndNotLink_whenGoogleDoesNotHostEmailOfUser() {
         final var tester = userRepository.save(UserTestData.createTestUserPippin());
-        final var idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims()
-                .claims(claims -> claims.remove(GoogleTestData.HOSTED_DOMAIN)));
+        final var idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaimsWithoutHostedDomain());
 
         signInWithGoogle(idToken)
                 .expectStatus().isEqualTo(HttpStatus.CONFLICT)

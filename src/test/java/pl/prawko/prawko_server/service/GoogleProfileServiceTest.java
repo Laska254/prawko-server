@@ -70,9 +70,8 @@ class GoogleProfileServiceTest {
     }
 
     private static JwtClaimsSet.Builder withoutHostedDomain(final String email) {
-        return GoogleTestData.createPippinClaims()
-                .claim(StandardClaimNames.EMAIL, email)
-                .claims(claims -> claims.remove(GoogleTestData.HOSTED_DOMAIN));
+        return GoogleTestData.createPippinClaimsWithoutHostedDomain()
+                .claim(StandardClaimNames.EMAIL, email);
     }
 
     @Test

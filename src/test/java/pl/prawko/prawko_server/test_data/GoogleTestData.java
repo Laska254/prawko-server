@@ -67,6 +67,11 @@ public class GoogleTestData {
                 .claim(StandardClaimNames.FAMILY_NAME, pippin.getLastName());
     }
 
+    public static JwtClaimsSet.Builder createPippinClaimsWithoutHostedDomain() {
+        return createPippinClaims()
+                .claims(claims -> claims.remove(HOSTED_DOMAIN));
+    }
+
     public static String idToken(final JwtClaimsSet.Builder claims) {
         return sign(SIGNING_KEY, claims);
     }
