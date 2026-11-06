@@ -166,6 +166,20 @@ class UserRepositoryTest {
     }
 
     @Test
+    void findWithLockById_returnUser_whenUserExists() {
+        final var result = repository.findWithLockById(tester.getId());
+
+        assertThat(result).get().extracting(User::getId).isEqualTo(tester.getId());
+    }
+
+    @Test
+    void findWithLockById_returnEmpty_whenUserDoesNotExist() {
+        final var result = repository.findWithLockById(tester.getId() + 1);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     void findById_returnIdentitiesOrderedByProvider_whenUserHasSeveral() {
         repository.save(tester.addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)
                 .addIdentity(IdentityProvider.GITHUB, UserTestData.PROVIDER_USER_ID));

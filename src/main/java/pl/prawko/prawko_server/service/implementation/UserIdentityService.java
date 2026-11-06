@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.service.implementation;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +10,8 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
+import pl.prawko.prawko_server.exception.LastSignInMethodException;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
@@ -19,7 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Implementation of {@link IUserIdentityService} resolving users from verified provider profiles.
+ * Implementation of {@link IUserIdentityService} resolving users from verified provider profiles and linking and
+ * unlinking their accounts.
  * <p>
  * Generated usernames follow the registration rules: no {@code '@'}, 3 to 31 characters.
  */
@@ -74,16 +78,77 @@ public class UserIdentityService implements IUserIdentityService {
         return user;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * A concurrent request linking the same account, or another account of the provider to this user, can win the race
+     * between the checks and the save. The resulting {@link DataIntegrityViolationException} is retried once in a new
+     * transaction, whose checks then report the conflict.
+     *
+     * @throws EntityNotFoundException if the user doesn't exist
+     * @throws AlreadyExistsException  if the user already has an account of the provider linked, or the account is
+     *                                 linked to another user
+     */
+    @Override
+    @Retryable(includes = DataIntegrityViolationException.class, maxRetries = 1, delay = 100)
+    @Transactional
+    public void linkIdentity(final long userId, final ProviderProfile profile) {
+        final var provider = profile.provider();
+        final var user = repository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User with id '" + userId + "' not found."));
+        if (user.hasIdentity(provider)) {
+            throw providerConflict("User is already linked to a " + provider.getDisplayName() + " account.", userId);
+        }
+        if (repository.findByIdentity(provider, profile.providerUserId())
+                .isPresent()) {
+            throw providerConflict("This " + provider.getDisplayName() + " account is already linked to another user.",
+                    userId);
+        }
+        repository.save(user.addIdentity(provider, profile.providerUserId()));
+        log.info("{} account linked to user with id '{}'.", provider, userId);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The user's row is locked, since two concurrent requests unlinking different providers would otherwise each see
+     * the other's account as left, and together remove the last way to sign in.
+     *
+     * @throws EntityNotFoundException   if the user doesn't exist or has no account of the provider linked
+     * @throws LastSignInMethodException if the user has no password and no other linked account
+     */
+    @Override
+    @Transactional
+    public void unlinkIdentity(final long userId, final IdentityProvider provider) {
+        final var user = repository.findWithLockById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User with id '" + userId + "' not found."));
+        if (!user.hasIdentity(provider)) {
+            throw new EntityNotFoundException("User has no " + provider.getDisplayName() + " account linked.");
+        }
+        if (user.getPassword() == null && user.getIdentities().size() == 1) {
+            log.warn("{} account not unlinked from user with id '{}', it's the last way to sign in.", provider, userId);
+            throw new LastSignInMethodException("Can't unlink the only way to sign in. Set a password or link another "
+                    + "account first.");
+        }
+        repository.save(user.removeIdentity(provider));
+        log.info("{} account unlinked from user with id '{}'.", provider, userId);
+    }
+
+    private static AlreadyExistsException providerConflict(final String message, final long userId) {
+        log.warn("{} User id: {}", message, userId);
+        return new AlreadyExistsException(message, Map.ofEntries(Map.entry("provider", message)));
+    }
+
     private User prepareForLinking(final User user, final ProviderProfile profile) {
         final var provider = profile.provider();
         if (user.hasIdentity(provider)) {
-            final var message = "User is already linked to another " + provider.getDisplayName() + " account.";
-            log.warn("{} User id: {}", message, user.getId());
-            throw new AlreadyExistsException(message, Map.ofEntries(Map.entry("provider", message)));
+            throw providerConflict("User is already linked to another " + provider.getDisplayName() + " account.",
+                    user.getId());
         }
         if (!profile.emailStatus().isAuthoritative()) {
             final var message = "User with this email already exists, and " + provider.getDisplayName()
-                    + " doesn't host the email, so the account can't be linked to it.";
+                    + " doesn't host the email, so the account can't be linked to it. Sign in as that user and"
+                    + " link " + provider.getDisplayName() + " from the account settings.";
             log.warn("{} account not linked to user with id '{}', its email isn't hosted by {}.",
                     provider, user.getId(), provider);
             throw new AlreadyExistsException(message, Map.ofEntries(Map.entry("email", message)));

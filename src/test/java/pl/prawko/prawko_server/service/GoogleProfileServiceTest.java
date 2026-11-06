@@ -1,16 +1,13 @@
 package pl.prawko.prawko_server.service;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -20,8 +17,9 @@ import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
 import pl.prawko.prawko_server.exception.ProviderUnavailableException;
 import pl.prawko.prawko_server.model.EmailStatus;
+import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
-import pl.prawko.prawko_server.service.implementation.GoogleSignInService;
+import pl.prawko.prawko_server.service.implementation.GoogleProfileService;
 import pl.prawko.prawko_server.test_data.GoogleTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
@@ -31,23 +29,12 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
-class GoogleSignInServiceTest {
+class GoogleProfileServiceTest {
 
     private static final String UNREACHABLE_JWKS = "http://localhost:1/oauth2/v3/certs";
 
     private static GoogleJwksStub jwksStub;
-
-    @Mock
-    private IUserIdentityService userIdentityService;
-
-    @Mock
-    private IRefreshTokenService refreshTokenService;
 
     @BeforeAll
     static void startJwksStub() throws IOException {
@@ -83,52 +70,66 @@ class GoogleSignInServiceTest {
     }
 
     private static JwtClaimsSet.Builder withoutHostedDomain(final String email) {
-        return GoogleTestData.createPippinClaims()
-                .claim(StandardClaimNames.EMAIL, email)
-                .claims(claims -> claims.remove(GoogleTestData.HOSTED_DOMAIN));
+        return GoogleTestData.createPippinClaimsWithoutHostedDomain()
+                .claim(StandardClaimNames.EMAIL, email);
     }
 
     @Test
-    void signIn_throwProviderNotConfigured_whenNoClientIdsAreConfigured() {
-        final var service = createService(List.of(), UNREACHABLE_JWKS);
+    void fetchProfile_throwProviderNotConfigured_whenNoClientIdsAreConfigured() {
+        final var service = new GoogleProfileService(List.of(), UNREACHABLE_JWKS, TestUtils.CLOCK);
         final var idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims());
 
-        assertThatThrownBy(() -> service.signIn(idToken))
+        assertThatThrownBy(() -> service.fetchProfile(idToken))
                 .isInstanceOf(ProviderNotConfiguredException.class)
                 .hasMessage(GoogleTestData.GOOGLE_NOT_AVAILABLE);
-        verifyNoInteractions(userIdentityService, refreshTokenService);
     }
 
     @Test
-    void signIn_throwProviderUnavailable_whenJwksIsUnavailable() {
-        final var service = createService(List.of(GoogleTestData.WEB_CLIENT_ID), UNREACHABLE_JWKS);
+    void fetchProfile_throwProviderUnavailable_whenJwksIsUnavailable() {
+        final var service = new GoogleProfileService(
+                List.of(GoogleTestData.WEB_CLIENT_ID),
+                UNREACHABLE_JWKS,
+                TestUtils.CLOCK);
         final var idToken = GoogleTestData.idToken(GoogleTestData.createPippinClaims());
 
-        assertThatThrownBy(() -> service.signIn(idToken))
+        assertThatThrownBy(() -> service.fetchProfile(idToken))
                 .isInstanceOf(ProviderUnavailableException.class)
                 .hasMessage(GoogleTestData.GOOGLE_UNAVAILABLE)
                 .cause()
                 .isInstanceOf(JwtException.class)
                 .isNotInstanceOf(BadJwtException.class);
-        verifyNoInteractions(userIdentityService, refreshTokenService);
+    }
+
+    @Test
+    void fetchProfile_returnProfile_whenTokenIsValid() {
+        final var pippin = UserTestData.createTestUserPippin();
+        final var service = createService();
+
+        final var result = service.fetchProfile(GoogleTestData.idToken(GoogleTestData.createPippinClaims()));
+
+        assertThat(result).isEqualTo(new ProviderProfile(
+                IdentityProvider.GOOGLE,
+                UserTestData.PROVIDER_USER_ID,
+                pippin.getEmail(),
+                EmailStatus.AUTHORITATIVE,
+                StringUtils.substringBefore(pippin.getEmail(), "@"),
+                pippin.getFirstName(),
+                pippin.getLastName()));
     }
 
     @ParameterizedTest
     @MethodSource("emailStatuses")
-    void signIn_resolveUserWithEmailStatus_whenTokenIsValid(final JwtClaimsSet.Builder claims,
-                                                            final EmailStatus status) {
-        final var service = createService(List.of(GoogleTestData.WEB_CLIENT_ID), jwksStub.url());
-        final var profile = ArgumentCaptor.forClass(ProviderProfile.class);
-        when(userIdentityService.resolveUser(any())).thenReturn(UserTestData.createTestUserPippin().setId(7L));
+    void fetchProfile_returnEmailStatus_whenTokenIsValid(final JwtClaimsSet.Builder claims,
+                                                         final EmailStatus status) {
+        final var service = createService();
 
-        service.signIn(GoogleTestData.idToken(claims));
+        final var result = service.fetchProfile(GoogleTestData.idToken(claims));
 
-        verify(userIdentityService).resolveUser(profile.capture());
-        assertThat(profile.getValue().emailStatus()).isEqualTo(status);
+        assertThat(result.emailStatus()).isEqualTo(status);
     }
 
-    private GoogleSignInService createService(final List<String> clientIds, final String jwkSetUri) {
-        return new GoogleSignInService(clientIds, jwkSetUri, TestUtils.CLOCK, userIdentityService, refreshTokenService);
+    private static GoogleProfileService createService() {
+        return new GoogleProfileService(List.of(GoogleTestData.WEB_CLIENT_ID), jwksStub.url(), TestUtils.CLOCK);
     }
 
 }

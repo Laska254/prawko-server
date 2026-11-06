@@ -24,11 +24,13 @@ import pl.prawko.prawko_server.dto.RefreshTokenRequest;
 import pl.prawko.prawko_server.dto.ResendVerificationRequest;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.VerifyEmailRequest;
+import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
-import pl.prawko.prawko_server.service.implementation.GitHubSignInService;
-import pl.prawko.prawko_server.service.implementation.GoogleSignInService;
+import pl.prawko.prawko_server.service.implementation.GitHubProfileService;
+import pl.prawko.prawko_server.service.implementation.GoogleProfileService;
 import pl.prawko.prawko_server.service.implementation.PasswordResetService;
 import pl.prawko.prawko_server.service.implementation.RefreshTokenService;
+import pl.prawko.prawko_server.service.implementation.UserIdentityService;
 
 /**
  * REST controller for authentication operations.
@@ -48,21 +50,24 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
-    private final GoogleSignInService googleSignInService;
-    private final GitHubSignInService gitHubSignInService;
+    private final GoogleProfileService googleProfileService;
+    private final GitHubProfileService gitHubProfileService;
+    private final UserIdentityService userIdentityService;
 
     public AuthController(final AuthenticationManager authenticationManager,
                           final RefreshTokenService refreshTokenService,
                           final PasswordResetService passwordResetService,
                           final EmailVerificationService emailVerificationService,
-                          final GoogleSignInService googleSignInService,
-                          final GitHubSignInService gitHubSignInService) {
+                          final GoogleProfileService googleProfileService,
+                          final GitHubProfileService gitHubProfileService,
+                          final UserIdentityService userIdentityService) {
         this.authenticationManager = authenticationManager;
         this.refreshTokenService = refreshTokenService;
         this.passwordResetService = passwordResetService;
         this.emailVerificationService = emailVerificationService;
-        this.googleSignInService = googleSignInService;
-        this.gitHubSignInService = gitHubSignInService;
+        this.googleProfileService = googleProfileService;
+        this.gitHubProfileService = gitHubProfileService;
+        this.userIdentityService = userIdentityService;
     }
 
     /**
@@ -115,7 +120,7 @@ public class AuthController {
     })
     @PostMapping(ApiConstants.GOOGLE)
     public ResponseEntity<AuthTokensDto> signInWithGoogle(@Valid @RequestBody final GoogleSignInRequest request) {
-        return ResponseEntity.ok(googleSignInService.signIn(request.idToken()));
+        return ResponseEntity.ok(signIn(googleProfileService.fetchProfile(request.idToken())));
     }
 
     /**
@@ -143,7 +148,7 @@ public class AuthController {
     })
     @PostMapping(ApiConstants.GITHUB)
     public ResponseEntity<AuthTokensDto> signInWithGitHub(@Valid @RequestBody final GitHubSignInRequest request) {
-        return ResponseEntity.ok(gitHubSignInService.signIn(request));
+        return ResponseEntity.ok(signIn(gitHubProfileService.fetchProfile(request)));
     }
 
     /**
@@ -271,6 +276,15 @@ public class AuthController {
     public ResponseEntity<Void> resendVerification(@Valid @RequestBody final ResendVerificationRequest request) {
         emailVerificationService.resendVerification(request.email());
         return ResponseEntity.accepted().build();
+    }
+
+    /**
+     * Signs in the user of a provider account. Not part of {@link UserIdentityService}, as a call from inside it would
+     * bypass the proxy, and with it the retry and transaction of {@link UserIdentityService#resolveUser}.
+     */
+    private AuthTokensDto signIn(final ProviderProfile profile) {
+        final var user = userIdentityService.resolveUser(profile);
+        return refreshTokenService.issueTokens(AuthenticatedUser.of(user));
     }
 
 }

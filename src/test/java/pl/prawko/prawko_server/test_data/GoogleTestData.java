@@ -31,7 +31,11 @@ public class GoogleTestData {
     public static final String GOOGLE_NOT_AVAILABLE = "Sign-in with Google is not available.";
     public static final String GOOGLE_UNAVAILABLE = "Sign-in with Google is unavailable, try again later.";
     public static final String EMAIL_NOT_HOSTED = "User with this email already exists, and Google doesn't host the "
-            + "email, so the account can't be linked to it.";
+            + "email, so the account can't be linked to it. Sign in as that user and link Google from the "
+            + "account settings.";
+    public static final String ALREADY_LINKED = "User is already linked to a Google account.";
+    public static final String LINKED_TO_OTHER_USER = "This Google account is already linked to another user.";
+    public static final String NOT_LINKED = "User has no Google account linked.";
 
     private static final String KEY_ID = "google-test-key";
     private static final RSAKey SIGNING_KEY = generateKey();
@@ -61,6 +65,11 @@ public class GoogleTestData {
                 .claim(HOSTED_DOMAIN, StringUtils.substringAfter(pippin.getEmail(), "@"))
                 .claim(StandardClaimNames.GIVEN_NAME, pippin.getFirstName())
                 .claim(StandardClaimNames.FAMILY_NAME, pippin.getLastName());
+    }
+
+    public static JwtClaimsSet.Builder createPippinClaimsWithoutHostedDomain() {
+        return createPippinClaims()
+                .claims(claims -> claims.remove(HOSTED_DOMAIN));
     }
 
     public static String idToken(final JwtClaimsSet.Builder claims) {

@@ -1,6 +1,8 @@
 package pl.prawko.prawko_server.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
@@ -60,6 +62,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT i.user FROM UserIdentity i WHERE i.provider = :provider AND i.providerUserId = :providerUserId")
     Optional<User> findByIdentity(final IdentityProvider provider, final String providerUserId);
+
+    /**
+     * Retrieves {@code user} by its ID, locking its row until the end of the transaction.
+     *
+     * @param id the ID to look for
+     * @return a {@code user} when found
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<User> findWithLockById(final long id);
 
     /**
      * Retrieves {@code user} by the hash of its pending password reset token.

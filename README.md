@@ -221,6 +221,17 @@ nothing is linked: GitHub doesn't host email addresses, it verified the address 
 else by now. Later sign-ins find the user by the GitHub account's ID alone, so renaming the login or changing the email
 keeps them linked.
 
+Linking and unlinking: a signed-in user links a provider account with `POST /users/me/identities/google` or
+`POST /users/me/identities/github`, with the same body and the same errors for a bad credential as the matching `/auth`
+endpoint, and `204` on success. The account's email doesn't have to match the user's, so this is the way forward after
+the `409` above: sign in as that user, then link. The answer is `409` if the account is linked to another user or
+the user already has an account of that provider. `DELETE /users/me/identities/google` or
+`DELETE /users/me/identities/github` unlinks it and answers `204`, `404` if it isn't linked, and `409` if they have no
+password and no other linked account, as that would leave no way to sign in. `providers` in the user response lists the
+linked ones. An unlinked account no longer finds the user by its ID, so its next sign-in counts as a first one: if the
+user's email is one the provider hosts it's linked again, since whoever holds that account controls the mailbox and
+could reset the password anyway. Unlinking doesn't revoke refresh tokens, so clients already signed in stay signed in.
+
 There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
 
 A new account must verify its email address before signing in. Registration emails a link to the frontend page
@@ -263,17 +274,21 @@ own data (admins may act on any user), **admin** - admins only.
 
 * `/users`
 
-  | Method   | Path                 | Access | Description                                                      |
-  |----------|----------------------|--------|------------------------------------------------------------------|
-  | `POST`   | `/users`             | public | register a new user, emails a verification link                  |
-  | `GET`    | `/users/me`          | user   | get the signed-in user (e.g. their ID and role)                  |
-  | `GET`    | `/users/me/stats`    | user   | get own exam statistics, see [Exam statistics](#exam-statistics) |
-  | `DELETE` | `/users/me`          | user   | delete own account with its exams (requires current password)    |
-  | `PATCH`  | `/users/me/password` | user   | change own password (requires current password)                  |
-  | `GET`    | `/users`             | admin  | get a page of users                                              |
-  | `GET`    | `/users/{id}`        | admin  | get a user                                                       |
-  | `PATCH`  | `/users/{id}`        | self   | update a user (email: the user themselves only)                  |
-  | `DELETE` | `/users/{id}`        | admin  | delete a user with their exams                                   |
+  | Method   | Path                          | Access | Description                                                      |
+  |----------|-------------------------------|--------|------------------------------------------------------------------|
+  | `POST`   | `/users`                      | public | register a new user, emails a verification link                  |
+  | `GET`    | `/users/me`                   | user   | get the signed-in user (e.g. their ID and role)                  |
+  | `GET`    | `/users/me/stats`             | user   | get own exam statistics, see [Exam statistics](#exam-statistics) |
+  | `DELETE` | `/users/me`                   | user   | delete own account with its exams (requires current password)    |
+  | `PATCH`  | `/users/me/password`          | user   | change own password (requires current password)                  |
+  | `POST`   | `/users/me/identities/google` | user   | link a Google account with an ID token                           |
+  | `DELETE` | `/users/me/identities/google` | user   | unlink the Google account, unless it's the only way to sign in   |
+  | `POST`   | `/users/me/identities/github` | user   | link a GitHub account with an authorization code                 |
+  | `DELETE` | `/users/me/identities/github` | user   | unlink the GitHub account, unless it's the only way to sign in   |
+  | `GET`    | `/users`                      | admin  | get a page of users                                              |
+  | `GET`    | `/users/{id}`                 | admin  | get a user                                                       |
+  | `PATCH`  | `/users/{id}`                 | self   | update a user (email: the user themselves only)                  |
+  | `DELETE` | `/users/{id}`                 | admin  | delete a user with their exams                                   |
 
   Usernames and emails are unique ignoring case: registering or renaming to one that differs from a taken one only in
   case returns `409`. Users can still change the capitalization of their own username. Emails are stored lowercased,

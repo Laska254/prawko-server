@@ -14,23 +14,26 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.UserIdentityService;
+import pl.prawko.prawko_server.test_data.GoogleTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
- * Runs {@link UserIdentityService#resolveUser} in real transactions, letting a concurrent request commit right after the
- * lookup by email, as if it won the race to the save.
+ * Runs {@link UserIdentityService} in real transactions, letting a concurrent request commit right after a lookup, as
+ * if it won the race to the save.
  */
 @DataJpaTest
 @ActiveProfiles("test")
@@ -90,6 +93,24 @@ class UserIdentityServiceRetryTest {
         verify(repository, times(2)).findByIdentity(PROVIDER, profile.providerUserId());
         assertThat(repository.findByIdentity(PROVIDER, profile.providerUserId()))
                 .get().extracting(User::getId).isEqualTo(pippin.getId());
+    }
+
+    @Test
+    void linkIdentity_throwAlreadyExists_whenSameAccountIsLinkedConcurrently() {
+        final var pippin = repository.save(UserTestData.createTestUserPippin());
+        final var profile = UserTestData.createPippinProfile(PROVIDER);
+        doAnswer(invocation -> {
+            final var free = realMethod().answer(invocation);
+            inNewTransaction(() -> repository.save(UserTestData.createMerry()
+                    .addIdentity(PROVIDER, profile.providerUserId())));
+            return free;
+        }).doAnswer(realMethod()).when(repository).findByIdentity(PROVIDER, profile.providerUserId());
+
+        assertThatThrownBy(() -> service.linkIdentity(pippin.getId(), profile))
+                .isInstanceOf(AlreadyExistsException.class)
+                .hasMessage(GoogleTestData.LINKED_TO_OTHER_USER);
+
+        verify(repository, times(2)).findByIdentity(PROVIDER, profile.providerUserId());
     }
 
     /**

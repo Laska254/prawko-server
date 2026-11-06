@@ -64,7 +64,9 @@ import java.util.List;
  *     {@code POST /auth/verify} and {@code POST /auth/verify/resend} (email verification),
  *     {@code POST /users} (registration)</li>
  *     <li>ADMIN only: {@code POST /questions} (upload), {@code GET /questions} (list all)</li>
- *     <li>USER+ required: {@code GET/DELETE /users/me}, {@code GET /questions/**}, {@code POST/GET /exams/**}</li>
+ *     <li>USER+ required: {@code GET/DELETE /users/me}, {@code POST/DELETE /users/me/identities/google} and
+ *     {@code POST/DELETE /users/me/identities/github} (linking and unlinking accounts), {@code GET /questions/**},
+ *     {@code POST/GET /exams/**}</li>
  *     <li>ADMIN only: other user management endpoints and delete operations</li>
  *     <li>Public: {@code GET/HEAD /media/**} (question media, see {@link MediaConfig}), Swagger UI and OpenAPI docs</li>
  *     <li>Any other request is denied</li>
@@ -254,11 +256,17 @@ public class SpringSecurity {
     private void configureEndpoint_Users(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.USERS_BASE_URL).permitAll()
+                .requestMatchers(HttpMethod.POST,
+                        ApiConstants.USERS_BASE_URL + ApiConstants.IDENTITIES + ApiConstants.GOOGLE,
+                        ApiConstants.USERS_BASE_URL + ApiConstants.IDENTITIES + ApiConstants.GITHUB).hasRole("USER")
                 .requestMatchers(HttpMethod.GET, ApiConstants.USERS_BASE_URL + ApiConstants.ME).hasRole("USER")
                 .requestMatchers(HttpMethod.GET, ApiConstants.USERS_BASE_URL + ApiConstants.STATS).hasRole("USER")
                 .requestMatchers(HttpMethod.GET, ApiConstants.USERS_BASE_URL_ALL).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, ApiConstants.USERS_BASE_URL_ALL).hasRole("USER")
-                .requestMatchers(HttpMethod.DELETE, ApiConstants.USERS_BASE_URL + ApiConstants.ME).hasRole("USER")
+                .requestMatchers(HttpMethod.DELETE,
+                        ApiConstants.USERS_BASE_URL + ApiConstants.ME,
+                        ApiConstants.USERS_BASE_URL + ApiConstants.IDENTITIES + ApiConstants.GOOGLE,
+                        ApiConstants.USERS_BASE_URL + ApiConstants.IDENTITIES + ApiConstants.GITHUB).hasRole("USER")
                 .requestMatchers(HttpMethod.DELETE, ApiConstants.USERS_BASE_URL_ALL).hasRole("ADMIN");
     }
 

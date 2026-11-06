@@ -39,6 +39,8 @@ public class UserTestData {
     public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";
     public static final String VERIFICATION_COOLDOWN = "Verification email was sent recently, try again later.";
     public static final String INCORRECT_PASSWORD = "Current password is incorrect.";
+    public static final String LAST_SIGN_IN_METHOD = "Can't unlink the only way to sign in. Set a password or link another "
+            + "account first.";
     public static final String PROVIDER_USER_ID = "109876543210";
     public static final String OTHER_PROVIDER_USER_ID = "otherAccountId";
     public static final String EMAIL_TOO_LONG = "Email must be at most 254 characters.";
