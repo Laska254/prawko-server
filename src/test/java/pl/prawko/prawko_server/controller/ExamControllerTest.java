@@ -94,6 +94,19 @@ public class ExamControllerTest {
         }
 
         @Test
+        void returnBadRequest_whenCategoryIsUnknown() {
+            final var body = Map.ofEntries(Map.entry("userId", 1L), Map.entry("categoryName", "unknown"));
+
+            restClient.post()
+                    .headers(auth::user)
+                    .body(body)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
+        }
+
+        @Test
         void returnCreated_whenAdminCreatesExamForAnotherUser() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
 

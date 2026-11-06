@@ -13,6 +13,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.client.RestTestClient;
+import org.springframework.util.unit.DataSize;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestAuth;
@@ -99,6 +100,21 @@ public class QuestionControllerTest {
                     .expectStatus().isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(expected);
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {6, 11}) // over max-file-size, and over max-request-size
+        void returnContentTooLarge_whenUploadExceedsLimit(final int megabytes) {
+            final var multipart = MultiPartFactory.withCsvOfSize(DataSize.ofMegabytes(megabytes));
+
+            restClient.post()
+                    .headers(auth::admin)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(multipart)
+                    .exchange()
+                    .expectStatus().isEqualTo(HttpStatus.CONTENT_TOO_LARGE)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("Maximum upload size exceeded");
         }
 
         @Test

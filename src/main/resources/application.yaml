@@ -1,5 +1,8 @@
 server:
   port: 8080
+  tomcat:
+    # the rest of a rejected upload is read, or the client loses the connection before getting the 413
+    max-swallow-size: 20MB
 
 spring:
   application:

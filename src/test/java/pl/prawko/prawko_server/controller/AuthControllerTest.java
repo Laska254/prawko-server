@@ -16,6 +16,7 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -266,6 +267,17 @@ public class AuthControllerTest {
                 .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.detail").isEqualTo(expectedMessage);
+    }
+
+    @Test
+    void login_returnBadRequest_whenBodyIsMalformed() {
+        restClient.post()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{not json")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.detail").isEqualTo(TestUtils.BODY_MISSING);
     }
 
     @Test

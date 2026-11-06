@@ -19,6 +19,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -66,6 +67,12 @@ public class ExceptionController {
     @ExceptionHandler(MultipartException.class)
     public ProblemDetail handleWrongFileType(final MultipartException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNSUPPORTED_MEDIA_TYPE, exception.getMessage());
+    }
+
+    @ApiResponse(responseCode = "413", description = "File or request is over the upload size limit")
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ProblemDetail handleUploadTooLarge(final MaxUploadSizeExceededException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONTENT_TOO_LARGE, exception.getMessage());
     }
 
     @ApiResponse(responseCode = "400", description = "Malformed CSV file")
@@ -235,10 +242,10 @@ public class ExceptionController {
                 "Cannot sort by '" + exception.getPropertyName() + "'.");
     }
 
-    @ApiResponse(responseCode = "400", description = "Request body is missing")
+    @ApiResponse(responseCode = "400", description = "Request body is missing or malformed")
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ProblemDetail handleMissingBody() {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Request body is missing.");
+    public ProblemDetail handleUnreadableBody() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Request body is missing or malformed.");
     }
 
     @ApiResponse(responseCode = "503", description = "Too many background tasks pending")
