@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.exception.InvalidCsvException;
+import pl.prawko.prawko_server.exception.UnknownCategoryException;
+import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
 import tools.jackson.core.JacksonException;
@@ -18,12 +20,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class CSVParser {
 
     private static final Logger log = LoggerFactory.getLogger(CSVParser.class);
+    private static final String ALLOWED_CATEGORIES = Arrays.stream(CategoryVariant.values())
+            .map(CategoryVariant::name)
+            .collect(Collectors.joining(", "));
 
     private final CsvMapper csvMapper;
     private final CsvSchema csvSchema;
@@ -48,11 +56,28 @@ public class CSVParser {
                     .readerFor(QuestionCSV.class)
                     .with(csvSchema)
                     .readValues(reader);
-            final var questionCSVs = csvRows.readAll();
-            log.info("Parsed {} rows from file '{}'", questionCSVs.size(), file.getOriginalFilename());
-            final var questions = questionCSVs.stream()
-                    .map(csvFacade::mapSingleRow)
-                    .toList();
+            final var rows = new ArrayList<Row>();
+            while (csvRows.hasNextValue()) {
+                // after hasNextValue the location is the record's first line, also for multi-line quoted values
+                rows.add(new Row(csvRows.currentLocation().getLineNr(), csvRows.nextValue()));
+            }
+            log.info("Parsed {} rows from file '{}'", rows.size(), file.getOriginalFilename());
+            final var questions = new ArrayList<Question>();
+            final var problems = new ArrayList<String>();
+            rows.forEach(row -> {
+                try {
+                    questions.add(csvFacade.mapSingleRow(row.value()));
+                } catch (final UnknownCategoryException exception) {
+                    exception.getNames()
+                            .forEach(name -> problems.add("line " + row.line() + ": unknown category '" + name + "'"));
+                }
+            });
+            if (!problems.isEmpty()) {
+                final var message = "Invalid CSV file: " + String.join("; ", problems)
+                        + ". Allowed: " + ALLOWED_CATEGORIES + ".";
+                log.warn("{} File: '{}'", message, file.getOriginalFilename());
+                throw new InvalidCsvException(message);
+            }
             log.info("Successfully mapped {} questions from file '{}'", questions.size(), file.getOriginalFilename());
             return questions;
         } catch (final JacksonException exception) {
@@ -81,6 +106,9 @@ public class CSVParser {
         final var path = exception.getPath();
         final var column = path.isEmpty() ? "" : " in column '" + path.getLast().getPropertyName() + "'";
         return "Invalid CSV file" + line + column + ": " + exception.getOriginalMessage();
+    }
+
+    private record Row(long line, QuestionCSV value) {
     }
 
 }

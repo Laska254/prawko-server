@@ -15,6 +15,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.exception.InvalidCsvException;
+import pl.prawko.prawko_server.exception.UnknownCategoryException;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
 import tools.jackson.databind.DatabindException;
@@ -104,6 +105,24 @@ class CSVParserTest {
                     .isInstanceOf(InvalidCsvException.class)
                     .hasMessage(expectedMessage);
             verifyNoInteractions(csvFacade);
+        }
+
+        @Test
+        void throwInvalidCsvException_listingEveryUnknownCategory_whenCategoriesAreUnknown() {
+            final var content = HEADER + "W1,1,A,2\n\"W2\nsecond line\",2,A,2\nW3,3,A,2\nW4,4,A,2\n";
+            final var file = new MockMultipartFile(
+                    "file", "categories.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
+            when(csvFacade.mapSingleRow(any()))
+                    .thenThrow(new UnknownCategoryException(List.of("Z")))
+                    .thenReturn(new Question())
+                    .thenThrow(new UnknownCategoryException(List.of("", "AA")))
+                    .thenReturn(new Question());
+
+            assertThatThrownBy(() -> csvParser.parse(file))
+                    .isInstanceOf(InvalidCsvException.class)
+                    .hasMessage("Invalid CSV file: line 2: unknown category 'Z'; line 5: unknown category ''; "
+                            + "line 5: unknown category 'AA'. " + QuestionCSVTestData.ALLOWED_CATEGORIES);
+            verify(csvFacade, times(4)).mapSingleRow(any());
         }
 
         @Test

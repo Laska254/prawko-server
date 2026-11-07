@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.service;
 
+import org.jspecify.annotations.Nullable;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.CategoryVariant;
 
@@ -24,13 +25,13 @@ public interface ICategoryService {
     /**
      * Parses a comma-separated string of category names and retrieves all matching {@link Category} entities from the repository.
      * <p>
-     * Names that aren't a {@link CategoryVariant} and categories that are not found in the repository will be ignored
-     * and not included in the resulting list.
+     * Every name must be a stored {@link CategoryVariant}, matched exactly. An empty name (an empty or {@code null}
+     * input, or two adjacent commas) is unknown too. All unknown names are reported together.
      * </p>
      *
      * @param input a comma-separated string of category names
-     * @return a list of matching {@link Category} entities
+     * @return the matching {@link Category} entities, in input order
      */
-    List<Category> findAllFromString(String input);
+    List<Category> findAllFromString(@Nullable String input);
 
 }
