@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 class TaskExecutorConfigTest {
 
     private static final long BUSY_MS = 1000;
+    private static final long STOP_PHASE_MS = BUSY_MS / 10;
 
     @Test
     void closingContext_sendQueuedEmail_whenPoolIsBusy() {
@@ -36,7 +37,7 @@ class TaskExecutorConfigTest {
                 // a stop phase shorter than BUSY_MS, so only await-termination keeps the queued email
                 .run("--server.port=0",
                         "--spring.datasource.url=jdbc:h2:mem:shutdown",
-                        "--spring.lifecycle.timeout-per-shutdown-phase=100ms")) {
+                        "--spring.lifecycle.timeout-per-shutdown-phase=" + STOP_PHASE_MS + "ms")) {
             context.getBean(UserRepository.class).save(user);
             final var taskExecutor = context.getBean(TaskExecutionAutoConfiguration.APPLICATION_TASK_EXECUTOR_BEAN_NAME,
                     ThreadPoolTaskExecutor.class);
