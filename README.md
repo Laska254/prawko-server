@@ -470,8 +470,9 @@ separately in every instance, and queued emails are kept in the memory of the in
 
 On `SIGTERM` the application stops taking requests and finishes the ones in progress for up to 30 seconds
 (`spring.lifecycle.timeout-per-shutdown-phase`), then sends the queued emails for up to another 30 seconds
-(`spring.task.execution.shutdown.await-termination-period`). Emails still queued after that are lost, the user can
-request another one after the cooldown.
+(`spring.task.execution.shutdown.await-termination-period`). Emails still queued after that are lost. Reset and
+verification emails can be requested again after the cooldown, an email change by repeating it; a lost identity notice
+is not sent again.
 
 The stop timeout of the deployment must be longer than both periods together. `docker stop` waits only 10 seconds by
 default, so use e.g. `docker stop -t 70`.

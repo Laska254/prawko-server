@@ -12,6 +12,7 @@ import pl.prawko.prawko_server.service.IPasswordResetService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -32,13 +33,15 @@ class TaskExecutorConfigTest {
                 .profiles("test")
                 .registerShutdownHook(false)
                 .initializers(initialized -> initialized.getBeanFactory().registerSingleton("mailSender", mailSender))
-                .run("--server.port=0", "--spring.datasource.url=jdbc:h2:mem:shutdown")) {
+                // a stop phase shorter than BUSY_MS, so only await-termination keeps the queued email
+                .run("--server.port=0",
+                        "--spring.datasource.url=jdbc:h2:mem:shutdown",
+                        "--spring.lifecycle.timeout-per-shutdown-phase=100ms")) {
             context.getBean(UserRepository.class).save(user);
             final var taskExecutor = context.getBean(TaskExecutionAutoConfiguration.APPLICATION_TASK_EXECUTOR_BEAN_NAME,
                     ThreadPoolTaskExecutor.class);
-            for (int thread = 0; thread < taskExecutor.getMaxPoolSize(); thread++) {
-                taskExecutor.execute(TaskExecutorConfigTest::stayBusy);
-            }
+            IntStream.range(0, taskExecutor.getMaxPoolSize())
+                    .forEach(thread -> taskExecutor.execute(TaskExecutorConfigTest::stayBusy));
             context.getBean(IPasswordResetService.class).requestReset(user.getEmail());
         }
         verify(mailSender).send(any(SimpleMailMessage.class));
