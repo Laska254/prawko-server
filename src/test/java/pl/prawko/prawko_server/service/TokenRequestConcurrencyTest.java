@@ -19,6 +19,7 @@ import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
+import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
 import pl.prawko.prawko_server.service.implementation.PasswordResetService;
 import pl.prawko.prawko_server.test_data.UserTestData;
 
@@ -34,12 +35,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
- * Runs {@link PasswordResetService} in real transactions, letting a concurrent request commit right after its lookup.
+ * Runs the services that issue emailed tokens ({@link PasswordResetService}, {@link EmailVerificationService}) in real
+ * transactions, letting a concurrent request commit right after their lookup by email.
  */
 @DataJpaTest
 @ActiveProfiles("test")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-class PasswordResetServiceConcurrencyTest {
+class TokenRequestConcurrencyTest {
 
     private final MailSender mailSender = mock(MailSender.class);
 
@@ -49,14 +51,19 @@ class PasswordResetServiceConcurrencyTest {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
-    private PasswordResetService service;
+    private PasswordResetService passwordResetService;
+
+    private EmailVerificationService emailVerificationService;
 
     @BeforeEach
     void setUp() {
-        service = new PasswordResetService(repository, mock(PasswordEncoder.class),
+        passwordResetService = new PasswordResetService(repository, mock(PasswordEncoder.class),
                 mock(IRefreshTokenService.class), mailSender, UserTestData.PASSWORD_RESET_URL,
                 UserTestData.PASSWORD_RESET_TOKEN_VALIDITY, UserTestData.PASSWORD_RESET_COOLDOWN, TestUtils.MAIL_FROM,
                 TestUtils.CLOCK);
+        emailVerificationService = new EmailVerificationService(repository, mailSender,
+                UserTestData.EMAIL_VERIFICATION_URL, UserTestData.EMAIL_VERIFICATION_TOKEN_VALIDITY,
+                UserTestData.EMAIL_VERIFICATION_COOLDOWN, TestUtils.MAIL_FROM, TestUtils.CLOCK);
     }
 
     @AfterEach
@@ -70,7 +77,7 @@ class PasswordResetServiceConcurrencyTest {
                 .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
         changeAfterLookup(pippin, user -> user.removeIdentity(IdentityProvider.GOOGLE));
 
-        service.requestReset(pippin.getEmail());
+        passwordResetService.requestReset(pippin.getEmail());
 
         assertThat(repository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isEmpty();
         assertThat(repository.findById(pippin.getId()))
@@ -81,15 +88,28 @@ class PasswordResetServiceConcurrencyTest {
     @Test
     void requestReset_keepNewPasswordAndSendNoMail_whenPasswordIsChangedConcurrently() {
         final var pippin = repository.save(UserTestData.createTestUserPippin());
-        final var newPassword = "newPasswordHash";
-        changeAfterLookup(pippin, user -> user.setPassword(newPassword));
+        changeAfterLookup(pippin, user -> user.setPassword(UserTestData.NEW_PASSWORD_HASH));
 
-        assertThatThrownBy(() -> service.requestReset(pippin.getEmail()))
+        assertThatThrownBy(() -> passwordResetService.requestReset(pippin.getEmail()))
                 .isInstanceOf(ObjectOptimisticLockingFailureException.class);
 
         final var stored = repository.findById(pippin.getId()).orElseThrow();
-        assertThat(stored.getPassword()).isEqualTo(newPassword);
+        assertThat(stored.getPassword()).isEqualTo(UserTestData.NEW_PASSWORD_HASH);
         assertThat(stored.getPasswordResetTokenHash()).isNull();
+        verifyNoInteractions(mailSender);
+    }
+
+    @Test
+    void resendVerification_keepNewPasswordAndSendNoMail_whenPasswordIsChangedConcurrently() {
+        final var pippin = repository.save(UserTestData.createUnverifiedPippin());
+        changeAfterLookup(pippin, user -> user.setPassword(UserTestData.NEW_PASSWORD_HASH));
+
+        assertThatThrownBy(() -> emailVerificationService.resendVerification(pippin.getEmail()))
+                .isInstanceOf(ObjectOptimisticLockingFailureException.class);
+
+        final var stored = repository.findById(pippin.getId()).orElseThrow();
+        assertThat(stored.getPassword()).isEqualTo(UserTestData.NEW_PASSWORD_HASH);
+        assertThat(stored.getVerificationTokenHash()).isEqualTo(pippin.getVerificationTokenHash());
         verifyNoInteractions(mailSender);
     }
 

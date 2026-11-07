@@ -42,10 +42,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class EmailVerificationServiceTest {
 
-    private static final String VERIFICATION_URL = "http://localhost:5173/auth/verify";
-    private static final Duration TOKEN_VALIDITY = Duration.ofHours(24);
-    private static final Duration COOLDOWN = Duration.ofMinutes(1);
-
     @Mock
     private UserRepository repository;
 
@@ -58,7 +54,8 @@ class EmailVerificationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new EmailVerificationService(repository, mailSender, VERIFICATION_URL, TOKEN_VALIDITY, COOLDOWN,
+        service = new EmailVerificationService(repository, mailSender, UserTestData.EMAIL_VERIFICATION_URL,
+                UserTestData.EMAIL_VERIFICATION_TOKEN_VALIDITY, UserTestData.EMAIL_VERIFICATION_COOLDOWN,
                 TestUtils.MAIL_FROM, TestUtils.CLOCK);
     }
 
@@ -73,7 +70,8 @@ class EmailVerificationServiceTest {
             assertThat(tester.getVerificationTokenHash())
                     .isEqualTo(SecureTokens.hash(token))
                     .isNotEqualTo(token);
-            assertThat(tester.getVerificationTokenExpires()).isEqualTo(TestUtils.CLOCK.instant().plus(TOKEN_VALIDITY));
+            assertThat(tester.getVerificationTokenExpires())
+                    .isEqualTo(TestUtils.CLOCK.instant().plus(UserTestData.EMAIL_VERIFICATION_TOKEN_VALIDITY));
             verifyNoInteractions(repository, mailSender);
         }
 
@@ -117,7 +115,7 @@ class EmailVerificationServiceTest {
             assertThat(message.getFrom()).isEqualTo(TestUtils.MAIL_FROM);
             assertThat(message.getTo()).containsExactly(tester.getEmail());
             assertThat(message.getText())
-                    .contains(VERIFICATION_URL + "?token=someToken")
+                    .contains(UserTestData.EMAIL_VERIFICATION_URL + "?token=someToken")
                     .contains("expires in 1d.");
             assertThat(UserTestData.extractToken(message)).isEqualTo("someToken");
         }
@@ -162,7 +160,7 @@ class EmailVerificationServiceTest {
             assertThat(confirmation.getTo()).containsExactly(tester.getEmail());
             assertThat(confirmation.getText())
                     .startsWith("A change of your account's email address to " + newEmail)
-                    .contains(VERIFICATION_URL, "expires in 1d.")
+                    .contains(UserTestData.EMAIL_VERIFICATION_URL, "expires in 1d.")
                     .endsWith("If you didn't request this, don't open the link. "
                             + "Someone else knows your password, so change or reset it, that also cancels the change.")
                     .doesNotContain("someToken");
@@ -193,14 +191,14 @@ class EmailVerificationServiceTest {
 
         @Test
         void returnTrue_whenTokenIssuedWithinCooldown() {
-            issueTokenIssuedAgo(COOLDOWN.minusNanos(1));
+            issueTokenIssuedAgo(UserTestData.EMAIL_VERIFICATION_COOLDOWN.minusNanos(1));
 
             assertThat(service.isCoolingDown(tester)).isTrue();
         }
 
         @Test
         void returnFalse_whenCooldownHasPassed() {
-            issueTokenIssuedAgo(COOLDOWN);
+            issueTokenIssuedAgo(UserTestData.EMAIL_VERIFICATION_COOLDOWN);
 
             assertThat(service.isCoolingDown(tester)).isFalse();
         }
@@ -228,7 +226,7 @@ class EmailVerificationServiceTest {
 
         @Test
         void issueNewToken_whenCooldownHasPassed() {
-            final var oldHash = issueTokenIssuedAgo(COOLDOWN.plusSeconds(1));
+            final var oldHash = issueTokenIssuedAgo(UserTestData.EMAIL_VERIFICATION_COOLDOWN.plusSeconds(1));
             when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
 
             service.resendVerification(tester.getEmail());

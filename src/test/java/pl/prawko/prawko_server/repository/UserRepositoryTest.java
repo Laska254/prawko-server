@@ -331,9 +331,8 @@ class UserRepositoryTest {
         entityManager.clear();
         final var stale = repository.findById(tester.getId()).orElseThrow();
         entityManager.detach(stale);
-        final var newPassword = "newPasswordHash";
         repository.findById(tester.getId())
-                .ifPresent(current -> current.setPassword(newPassword));
+                .ifPresent(current -> current.setPassword(UserTestData.NEW_PASSWORD_HASH));
         repository.flush();
         entityManager.clear();
 
@@ -342,7 +341,7 @@ class UserRepositoryTest {
 
         entityManager.clear();
         final var stored = repository.findById(tester.getId()).orElseThrow();
-        assertThat(stored.getPassword()).isEqualTo(newPassword);
+        assertThat(stored.getPassword()).isEqualTo(UserTestData.NEW_PASSWORD_HASH);
         assertThat(stored.getPasswordResetTokenHash()).isNull();
     }
 

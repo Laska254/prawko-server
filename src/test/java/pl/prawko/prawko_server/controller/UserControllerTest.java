@@ -582,14 +582,14 @@ public class UserControllerTest {
             final var concurrentFirstName = "Paladin";
             final var realMethod = mockingDetails(userRepository).getMockCreationSettings().getDefaultAnswer();
             doAnswer(invocation -> {
-                final var free = realMethod.answer(invocation);
+                final var exists = realMethod.answer(invocation);
                 restClient.patch()
                         .uri(ApiConstants.BY_ID, id)
                         .headers(auth::user)
                         .body(new UserUpdateRequest(concurrentFirstName, null, null, null))
                         .exchange()
                         .expectStatus().isOk();
-                return free;
+                return exists;
             }).when(userRepository).existsByUserNameIgnoreCase(request.userName());
 
             restClient.patch()

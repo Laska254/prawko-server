@@ -293,6 +293,10 @@ invalidates any pending reset or verification links; the username and email can 
 Access: **public** - no authentication, **user** - any signed-in user, **self** - the signed-in user acting on their
 own data (admins may act on any user), **admin** - admins only.
 
+A request that changes a user (e.g. updating or deleting them, verifying an email, changing or resetting the password,
+or a Google or GitHub sign-in that links or verifies the account) returns `409` when it races another change to the
+same user, retry it.
+
 * `/auth`
 
   | Method | Path                    | Access | Description                                                                                    |
@@ -327,8 +331,7 @@ own data (admins may act on any user), **admin** - admins only.
 
   Usernames and emails are unique ignoring case: registering or renaming to one that differs from a taken one only in
   case returns `409`. Users can still change the capitalization of their own username. Emails are stored lowercased,
-  so responses return them lowercased and mails go to the lowercased address. An update racing another change to the
-  same user returns `409`, retry it.
+  so responses return them lowercased and mails go to the lowercased address.
 
 * `/questions`
 
