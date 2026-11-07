@@ -294,8 +294,8 @@ Access: **public** - no authentication, **user** - any signed-in user, **self** 
 own data (admins may act on any user), **admin** - admins only.
 
 A request that changes a user (e.g. updating or deleting them, verifying an email, changing or resetting the password,
-or a Google or GitHub sign-in that links or verifies the account) returns `409` when it races another change to the
-same user, retry it.
+or a Google or GitHub sign-in that verifies the account) returns `409` when it races another change to the same user;
+retry it.
 
 * `/auth`
 
