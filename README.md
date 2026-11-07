@@ -71,8 +71,8 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
 * `application-dev.yaml` - `dev` profile (default), not in the repository - your local connection details for
   development and manual verification, see [Local configuration](#local-configuration). Left out of the JAR, so
   it never ends up in an image.
-* `application-prod.yaml` - `prod` profile: MariaDB, schema updated by Hibernate, Swagger disabled. Holds no
-  credentials - all connection details come from environment variables:
+* `application-prod.yaml` - `prod` profile: MariaDB, schema updated by Hibernate, Swagger disabled, runs behind a
+  [proxy](#deployment). Holds no credentials - all connection details come from environment variables:
     + `DB_URL` e.g. `jdbc:mariadb://localhost:3306/prawko`
     + `DB_USERNAME`
     + `DB_PASSWORD`
@@ -489,3 +489,13 @@ is not sent again.
 
 The stop timeout of the deployment must be longer than both periods together. `docker stop` waits only 10 seconds by
 default, so use e.g. `docker stop -t 70`.
+
+The `prod` profile expects a reverse proxy in front that terminates HTTPS, since the application serves only plain
+HTTP. It trusts the `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host` and `X-Forwarded-Port` headers
+(`server.forward-headers-strategy: native`), so the logs show the client's IP and `Location` headers carry the public
+scheme and host. The proxy must set these headers and append the client's IP to `X-Forwarded-For` (or replace it).
+
+The headers are trusted only from private and loopback addresses (`server.tomcat.remoteip.internal-proxies`), so don't
+expose the application directly. A port published with `docker run -p` may make every client look like it comes from a
+private address, and then any client could set its IP and the `Location` host itself (not tested). Keep the
+application on a network only the proxy can reach, e.g. a Docker network without a published port.
