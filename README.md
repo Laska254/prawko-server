@@ -495,8 +495,14 @@ The `prod` profile expects a reverse proxy in front that terminates HTTPS, since
 HTTP. It trusts the `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host` and `X-Forwarded-Port` headers
 (`server.forward-headers-strategy: native`), so the logs show the client's IP and `Location` headers carry the public
 scheme and host. The proxy must set these headers and append the client's IP to `X-Forwarded-For` (or replace it).
+Requests forwarded as HTTPS count as secure, so the application itself sends
+`Strict-Transport-Security: max-age=31536000 ; includeSubDomains` (Spring Security's default). The proxy shouldn't add
+another one, and every subdomain of the API host must serve HTTPS.
 
-The headers are trusted only from private and loopback addresses (`server.tomcat.remoteip.internal-proxies`), so don't
-expose the application directly. A port published with `docker run -p` may make every client look like it comes from a
-private address, and then any client could set its IP and the `Location` host itself (not tested). Keep the
-application on a network only the proxy can reach, e.g. a Docker network without a published port.
+The headers are trusted only from internal addresses (`server.tomcat.remoteip.internal-proxies`): private
+`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` and `fc00::/7`, loopback `127.0.0.0/8` and `::1`, link-local
+`169.254.0.0/16` and `fe80::/10`, and the shared `100.64.0.0/10` (carrier-grade NAT, Tailscale). So don't expose the
+application directly, also not to a VPN or cloud network in these ranges. A port published with `docker run -p` may
+make every client look like it comes from a private address, and then any client could set its IP and the `Location`
+host itself (not tested). Keep the application on a network only the proxy can reach, e.g. a Docker network without a
+published port.
