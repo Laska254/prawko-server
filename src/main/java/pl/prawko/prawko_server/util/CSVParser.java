@@ -69,10 +69,11 @@ public class CSVParser {
                 }
             }
             if (!problems.isEmpty()) {
-                final var message = "Invalid CSV file: " + String.join("; ", problems)
-                        + ". Allowed: " + ALLOWED_CATEGORIES + ".";
-                log.warn("{} File: '{}'", message, file.getOriginalFilename());
-                throw new InvalidCsvException(message);
+                // only the count: the list is unbounded and echoes raw cell values
+                log.warn("Invalid CSV file: {} unknown categories. File: '{}'",
+                        problems.size(), file.getOriginalFilename());
+                throw new InvalidCsvException("Invalid CSV file: " + String.join("; ", problems)
+                        + ". Allowed: " + ALLOWED_CATEGORIES + ".");
             }
             log.info("Successfully mapped {} questions from file '{}'", questions.size(), file.getOriginalFilename());
             return questions;
