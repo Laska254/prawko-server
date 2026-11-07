@@ -69,7 +69,8 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
   `@ActiveProfiles("test")`). On the test classpath only, so it is not packaged into the JAR. In-memory H2 database
   recreated and seeded with `data.sql` (categories and languages).
 * `application-dev.yaml` - `dev` profile (default), not in the repository - your local connection details for
-  development and manual verification, see [Local configuration](#local-configuration).
+  development and manual verification, see [Local configuration](#local-configuration). Left out of the JAR, so
+  it never ends up in an image.
 * `application-prod.yaml` - `prod` profile: MariaDB, schema updated by Hibernate, Swagger disabled. Holds no
   credentials - all connection details come from environment variables:
     + `DB_URL` e.g. `jdbc:mariadb://localhost:3306/prawko`
@@ -109,10 +110,13 @@ Run with Docker (after `./mvnw package`)
 
 `docker build -t prawko-server .`
 
-`docker run -p 8080:8080 prawko-server`
+`docker run -p 8080:8080 -v "$PWD/src/main/resources/application-dev.yaml:/config/application-dev.yaml:ro" -e SPRING_CONFIG_ADDITIONAL_LOCATION=file:/config/ prawko-server`
 
-With no profile the image falls back to `dev`, whose config only a local build packages, so a released image exits
-with status 1. For `prod`, set it at runtime and mount the media directory as a volume, e.g.
+With no profile the image falls back to `dev`, whose config isn't in the image, so without the mounted file it exits
+with status 1. Inside the container `localhost` is the container itself, so it can't reach Mailpit on `localhost:1025`.
+Put both containers on one network instead: `docker network create prawko`, start Mailpit with
+`--network prawko --name mailpit` and the application with `--network prawko -e SPRING_MAIL_HOST=mailpit`. For `prod`,
+set the profile at runtime and mount the media directory as a volume, e.g.
 `docker run -p 8080:8080 -v /srv/prawko/media:/media -e SPRING_PROFILES_ACTIVE=prod -e MEDIA_DIRECTORY=/media ... prawko-server`.
 The container runs as UID 1000, which must be able to read the files in the volume.
 
