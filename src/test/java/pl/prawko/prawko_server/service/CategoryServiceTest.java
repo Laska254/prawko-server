@@ -1,7 +1,6 @@
 package pl.prawko.prawko_server.service;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,6 +19,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -70,20 +70,20 @@ class CategoryServiceTest {
         when(repository.findByName(CategoryVariant.T)).thenReturn(Optional.empty());
         when(repository.findByName(category.getName())).thenReturn(Optional.of(category));
 
-        assertThatThrownBy(() -> service.findAllFromString("Z,T,,b,B,"))
-                .asInstanceOf(InstanceOfAssertFactories.throwable(UnknownCategoryException.class))
-                .extracting(UnknownCategoryException::getNames)
-                .isEqualTo(List.of("Z", "T", "", "b", ""));
+        final var exception = catchThrowableOfType(UnknownCategoryException.class,
+                () -> service.findAllFromString("Z,T,,b,B,"));
+
+        assertThat(exception.getNames()).isEqualTo(List.of("Z", "T", "", "b", ""));
         verifyNoMoreInteractions(repository);
     }
 
     @ParameterizedTest
     @NullAndEmptySource
     void findAllFromString_throwUnknownCategory_whenInputIsNullOrEmpty(final String input) {
-        assertThatThrownBy(() -> service.findAllFromString(input))
-                .asInstanceOf(InstanceOfAssertFactories.throwable(UnknownCategoryException.class))
-                .extracting(UnknownCategoryException::getNames)
-                .isEqualTo(List.of(""));
+        final var exception = catchThrowableOfType(UnknownCategoryException.class,
+                () -> service.findAllFromString(input));
+
+        assertThat(exception.getNames()).isEqualTo(List.of(""));
         verifyNoInteractions(repository);
     }
 

@@ -56,22 +56,18 @@ public class CSVParser {
                     .readerFor(QuestionCSV.class)
                     .with(csvSchema)
                     .readValues(reader);
-            final var rows = new ArrayList<Row>();
-            while (csvRows.hasNextValue()) {
-                // after hasNextValue the location is the record's first line, also for multi-line quoted values
-                rows.add(new Row(csvRows.currentLocation().getLineNr(), csvRows.nextValue()));
-            }
-            log.info("Parsed {} rows from file '{}'", rows.size(), file.getOriginalFilename());
             final var questions = new ArrayList<Question>();
             final var problems = new ArrayList<String>();
-            rows.forEach(row -> {
+            while (csvRows.hasNextValue()) {
+                // after hasNextValue the location is the record's first line, also for multi-line quoted values
+                final var line = csvRows.currentLocation().getLineNr();
                 try {
-                    questions.add(csvFacade.mapSingleRow(row.value()));
+                    questions.add(csvFacade.mapSingleRow(csvRows.nextValue()));
                 } catch (final UnknownCategoryException exception) {
                     exception.getNames()
-                            .forEach(name -> problems.add("line " + row.line() + ": unknown category '" + name + "'"));
+                            .forEach(name -> problems.add("line " + line + ": unknown category '" + name + "'"));
                 }
-            });
+            }
             if (!problems.isEmpty()) {
                 final var message = "Invalid CSV file: " + String.join("; ", problems)
                         + ". Allowed: " + ALLOWED_CATEGORIES + ".";
@@ -106,9 +102,6 @@ public class CSVParser {
         final var path = exception.getPath();
         final var column = path.isEmpty() ? "" : " in column '" + path.getLast().getPropertyName() + "'";
         return "Invalid CSV file" + line + column + ": " + exception.getOriginalMessage();
-    }
-
-    private record Row(long line, QuestionCSV value) {
     }
 
 }

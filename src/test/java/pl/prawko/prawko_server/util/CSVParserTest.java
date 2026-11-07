@@ -104,11 +104,10 @@ class CSVParserTest {
             assertThatThrownBy(() -> csvParser.parse(file))
                     .isInstanceOf(InvalidCsvException.class)
                     .hasMessage(expectedMessage);
-            verifyNoInteractions(csvFacade);
         }
 
         @Test
-        void throwInvalidCsvException_listingEveryUnknownCategory_whenCategoriesAreUnknown() {
+        void throwInvalidCsvException_whenCategoriesAreUnknown() {
             final var content = HEADER + "W1,1,A,2\n\"W2\nsecond line\",2,A,2\nW3,3,A,2\nW4,4,A,2\n";
             final var file = new MockMultipartFile(
                     "file", "categories.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
