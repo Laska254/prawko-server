@@ -51,8 +51,8 @@ class LoggingFilterTest {
                 .expectStatus().isOk();
 
         assertThat(output)
-                .contains("status=200", "user=" + tester.getId(), "User with id '" + tester.getId() + "' logged successfully.")
-                .doesNotContain(tester.getUserName(), tester.getEmail());
+                .contains("status=200", "user=" + tester.getId())
+                .doesNotContain(tester.getUserName(), tester.getEmail(), "logged successfully");
     }
 
     @Test

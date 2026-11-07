@@ -20,6 +20,7 @@
     + [Exam statistics](#exam-statistics)
     + [Pagination](#pagination)
 * [Emails (Mailpit)](#emails-mailpit)
+* [Deployment](#deployment)
 
 ---
 
@@ -110,8 +111,10 @@ Run with Docker (after `./mvnw package`)
 
 `docker run -p 8080:8080 prawko-server`
 
-In the `prod` profile mount the media directory as a volume, e.g.
-`docker run -p 8080:8080 -v /srv/prawko/media:/media -e MEDIA_DIRECTORY=/media ... prawko-server`.
+With no profile the image falls back to `dev`, whose config only a local build packages, so a released image exits
+with status 1. For `prod`, set it at runtime and mount the media directory as a volume, e.g.
+`docker run -p 8080:8080 -v /srv/prawko/media:/media -e SPRING_PROFILES_ACTIVE=prod -e MEDIA_DIRECTORY=/media ... prawko-server`.
+The container runs as UID 1000, which must be able to read the files in the volume.
 
 ### Local configuration
 
@@ -155,6 +158,24 @@ media:
 To use a local MariaDB instead, replace the datasource, e.g. `url: jdbc:mariadb://localhost:3306/prawko` with your
 username and password, and set `spring.jpa.hibernate.ddl-auto` to `update` (`data.sql` is then not run - seed
 categories and languages once manually).
+
+To test [signing in with Google](#authentication) locally, create an OAuth client ID of type *Web application* in the
+[Google Cloud console](https://console.cloud.google.com/apis/credentials). Under *Authorized JavaScript origins* add the
+client's origin, for prawko-web both `http://localhost` and `http://localhost:5173`. Add the ID to
+`application-dev.yaml` (`GOOGLE_CLIENT_IDS` is only read in `prod`) and restart the application:
+
+```yaml
+google:
+  client-ids: <client-id>.apps.googleusercontent.com
+```
+
+A made-up token then answers `401`; `404` means the ID isn't configured:
+
+`curl -i -X POST http://localhost:8080/auth/google -H 'Content-Type: application/json' -d '{"idToken":"x"}'`
+
+A real token needs a client: set the same ID as `VITE_GOOGLE_CLIENT_ID` in prawko-web's `.env.development.local` and use
+the Google button on its `/auth` page. While the app's consent screen is in *Testing* status, only its test users can
+sign in.
 
 ---
 
@@ -313,10 +334,13 @@ own data (admins may act on any user), **admin** - admins only.
 
   | Method | Path                                                | Access | Description                                                                                               |
   |--------|-----------------------------------------------------|--------|-----------------------------------------------------------------------------------------------------------|
-  | `POST` | `/questions`                                        | admin  | upload a CSV file (`file` multipart part, max 5MB) with questions                                         |
+  | `POST` | `/questions`                                        | admin  | upload a CSV file (`file` multipart part, max 5MB, `413` above it) with questions                         |
   | `GET`  | `/questions`                                        | admin  | get a page of questions                                                                                   |
   | `GET`  | `/questions/random?category={category}&type={type}` | user   | random question for practice, with answers' `correct` flag; `category` and `type` are random when missing |
   | `GET`  | `/questions/{id}`                                   | user   | get a question; answers' `correct` flag is included only for admins                                       |
+
+  An upload over about 20MB (`server.tomcat.max-swallow-size`) loses the connection instead of getting the `413`, so a
+  rejected request can't hold a thread until an arbitrarily large body is read.
 
   Hiding the `correct` flag (here and on active exams) only keeps it out of those views, it isn't a security boundary:
   the question bank is public and `GET /questions/random` includes the flag for practice.
@@ -376,7 +400,7 @@ cross-origin scripts via CORS) to show the remaining time correctly.
 
 | Status | When                                                                                                                         |
 |--------|------------------------------------------------------------------------------------------------------------------------------|
-| `400`  | `answerId` or the body is missing (answers only), or the exam ID is not positive                                             |
+| `400`  | `answerId` is missing or the body is missing or malformed (answers only), or the exam ID is not positive                     |
 | `403`  | the exam belongs to another user                                                                                             |
 | `404`  | the exam doesn't exist, or the answer doesn't belong to any of its questions                                                 |
 | `409`  | the exam is no longer `active` or its time has expired (answers only), or it was modified by a concurrent request - retry it |
@@ -437,3 +461,19 @@ Reset, verification and identity notice emails are processed in the background o
 (`spring.task.execution.pool.*`: 8 threads, 100 queued). When it's full, `/auth/password/forgot`, `/auth/verify/resend`,
 `/users` (registration), email changes with `PATCH /users/{id}`, `POST`/`DELETE /users/me/identities/*` and a first
 `/auth/google` sign-in that links an account to a user with other linked accounts answer `503`.
+
+---
+
+## Deployment
+
+Run a single instance. Scheduled jobs (expiring exams, deleting unverified accounts and old refresh tokens) run
+separately in every instance, and queued emails are kept in the memory of the instance that queued them.
+
+On `SIGTERM` the application stops taking requests and finishes the ones in progress for up to 30 seconds
+(`spring.lifecycle.timeout-per-shutdown-phase`), then sends the queued emails for up to another 30 seconds
+(`spring.task.execution.shutdown.await-termination-period`). Emails still queued after that are lost. Reset and
+verification emails can be requested again after the cooldown, an email change by repeating it; a lost identity notice
+is not sent again.
+
+The stop timeout of the deployment must be longer than both periods together. `docker stop` waits only 10 seconds by
+default, so use e.g. `docker stop -t 70`.

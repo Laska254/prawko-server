@@ -1,5 +1,10 @@
 server:
   port: 8080
+  tomcat:
+    # a rejected upload is read up to this size, so the client gets the 413 instead of losing the connection;
+    # over it the connection is still lost, the cap limits how long a rejected request can hold a thread.
+    # Keep it above spring.servlet.multipart.max-request-size (twice that here).
+    max-swallow-size: 20MB
 
 spring:
   application:
@@ -27,6 +32,9 @@ spring:
         core-size: 8
         max-size: 8
         queue-capacity: 100
+      shutdown:
+        await-termination: true
+        await-termination-period: 30s
 
   mail:
     properties:
