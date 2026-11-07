@@ -133,6 +133,21 @@ public class QuestionControllerTest {
         }
 
         @Test
+        void returnBadRequest_whenCategoriesAreUnknown() {
+            final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.UNKNOWN_CATEGORY_CSV_FILE);
+
+            restClient.post()
+                    .headers(auth::admin)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(multipart)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(QuestionCSVTestData.UNKNOWN_CATEGORY_CSV_MESSAGE);
+            assertThat(repository.count()).isZero();
+        }
+
+        @Test
         void returnForbidden_whenNotAdmin() {
             restClient.post()
                     .headers(auth::user)

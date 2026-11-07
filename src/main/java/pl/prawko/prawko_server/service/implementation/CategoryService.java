@@ -1,16 +1,20 @@
 package pl.prawko.prawko_server.service.implementation;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import pl.prawko.prawko_server.exception.UnknownCategoryException;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.repository.CategoryRepository;
 import pl.prawko.prawko_server.service.ICategoryService;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Implementation of {@link ICategoryService} that manages and retrieves {@link Category} entities.
@@ -38,14 +42,24 @@ public class CategoryService implements ICategoryService {
                 .orElseThrow(() -> new EntityNotFoundException("Category '" + name + "' not found."));
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @throws UnknownCategoryException if any name isn't a stored category
+     */
     @Override
-    public List<Category> findAllFromString(final String input) {
+    public List<Category> findAllFromString(@Nullable final String input) {
         log.info("Fetching categories from '{}'", input);
-        return Arrays.stream(input.split(","))
-                .flatMap(name -> CategoryVariant.ofName(name)
+        final var categories = new ArrayList<Category>();
+        final var unknown = new ArrayList<String>();
+        Arrays.stream(Objects.requireNonNullElse(input, "").split(",", -1))
+                .forEach(name -> CategoryVariant.ofName(name)
                         .flatMap(repository::findByName)
-                        .stream())
-                .toList();
+                        .ifPresentOrElse(categories::add, () -> unknown.add(name)));
+        if (!unknown.isEmpty()) {
+            throw new UnknownCategoryException(unknown);
+        }
+        return categories;
     }
 
 }

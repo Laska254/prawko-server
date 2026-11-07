@@ -3,10 +3,12 @@ package pl.prawko.prawko_server.service;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pl.prawko.prawko_server.model.Category;
+import pl.prawko.prawko_server.exception.UnknownCategoryException;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.repository.CategoryRepository;
 import pl.prawko.prawko_server.service.implementation.CategoryService;
@@ -17,6 +19,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -61,15 +65,26 @@ class CategoryServiceTest {
     }
 
     @Test
-    void findAllFromString_skipCategories_whenUnknownOrNotFound() {
+    void findAllFromString_throwUnknownCategory_whenUnknownEmptyOrNotFound() {
         final var category = CategoryTestData.CATEGORY_B;
         when(repository.findByName(CategoryVariant.T)).thenReturn(Optional.empty());
         when(repository.findByName(category.getName())).thenReturn(Optional.of(category));
 
-        final var result = service.findAllFromString("Z,T,B");
+        final var exception = catchThrowableOfType(UnknownCategoryException.class,
+                () -> service.findAllFromString("Z,T,,b,B,"));
 
-        assertThat(result).isEqualTo(List.of(category));
+        assertThat(exception.getNames()).isEqualTo(List.of("Z", "T", "", "b", ""));
         verifyNoMoreInteractions(repository);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    void findAllFromString_throwUnknownCategory_whenInputIsNullOrEmpty(final String input) {
+        final var exception = catchThrowableOfType(UnknownCategoryException.class,
+                () -> service.findAllFromString(input));
+
+        assertThat(exception.getNames()).isEqualTo(List.of(""));
+        verifyNoInteractions(repository);
     }
 
 }
