@@ -107,7 +107,8 @@ public class EmailVerificationService implements IEmailVerificationService {
     /**
      * {@inheritDoc}
      * <p>
-     * Not transactional, so the token is committed before the email goes out.
+     * Not transactional, so the token is committed before the email goes out. If the user is modified concurrently,
+     * saving the token fails, so no email goes out and the user can request another one.
      */
     @Async
     @Override

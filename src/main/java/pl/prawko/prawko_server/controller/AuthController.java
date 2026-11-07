@@ -114,7 +114,8 @@ public class AuthController {
             @ApiResponse(responseCode = "403", description = "Email address is not verified by Google"),
             @ApiResponse(responseCode = "404", description = "Sign-in with Google is not configured"),
             @ApiResponse(responseCode = "409", description = "The user with the email is linked to another Google "
-                    + "account, or Google doesn't host the email, so it can't be linked"),
+                    + "account, or Google doesn't host the email, so it can't be linked, or the user was modified "
+                    + "concurrently"),
             @ApiResponse(responseCode = "503", description = "Google can't be reached or the notice about the user's "
                     + "other linked accounts can't be queued, try again later"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
@@ -142,7 +143,7 @@ public class AuthController {
             @ApiResponse(responseCode = "403", description = "Primary email address is not verified by GitHub"),
             @ApiResponse(responseCode = "404", description = "Sign-in with GitHub is not configured"),
             @ApiResponse(responseCode = "409", description = "A user with the email exists, and GitHub doesn't host "
-                    + "the email, so it can't be linked"),
+                    + "the email, so it can't be linked, or the user was modified concurrently"),
             @ApiResponse(responseCode = "503", description = "GitHub can't be reached or rate limits the app, try "
                     + "again later"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
@@ -247,7 +248,7 @@ public class AuthController {
             @ApiResponse(responseCode = "202",
                     description = "Email change confirmed by this address, awaiting the link sent to the other one"),
             @ApiResponse(responseCode = "400", description = "Invalid argument or invalid/expired token"),
-            @ApiResponse(responseCode = "409", description = "The new email was taken by another user meanwhile"),
+            @ApiResponse(responseCode = "409", description = "The new email was taken by another user meanwhile, or the user was modified concurrently"),
     })
     @PostMapping(ApiConstants.VERIFY_EMAIL)
     public ResponseEntity<Void> verifyEmail(@Valid @RequestBody final VerifyEmailRequest request) {

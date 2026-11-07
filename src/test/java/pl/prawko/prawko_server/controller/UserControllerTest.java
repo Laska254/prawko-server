@@ -60,6 +60,8 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -571,6 +573,38 @@ public class UserControllerTest {
 
     @Nested
     class UpdateUser {
+
+        @Test
+        void returnConflict_whenUserIsUpdatedConcurrently() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var id = tester.getId();
+            final var request = UserTestData.createUserUpdateRequestWithoutEmail();
+            final var concurrentFirstName = "Paladin";
+            final var realMethod = mockingDetails(userRepository).getMockCreationSettings().getDefaultAnswer();
+            doAnswer(invocation -> {
+                final var exists = realMethod.answer(invocation);
+                restClient.patch()
+                        .uri(ApiConstants.BY_ID, id)
+                        .headers(auth::user)
+                        .body(new UserUpdateRequest(concurrentFirstName, null, null, null))
+                        .exchange()
+                        .expectStatus().isOk();
+                return exists;
+            }).when(userRepository).existsByUserNameIgnoreCase(request.userName());
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, id)
+                    .headers(auth::user)
+                    .body(request)
+                    .exchange()
+                    .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(TestUtils.CONCURRENT_MODIFICATION);
+
+            final var stored = userRepository.findById(id).orElseThrow();
+            assertThat(stored.getFirstName()).isEqualTo(concurrentFirstName);
+            assertThat(stored.getUserName()).isEqualTo(tester.getUserName());
+        }
 
         @Test
         void success_whenAdminUpdatesAnotherUserWithoutEmail() {

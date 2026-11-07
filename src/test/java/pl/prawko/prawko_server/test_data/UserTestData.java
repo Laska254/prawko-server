@@ -37,6 +37,10 @@ public class UserTestData {
     public static final String PASSWORD_RESET_URL = "http://localhost:5173/auth/password/reset";
     public static final Duration PASSWORD_RESET_TOKEN_VALIDITY = Duration.ofMinutes(15);
     public static final Duration PASSWORD_RESET_COOLDOWN = Duration.ofMinutes(30);
+    public static final String EMAIL_VERIFICATION_URL = "http://localhost:5173/auth/verify";
+    public static final Duration EMAIL_VERIFICATION_TOKEN_VALIDITY = Duration.ofHours(24);
+    public static final Duration EMAIL_VERIFICATION_COOLDOWN = Duration.ofMinutes(1);
+    public static final String NEW_PASSWORD_HASH = "newPasswordHash";
     public static final String INVALID_RESET_TOKEN = "Password reset token is invalid or expired.";
     public static final String INVALID_VERIFICATION_TOKEN = "Email verification token is invalid or expired.";
     public static final String EMAIL_NOT_VERIFIED = "Email address is not verified.";

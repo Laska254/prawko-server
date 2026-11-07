@@ -37,6 +37,7 @@ public class TestUtils {
     public static final String USERNAME_REQUIRED = "Username is required.";
     public static final String PASSWORD_REQUIRED = "Password is required.";
     public static final String SERVER_BUSY = "Server is busy, try again later.";
+    public static final String CONCURRENT_MODIFICATION = "Resource was modified concurrently, try again.";
 
     public static final String MAIL_FROM = "no-reply@prawko.local";
     public static final String MAIL_FAILURE = "SMTP down";
