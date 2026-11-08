@@ -179,6 +179,8 @@ class RefreshTokenServiceTest {
             stubRevokedToken(NOW.minus(RefreshTokenTestData.REUSE_GRACE));
 
             assertReused();
+
+            verify(repository, never()).revokeIfActive(anyLong(), any());
         }
 
         @Test
