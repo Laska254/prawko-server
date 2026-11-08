@@ -92,6 +92,15 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
 
   `data.sql` is not run in `prod` - seed categories and languages once manually.
 
+  No endpoint assigns the `ADMIN` role, and `POST /questions` requires it. To create the first admin, register an
+  account, verify its email and set the role in the database (emails are stored in lowercase):
+
+  ```sql
+  UPDATE `user` SET role = 'ADMIN' WHERE email = 'admin@example.com';
+  ```
+
+  The role is in the access token, so it applies after signing in again or refreshing.
+
 Select the profile with `SPRING_PROFILES_ACTIVE=<profile>` or `--spring.profiles.active=<profile>`.
 
 Test (unit and integration tests, coverage check, javadoc)
