@@ -34,6 +34,7 @@
 
 * Java 21
 * Docker (optional, to catch emails locally with [Mailpit](#emails-mailpit))
+* ffmpeg (optional, to [convert question videos](#endpoints))
 
 Maven doesn't have to be installed - the repository includes the Maven Wrapper (`./mvnw`, `mvnw.cmd` on Windows).
 
@@ -42,6 +43,8 @@ Maven doesn't have to be installed - the repository includes the Maven Wrapper (
 `sudo apt install openjdk-21-jdk`
 
 `sudo apt install docker.io`
+
+`sudo apt install ffmpeg`
 
 To run `docker` without `sudo`, add yourself to the `docker` group and log out and back in (the group grants
 root-equivalent access):
@@ -390,6 +393,11 @@ retry it.
   changes `media.base-url`. To add media, put the file into the media directory under the name from the `Media` column
   of the imported question CSV - except `.wmv` videos: the import renames them to `.webm`, so convert them to WebM and
   store them as `<name>.webm`.
+
+  The question bank's videos are `.wmv`, which Android and most browsers can't play, so the CSV import stores their
+  names as `.webm`. Convert the files once (VP9 + Opus, originals are kept, converted videos are skipped on reruns):
+
+  `scripts/convert-videos.sh <media directory>`
 
 `POST` endpoints creating a resource return `201 Created` with its URL in the `Location` header.
 
