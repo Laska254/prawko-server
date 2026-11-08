@@ -29,22 +29,34 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
      * Revokes a refresh token unless it's already revoked. Atomic, so of concurrent requests using the same token
      * only one succeeds.
      *
-     * @param id the ID of the refresh token
-     * @return {@code 1} if the token was revoked by this call, {@code 0} if it already was
+     * @param id        the ID of the refresh token
+     * @param revokedAt the time the token is revoked at
+     * @return {@code 1} if the token was revoked by this call, {@code 0} if it already was or doesn't exist
      */
     @Modifying
-    @Query("UPDATE RefreshToken t SET t.revoked = true WHERE t.id = :id AND t.revoked = false")
-    int revokeIfActive(final long id);
+    @Query("UPDATE RefreshToken t SET t.revokedAt = :revokedAt WHERE t.id = :id AND t.revokedAt IS NULL")
+    int revokeIfActive(final long id, final Instant revokedAt);
 
     /**
-     * Revokes all refresh tokens of a user.
+     * Revokes all active refresh tokens of a user. Tokens revoked before keep their revocation time.
      *
-     * @param userId the ID of the user owning the tokens
+     * @param userId    the ID of the user owning the tokens
+     * @param revokedAt the time the tokens are revoked at
      * @return the number of revoked tokens
      */
     @Modifying
-    @Query("UPDATE RefreshToken t SET t.revoked = true WHERE t.user.id = :userId AND t.revoked = false")
-    int revokeAllByUserId(final long userId);
+    @Query("UPDATE RefreshToken t SET t.revokedAt = :revokedAt WHERE t.user.id = :userId AND t.revokedAt IS NULL")
+    int revokeAllByUserId(final long userId, final Instant revokedAt);
+
+    /**
+     * Links a refresh token to the token issued in its place.
+     *
+     * @param id        the ID of the replaced refresh token
+     * @param successor the refresh token issued in its place
+     */
+    @Modifying
+    @Query("UPDATE RefreshToken t SET t.replacedBy = :successor WHERE t.id = :id")
+    void setReplacedBy(final long id, final RefreshToken successor);
 
     /**
      * Deletes a refresh token by the token's hash.

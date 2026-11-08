@@ -12,6 +12,7 @@ public class RefreshTokenTestData {
     public static final String TOKEN = "refreshToken";
     public static final String INVALID_REFRESH_TOKEN = "Refresh token is invalid, expired or revoked.";
     public static final Duration VALIDITY = Duration.ofDays(30);
+    public static final Duration REUSE_GRACE = Duration.ofSeconds(30);
 
     private RefreshTokenTestData() {
     }

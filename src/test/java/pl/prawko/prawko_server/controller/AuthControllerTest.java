@@ -103,6 +103,9 @@ public class AuthControllerTest {
     @Value("${access-token.validity}")
     private Duration accessTokenValidity;
 
+    @Value("${refresh-token.reuse-grace}")
+    private Duration reuseGrace;
+
     @LocalServerPort
     private int port;
 
@@ -318,25 +321,63 @@ public class AuthControllerTest {
     }
 
     @Test
-    void refresh_returnUnauthorized_whenRefreshTokenIsUsedTwice() {
+    void refresh_returnNewTokensKeepingOtherClients_whenUsedTokenIsRetriedWithinGracePeriod() {
         userRepository.save(UserTestData.createTestUserPippin());
+        final var otherClient = login();
         final var signedIn = login();
         refreshTokens(signedIn.refreshToken());
 
-        assertRefreshUnauthorized(signedIn.refreshToken());
+        final var retried = refreshTokens(signedIn.refreshToken());
+
+        getMe(retried.accessToken())
+                .expectStatus().isOk();
+        refreshTokens(retried.refreshToken());
+        refreshTokens(otherClient.refreshToken());
     }
 
     @Test
-    void refresh_revokeAllRefreshTokensOfUser_whenUsedTokenIsReused() {
+    void refresh_revokeAllRefreshTokensOfUser_whenUsedTokenIsReusedAfterGracePeriod() {
         userRepository.save(UserTestData.createTestUserPippin());
         final var otherClient = login();
         final var signedIn = login();
         final var refreshed = refreshTokens(signedIn.refreshToken());
+        final var token = refreshTokenRepository.findByTokenHash(SecureTokens.hash(signedIn.refreshToken()))
+                .orElseThrow();
+        refreshTokenRepository.save(token.setRevokedAt(Instant.now().minus(reuseGrace)));
 
         assertRefreshUnauthorized(signedIn.refreshToken());
 
         assertRefreshUnauthorized(refreshed.refreshToken());
         assertRefreshUnauthorized(otherClient.refreshToken());
+    }
+
+    @Test
+    void refresh_revokeAllRefreshTokensOfUser_whenUsedTokenIsReusedAfterSuccessorWasUsed() {
+        userRepository.save(UserTestData.createTestUserPippin());
+        final var otherClient = login();
+        final var signedIn = login();
+        final var refreshed = refreshTokens(signedIn.refreshToken());
+        final var refreshedAgain = refreshTokens(refreshed.refreshToken());
+
+        assertRefreshUnauthorized(signedIn.refreshToken());
+
+        assertRefreshUnauthorized(refreshedAgain.refreshToken());
+        assertRefreshUnauthorized(otherClient.refreshToken());
+    }
+
+    @Test
+    void refresh_revokeAllRefreshTokensOfUser_whenSuccessorReplacedByRetryIsUsed() {
+        userRepository.save(UserTestData.createTestUserPippin());
+        final var otherClient = login();
+        final var signedIn = login();
+        final var refreshed = refreshTokens(signedIn.refreshToken());
+        final var retried = refreshTokens(signedIn.refreshToken());
+
+        assertRefreshUnauthorized(refreshed.refreshToken());
+
+        assertRefreshUnauthorized(retried.refreshToken());
+        assertRefreshUnauthorized(otherClient.refreshToken());
+        assertRefreshUnauthorized(signedIn.refreshToken());
     }
 
     @Test

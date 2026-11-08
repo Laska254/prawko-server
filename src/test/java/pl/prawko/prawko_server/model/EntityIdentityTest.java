@@ -116,10 +116,14 @@ class EntityIdentityTest {
 
     @Test
     void toString_excludeTokenHash_whenRefreshTokenHasUser() {
-        final var token = new RefreshToken().setId(3).setTokenHash("secret-hash").setUser(new User().setId(1));
+        final var token = new RefreshToken()
+                .setId(3)
+                .setTokenHash("secret-hash")
+                .setUser(new User().setId(1))
+                .setReplacedBy(new RefreshToken().setId(5));
 
         assertThat(token.toString())
-                .contains("id=3", "user=1")
+                .contains("id=3", "user=1", "replacedBy=5")
                 .doesNotContain("secret-hash");
     }
 
