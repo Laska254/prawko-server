@@ -1215,7 +1215,11 @@ public class UserControllerTest {
             final var tester = userRepository.save(UserTestData.createGooglePippin());
             final var authClient = TestUtils.createRestTestClient(port, ApiConstants.AUTH_BASE_URL);
 
-            deleteOwnAccount(UserTestData.createValidDeleteAccountRequest())
+            restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.ME)
+                    .headers(auth::user)
+                    .body(UserTestData.createValidDeleteAccountRequest())
+                    .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
@@ -1234,7 +1238,11 @@ public class UserControllerTest {
                     .exchange()
                     .expectStatus().isNoContent();
 
-            deleteOwnAccount(new DeleteAccountRequest(reset.newPassword()))
+            restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.ME)
+                    .headers(auth::user)
+                    .body(new DeleteAccountRequest(reset.newPassword()))
+                    .exchange()
                     .expectStatus().isNoContent();
 
             assertThat(userRepository.existsById(tester.getId())).isFalse();
@@ -1271,14 +1279,6 @@ public class UserControllerTest {
                     .body(UserTestData.createValidDeleteAccountRequest())
                     .exchange()
                     .expectStatus().isUnauthorized();
-        }
-
-        private RestTestClient.ResponseSpec deleteOwnAccount(final DeleteAccountRequest request) {
-            return restClient.method(HttpMethod.DELETE)
-                    .uri(ApiConstants.ME)
-                    .headers(auth::user)
-                    .body(request)
-                    .exchange();
         }
 
     }
