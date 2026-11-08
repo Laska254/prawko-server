@@ -289,6 +289,12 @@ class UserRepositoryTest {
     }
 
     @Test
+    void existsByUserNameIgnoreCase_returnFalse_whenUserNameDiffersOnlyInAccents() {
+        final var result = repository.existsByUserNameIgnoreCase("pìppín");
+        assertThat(result).isFalse();
+    }
+
+    @Test
     void saveAndFlush_throwDataIntegrityViolationHandledAsConflict_whenUserNameIsTaken() {
         final var merry = UserTestData.createMerry().setUserName(tester.getUserName());
 

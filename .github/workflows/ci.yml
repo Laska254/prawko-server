@@ -23,8 +23,11 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      # Deactivates the Testcontainers skip without Docker, so the MariaDB tests fail here instead of being skipped
       - name: Compile & run tests
-        run: mvn --batch-mode clean verify
+        run: >-
+          mvn --batch-mode clean verify
+          -Djunit.jupiter.conditions.deactivate=org.testcontainers.junit.jupiter.TestcontainersExtension
 
       - name: Upload test reports
         if: always()

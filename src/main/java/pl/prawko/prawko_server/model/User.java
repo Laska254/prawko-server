@@ -58,7 +58,8 @@ import java.util.Locale;
  * </ul>
  * The entity is mapped to the database table {@code user}. The unique constraints on the username and email are named
  * {@value #USER_NAME_CONSTRAINT} and {@value #EMAIL_CONSTRAINT}. The database's collation decides whether the username
- * constraint ignores case (MariaDB's default does, H2 doesn't); the services check it ignoring case either way.
+ * constraint ignores case and accents (MariaDB's default ignores both, H2 neither); the services check it ignoring case
+ * either way, and accents as the collation does.
  * Emails, including the pending one, are lowercased by their setters, so their constraint behaves the same everywhere.
  * The {@code version} is an optimistic lock, so concurrent changes fail instead of overwriting each other. Linking or
  * unlinking an identity alone doesn't change it.

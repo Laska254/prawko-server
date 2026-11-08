@@ -33,7 +33,7 @@
 ## Prerequisites
 
 * Java 21
-* Docker (optional, to catch emails locally with [Mailpit](#emails-mailpit))
+* Docker (optional, to catch emails locally with [Mailpit](#emails-mailpit) and to run the MariaDB tests)
 
 Maven doesn't have to be installed - the repository includes the Maven Wrapper (`./mvnw`, `mvnw.cmd` on Windows).
 
@@ -106,6 +106,10 @@ Select the profile with `SPRING_PROFILES_ACTIVE=<profile>` or `--spring.profiles
 Test (unit and integration tests, coverage check, javadoc)
 
 `./mvnw clean verify`
+
+Tests run on H2, except a few on MariaDB (`mariadb:11.8` with Testcontainers) for what depends on the database: the
+constraint names behind the `409` details and the collation of usernames and emails. Without Docker they are skipped
+locally; CI runs them and fails without Docker.
 
 Build with Maven
 
@@ -351,7 +355,9 @@ retry it.
   | `DELETE` | `/users/{id}`                 | admin  | delete a user with their exams                                                                       |
 
   Usernames and emails are unique ignoring case: registering or renaming to one that differs from a taken one only in
-  case returns `409`. Users can still change the capitalization of their own username. Emails are stored lowercased,
+  case returns `409`. Users can still change the capitalization of their own username. On MariaDB with its default
+  collation (`utf8mb4_uca1400_ai_ci`, accent-insensitive) the same applies to accents: `żaba` conflicts with `zaba`.
+  H2, used locally and in most tests, tells them apart. Emails are stored lowercased,
   so responses return them lowercased and mails go to the lowercased address.
 
 * `/questions`
