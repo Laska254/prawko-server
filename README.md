@@ -71,8 +71,8 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
 * `application-dev.yaml` - `dev` profile (default), not in the repository - your local connection details for
   development and manual verification, see [Local configuration](#local-configuration). Left out of the JAR, so
   it never ends up in an image.
-* `application-prod.yaml` - `prod` profile: MariaDB, schema updated by Hibernate, Swagger disabled. Holds no
-  credentials - all connection details come from environment variables:
+* `application-prod.yaml` - `prod` profile: MariaDB, schema updated by Hibernate, Swagger disabled, runs behind a
+  [proxy](#deployment). Holds no credentials - all connection details come from environment variables:
     + `DB_URL` e.g. `jdbc:mariadb://localhost:3306/prawko`
     + `DB_USERNAME`
     + `DB_PASSWORD`
@@ -116,8 +116,9 @@ With no profile the image falls back to `dev`, whose config isn't in the image, 
 with status 1. Inside the container `localhost` is the container itself, so it can't reach Mailpit on `localhost:1025`.
 Put both containers on one network instead: `docker network create prawko`, start Mailpit with
 `--network prawko --name mailpit` and the application with `--network prawko -e SPRING_MAIL_HOST=mailpit`. For `prod`,
-set the profile at runtime and mount the media directory as a volume, e.g.
-`docker run -p 8080:8080 -v /srv/prawko/media:/media -e SPRING_PROFILES_ACTIVE=prod -e MEDIA_DIRECTORY=/media ... prawko-server`.
+set the profile at runtime, mount the media directory as a volume and publish no port - put the application on the
+proxy's network instead ([Deployment](#deployment)), e.g.
+`docker run --network prawko -v /srv/prawko/media:/media -e SPRING_PROFILES_ACTIVE=prod -e MEDIA_DIRECTORY=/media ... prawko-server`.
 The container runs as UID 1000, which must be able to read the files in the volume.
 
 ### Local configuration
@@ -489,3 +490,19 @@ is not sent again.
 
 The stop timeout of the deployment must be longer than both periods together. `docker stop` waits only 10 seconds by
 default, so use e.g. `docker stop -t 70`.
+
+The `prod` profile expects a reverse proxy in front that terminates HTTPS, since the application serves only plain
+HTTP. It trusts the `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host` and `X-Forwarded-Port` headers
+(`server.forward-headers-strategy: native`), so the logs show the client's IP and `Location` headers carry the public
+scheme and host. The proxy must set these headers and append the client's IP to `X-Forwarded-For` (or replace it).
+Requests forwarded as HTTPS count as secure, so the application itself sends
+`Strict-Transport-Security: max-age=31536000 ; includeSubDomains` (Spring Security's default). The proxy shouldn't add
+another one, and every subdomain of the API host must serve HTTPS.
+
+The headers are trusted only from internal addresses (`server.tomcat.remoteip.internal-proxies`): private
+`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` and `fc00::/7`, loopback `127.0.0.0/8` and `::1`, link-local
+`169.254.0.0/16` and `fe80::/10`, and the shared `100.64.0.0/10` (carrier-grade NAT, Tailscale). So don't expose the
+application directly, also not to a VPN or cloud network in these ranges. A port published with `docker run -p` may
+make every client look like it comes from a private address, and then any client could set its IP and the `Location`
+host itself (not tested). Keep the application on a network only the proxy can reach, e.g. a Docker network without a
+published port.
