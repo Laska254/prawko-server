@@ -62,7 +62,7 @@ public class RefreshTokenService implements IRefreshTokenService {
     public AuthTokensDto issueTokens(final AuthenticatedUser user) {
         final var refreshToken = SecureTokens.generate();
         save(refreshToken, user.getId());
-        return toDto(user, refreshToken);
+        return issuePair(user, refreshToken);
     }
 
     /**
@@ -141,7 +141,7 @@ public class RefreshTokenService implements IRefreshTokenService {
     private AuthTokensDto replace(final RefreshToken token) {
         final var refreshToken = SecureTokens.generate();
         repository.setReplacedBy(token.getId(), save(refreshToken, token.getUser().getId()));
-        return toDto(AuthenticatedUser.of(token.getUser()), refreshToken);
+        return issuePair(AuthenticatedUser.of(token.getUser()), refreshToken);
     }
 
     private RefreshToken save(final String refreshToken, final long userId) {
@@ -154,7 +154,7 @@ public class RefreshTokenService implements IRefreshTokenService {
         return token;
     }
 
-    private AuthTokensDto toDto(final AuthenticatedUser user, final String refreshToken) {
+    private AuthTokensDto issuePair(final AuthenticatedUser user, final String refreshToken) {
         final var accessToken = accessTokenService.issue(user);
         return new AuthTokensDto(
                 accessToken.getTokenValue(),
