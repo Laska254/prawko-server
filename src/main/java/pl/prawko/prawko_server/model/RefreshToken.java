@@ -8,6 +8,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 
@@ -16,11 +19,14 @@ import java.time.Instant;
  * again.
  * <p>
  * Stored as the SHA-256 hash of the token (never the token itself) with an expiry time. A token is used once: using it
- * revokes it, and the revoked row is kept until it expires, so its reuse can be detected.
+ * revokes it and links it to its successor, and the revoked row is kept until it expires, so its reuse can be detected
+ * and a retry told apart from it.
  * <p>
  * Relationships:
  * <ul>
  *     <li>{@link User}: Each {@code User} can have multiple refresh tokens, one per signed-in client.</li>
+ *     <li>{@code RefreshToken}: A used token points to the token issued in its place. Deleting the successor clears
+ *     the link.</li>
  * </ul>
  * All setters are returning {@code RefreshToken} itself, enabling method chaining.
  * {@link #toString()} leaves out the token hash, so it's safe to log.
@@ -42,7 +48,12 @@ public class RefreshToken {
     @Column(nullable = false)
     private Instant expires;
 
-    private boolean revoked;
+    private Instant revokedAt;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "replaced_by_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private RefreshToken replacedBy;
 
     public long getId() {
         return id;
@@ -80,12 +91,21 @@ public class RefreshToken {
         return this;
     }
 
-    public boolean isRevoked() {
-        return revoked;
+    public Instant getRevokedAt() {
+        return revokedAt;
     }
 
-    public RefreshToken setRevoked(final boolean revoked) {
-        this.revoked = revoked;
+    public RefreshToken setRevokedAt(final Instant revokedAt) {
+        this.revokedAt = revokedAt;
+        return this;
+    }
+
+    public RefreshToken getReplacedBy() {
+        return replacedBy;
+    }
+
+    public RefreshToken setReplacedBy(final RefreshToken replacedBy) {
+        this.replacedBy = replacedBy;
         return this;
     }
 
@@ -110,7 +130,8 @@ public class RefreshToken {
         return "RefreshToken{" +
                 "id=" + id +
                 ", expires=" + expires +
-                ", revoked=" + revoked +
+                ", revokedAt=" + revokedAt +
+                ", replacedBy=" + (replacedBy == null ? null : replacedBy.getId()) +
                 ", user=" + (user == null ? null : user.getId()) +
                 '}';
     }

@@ -18,12 +18,17 @@ import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 
 /**
  * Implementation of {@link IRefreshTokenService} storing refresh tokens as {@link RefreshToken}s.
  * <p>
  * Tokens come from {@link SecureTokens}, only their hash is stored. Every refresh issues a token valid for the full
  * {@code refresh-token.validity}, so a client used regularly stays signed in.
+ * <p>
+ * A used token may be used again within {@code refresh-token.reuse-grace} of its first use, for a client whose
+ * response was lost, as long as its successor was never used. The retry revokes that successor and issues a new one,
+ * so a token has at most one live successor.
  */
 @Service
 public class RefreshTokenService implements IRefreshTokenService {
@@ -35,17 +40,20 @@ public class RefreshTokenService implements IRefreshTokenService {
     private final UserRepository userRepository;
     private final IAccessTokenService accessTokenService;
     private final Duration validity;
+    private final Duration reuseGrace;
     private final Clock clock;
 
     public RefreshTokenService(final RefreshTokenRepository repository,
                                final UserRepository userRepository,
                                final IAccessTokenService accessTokenService,
                                @Value("${refresh-token.validity}") final Duration validity,
+                               @Value("${refresh-token.reuse-grace}") final Duration reuseGrace,
                                final Clock clock) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.accessTokenService = accessTokenService;
         this.validity = validity;
+        this.reuseGrace = reuseGrace;
         this.clock = clock;
     }
 
@@ -53,16 +61,8 @@ public class RefreshTokenService implements IRefreshTokenService {
     @Transactional
     public AuthTokensDto issueTokens(final AuthenticatedUser user) {
         final var refreshToken = SecureTokens.generate();
-        repository.save(new RefreshToken()
-                .setTokenHash(SecureTokens.hash(refreshToken))
-                .setUser(userRepository.getReferenceById(user.getId()))
-                .setExpires(clock.instant().plus(validity)));
-        log.info("Refresh token issued for user with id '{}'.", user.getId());
-        final var accessToken = accessTokenService.issue(user);
-        return new AuthTokensDto(
-                accessToken.getTokenValue(),
-                refreshToken,
-                Duration.between(accessToken.getIssuedAt(), accessToken.getExpiresAt()).toSeconds());
+        save(refreshToken, user.getId());
+        return toDto(user, refreshToken);
     }
 
     /**
@@ -78,19 +78,25 @@ public class RefreshTokenService implements IRefreshTokenService {
                     log.warn("Unknown refresh token used.");
                     return new InvalidRefreshTokenException(INVALID_TOKEN);
                 });
-        final var user = token.getUser();
-        if (!token.getExpires().isAfter(clock.instant())) {
-            log.warn("Expired refresh token of user with id '{}' used.", user.getId());
+        final var userId = token.getUser().getId();
+        final var now = clock.instant();
+        if (!token.getExpires().isAfter(now)) {
+            log.warn("Expired refresh token of user with id '{}' used.", userId);
             throw new InvalidRefreshTokenException(INVALID_TOKEN);
         }
-        if (token.isRevoked() || repository.revokeIfActive(token.getId()) == 0) {
-            final var revoked = repository.revokeAllByUserId(user.getId());
-            log.warn("Revoked refresh token of user with id '{}' reused, revoked their {} active refresh tokens.",
-                    user.getId(), revoked);
-            throw new InvalidRefreshTokenException(INVALID_TOKEN);
+        if (token.getRevokedAt() == null && repository.revokeIfActive(token.getId(), now) == 1) {
+            log.info("Refresh token of user with id '{}' used.", userId);
+            return replace(token);
         }
-        log.info("Refresh token of user with id '{}' used.", user.getId());
-        return issueTokens(AuthenticatedUser.of(user));
+        if (isRetry(token, now) && repository.revokeIfActive(token.getReplacedBy().getId(), now) == 1) {
+            log.info("Refresh token of user with id '{}' used again within the grace period, revoked its successor.",
+                    userId);
+            return replace(token);
+        }
+        final var revoked = repository.revokeAllByUserId(userId, now);
+        log.warn("Revoked refresh token of user with id '{}' reused, revoked their {} active refresh tokens.",
+                userId, revoked);
+        throw new InvalidRefreshTokenException(INVALID_TOKEN);
     }
 
     /**
@@ -124,6 +130,36 @@ public class RefreshTokenService implements IRefreshTokenService {
         if (deleted > 0) {
             log.info("Deleted {} expired refresh tokens.", deleted);
         }
+    }
+
+    private boolean isRetry(final RefreshToken token, final Instant now) {
+        return token.getRevokedAt() != null
+                && token.getRevokedAt().plus(reuseGrace).isAfter(now)
+                && token.getReplacedBy() != null;
+    }
+
+    private AuthTokensDto replace(final RefreshToken token) {
+        final var refreshToken = SecureTokens.generate();
+        repository.setReplacedBy(token.getId(), save(refreshToken, token.getUser().getId()));
+        return toDto(AuthenticatedUser.of(token.getUser()), refreshToken);
+    }
+
+    private RefreshToken save(final String refreshToken, final long userId) {
+        final var token = new RefreshToken()
+                .setTokenHash(SecureTokens.hash(refreshToken))
+                .setUser(userRepository.getReferenceById(userId))
+                .setExpires(clock.instant().plus(validity));
+        repository.save(token);
+        log.info("Refresh token issued for user with id '{}'.", userId);
+        return token;
+    }
+
+    private AuthTokensDto toDto(final AuthenticatedUser user, final String refreshToken) {
+        final var accessToken = accessTokenService.issue(user);
+        return new AuthTokensDto(
+                accessToken.getTokenValue(),
+                refreshToken,
+                Duration.between(accessToken.getIssuedAt(), accessToken.getExpiresAt()).toSeconds());
     }
 
 }

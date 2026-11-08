@@ -57,9 +57,13 @@ class EntityCascadeTest {
     }
 
     @Test
-    void removingUser_removesRefreshTokens() {
-        final var token = RefreshTokenTestData.createRefreshToken(
-                entityManager.find(User.class, user.getId()), RefreshTokenTestData.TOKEN, Instant.now());
+    void removingUser_removesRefreshTokensReplacingEachOther() {
+        final var owner = entityManager.find(User.class, user.getId());
+        final var successor = RefreshTokenTestData.createRefreshToken(owner, "successorToken", Instant.now());
+        entityManager.persist(successor);
+        final var token = RefreshTokenTestData.createRefreshToken(owner, RefreshTokenTestData.TOKEN, Instant.now())
+                .setRevokedAt(Instant.now())
+                .setReplacedBy(successor);
         entityManager.persist(token);
         flushAndClear();
 
@@ -67,6 +71,7 @@ class EntityCascadeTest {
         flushAndClear();
 
         assertThat(entityManager.find(RefreshToken.class, token.getId())).isNull();
+        assertThat(entityManager.find(RefreshToken.class, successor.getId())).isNull();
     }
 
     @Test

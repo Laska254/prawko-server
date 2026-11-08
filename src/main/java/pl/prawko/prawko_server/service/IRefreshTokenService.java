@@ -9,7 +9,8 @@ import pl.prawko.prawko_server.exception.InvalidRefreshTokenException;
  * long-lived refresh token, exchanged for a new pair without signing in again.
  * <p>
  * Refresh tokens are rotated: each can be used once. Using a revoked token again means it leaked, so all refresh
- * tokens of its user are revoked, signing out both the legitimate client and whoever else holds one.
+ * tokens of its user are revoked, signing out both the legitimate client and whoever else holds one. The exception is
+ * a retry shortly after a token's use whose successor was never used, for a client that lost the response.
  */
 public interface IRefreshTokenService {
 
@@ -22,12 +23,13 @@ public interface IRefreshTokenService {
     AuthTokensDto issueTokens(AuthenticatedUser user);
 
     /**
-     * Revokes the refresh token and issues a new pair for its user, with the user's current role.
+     * Revokes the refresh token and issues a new pair for its user, with the user's current role. A token used
+     * shortly before, whose successor was never used, is a retry: its successor is revoked and replaced instead.
      *
      * @param refreshToken the refresh token issued on sign-in or the previous refresh
      * @return the issued token pair
-     * @throws InvalidRefreshTokenException if the token is unknown, expired or revoked; a revoked token also revokes
-     *                                      all refresh tokens of its user
+     * @throws InvalidRefreshTokenException if the token is unknown, expired or revoked and not a retry; a revoked
+     *                                      token also revokes all refresh tokens of its user
      */
     AuthTokensDto refresh(String refreshToken);
 

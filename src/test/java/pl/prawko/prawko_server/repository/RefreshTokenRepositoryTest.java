@@ -14,6 +14,7 @@ import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 class RefreshTokenRepositoryTest {
 
-    private final Instant now = Instant.now();
+    private final Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 
     @Autowired
     private RefreshTokenRepository repository;
@@ -58,25 +59,45 @@ class RefreshTokenRepositoryTest {
     }
 
     @Test
-    void revokeIfActive_revokeOnlyOnce_whenCalledTwice() {
-        assertThat(repository.revokeIfActive(token.getId())).isEqualTo(1);
-        assertThat(repository.revokeIfActive(token.getId())).isZero();
+    void revokeIfActive_revokeOnlyOnceKeepingFirstTime_whenCalledTwice() {
+        assertThat(repository.revokeIfActive(token.getId(), now)).isEqualTo(1);
+        assertThat(repository.revokeIfActive(token.getId(), now.plusSeconds(1))).isZero();
 
-        assertThat(reload(token).isRevoked()).isTrue();
+        assertThat(reload(token).getRevokedAt()).isEqualTo(now);
     }
 
     @Test
     void revokeAllByUserId_revokeOnlyActiveTokensOfUser_whenUserHasTokens() {
         final var revoked = save(tester, "revokedToken", now.plus(RefreshTokenTestData.VALIDITY));
-        repository.revokeIfActive(revoked.getId());
+        repository.revokeIfActive(revoked.getId(), now.minusSeconds(1));
         final var merry = userRepository.save(UserTestData.createMerry());
         final var othersToken = save(merry, "othersToken", now.plus(RefreshTokenTestData.VALIDITY));
 
-        final var result = repository.revokeAllByUserId(tester.getId());
+        final var result = repository.revokeAllByUserId(tester.getId(), now);
 
         assertThat(result).isEqualTo(1);
-        assertThat(reload(token).isRevoked()).isTrue();
-        assertThat(reload(othersToken).isRevoked()).isFalse();
+        assertThat(reload(token).getRevokedAt()).isEqualTo(now);
+        assertThat(reload(revoked).getRevokedAt()).isEqualTo(now.minusSeconds(1));
+        assertThat(reload(othersToken).getRevokedAt()).isNull();
+    }
+
+    @Test
+    void setReplacedBy_linkSuccessor_whenTokenIsReplaced() {
+        final var successor = save(tester, "successorToken", now.plus(RefreshTokenTestData.VALIDITY));
+
+        repository.setReplacedBy(token.getId(), successor);
+
+        assertThat(reload(token).getReplacedBy()).isEqualTo(successor);
+    }
+
+    @Test
+    void deleteByTokenHash_unlinkPredecessor_whenSuccessorIsDeleted() {
+        final var successor = save(tester, "successorToken", now.plus(RefreshTokenTestData.VALIDITY));
+        repository.setReplacedBy(token.getId(), successor);
+
+        repository.deleteByTokenHash(SecureTokens.hash("successorToken"));
+
+        assertThat(reload(token).getReplacedBy()).isNull();
     }
 
     @Test
@@ -98,9 +119,10 @@ class RefreshTokenRepositoryTest {
     }
 
     @Test
-    void deleteAllByUserId_deleteOnlyTokensOfUser_whenRevokedOrNot() {
+    void deleteAllByUserId_deleteOnlyTokensOfUser_whenRevokedOrReplaced() {
         final var revoked = save(tester, "revokedToken", now.plus(RefreshTokenTestData.VALIDITY));
-        repository.revokeIfActive(revoked.getId());
+        repository.revokeIfActive(revoked.getId(), now);
+        repository.setReplacedBy(revoked.getId(), token);
         final var merry = userRepository.save(UserTestData.createMerry());
         final var othersToken = save(merry, "othersToken", now.plus(RefreshTokenTestData.VALIDITY));
 
@@ -111,10 +133,11 @@ class RefreshTokenRepositoryTest {
     }
 
     @Test
-    void deleteExpiredBefore_deleteOnlyExpiredTokens_whenRevokedOrNot() {
-        save(tester, "expiredToken", now.minus(Duration.ofMinutes(1)));
+    void deleteExpiredBefore_deleteOnlyExpiredTokens_whenRevokedOrReplaced() {
+        final var expired = save(tester, "expiredToken", now.minus(Duration.ofMinutes(1)));
         final var expiredRevoked = save(tester, "expiredRevokedToken", now.minus(Duration.ofMinutes(1)));
-        repository.revokeIfActive(expiredRevoked.getId());
+        repository.revokeIfActive(expiredRevoked.getId(), now);
+        repository.setReplacedBy(expiredRevoked.getId(), expired);
 
         final var result = repository.deleteExpiredBefore(now);
 

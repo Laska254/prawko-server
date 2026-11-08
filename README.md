@@ -213,8 +213,15 @@ Access tokens sent to `POST /auth/**` are ignored, so a client may keep attachin
 A refresh token is valid for `refresh-token.validity` (30 days) and can be used only once - each refresh returns a new
 one, valid for the full period again. An unknown, expired or already used refresh token is answered with `401`, and
 using one again also revokes every other refresh token of the user, signing out all their clients - a used token
-showing up again means it was copied. Clients therefore must not refresh concurrently. Expired refresh tokens are
-deleted every `refresh-token.cleanup-interval`.
+showing up again means it was copied.
+
+The exception is a retry after a lost response: within `refresh-token.reuse-grace` (30 seconds) of its first use, a
+used token whose successor was never used returns a new pair. The successor it got before is revoked, so a token has
+at most one live successor, and using that earlier successor counts as reuse. If a copied token is used within the
+grace period, the legitimate client's token stops working, and its next refresh revokes all tokens, the copy's
+included. A token revoked because of reuse can't be retried either. Two concurrent refreshes with one token can still
+end as reuse, so clients must not refresh concurrently. Expired refresh tokens are deleted every
+`refresh-token.cleanup-interval`.
 
 Signing out with `POST /auth/logout` (`{"refreshToken": "..."}`) revokes the refresh token and answers `204`, also for
 an unknown one. The client's access token stays valid until it expires, so the client should discard it too.
