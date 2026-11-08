@@ -27,6 +27,7 @@ import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.AuthTokensDto;
 import pl.prawko.prawko_server.dto.ChangePasswordRequest;
 import pl.prawko.prawko_server.dto.DeleteAccountRequest;
+import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
 import pl.prawko.prawko_server.dto.GitHubSignInRequest;
 import pl.prawko.prawko_server.dto.GoogleSignInRequest;
 import pl.prawko.prawko_server.dto.LinkGitHubRequest;
@@ -1210,6 +1211,36 @@ public class UserControllerTest {
         }
 
         @Test
+        void returnNoContent_whenPasswordlessUserSetsPasswordThroughReset() {
+            final var tester = userRepository.save(UserTestData.createGooglePippin());
+            final var authClient = TestUtils.createRestTestClient(port, ApiConstants.AUTH_BASE_URL);
+
+            deleteOwnAccount(UserTestData.createValidDeleteAccountRequest())
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
+
+            authClient.post()
+                    .uri(ApiConstants.FORGOT_PASSWORD)
+                    .body(new ForgotPasswordRequest(tester.getEmail()))
+                    .exchange()
+                    .expectStatus().isAccepted();
+            final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+            verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());
+            final var reset = UserTestData.createValidResetPasswordRequest(UserTestData.extractToken(captor.getValue()));
+            authClient.post()
+                    .uri(ApiConstants.RESET_PASSWORD)
+                    .body(reset)
+                    .exchange()
+                    .expectStatus().isNoContent();
+
+            deleteOwnAccount(new DeleteAccountRequest(reset.newPassword()))
+                    .expectStatus().isNoContent();
+
+            assertThat(userRepository.existsById(tester.getId())).isFalse();
+        }
+
+        @Test
         void returnBadRequest_whenPasswordIsBlank() {
             restClient.method(HttpMethod.DELETE)
                     .uri(ApiConstants.ME)
@@ -1240,6 +1271,14 @@ public class UserControllerTest {
                     .body(UserTestData.createValidDeleteAccountRequest())
                     .exchange()
                     .expectStatus().isUnauthorized();
+        }
+
+        private RestTestClient.ResponseSpec deleteOwnAccount(final DeleteAccountRequest request) {
+            return restClient.method(HttpMethod.DELETE)
+                    .uri(ApiConstants.ME)
+                    .headers(auth::user)
+                    .body(request)
+                    .exchange();
         }
 
     }
