@@ -82,7 +82,7 @@ class UserRepositoryMariaDbTest {
 
     @Test
     void existsByUserNameIgnoreCase_returnTrue_whenUserNameDiffersOnlyInAccents() {
-        final var result = repository.existsByUserNameIgnoreCase("pìppín");
+        final var result = repository.existsByUserNameIgnoreCase(UserTestData.ACCENTED_USER_NAME);
         assertThat(result).isTrue();
     }
 

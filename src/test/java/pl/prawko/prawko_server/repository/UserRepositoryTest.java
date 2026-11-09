@@ -290,7 +290,7 @@ class UserRepositoryTest {
 
     @Test
     void existsByUserNameIgnoreCase_returnFalse_whenUserNameDiffersOnlyInAccents() {
-        final var result = repository.existsByUserNameIgnoreCase("pìppín");
+        final var result = repository.existsByUserNameIgnoreCase(UserTestData.ACCENTED_USER_NAME);
         assertThat(result).isFalse();
     }
 
