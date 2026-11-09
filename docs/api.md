@@ -50,7 +50,9 @@ retry it.
 
   Usernames and emails are unique ignoring case: registering or renaming to one that differs from a taken one only in
   case returns `409`. Users can still change the capitalization of their own username. Emails are stored lowercased,
-  so responses return them lowercased and mails go to the lowercased address.
+  so responses return them lowercased and mails go to the lowercased address. On MariaDB (`prod`, default collation)
+  they also ignore accents: `żaba` conflicts with `zaba`, and signing in with either finds the same user. The H2
+  database of `dev` and the tests keeps them apart.
 
 * `/questions`
 
