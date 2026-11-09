@@ -1,7 +1,6 @@
 target/
 src/main/resources/application-dev.yaml
 src/main/resources/application-local.properties
-/docs/
 /HELP.md
 /mvnw
 /mvnw.cmd
