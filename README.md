@@ -8,19 +8,10 @@
 
 ## Table of Contents
 
-* [Table of Contents](#table-of-contents)
 * [Overview](#overview)
+* [Documentation](#documentation)
 * [Prerequisites](#prerequisites)
-* [Installation](#installation)
-    + [Local configuration](#local-configuration)
-* [Usage](#usage)
-    + [Authentication](#authentication)
-    + [Endpoints](#endpoints)
-    + [Solving an exam](#solving-an-exam)
-    + [Exam statistics](#exam-statistics)
-    + [Pagination](#pagination)
-* [Emails (Mailpit)](#emails-mailpit)
-* [Deployment](#deployment)
+* [Quick start](#quick-start)
 
 ---
 
@@ -30,10 +21,21 @@
 
 ---
 
+## Documentation
+
+* [Configuration](docs/configuration.md) - profiles, local `application-dev.yaml`, running with Docker, catching
+  emails with Mailpit
+* [Authentication](docs/authentication.md) - access and refresh tokens, Google and GitHub sign-in, linking accounts,
+  email verification and changes
+* [API](docs/api.md) - Swagger, endpoints, solving an exam, exam statistics, pagination
+* [Deployment](docs/deployment.md) - `prod` environment variables, first admin, Docker, shutdown, reverse proxy
+
+---
+
 ## Prerequisites
 
 * Java 21
-* Docker (optional, to catch emails locally with [Mailpit](#emails-mailpit))
+* Docker (optional, to catch emails locally with [Mailpit](docs/configuration.md#emails-mailpit))
 
 Maven doesn't have to be installed - the repository includes the Maven Wrapper (`./mvnw`, `mvnw.cmd` on Windows).
 
@@ -54,54 +56,13 @@ root-equivalent access):
 
 ---
 
-## Installation
+## Quick start
 
 Clone repository
 
 `git clone https://github.com/Laska254/prawko-server.git`
 
 `cd prawko-server`
-
-Configuration files in `src/main/resources` (except `application-test.yaml`):
-
-* `application.yaml` - defaults shared by all profiles, no passwords or URLs.
-* `src/test/resources/application-test.yaml` - `test` profile, used by local and CI tests (activated with
-  `@ActiveProfiles("test")`). On the test classpath only, so it is not packaged into the JAR. In-memory H2 database
-  recreated and seeded with `data.sql` (categories and languages).
-* `application-dev.yaml` - `dev` profile (default), not in the repository - your local connection details for
-  development and manual verification, see [Local configuration](#local-configuration). Left out of the JAR, so
-  it never ends up in an image.
-* `application-prod.yaml` - `prod` profile: MariaDB, schema updated by Hibernate, Swagger disabled, runs behind a
-  [proxy](#deployment). Holds no credentials - all connection details come from environment variables:
-    + `DB_URL` e.g. `jdbc:mariadb://localhost:3306/prawko`
-    + `DB_USERNAME`
-    + `DB_PASSWORD`
-    + `CORS_ALLOWED_ORIGIN_PATTERNS` comma-separated, e.g. `https://prawko.pl`
-    + `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` SMTP server (with auth and STARTTLS)
-    + `MAIL_FROM` sender address, e.g. `no-reply@prawko.pl`
-    + `ACCESS_TOKEN_SECRET` Base64-encoded key signing access tokens, at least 256 bits, e.g. from
-      `openssl rand -base64 32`
-    + `PASSWORD_RESET_URL` frontend page the reset link points to, e.g. `https://prawko.pl/auth/password/reset`
-    + `EMAIL_VERIFICATION_URL` frontend page the email verification link points to, e.g. `https://prawko.pl/auth/verify`
-    + `GOOGLE_CLIENT_IDS` optional, comma-separated web (server) OAuth client IDs the apps request Google ID tokens
-      for ([Google sign-in](#authentication)); without it `POST /auth/google` answers `404`
-    + `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` optional, credentials of the GitHub OAuth app
-      ([GitHub sign-in](#authentication)); without them `POST /auth/github` answers `404`
-    + `MEDIA_DIRECTORY` directory with question media files, e.g. `/media` (a Docker volume)
-    + `MEDIA_BASE_URL` public URL the media files are served from, e.g. `https://api.prawko.pl/media`
-
-  `data.sql` is not run in `prod` - seed categories and languages once manually.
-
-  No endpoint assigns the `ADMIN` role, and `POST /questions` requires it. To create the first admin, register an
-  account, verify its email and set the role in the database (emails are stored in lowercase):
-
-  ```sql
-  UPDATE `user` SET role = 'ADMIN' WHERE email = 'admin@example.com';
-  ```
-
-  The role is in the access token, so it applies after signing in again or refreshing.
-
-Select the profile with `SPRING_PROFILES_ACTIVE=<profile>` or `--spring.profiles.active=<profile>`.
 
 Test (unit and integration tests, coverage check, javadoc)
 
@@ -111,414 +72,8 @@ Build with Maven
 
 `./mvnw package`
 
-Run (requires `application-dev.yaml`, see [Local configuration](#local-configuration))
+Run (requires `application-dev.yaml`, see [Local configuration](docs/configuration.md#local-configuration))
 
 `./mvnw spring-boot:run`
 
-Run with Docker (after `./mvnw package`)
-
-`docker build -t prawko-server .`
-
-`docker run -p 8080:8080 -v "$PWD/src/main/resources/application-dev.yaml:/config/application-dev.yaml:ro" -e SPRING_CONFIG_ADDITIONAL_LOCATION=file:/config/ prawko-server`
-
-With no profile the image falls back to `dev`, whose config isn't in the image, so without the mounted file it exits
-with status 1. Inside the container `localhost` is the container itself, so it can't reach Mailpit on `localhost:1025`.
-Put both containers on one network instead: `docker network create prawko`, start Mailpit with
-`--network prawko --name mailpit` and the application with `--network prawko -e SPRING_MAIL_HOST=mailpit`. For `prod`,
-set the profile at runtime, mount the media directory as a volume and publish no port - put the application on the
-proxy's network instead ([Deployment](#deployment)), e.g.
-`docker run --network prawko -v /srv/prawko/media:/media -e SPRING_PROFILES_ACTIVE=prod -e MEDIA_DIRECTORY=/media ... prawko-server`.
-The container runs as UID 1000, which must be able to read the files in the volume.
-
-### Local configuration
-
-Create `src/main/resources/application-dev.yaml` (ignored by Git) before running the application locally. The
-example below uses an in-memory H2 database recreated and seeded with `data.sql` on every start, allows CORS from
-`localhost` and sends emails to SMTP on `localhost:1025` (see [Emails (Mailpit)](#emails-mailpit)):
-
-```yaml
-cors:
-  allowed-origin-patterns: "http://localhost:[*],http://127.0.0.1:[*]"
-
-spring:
-  datasource:
-    url: jdbc:h2:mem:prawko
-    username: sa
-    password: ""
-    driver-class-name: org.h2.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    defer-datasource-initialization: true
-
-  mail:
-    host: localhost
-    port: 1025
-
-mail:
-  from: no-reply@prawko.local
-
-password-reset:
-  url: http://localhost:5173/auth/password/reset
-
-email-verification:
-  url: http://localhost:5173/auth/verify
-
-media:
-  base-url: http://localhost:8080/media
-```
-
-To use a local MariaDB instead, replace the datasource, e.g. `url: jdbc:mariadb://localhost:3306/prawko` with your
-username and password, and set `spring.jpa.hibernate.ddl-auto` to `update` (`data.sql` is then not run - seed
-categories and languages once manually).
-
-To test [signing in with Google](#authentication) locally, create an OAuth client ID of type *Web application* in the
-[Google Cloud console](https://console.cloud.google.com/apis/credentials). Under *Authorized JavaScript origins* add the
-client's origin, for prawko-web both `http://localhost` and `http://localhost:5173`. Add the ID to
-`application-dev.yaml` (`GOOGLE_CLIENT_IDS` is only read in `prod`) and restart the application:
-
-```yaml
-google:
-  client-ids: <client-id>.apps.googleusercontent.com
-```
-
-A made-up token then answers `401`; `404` means the ID isn't configured:
-
-`curl -i -X POST http://localhost:8080/auth/google -H 'Content-Type: application/json' -d '{"idToken":"x"}'`
-
-A real token needs a client: set the same ID as `VITE_GOOGLE_CLIENT_ID` in prawko-web's `.env.development.local` and use
-the Google button on its `/auth` page. While the app's consent screen is in *Testing* status, only its test users can
-sign in.
-
----
-
-## Usage
-
-Base URL: `http://localhost:8080/`
-
-Application has Swagger, so you can test out the REST API via `/swagger-ui/index.html` (OpenAPI docs at
-`/v3/api-docs`). Both are disabled in the `prod` profile. For protected endpoints, sign in with `POST /auth` and paste
-the access token into "Authorize". [`/media`](#endpoints) is served by a resource handler, not a controller, so it's
-documented only here.
-
-### Authentication
-
-The API is stateless - every request that requires authentication must carry an access token as
-`Authorization: Bearer ...`. HTTP Basic isn't supported - such a request counts as unauthenticated (`401`).
-
-Signing in with `POST /auth` (`{"userName": "...", "password": "..."}`, username or email, both ignoring case) returns a token pair:
-
-```json
-{"accessToken": "...", "refreshToken": "...", "expiresIn": 900}
-```
-
-The access token is a signed JWT, valid for `access-token.validity` (15 minutes, `expiresIn` in seconds). It carries
-the user's role, so a role change or account deletion applies only once it expires. An invalid or expired token is
-answered with `401` and `WWW-Authenticate: Bearer error="invalid_token"`.
-
-Once it expires, `POST /auth/refresh` with `{"refreshToken": "..."}` returns a new pair with the user's current role.
-Access tokens sent to `POST /auth/**` are ignored, so a client may keep attaching its expired one when refreshing.
-A refresh token is valid for `refresh-token.validity` (30 days) and can be used only once - each refresh returns a new
-one, valid for the full period again. An unknown, expired or already used refresh token is answered with `401`, and
-using one again also revokes every other refresh token of the user, signing out all their clients - a used token
-showing up again means it was copied.
-
-The exception is a retry after a lost response: within `refresh-token.reuse-grace` (30 seconds) of its first use, a
-used token whose successor was never used returns a new pair. The successor it got before is revoked, so a token has
-at most one live successor, and using that earlier successor counts as reuse. If a copied token is used within the
-grace period, the legitimate client's token stops working, and its next refresh revokes all tokens, the copy's
-included. A token revoked because of reuse can't be retried either. Two concurrent refreshes with one token can still
-end as reuse, so clients must not refresh concurrently. Expired refresh tokens are deleted every
-`refresh-token.cleanup-interval`.
-
-Signing out with `POST /auth/logout` (`{"refreshToken": "..."}`) revokes the refresh token and answers `204`, also for
-an unknown one. The client's access token stays valid until it expires, so the client should discard it too.
-Changing (`PATCH /users/me/password`) or resetting (`POST /auth/password/reset`) the password revokes all refresh tokens
-of the user, signing out all their clients - including the one that changed it, which has to sign in again.
-
-Signing in with Google: the client gets an ID token from Google (Credential Manager on Android, Google Identity
-Services on the web) and sends it to `POST /auth/google` as `{"idToken": "..."}`, which returns the same token pair as
-`POST /auth`. Every client requests the token for the web (server) OAuth client ID, created in the Google Cloud console;
-on Android it's passed to `GetGoogleIdOption.Builder.setServerClientId`, not the Android client ID. The server checks
-the token's signature against Google's keys, its expiry, the issuer and that its audience is one of
-`google.client-ids`. An invalid token is answered with `401`, without configured client IDs the endpoint answers `404`,
-and if Google's keys can't be fetched `503`. The Google account is linked to a user on its first sign-in, looked up by
-its email, which Google must have verified (otherwise `403`): an existing user gets it linked (`409` if it's linked to
-another Google account already), an unverified one is verified and its password cleared (it may have been registered
-by someone else with that email), and otherwise a new user without a password is created, with a username from the
-email's local part. An existing user is only linked if Google hosts the email (Gmail or Google Workspace), otherwise
-`409`: any other address was verified by Google only once and may belong to someone else by now. Later sign-ins find
-the user by the Google account alone, so changing the email on either side keeps them linked.
-
-Signing in with GitHub: the client runs GitHub's authorization code flow with PKCE and the scope `user:email`, using the
-client ID of the GitHub OAuth app, and sends the result to `POST /auth/github` as
-`{"code": "...", "codeVerifier": "...", "redirectUri": "..."}`, which returns the same token pair as `POST /auth`. The
-server exchanges the code with the app's client secret and reads the account's ID and primary email from the GitHub API;
-the GitHub access token is used only for that and isn't stored. A code GitHub rejects is answered with `401`, without a
-configured client ID and secret the endpoint answers `404`, and if GitHub can't be reached, answers with a server error
-or rate limits the app `503`. The first sign-in creates a user without a password, with the GitHub login as username.
-The primary email must be verified by GitHub (otherwise `403`). If a user with that email exists the answer is `409` and
-nothing is linked: GitHub doesn't host email addresses, it verified the address only once and it may belong to someone
-else by now. Later sign-ins find the user by the GitHub account's ID alone, so renaming the login or changing the email
-keeps them linked.
-
-Linking and unlinking: a signed-in user links a provider account with `POST /users/me/identities/google` or
-`POST /users/me/identities/github`, with the body of the matching `/auth` endpoint plus `currentPassword` and the same
-errors for a bad credential, and `204` on success. The account's email doesn't have to match the user's, so this is the
-way forward after the `409` above: sign in as that user, then link. The answer is `409` if the account is linked to
-another user or the user already has an account of that provider. `DELETE /users/me/identities/google` or
-`DELETE /users/me/identities/github` with `{"currentPassword": "..."}` unlinks it and answers `204`, `404` if it isn't
-linked, and `409` if they have no password and no other linked account, as that would leave no way to sign in. Requiring
-the password means a stolen access token alone can't add a lasting way in or remove the user's own: if it's missing or
-wrong the answer is `400` `"Current password is incorrect."`, nothing changes and a GitHub code isn't used up. A user
-without a password leaves it out, and can send no body when unlinking. Every link and unlink through these endpoints
-emails a notice to the user's current address, so users without a password get warned too; if it can't be queued the
-answer is `503` and nothing changes. A link made by a first sign-in sends no such notice: the provider hosts the email,
-so it would go to the mailbox of the account that just signed in. If the user already has other accounts linked, one of
-them may belong to someone who held the email earlier, so that mailbox gets a notice naming them (`503` and no link if
-it can't be queued), and the password reset email names the linked accounts too. Removing one is left to the user.
-`providers` in the user response lists the linked ones.
-An unlinked account no longer finds the user by its ID, so its next sign-in counts as a first one: if the user's email
-is one the provider hosts it's linked again, since whoever holds that account controls the mailbox and could reset the
-password anyway. Unlinking doesn't revoke refresh tokens, so clients already signed in stay signed in.
-
-Users without a password: a user created by a provider has none, and `hasPassword` in the user response is `false`, so
-a client can offer to set one. Until then `POST /auth` answers `401`, and `PATCH /users/me/password` and
-`DELETE /users/me` answer `400` `"Current password is incorrect."`. `POST /auth/password/forgot` and
-`POST /auth/password/reset` work without a current password and set the first one, after which all three work as usual.
-
-There are two roles: `USER` (every registered user) and `ADMIN`. `ADMIN` includes all `USER` permissions.
-
-A new account must verify its email address before signing in. Registration emails a link to the frontend page
-(`email-verification.url`) with a `token` query parameter, which the page sends to `POST /auth/verify` as
-`{"token": "..."}`. Until then `POST /auth` answers `403` (only with the correct password, otherwise `401`), so the
-account gets no tokens. Another link can be requested with `POST /auth/verify/resend`. Accounts not
-verified before their link expires are deleted, so the username and email can be registered again.
-
-Changing the email with `PATCH /users/{id}` works the same way: the new address is only stored as pending and a link
-is emailed to it (`pendingEmail` in the user response), and a confirmation link to the current address, so a stolen
-password alone can't move the account to another inbox. Only the user themselves may change their email - admins get
-`403`, so a stolen admin account can't take over other accounts this way either. Both links go to
-`POST /auth/verify`, in any order; the user response tells which are still unopened (`awaitingNewEmailConfirmation`,
-`awaitingCurrentEmailConfirmation`). The current email stays in use (sign-in, password reset) until both links are
-used. Changing or resetting the password cancels a pending change, and so does sending the current email in the
-`PATCH`. For new links send the `PATCH` again after the cooldown - within it the `PATCH` answers `429` and changes
-nothing.
-
-Deleting an account (`DELETE /users/me`, or `DELETE /users/{id}` by an admin) removes its exams and refresh tokens and
-invalidates any pending reset or verification links; the username and email can be registered again.
-
-### Endpoints
-
-Access: **public** - no authentication, **user** - any signed-in user, **self** - the signed-in user acting on their
-own data (admins may act on any user), **admin** - admins only.
-
-A request that changes a user (e.g. updating or deleting them, verifying an email, changing or resetting the password,
-or a Google or GitHub sign-in that verifies the account) returns `409` when it races another change to the same user;
-retry it.
-
-* `/auth`
-
-  | Method | Path                    | Access | Description                                                                                    |
-  |--------|-------------------------|--------|------------------------------------------------------------------------------------------------|
-  | `POST` | `/auth`                 | public | sign in, returns an access and a refresh token                                                 |
-  | `POST` | `/auth/refresh`         | public | exchange a refresh token for a new token pair, the used one is revoked                         |
-  | `POST` | `/auth/logout`          | public | revoke a refresh token                                                                         |
-  | `POST` | `/auth/google`          | public | sign in with a Google ID token, returns an access and a refresh token                          |
-  | `POST` | `/auth/github`          | public | sign in with a GitHub authorization code, returns an access and a refresh token                |
-  | `POST` | `/auth/password/forgot` | public | email a password reset link, returns `202` whether the account exists or not                   |
-  | `POST` | `/auth/password/reset`  | public | set a new password with the token from the reset link                                          |
-  | `POST` | `/auth/verify`          | public | verify an email with a link's token, returns `202` while an email change awaits the other link |
-  | `POST` | `/auth/verify/resend`   | public | email a new verification link, returns `202` whatever the account's state                      |
-
-* `/users`
-
-  | Method   | Path                          | Access | Description                                                                                          |
-  |----------|-------------------------------|--------|------------------------------------------------------------------------------------------------------|
-  | `POST`   | `/users`                      | public | register a new user, emails a verification link                                                      |
-  | `GET`    | `/users/me`                   | user   | get the signed-in user (e.g. their ID and role)                                                      |
-  | `GET`    | `/users/me/stats`             | user   | get own exam statistics, see [Exam statistics](#exam-statistics)                                     |
-  | `DELETE` | `/users/me`                   | user   | delete own account with its exams (requires current password, if none set one with a password reset) |
-  | `PATCH`  | `/users/me/password`          | user   | change own password (requires current password, if none set one with a password reset)               |
-  | `POST`   | `/users/me/identities/google` | user   | link a Google account (requires current password)                                                    |
-  | `DELETE` | `/users/me/identities/google` | user   | unlink the Google account (requires current password)                                                |
-  | `POST`   | `/users/me/identities/github` | user   | link a GitHub account (requires current password)                                                    |
-  | `DELETE` | `/users/me/identities/github` | user   | unlink the GitHub account (requires current password)                                                |
-  | `GET`    | `/users`                      | admin  | get a page of users                                                                                  |
-  | `GET`    | `/users/{id}`                 | admin  | get a user                                                                                           |
-  | `PATCH`  | `/users/{id}`                 | self   | update a user (email: the user themselves only)                                                      |
-  | `DELETE` | `/users/{id}`                 | admin  | delete a user with their exams                                                                       |
-
-  Usernames and emails are unique ignoring case: registering or renaming to one that differs from a taken one only in
-  case returns `409`. Users can still change the capitalization of their own username. Emails are stored lowercased,
-  so responses return them lowercased and mails go to the lowercased address.
-
-* `/questions`
-
-  | Method | Path                                                | Access | Description                                                                                               |
-  |--------|-----------------------------------------------------|--------|-----------------------------------------------------------------------------------------------------------|
-  | `POST` | `/questions`                                        | admin  | upload a CSV file (`file` multipart part, max 5MB, `413` above it) with questions                         |
-  | `GET`  | `/questions`                                        | admin  | get a page of questions                                                                                   |
-  | `GET`  | `/questions/random?category={category}&type={type}` | user   | random question for practice, with answers' `correct` flag; `category` and `type` are random when missing |
-  | `GET`  | `/questions/{id}`                                   | user   | get a question; answers' `correct` flag is included only for admins                                       |
-
-  An upload over about 20MB (`server.tomcat.max-swallow-size`) loses the connection instead of getting the `413`, so a
-  rejected request can't hold a thread until an arbitrarily large body is read.
-
-  The import is all or nothing: a malformed file returns `400` and saves no questions. Every name in the `Kategorie`
-  column must be a category (`A`, `A1`, …, `PT`, case-sensitive); an unknown or empty one fails the file, and the
-  message lists each offending line and value together with the allowed categories, e.g. `Invalid CSV file: line 12:
-  unknown category 'Z'; line 40: unknown category ''. Allowed: A, A1, …`.
-
-  Hiding the `correct` flag (here and on active exams) only keeps it out of those views, it isn't a security boundary:
-  the question bank is public and `GET /questions/random` includes the flag for practice.
-
-  `GET /questions/random` picks a missing `category` or `type` at random, each value equally likely. The full question
-  bank has questions of both types in every category; after a partial import the picked combination can be empty and
-  the request returns `404` naming it.
-
-* `/exams`
-
-  | Method | Path                                     | Access | Description                                                                                 |
-  |--------|------------------------------------------|--------|---------------------------------------------------------------------------------------------|
-  | `POST` | `/exams`                                 | self   | create a new exam for the `userId` from the request body                                    |
-  | `GET`  | `/exams?userId={id}&category={category}` | self   | get a page of the user's exams history, newest first; `category` is optional and filters it |
-  | `GET`  | `/exams/{id}`                            | self   | get an exam; answers' `correct` flag is included only once the exam is not `active`         |
-  | `POST` | `/exams/{id}/answers`                    | owner  | answer a question of an active exam, see [Solving an exam](#solving-an-exam)                |
-  | `POST` | `/exams/{id}/finish`                     | owner  | finish an active exam and calculate its score, see [Solving an exam](#solving-an-exam)      |
-
-* `/media`
-
-  | Method | Path                | Access | Description                                      |
-  |--------|---------------------|--------|--------------------------------------------------|
-  | `GET`  | `/media/{filename}` | public | question image or video file                     |
-  | `HEAD` | `/media/{filename}` | public | same headers as `GET` (size, `ETag`, …), no body |
-
-  Files are served from `media.directory` (default `media` in the working directory, ignored by Git; `MEDIA_DIRECTORY`
-  in `prod`) with the content type from the extension. They're public like the question bank, so image loaders and
-  video players need no credentials. Responses are cacheable for `media.cache-max-age` (`1d`), carry `ETag` and
-  `Last-Modified` (revalidation answers `304`) and support range requests (`206`), so videos can be streamed and
-  seeked. A missing file returns `404`.
-
-  Questions don't expose filenames: `mediaUrl` is the file's absolute URL (`media.base-url` followed by the filename)
-  and `mediaType` is `IMAGE` or `VIDEO` (from the file extension); both are `null` for a question without media, and
-  `mediaType` alone is `null` when the extension is neither an image nor a video. Moving the files to a CDN only
-  changes `media.base-url`. To add media, put the file into the media directory under the name from the `Media` column
-  of the imported question CSV - except `.wmv` videos: the import renames them to `.webm`, so convert them to WebM and
-  store them as `<name>.webm`.
-
-`POST` endpoints creating a resource return `201 Created` with its URL in the `Location` header.
-
-### Solving an exam
-
-Submit the ID of the chosen answer, e.g. `POST /exams/7/answers` with `{"answerId": 42}`; it returns `204 No Content`.
-The question is determined by the answer, so answering the same question again replaces the previous answer. The
-submitted answers are returned in `userAnswers` of `GET /exams/{id}`.
-
-When done, finish the exam with `POST /exams/7/finish` (no body); it returns `200 OK` with the finished exam. The exam
-is no longer `active`, so no more answers can be submitted, its `score` is the sum of `points` of the correctly
-answered questions (unanswered questions give no points) and answers' `correct` flag is included.
-
-An exam lasts 25 minutes: `expires` (`created` + 25 minutes) is the deadline for answers. Answers submitted after it
-return `409`, and the exam is finished automatically within `exam.expiry-check-interval` (`30s`).
-
-Timestamps (`created`, `updated`, `expires`) are ISO-8601 instants in UTC, e.g. `2026-10-23T12:00:00Z`, independent
-of the server's time zone. Clients can estimate their clock offset from the `Date` response header (exposed to
-cross-origin scripts via CORS) to show the remaining time correctly.
-
-| Status | When                                                                                                                         |
-|--------|------------------------------------------------------------------------------------------------------------------------------|
-| `400`  | `answerId` is missing or the body is missing or malformed (answers only), or the exam ID is not positive                     |
-| `403`  | the exam belongs to another user                                                                                             |
-| `404`  | the exam doesn't exist, or the answer doesn't belong to any of its questions                                                 |
-| `409`  | the exam is no longer `active` or its time has expired (answers only), or it was modified by a concurrent request - retry it |
-
-### Exam statistics
-
-`GET /users/me/stats` summarizes the signed-in user's finished exams, overall and per category; active exams are not
-counted. An exam is passed with a `score` of at least 68 (out of 74). Categories without finished exams are left out.
-
-```json
-{
-  "examsTaken": 12,
-  "examsPassed": 7,
-  "averageScore": 63.5,
-  "bestScore": 72,
-  "categories": [
-    {"category": "A", "examsTaken": 2, "examsPassed": 1, "averageScore": 60.5, "bestScore": 68},
-    {"category": "B", "examsTaken": 10, "examsPassed": 6, "averageScore": 64.1, "bestScore": 72}
-  ]
-}
-```
-
-Without finished exams the counts are `0`, `averageScore` and `bestScore` are `null` and `categories` is empty.
-
-### Pagination
-
-List endpoints (`GET /users`, `GET /questions`, `GET /exams`) are paginated with query parameters:
-
-* `page` - page number, starting from `0`
-* `size` - page size, default `20`, max `100`
-* `sort` - property and optional direction, e.g. `sort=id,desc`; can be repeated
-
----
-
-## Emails (Mailpit)
-
-In the `dev` profile emails (e.g. email verification and password reset links) are sent to SMTP on `localhost:1025`. Run
-[Mailpit](https://mailpit.axllent.org/) to catch them - nothing is delivered to real inboxes.
-
-Run Mailpit (SMTP on port 1025, web UI on port 8025)
-
-`docker run --rm -p 1025:1025 -p 8025:8025 axllent/mailpit`
-
-Then start the application and open the inbox at `http://localhost:8025`.
-
-Without Mailpit running the application still works, but emails are not sent - the failure is only logged.
-
-Mailpit also has a REST API, e.g. `GET http://localhost:8025/api/v1/message/latest` returns the latest email
-(its body is in the `Text` field), so an API client can read the verification or reset token from it.
-
-Password reset links are valid for 15 minutes; another reset email for the same account can be requested after
-1 minute.
-
-Email verification links are valid for 24 hours; another one can be requested after 1 minute. Unverified accounts
-with expired links are deleted every hour.
-
-Reset, verification and identity notice emails are processed in the background on a bounded pool
-(`spring.task.execution.pool.*`: 8 threads, 100 queued). When it's full, `/auth/password/forgot`, `/auth/verify/resend`,
-`/users` (registration), email changes with `PATCH /users/{id}`, `POST`/`DELETE /users/me/identities/*` and a first
-`/auth/google` sign-in that links an account to a user with other linked accounts answer `503`.
-
----
-
-## Deployment
-
-Run a single instance. Scheduled jobs (expiring exams, deleting unverified accounts and old refresh tokens) run
-separately in every instance, and queued emails are kept in the memory of the instance that queued them.
-
-On `SIGTERM` the application stops taking requests and finishes the ones in progress for up to 30 seconds
-(`spring.lifecycle.timeout-per-shutdown-phase`), then sends the queued emails for up to another 30 seconds
-(`spring.task.execution.shutdown.await-termination-period`). Emails still queued after that are lost. Reset and
-verification emails can be requested again after the cooldown, an email change by repeating it; a lost identity notice
-is not sent again.
-
-The stop timeout of the deployment must be longer than both periods together. `docker stop` waits only 10 seconds by
-default, so use e.g. `docker stop -t 70`.
-
-The `prod` profile expects a reverse proxy in front that terminates HTTPS, since the application serves only plain
-HTTP. It trusts the `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host` and `X-Forwarded-Port` headers
-(`server.forward-headers-strategy: native`), so the logs show the client's IP and `Location` headers carry the public
-scheme and host. The proxy must set these headers and append the client's IP to `X-Forwarded-For` (or replace it).
-Requests forwarded as HTTPS count as secure, so the application itself sends
-`Strict-Transport-Security: max-age=31536000 ; includeSubDomains` (Spring Security's default). The proxy shouldn't add
-another one, and every subdomain of the API host must serve HTTPS.
-
-The headers are trusted only from internal addresses (`server.tomcat.remoteip.internal-proxies`): private
-`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` and `fc00::/7`, loopback `127.0.0.0/8` and `::1`, link-local
-`169.254.0.0/16` and `fe80::/10`, and the shared `100.64.0.0/10` (carrier-grade NAT, Tailscale). So don't expose the
-application directly, also not to a VPN or cloud network in these ranges. A port published with `docker run -p` may
-make every client look like it comes from a private address, and then any client could set its IP and the `Location`
-host itself (not tested). Keep the application on a network only the proxy can reach, e.g. a Docker network without a
-published port.
+Then open Swagger at `http://localhost:8080/swagger-ui/index.html`, see [API](docs/api.md).
