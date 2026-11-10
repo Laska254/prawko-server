@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server;
 
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -16,8 +17,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * Conventions for the test code: shared Spring context, no sleeps, test method names, map literals and enum constant
- * names.
+ * Conventions for the test code: shared Spring context, no sleeps, method names, map literals and enum constant names.
  */
 @AnalyzeClasses(packagesOf = PrawkoServerApplication.class, importOptions = ImportOption.OnlyIncludeTests.class)
 class TestConventionsTest {
@@ -50,6 +50,15 @@ class TestConventionsTest {
             .andShould()
             .haveNameNotStartingWith("should")
             .because("test names are subject_result_whenCondition, or result_whenCondition in a @Nested class");
+
+    @ArchTest
+    static final ArchRule OTHER_METHOD_NAMES_ARE_CAMEL_CASE = methods()
+            .that()
+            .areNotMetaAnnotatedWith(Testable.class)
+            .and()
+            .doNotHaveModifier(JavaModifier.SYNTHETIC)
+            .should()
+            .haveNameMatching("[a-z][a-zA-Z0-9]*");
 
     @ArchTest
     static final ArchRule NO_MAP_OF = ArchitectureTest.NO_MAP_OF;

@@ -43,10 +43,10 @@ public class AnswerTestData {
     public static List<AnswerDto> createAnswerDtos(final List<Answer> savedAnswers, final QuestionType type) {
         return switch (type) {
             case BASIC -> savedAnswers.stream()
-                    .map(AnswerTestData::toDto_BASIC)
+                    .map(AnswerTestData::toBasicDto)
                     .toList();
             case SPECIAL -> savedAnswers.stream()
-                    .map(AnswerTestData::toDto_SPECIAL)
+                    .map(AnswerTestData::toSpecialDto)
                     .toList();
         };
     }
@@ -65,7 +65,7 @@ public class AnswerTestData {
         };
     }
 
-    private static AnswerDto toDto_BASIC(final Answer answer) {
+    private static AnswerDto toBasicDto(final Answer answer) {
         return new AnswerDto(
                 answer.getId(),
                 answer.getQuestion().getId(),
@@ -73,7 +73,7 @@ public class AnswerTestData {
                 Collections.emptyList());
     }
 
-    private static AnswerDto toDto_SPECIAL(final Answer answer) {
+    private static AnswerDto toSpecialDto(final Answer answer) {
         return new AnswerDto(
                 answer.getId(),
                 answer.getQuestion().getId(),
