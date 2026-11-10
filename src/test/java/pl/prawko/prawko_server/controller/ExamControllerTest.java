@@ -78,11 +78,11 @@ public class ExamControllerTest {
         @Test
         void returnCreated_whenRequestIsValid() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
-            final var validDto = new CreateExamRequest(tester.getId(), CategoryVariant.B);
+            final var validRequest = new CreateExamRequest(tester.getId(), CategoryVariant.B);
 
             restClient.post()
                     .headers(auth::user)
-                    .body(validDto)
+                    .body(validRequest)
                     .exchange()
                     .expectStatus().isCreated()
                     .expectHeader().value("Location", location -> {
@@ -135,7 +135,7 @@ public class ExamControllerTest {
 
         @Test
         void returnBadRequest_whenRequestIsInvalid() {
-            final var invalidDto = new CreateExamRequest(null, null);
+            final var invalidRequest = new CreateExamRequest(null, null);
             final var expected = Map.ofEntries(
                     Map.entry("message", TestUtils.VALIDATION_FAILED),
                     Map.entry("details", Map.ofEntries(
@@ -144,7 +144,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .headers(auth::user)
-                    .body(invalidDto)
+                    .body(invalidRequest)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()

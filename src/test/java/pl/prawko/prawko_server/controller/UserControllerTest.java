@@ -123,7 +123,7 @@ public class UserControllerTest {
     class RegisterUser {
 
         @Test
-        void success_whenDtoIsValid() {
+        void success_whenRequestIsValid() {
             restClient.post()
                     .body(registerRequest)
                     .exchange()
@@ -138,7 +138,7 @@ public class UserControllerTest {
         }
 
         @Test
-        void storeUnverifiedUserAndEmailVerificationLink_whenDtoIsValid() {
+        void storeUnverifiedUserAndEmailVerificationLink_whenRequestIsValid() {
             final var id = registerUser();
 
             final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
@@ -167,8 +167,8 @@ public class UserControllerTest {
         }
 
         @Test
-        void returnBadRequest_whenDtoIsInvalid() {
-            final var invalidDto = new RegisterRequest(
+        void returnBadRequest_whenRequestIsInvalid() {
+            final var invalidRequest = new RegisterRequest(
                     TOO_LONG_NAME,
                     "Tu",
                     "OK",
@@ -185,7 +185,7 @@ public class UserControllerTest {
                     ));
 
             restClient.post()
-                    .body(invalidDto)
+                    .body(invalidRequest)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -195,11 +195,11 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenLastNameIsTooLong() {
-            final var invalidDto = new RegisterRequest(registerRequest.firstName(), TOO_LONG_NAME,
+            final var invalidRequest = new RegisterRequest(registerRequest.firstName(), TOO_LONG_NAME,
                     registerRequest.userName(), registerRequest.email(), registerRequest.password());
 
             restClient.post()
-                    .body(invalidDto)
+                    .body(invalidRequest)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -208,11 +208,11 @@ public class UserControllerTest {
 
         @Test
         void returnCreated_whenEmailHasMaximumLength() {
-            final var dto = new RegisterRequest(registerRequest.firstName(), registerRequest.lastName(),
+            final var request = new RegisterRequest(registerRequest.firstName(), registerRequest.lastName(),
                     registerRequest.userName(), UserTestData.LONGEST_EMAIL, registerRequest.password());
 
             restClient.post()
-                    .body(dto)
+                    .body(request)
                     .exchange()
                     .expectStatus().isCreated();
 
@@ -223,11 +223,11 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenEmailIsTooLong() {
-            final var invalidDto = new RegisterRequest(registerRequest.firstName(), registerRequest.lastName(),
+            final var invalidRequest = new RegisterRequest(registerRequest.firstName(), registerRequest.lastName(),
                     registerRequest.userName(), UserTestData.OVERLONG_EMAIL, registerRequest.password());
 
             restClient.post()
-                    .body(invalidDto)
+                    .body(invalidRequest)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -236,10 +236,11 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenUserNameContainsAt() {
-            final var invalidDto = new RegisterRequest("Peregrin", "Tuk", "pippin@shire", "pippin@shire.me", "lembasy");
+            final var invalidRequest = new RegisterRequest("Peregrin", "Tuk", "pippin@shire", "pippin@shire.me",
+                    "lembasy");
 
             restClient.post()
-                    .body(invalidDto)
+                    .body(invalidRequest)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -260,7 +261,7 @@ public class UserControllerTest {
         @Test
         void returnBadRequest_whenAllFieldsAreNull() {
             registerUser();
-            final var invalidDto = new RegisterRequest(null, null, null, null, null);
+            final var invalidRequest = new RegisterRequest(null, null, null, null, null);
             final var expected = Map.ofEntries(
                     Map.entry("message", TestUtils.VALIDATION_FAILED),
                     Map.entry("details", Map.ofEntries(
@@ -271,7 +272,7 @@ public class UserControllerTest {
                             Map.entry("password", TestUtils.PASSWORD_REQUIRED))));
 
             restClient.post()
-                    .body(invalidDto)
+                    .body(invalidRequest)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -282,14 +283,14 @@ public class UserControllerTest {
         @Test
         void returnConflict_whenEmailDiffersOnlyInCase() {
             registerUser();
-            final var dto = new RegisterRequest("Peregrin", "Tuk", "peregrin", "Pippin@Shire.ME", "lembasy");
+            final var request = new RegisterRequest("Peregrin", "Tuk", "peregrin", "Pippin@Shire.ME", "lembasy");
 
             restClient.post()
-                    .body(dto)
+                    .body(request)
                     .exchange()
                     .expectStatus().isEqualTo(HttpStatus.CONFLICT)
                     .expectBody()
-                    .jsonPath("$.details.email").isEqualTo(UserTestData.emailConflictMessage(dto.email()))
+                    .jsonPath("$.details.email").isEqualTo(UserTestData.emailConflictMessage(request.email()))
                     .jsonPath("$.details.userName").doesNotExist();
         }
 
@@ -610,13 +611,13 @@ public class UserControllerTest {
         @Test
         void success_whenAdminUpdatesAnotherUserWithoutEmail() {
             final var id = userRepository.save(UserTestData.createTestUserPippin()).getId();
-            final var validDto = UserTestData.createUserUpdateRequestWithoutEmail();
+            final var validRequest = UserTestData.createUserUpdateRequestWithoutEmail();
             final var expected = UserTestData.createUpdatedByAdminUserDto(id);
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, id)
                     .headers(auth::admin)
-                    .body(validDto)
+                    .body(validRequest)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserDto.class).isEqualTo(expected);
@@ -625,13 +626,13 @@ public class UserControllerTest {
         @Test
         void success_whenUserUpdatesThemselves() {
             final var id = userRepository.save(UserTestData.createTestUserPippin()).getId();
-            final var validDto = UserTestData.createValidUserUpdateRequest();
+            final var validRequest = UserTestData.createValidUserUpdateRequest();
             final var expected = UserTestData.createUpdatedUserDto(id);
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, id)
                     .headers(auth::user)
-                    .body(validDto)
+                    .body(validRequest)
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserDto.class).isEqualTo(expected);
@@ -836,7 +837,7 @@ public class UserControllerTest {
         }
 
         @Test
-        void returnBadRequest_whenDtoIsInvalid() {
+        void returnBadRequest_whenRequestIsInvalid() {
             final var invalidUpdateRequest = UserTestData.createInvalidUserUpdateRequest();
             final var expected = Map.ofEntries(
                     Map.entry("message", TestUtils.VALIDATION_FAILED),
@@ -920,13 +921,13 @@ public class UserControllerTest {
         @ParameterizedTest
         @ValueSource(longs = {-1L, 0L})
         void returnBadRequest_whenIdIsNotPositive(final long invalidId) {
-            final var validDto = UserTestData.createUserUpdateRequestWithoutEmail();
+            final var validRequest = UserTestData.createUserUpdateRequestWithoutEmail();
             final var expectedMessage = TestUtils.ID_NOT_POSITIVE;
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, invalidId)
                     .headers(auth::admin)
-                    .body(validDto)
+                    .body(validRequest)
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
@@ -936,13 +937,13 @@ public class UserControllerTest {
         @Test
         void returnNotFound_whenUserDoesNotExist() {
             final var nonExistentId = 666L;
-            final var validDto = UserTestData.createUserUpdateRequestWithoutEmail();
+            final var validRequest = UserTestData.createUserUpdateRequestWithoutEmail();
             final var expectedMessage = UserTestData.userNotFoundMessage(nonExistentId);
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, nonExistentId)
                     .headers(auth::admin)
-                    .body(validDto)
+                    .body(validRequest)
                     .exchange()
                     .expectStatus().isNotFound()
                     .expectBody()
@@ -1078,7 +1079,7 @@ public class UserControllerTest {
         }
 
         @Test
-        void returnBadRequest_whenDtoIsInvalid() {
+        void returnBadRequest_whenRequestIsInvalid() {
             final var invalidRequest = new ChangePasswordRequest(" ", "short");
             final var expected = Map.ofEntries(
                     Map.entry("message", TestUtils.VALIDATION_FAILED),
