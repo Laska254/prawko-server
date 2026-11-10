@@ -281,8 +281,9 @@ public class AuthController {
     }
 
     /**
-     * Signs in the user of a provider account. Not part of {@link IUserIdentityService}, as a call from inside it would
-     * bypass the proxy, and with it the retry and transaction of {@link IUserIdentityService#resolveUser}.
+     * Signs in the user of a provider account. Not part of {@link IUserIdentityService}: called from inside its
+     * implementation, it would bypass the proxy, and with it the retry and transaction of
+     * {@link pl.prawko.prawko_server.service.implementation.UserIdentityService#resolveUser}.
      */
     private AuthTokensDto signIn(final ProviderProfile profile) {
         final var user = userIdentityService.resolveUser(profile);
