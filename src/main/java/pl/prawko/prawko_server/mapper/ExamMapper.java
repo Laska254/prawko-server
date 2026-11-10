@@ -14,7 +14,7 @@ import pl.prawko.prawko_server.model.Exam;
  * This class is responsible for mapping {@link Exam} model into {@link ExamDto}.
  * <p>
  * The mapper is registered as a Spring {@link Component}, so it can be injected into services or other components that
- * require answer mapping functionality.
+ * require exam mapping functionality.
  * <p>
  * {@code revealCorrect} is passed to {@link AnswerMapper} to decide whether answers show which one is correct.
  */
