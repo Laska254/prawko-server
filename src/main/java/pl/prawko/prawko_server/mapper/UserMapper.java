@@ -66,7 +66,10 @@ public abstract class UserMapper {
     @Named("activePendingEmail")
     protected @Nullable String activePendingEmail(final User user) {
         final var expires = user.getVerificationTokenExpires();
-        return expires != null && expires.isAfter(clock.instant()) ? user.getPendingEmail() : null;
+        if (expires == null || !expires.isAfter(clock.instant())) {
+            return null;
+        }
+        return user.getPendingEmail();
     }
 
     @Named("awaitingNewEmailConfirmation")

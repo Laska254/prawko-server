@@ -114,10 +114,16 @@ public class Answer {
 
     @Override
     public String toString() {
+        final long questionId;
+        if (question == null) {
+            questionId = 0;
+        } else {
+            questionId = question.getId();
+        }
         return "Answer{" +
                 "id=" + id +
                 ", correct=" + correct +
-                ", question=" + (question == null ? null : question.getId()) +
+                ", question=" + questionId +
                 '}';
     }
 

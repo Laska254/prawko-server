@@ -96,11 +96,23 @@ public class QuestionTranslation {
 
     @Override
     public String toString() {
+        final long questionId;
+        if (question == null) {
+            questionId = 0;
+        } else {
+            questionId = question.getId();
+        }
+        final String languageCode;
+        if (language == null) {
+            languageCode = null;
+        } else {
+            languageCode = language.getCode();
+        }
         return "QuestionTranslation{" +
                 "id=" + id +
                 ", content='" + content + '\'' +
-                ", question=" + (question == null ? null : question.getId()) +
-                ", language=" + (language == null ? null : language.getCode()) +
+                ", question=" + questionId +
+                ", language=" + languageCode +
                 '}';
     }
 

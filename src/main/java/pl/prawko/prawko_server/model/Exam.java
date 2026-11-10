@@ -200,6 +200,18 @@ public class Exam {
 
     @Override
     public String toString() {
+        final long userId;
+        if (user == null) {
+            userId = 0;
+        } else {
+            userId = user.getId();
+        }
+        final CategoryVariant categoryName;
+        if (category == null) {
+            categoryName = null;
+        } else {
+            categoryName = category.getName();
+        }
         return "Exam{" +
                 "id=" + id +
                 ", active=" + active +
@@ -207,8 +219,8 @@ public class Exam {
                 ", created=" + created +
                 ", updated=" + updated +
                 ", expires=" + expires +
-                ", user=" + (user == null ? null : user.getId()) +
-                ", category=" + (category == null ? null : category.getName()) +
+                ", user=" + userId +
+                ", category=" + categoryName +
                 '}';
     }
 

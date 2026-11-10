@@ -110,11 +110,23 @@ public class AnswerTranslation {
 
     @Override
     public String toString() {
+        final long answerId;
+        if (answer == null) {
+            answerId = 0;
+        } else {
+            answerId = answer.getId();
+        }
+        final String languageCode;
+        if (language == null) {
+            languageCode = null;
+        } else {
+            languageCode = language.getCode();
+        }
         return "AnswerTranslation{" +
                 "id=" + id +
                 ", content='" + content + '\'' +
-                ", answer=" + (answer == null ? null : answer.getId()) +
-                ", language=" + (language == null ? null : language.getCode()) +
+                ", answer=" + answerId +
+                ", language=" + languageCode +
                 '}';
     }
 

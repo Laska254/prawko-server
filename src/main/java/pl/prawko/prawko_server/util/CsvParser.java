@@ -100,9 +100,19 @@ public class CsvParser {
 
     private static String describe(final JacksonException exception) {
         final var location = exception.getLocation();
-        final var line = location == null ? "" : " at line " + location.getLineNr();
+        final String line;
+        if (location == null) {
+            line = "";
+        } else {
+            line = " at line " + location.getLineNr();
+        }
         final var path = exception.getPath();
-        final var column = path.isEmpty() ? "" : " in column '" + path.getLast().getPropertyName() + "'";
+        final String column;
+        if (path.isEmpty()) {
+            column = "";
+        } else {
+            column = " in column '" + path.getLast().getPropertyName() + "'";
+        }
         return "Invalid CSV file" + line + column + ": " + exception.getOriginalMessage();
     }
 

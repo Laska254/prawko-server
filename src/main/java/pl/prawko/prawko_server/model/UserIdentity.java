@@ -104,10 +104,16 @@ public class UserIdentity {
 
     @Override
     public String toString() {
+        final long userId;
+        if (user == null) {
+            userId = 0;
+        } else {
+            userId = user.getId();
+        }
         return "UserIdentity{" +
                 "id=" + id +
                 ", provider=" + provider +
-                ", user=" + (user == null ? null : user.getId()) +
+                ", user=" + userId +
                 '}';
     }
 

@@ -171,7 +171,12 @@ public class UserService implements IUserService, UserDetailsService {
         final var userName = updateRequest.userName();
         final var email = updateRequest.email();
         final var cancelsEmailChange = email != null && email.equalsIgnoreCase(user.getEmail());
-        final var newEmail = cancelsEmailChange ? null : email;
+        final String newEmail;
+        if (cancelsEmailChange) {
+            newEmail = null;
+        } else {
+            newEmail = email;
+        }
         validateNoConflict(userName, name -> repository.existsByUserNameIgnoreCaseAndIdNot(name, userId), newEmail);
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
@@ -181,8 +186,13 @@ public class UserService implements IUserService, UserDetailsService {
                 log.info("Email change of user with id '{}' canceled.", userId);
             }
         }
-        final Runnable sendEmailChangeLinks = newEmail == null ? () -> {
-        } : requestEmailChange(user, newEmail);
+        final Runnable sendEmailChangeLinks;
+        if (newEmail == null) {
+            sendEmailChangeLinks = () -> {
+            };
+        } else {
+            sendEmailChangeLinks = requestEmailChange(user, newEmail);
+        }
         final var updated = repository.save(user);
         sendEmailChangeLinks.run();
         log.info("Successfully updated user with id '{}'", userId);

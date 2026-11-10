@@ -127,12 +127,24 @@ public class RefreshToken {
 
     @Override
     public String toString() {
+        final long replacedById;
+        if (replacedBy == null) {
+            replacedById = 0;
+        } else {
+            replacedById = replacedBy.getId();
+        }
+        final long userId;
+        if (user == null) {
+            userId = 0;
+        } else {
+            userId = user.getId();
+        }
         return "RefreshToken{" +
                 "id=" + id +
                 ", expires=" + expires +
                 ", revokedAt=" + revokedAt +
-                ", replacedBy=" + (replacedBy == null ? null : replacedBy.getId()) +
-                ", user=" + (user == null ? null : user.getId()) +
+                ", replacedBy=" + replacedById +
+                ", user=" + userId +
                 '}';
     }
 
