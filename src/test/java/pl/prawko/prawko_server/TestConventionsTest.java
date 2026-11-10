@@ -16,7 +16,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * Conventions for the test code: shared Spring context, no sleeps, test method names and map literals.
+ * Conventions for the test code: shared Spring context, no sleeps, test method names, map literals and enum constant
+ * names.
  */
 @AnalyzeClasses(packagesOf = PrawkoServerApplication.class, importOptions = ImportOption.OnlyIncludeTests.class)
 class TestConventionsTest {
@@ -52,5 +53,8 @@ class TestConventionsTest {
 
     @ArchTest
     static final ArchRule NO_MAP_OF = ArchitectureTest.NO_MAP_OF;
+
+    @ArchTest
+    static final ArchRule ENUM_CONSTANTS_ARE_UPPER_SNAKE_CASE = ArchitectureTest.ENUM_CONSTANTS_ARE_UPPER_SNAKE_CASE;
 
 }

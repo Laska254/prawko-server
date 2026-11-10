@@ -30,5 +30,26 @@
             <property name="separateLineBetweenGroups" value="true"/>
         </module>
         <module name="DeclarationOrder"/>
+
+        <!-- Method names: ArchitectureTest and TestConventionsTest (test names and Spring Data queries need _) -->
+        <module name="TypeName"/>
+        <module name="ClassTypeParameterName"/>
+        <module name="InterfaceTypeParameterName"/>
+        <module name="MethodTypeParameterName"/>
+        <module name="RecordTypeParameterName"/>
+        <module name="RecordComponentName"/>
+        <module name="ConstantName">
+            <!-- a Logger isn't a constant, see Google Java Style 5.2.4 -->
+            <property name="format" value="^(log|[A-Z][A-Z0-9]*(_[A-Z0-9]+)*)$"/>
+        </module>
+        <module name="StaticVariableName"/>
+        <module name="MemberName"/>
+        <module name="ParameterName"/>
+        <module name="LambdaParameterName"/>
+        <module name="CatchParameterName"/>
+        <module name="LocalVariableName"/>
+        <module name="LocalFinalVariableName"/>
+        <module name="PatternVariableName"/>
+        <module name="IllegalIdentifierName"/>
     </module>
 </module>

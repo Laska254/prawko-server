@@ -25,6 +25,7 @@ import static com.tngtech.archunit.core.domain.properties.HasOwner.Predicates.Wi
 import static com.tngtech.archunit.core.domain.properties.HasParameterTypes.Predicates.rawParameterTypes;
 import static com.tngtech.archunit.lang.conditions.ArchConditions.have;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
@@ -188,6 +189,14 @@ class ArchitectureTest {
             .doNotHaveModifier(JavaModifier.SYNTHETIC)
             .should()
             .haveNameMatching("[a-z][a-zA-Z0-9]*");
+
+    /** Checkstyle has no check for enum constants. */
+    @ArchTest
+    static final ArchRule ENUM_CONSTANTS_ARE_UPPER_SNAKE_CASE = fields()
+            .that()
+            .haveModifier(JavaModifier.ENUM)
+            .should()
+            .haveNameMatching("[A-Z][A-Z0-9]*(_[A-Z0-9]+)*");
 
     @ArchTest
     static final ArchRule NO_FIELD_INJECTION = GeneralCodingRules.NO_CLASSES_SHOULD_USE_FIELD_INJECTION;
