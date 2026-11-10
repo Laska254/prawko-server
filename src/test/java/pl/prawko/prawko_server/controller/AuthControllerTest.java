@@ -133,13 +133,13 @@ public class AuthControllerTest {
                         GoogleTestData.idToken(GoogleTestData.createPippinClaims()))),
                 Arguments.of(Named.of("for the Android client",
                         GoogleTestData.idToken(GoogleTestData.createPippinClaims()
-                        .audience(List.of(GoogleTestData.ANDROID_CLIENT_ID))))),
+                                .audience(List.of(GoogleTestData.ANDROID_CLIENT_ID))))),
                 Arguments.of(Named.of("for several audiences",
                         GoogleTestData.idToken(GoogleTestData.createPippinClaims()
-                        .audience(List.of(GoogleTestData.OTHER_CLIENT_ID, GoogleTestData.ANDROID_CLIENT_ID))))),
+                                .audience(List.of(GoogleTestData.OTHER_CLIENT_ID, GoogleTestData.ANDROID_CLIENT_ID))))),
                 Arguments.of(Named.of("issuer without scheme",
                         GoogleTestData.idToken(GoogleTestData.createPippinClaims()
-                        .issuer("accounts.google.com"))))
+                                .issuer("accounts.google.com"))))
         );
     }
 
@@ -768,8 +768,8 @@ public class AuthControllerTest {
         final var tester = userRepository.save(UserTestData.createTestUserPippin());
         final var oldToken = requestResetToken(tester.getEmail());
         final var pending = userRepository.findById(tester.getId()).orElseThrow();
-        userRepository.save(pending.setPasswordResetTokenExpires(pending.getPasswordResetTokenExpires()
-                .minus(cooldown)));
+        final var cooldownOver = pending.getPasswordResetTokenExpires().minus(cooldown);
+        userRepository.save(pending.setPasswordResetTokenExpires(cooldownOver));
 
         forgotPassword(tester.getEmail());
 

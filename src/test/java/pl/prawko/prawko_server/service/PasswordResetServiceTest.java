@@ -94,8 +94,8 @@ class PasswordResetServiceTest {
         when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
         service.requestReset(tester.getEmail());
         final var firstHash = tester.getPasswordResetTokenHash();
-        tester.setPasswordResetTokenExpires(tester.getPasswordResetTokenExpires()
-                .minus(UserTestData.PASSWORD_RESET_COOLDOWN));
+        final var cooldownOver = tester.getPasswordResetTokenExpires().minus(UserTestData.PASSWORD_RESET_COOLDOWN);
+        tester.setPasswordResetTokenExpires(cooldownOver);
 
         service.requestReset(tester.getEmail());
 
