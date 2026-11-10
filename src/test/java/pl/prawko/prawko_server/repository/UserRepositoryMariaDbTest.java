@@ -20,7 +20,7 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.service.IIdentityNotificationService;
 import pl.prawko.prawko_server.service.IUserIdentityService;
 import pl.prawko.prawko_server.service.implementation.UserIdentityService;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.util.Locale;
 import java.util.Map;

@@ -21,7 +21,7 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
 import pl.prawko.prawko_server.service.implementation.PasswordResetService;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.util.function.UnaryOperator;
 

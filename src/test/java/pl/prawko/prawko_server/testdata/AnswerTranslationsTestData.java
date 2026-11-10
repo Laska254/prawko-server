@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.test_data;
+package pl.prawko.prawko_server.testdata;
 
 import pl.prawko.prawko_server.dto.response.AnswerTranslationDto;
 import pl.prawko.prawko_server.model.AnswerTranslation;
@@ -6,9 +6,9 @@ import pl.prawko.prawko_server.model.AnswerTranslation;
 import java.util.Comparator;
 import java.util.List;
 
-import static pl.prawko.prawko_server.test_data.LanguageTestData.DE;
-import static pl.prawko.prawko_server.test_data.LanguageTestData.EN;
-import static pl.prawko.prawko_server.test_data.LanguageTestData.PL;
+import static pl.prawko.prawko_server.testdata.LanguageTestData.DE;
+import static pl.prawko.prawko_server.testdata.LanguageTestData.EN;
+import static pl.prawko.prawko_server.testdata.LanguageTestData.PL;
 
 public class AnswerTranslationsTestData {
 

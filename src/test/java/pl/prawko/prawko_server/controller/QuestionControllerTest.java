@@ -24,9 +24,9 @@ import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
-import pl.prawko.prawko_server.test_data.MultiPartFactory;
-import pl.prawko.prawko_server.test_data.QuestionCsvTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
+import pl.prawko.prawko_server.testdata.MultiPartFactory;
+import pl.prawko.prawko_server.testdata.QuestionCsvTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
 
 import java.util.Arrays;
 import java.util.List;

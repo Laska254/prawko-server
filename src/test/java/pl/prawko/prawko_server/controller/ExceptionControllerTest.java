@@ -12,8 +12,8 @@ import org.springframework.security.oauth2.jwt.JwtException;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
 import pl.prawko.prawko_server.exception.ProviderUnavailableException;
-import pl.prawko.prawko_server.test_data.GoogleTestData;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.GoogleTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.sql.SQLException;
 import java.util.Map;

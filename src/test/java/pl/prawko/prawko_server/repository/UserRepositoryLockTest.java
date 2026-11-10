@@ -11,7 +11,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

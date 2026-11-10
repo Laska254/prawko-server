@@ -30,10 +30,10 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
-import pl.prawko.prawko_server.test_data.CategoryTestData;
-import pl.prawko.prawko_server.test_data.ExamTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.CategoryTestData;
+import pl.prawko.prawko_server.testdata.ExamTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.util.List;
 import java.util.Map;

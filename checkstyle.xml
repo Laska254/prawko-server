@@ -32,6 +32,10 @@
         <module name="DeclarationOrder"/>
 
         <!-- Method names: ArchitectureTest and TestConventionsTest (test names and Spring Data queries need _) -->
+        <!-- the root keeps its _ for the - in prawko-server (JLS 6.1), subpackages don't -->
+        <module name="PackageName">
+            <property name="format" value="^pl\.prawko\.prawko_server(\.[a-z][a-z0-9]*)*$"/>
+        </module>
         <module name="TypeName"/>
         <module name="ClassTypeParameterName"/>
         <module name="InterfaceTypeParameterName"/>

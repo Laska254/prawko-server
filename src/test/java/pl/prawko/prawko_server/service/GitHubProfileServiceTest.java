@@ -23,8 +23,8 @@ import pl.prawko.prawko_server.model.EmailStatus;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.service.implementation.GitHubProfileService;
-import pl.prawko.prawko_server.test_data.GitHubTestData;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.GitHubTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.io.IOException;
 import java.util.stream.Stream;

@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.exception.UnknownCategoryException;
 import pl.prawko.prawko_server.model.Question;
-import pl.prawko.prawko_server.test_data.QuestionCsvTestData;
+import pl.prawko.prawko_server.testdata.QuestionCsvTestData;
 import tools.jackson.databind.DatabindException;
 
 import java.io.IOException;

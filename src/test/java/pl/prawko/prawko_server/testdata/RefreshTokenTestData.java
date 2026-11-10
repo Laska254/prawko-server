@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.test_data;
+package pl.prawko.prawko_server.testdata;
 
 import pl.prawko.prawko_server.model.RefreshToken;
 import pl.prawko.prawko_server.model.User;

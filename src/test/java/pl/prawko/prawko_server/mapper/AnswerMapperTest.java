@@ -6,12 +6,12 @@ import pl.prawko.prawko_server.dto.response.AnswerTranslationDto;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.AnswerTranslation;
 import pl.prawko.prawko_server.model.Question;
-import pl.prawko.prawko_server.test_data.AnswerTestData;
-import pl.prawko.prawko_server.test_data.AnswerTranslationsTestData;
-import pl.prawko.prawko_server.test_data.AnswerVariant;
+import pl.prawko.prawko_server.testdata.AnswerTestData;
+import pl.prawko.prawko_server.testdata.AnswerTranslationsTestData;
+import pl.prawko.prawko_server.testdata.AnswerVariant;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static pl.prawko.prawko_server.test_data.LanguageTestData.PL;
+import static pl.prawko.prawko_server.testdata.LanguageTestData.PL;
 
 class AnswerMapperTest {
 

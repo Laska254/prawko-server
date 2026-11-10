@@ -12,7 +12,7 @@ import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.User;
-import pl.prawko.prawko_server.test_data.CategoryTestData;
+import pl.prawko.prawko_server.testdata.CategoryTestData;
 
 import java.time.Instant;
 import java.util.List;

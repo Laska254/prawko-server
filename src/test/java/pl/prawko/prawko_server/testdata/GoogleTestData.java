@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.test_data;
+package pl.prawko.prawko_server.testdata;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;

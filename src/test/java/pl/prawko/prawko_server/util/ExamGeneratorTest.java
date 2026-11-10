@@ -10,8 +10,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.IQuestionService;
-import pl.prawko.prawko_server.test_data.CategoryTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
+import pl.prawko.prawko_server.testdata.CategoryTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;

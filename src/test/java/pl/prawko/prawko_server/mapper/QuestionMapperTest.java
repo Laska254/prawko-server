@@ -12,9 +12,9 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.test_data.QuestionCsvTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
-import pl.prawko.prawko_server.test_data.QuestionTranslationsTestData;
+import pl.prawko.prawko_server.testdata.QuestionCsvTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
+import pl.prawko.prawko_server.testdata.QuestionTranslationsTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -71,7 +71,7 @@ class QuestionMapperTest {
     }
 
     @ParameterizedTest
-    @MethodSource("pl.prawko.prawko_server.test_data.QuestionTranslationsTestData#translations")
+    @MethodSource("pl.prawko.prawko_server.testdata.QuestionTranslationsTestData#translations")
     void toTranslationDto_mapContentAndLanguageCode_whenTranslationIsInAnyLanguage(final Language language,
                                                                                    final String content) {
         final var given = QuestionTranslationsTestData.createTranslation(language, content);

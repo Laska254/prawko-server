@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.test_data;
+package pl.prawko.prawko_server.testdata;
 
 import pl.prawko.prawko_server.dto.response.AnswerDto;
 import pl.prawko.prawko_server.model.Answer;

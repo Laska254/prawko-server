@@ -44,10 +44,10 @@ import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.RefreshTokenRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IEmailVerificationService;
-import pl.prawko.prawko_server.test_data.GitHubTestData;
-import pl.prawko.prawko_server.test_data.GoogleTestData;
-import pl.prawko.prawko_server.test_data.RefreshTokenTestData;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.GitHubTestData;
+import pl.prawko.prawko_server.testdata.GoogleTestData;
+import pl.prawko.prawko_server.testdata.RefreshTokenTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;

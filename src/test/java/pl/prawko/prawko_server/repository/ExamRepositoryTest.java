@@ -10,10 +10,10 @@ import org.springframework.test.context.ActiveProfiles;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.test_data.CategoryTestData;
-import pl.prawko.prawko_server.test_data.ExamTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.CategoryTestData;
+import pl.prawko.prawko_server.testdata.ExamTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.time.Instant;
 import java.util.List;

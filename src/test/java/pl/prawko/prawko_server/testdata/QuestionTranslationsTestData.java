@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.test_data;
+package pl.prawko.prawko_server.testdata;
 
 import org.junit.jupiter.params.provider.Arguments;
 import pl.prawko.prawko_server.dto.response.QuestionTranslationDto;
@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static pl.prawko.prawko_server.test_data.LanguageTestData.DE;
-import static pl.prawko.prawko_server.test_data.LanguageTestData.EN;
-import static pl.prawko.prawko_server.test_data.LanguageTestData.PL;
+import static pl.prawko.prawko_server.testdata.LanguageTestData.DE;
+import static pl.prawko.prawko_server.testdata.LanguageTestData.EN;
+import static pl.prawko.prawko_server.testdata.LanguageTestData.PL;
 
 public class QuestionTranslationsTestData {
 

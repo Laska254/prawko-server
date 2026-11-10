@@ -11,8 +11,8 @@ import org.springframework.test.context.DynamicPropertyRegistrar;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IAccessTokenService;
-import pl.prawko.prawko_server.test_data.GitHubTestData;
-import pl.prawko.prawko_server.test_data.GoogleTestData;
+import pl.prawko.prawko_server.testdata.GitHubTestData;
+import pl.prawko.prawko_server.testdata.GoogleTestData;
 
 import java.io.IOException;
 

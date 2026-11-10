@@ -2,7 +2,7 @@ package pl.prawko.prawko_server.config;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

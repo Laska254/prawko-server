@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.time.Duration;
 

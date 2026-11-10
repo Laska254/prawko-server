@@ -8,8 +8,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 import pl.prawko.prawko_server.model.RefreshToken;
 import pl.prawko.prawko_server.model.User;
-import pl.prawko.prawko_server.test_data.RefreshTokenTestData;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.RefreshTokenTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;

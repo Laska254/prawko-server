@@ -7,7 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.repository.LanguageRepository;
 import pl.prawko.prawko_server.service.implementation.LanguageService;
-import pl.prawko.prawko_server.test_data.LanguageTestData;
+import pl.prawko.prawko_server.testdata.LanguageTestData;
 
 import java.util.Collections;
 

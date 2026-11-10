@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.test_data;
+package pl.prawko.prawko_server.testdata;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;

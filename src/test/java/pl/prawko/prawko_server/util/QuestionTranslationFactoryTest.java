@@ -10,10 +10,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.ILanguageService;
-import pl.prawko.prawko_server.test_data.LanguageTestData;
-import pl.prawko.prawko_server.test_data.QuestionCsvTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
-import pl.prawko.prawko_server.test_data.QuestionTranslationsTestData;
+import pl.prawko.prawko_server.testdata.LanguageTestData;
+import pl.prawko.prawko_server.testdata.QuestionCsvTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
+import pl.prawko.prawko_server.testdata.QuestionTranslationsTestData;
 
 import java.util.List;
 

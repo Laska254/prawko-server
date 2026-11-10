@@ -12,7 +12,7 @@ import pl.prawko.prawko_server.controller.ExceptionController;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.model.UserIdentity;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.time.Duration;
 import java.time.Instant;

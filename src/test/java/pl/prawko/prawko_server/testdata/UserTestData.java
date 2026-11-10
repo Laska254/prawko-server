@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.test_data;
+package pl.prawko.prawko_server.testdata;
 
 import org.springframework.lang.NonNull;
 import org.springframework.mail.SimpleMailMessage;

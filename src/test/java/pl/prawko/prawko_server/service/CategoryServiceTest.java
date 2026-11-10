@@ -12,7 +12,7 @@ import pl.prawko.prawko_server.exception.UnknownCategoryException;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.repository.CategoryRepository;
 import pl.prawko.prawko_server.service.implementation.CategoryService;
-import pl.prawko.prawko_server.test_data.CategoryTestData;
+import pl.prawko.prawko_server.testdata.CategoryTestData;
 
 import java.util.List;
 import java.util.Optional;
