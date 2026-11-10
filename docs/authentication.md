@@ -5,7 +5,7 @@ The API is stateless - every request that requires authentication must carry an 
 
 ## Tokens
 
-Signing in with `POST /auth` (`{"userName": "...", "password": "..."}`, username or email, both ignoring case) returns a token pair:
+Signing in with `POST /auth` (`{"userName": "...", "password": "..."}`, username or email, both ignoring case, on MariaDB also [accents](api.md#endpoints)) returns a token pair:
 
 ```json
 {"accessToken": "...", "refreshToken": "...", "expiresIn": 900}
