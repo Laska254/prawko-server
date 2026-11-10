@@ -4,12 +4,12 @@ import org.springframework.stereotype.Component;
 import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
-import pl.prawko.prawko_server.service.implementation.CategoryService;
+import pl.prawko.prawko_server.service.ICategoryService;
 
 @Component
 public class CsvFacade {
 
-    private final CategoryService categoryService;
+    private final ICategoryService categoryService;
     private final QuestionMapper questionMapper;
     private final QuestionTranslationFactory translationFactory;
     private final AnswerFactory answerFactory;
@@ -17,7 +17,7 @@ public class CsvFacade {
     public CsvFacade(final QuestionMapper questionMapper,
                      final QuestionTranslationFactory translationFactory,
                      final AnswerFactory answerFactory,
-                     final CategoryService categoryService) {
+                     final ICategoryService categoryService) {
         this.questionMapper = questionMapper;
         this.translationFactory = translationFactory;
         this.answerFactory = answerFactory;

@@ -9,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.service.implementation.LanguageService;
+import pl.prawko.prawko_server.service.ILanguageService;
 import pl.prawko.prawko_server.test_data.LanguageTestData;
 import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 class QuestionTranslationFactoryTest {
 
     @Mock
-    private LanguageService languageService;
+    private ILanguageService languageService;
 
     @InjectMocks
     private QuestionTranslationFactory factory;

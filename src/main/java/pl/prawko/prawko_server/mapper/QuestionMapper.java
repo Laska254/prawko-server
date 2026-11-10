@@ -14,12 +14,12 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
 import pl.prawko.prawko_server.model.QuestionTranslation;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.service.implementation.CategoryService;
+import pl.prawko.prawko_server.service.ICategoryService;
 
 /**
  * This class is responsible for mapping {@link QuestionCSV} models into {@link Question} entities.
  * It's using {@link AnswerMapper} to delegate mapping of {@link Answer} entities linked to {@link Question}.
- * Categories are mapped using {@link CategoryService#findAllFromString(String)}.
+ * Categories are mapped using {@link ICategoryService#findAllFromString(String)}.
  * {@code revealCorrect} is passed to {@link AnswerMapper} to decide whether answers show which one is correct.
  * The media filename is turned into {@code mediaUrl} and {@code mediaType} by {@link MediaMapper}.
  * <p>

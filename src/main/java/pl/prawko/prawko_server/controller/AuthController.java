@@ -25,12 +25,12 @@ import pl.prawko.prawko_server.dto.ResendVerificationRequest;
 import pl.prawko.prawko_server.dto.ResetPasswordRequest;
 import pl.prawko.prawko_server.dto.VerifyEmailRequest;
 import pl.prawko.prawko_server.model.ProviderProfile;
-import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
-import pl.prawko.prawko_server.service.implementation.GitHubProfileService;
-import pl.prawko.prawko_server.service.implementation.GoogleProfileService;
-import pl.prawko.prawko_server.service.implementation.PasswordResetService;
-import pl.prawko.prawko_server.service.implementation.RefreshTokenService;
-import pl.prawko.prawko_server.service.implementation.UserIdentityService;
+import pl.prawko.prawko_server.service.IEmailVerificationService;
+import pl.prawko.prawko_server.service.IGitHubProfileService;
+import pl.prawko.prawko_server.service.IGoogleProfileService;
+import pl.prawko.prawko_server.service.IPasswordResetService;
+import pl.prawko.prawko_server.service.IRefreshTokenService;
+import pl.prawko.prawko_server.service.IUserIdentityService;
 
 /**
  * REST controller for authentication operations.
@@ -47,20 +47,20 @@ import pl.prawko.prawko_server.service.implementation.UserIdentityService;
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
-    private final RefreshTokenService refreshTokenService;
-    private final PasswordResetService passwordResetService;
-    private final EmailVerificationService emailVerificationService;
-    private final GoogleProfileService googleProfileService;
-    private final GitHubProfileService gitHubProfileService;
-    private final UserIdentityService userIdentityService;
+    private final IRefreshTokenService refreshTokenService;
+    private final IPasswordResetService passwordResetService;
+    private final IEmailVerificationService emailVerificationService;
+    private final IGoogleProfileService googleProfileService;
+    private final IGitHubProfileService gitHubProfileService;
+    private final IUserIdentityService userIdentityService;
 
     public AuthController(final AuthenticationManager authenticationManager,
-                          final RefreshTokenService refreshTokenService,
-                          final PasswordResetService passwordResetService,
-                          final EmailVerificationService emailVerificationService,
-                          final GoogleProfileService googleProfileService,
-                          final GitHubProfileService gitHubProfileService,
-                          final UserIdentityService userIdentityService) {
+                          final IRefreshTokenService refreshTokenService,
+                          final IPasswordResetService passwordResetService,
+                          final IEmailVerificationService emailVerificationService,
+                          final IGoogleProfileService googleProfileService,
+                          final IGitHubProfileService gitHubProfileService,
+                          final IUserIdentityService userIdentityService) {
         this.authenticationManager = authenticationManager;
         this.refreshTokenService = refreshTokenService;
         this.passwordResetService = passwordResetService;
@@ -281,8 +281,8 @@ public class AuthController {
     }
 
     /**
-     * Signs in the user of a provider account. Not part of {@link UserIdentityService}, as a call from inside it would
-     * bypass the proxy, and with it the retry and transaction of {@link UserIdentityService#resolveUser}.
+     * Signs in the user of a provider account. Not part of {@link IUserIdentityService}, as a call from inside it would
+     * bypass the proxy, and with it the retry and transaction of {@link IUserIdentityService#resolveUser}.
      */
     private AuthTokensDto signIn(final ProviderProfile profile) {
         final var user = userIdentityService.resolveUser(profile);

@@ -7,7 +7,7 @@ import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.service.implementation.LanguageService;
+import pl.prawko.prawko_server.service.ILanguageService;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -15,9 +15,9 @@ import java.util.stream.Stream;
 @Component
 public class AnswerFactory {
 
-    private final LanguageService languageService;
+    private final ILanguageService languageService;
 
-    public AnswerFactory(final LanguageService languageService) {
+    public AnswerFactory(final ILanguageService languageService) {
         this.languageService = languageService;
     }
 

@@ -9,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.service.implementation.QuestionService;
+import pl.prawko.prawko_server.service.IQuestionService;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 
@@ -23,7 +23,7 @@ public class ExamGeneratorTest {
     private static final Category CATEGORY = CategoryTestData.CATEGORY_B;
 
     @Mock
-    private QuestionService questionService;
+    private IQuestionService questionService;
 
     @InjectMocks
     private ExamGenerator examGenerator;

@@ -13,7 +13,7 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
 import pl.prawko.prawko_server.model.QuestionTranslation;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.service.implementation.CategoryService;
+import pl.prawko.prawko_server.service.ICategoryService;
 
 import java.util.List;
 
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 class CsvFacadeTest {
 
     @Mock
-    private CategoryService categoryService;
+    private ICategoryService categoryService;
 
     @Mock
     private QuestionMapper questionMapper;

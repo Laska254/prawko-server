@@ -25,6 +25,7 @@ import pl.prawko.prawko_server.mapper.UserMapper;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
+import pl.prawko.prawko_server.service.IEmailVerificationService;
 import pl.prawko.prawko_server.service.IRefreshTokenService;
 import pl.prawko.prawko_server.service.IUserService;
 
@@ -46,13 +47,13 @@ public class UserService implements IUserService, UserDetailsService {
     private final UserRepository repository;
     private final UserMapper mapper;
     private final PasswordEncoder passwordEncoder;
-    private final EmailVerificationService emailVerificationService;
+    private final IEmailVerificationService emailVerificationService;
     private final IRefreshTokenService refreshTokenService;
 
     public UserService(final UserRepository repository,
                        final UserMapper mapper,
                        final PasswordEncoder passwordEncoder,
-                       final EmailVerificationService emailVerificationService,
+                       final IEmailVerificationService emailVerificationService,
                        final IRefreshTokenService refreshTokenService) {
         this.repository = repository;
         this.mapper = mapper;
