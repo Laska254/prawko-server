@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.service.implementation.QuestionService;
+import pl.prawko.prawko_server.service.IQuestionService;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,9 +21,9 @@ public class ExamGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(ExamGenerator.class);
 
-    private final QuestionService questionService;
+    private final IQuestionService questionService;
 
-    public ExamGenerator(final QuestionService questionService) {
+    public ExamGenerator(final IQuestionService questionService) {
         this.questionService = questionService;
     }
 

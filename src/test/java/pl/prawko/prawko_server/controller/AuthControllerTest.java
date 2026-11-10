@@ -43,7 +43,7 @@ import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.RefreshTokenRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
-import pl.prawko.prawko_server.service.implementation.EmailVerificationService;
+import pl.prawko.prawko_server.service.IEmailVerificationService;
 import pl.prawko.prawko_server.test_data.GitHubTestData;
 import pl.prawko.prawko_server.test_data.GoogleTestData;
 import pl.prawko.prawko_server.test_data.RefreshTokenTestData;
@@ -89,7 +89,7 @@ public class AuthControllerTest {
     private ThreadPoolTaskExecutor taskExecutor;
 
     @Autowired
-    private EmailVerificationService emailVerificationService;
+    private IEmailVerificationService emailVerificationService;
 
     @Autowired
     private JwtEncoder jwtEncoder;

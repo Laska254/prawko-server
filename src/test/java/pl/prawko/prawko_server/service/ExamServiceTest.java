@@ -21,9 +21,7 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.AnswerRepository;
 import pl.prawko.prawko_server.repository.ExamRepository;
-import pl.prawko.prawko_server.service.implementation.CategoryService;
 import pl.prawko.prawko_server.service.implementation.ExamService;
-import pl.prawko.prawko_server.service.implementation.UserService;
 import pl.prawko.prawko_server.test_data.CategoryTestData;
 import pl.prawko.prawko_server.test_data.ExamTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
@@ -47,10 +45,10 @@ import static org.mockito.Mockito.when;
 public class ExamServiceTest {
 
     @Mock
-    private UserService userService;
+    private IUserService userService;
 
     @Mock
-    private CategoryService categoryService;
+    private ICategoryService categoryService;
 
     @Mock
     private ExamRepository repository;

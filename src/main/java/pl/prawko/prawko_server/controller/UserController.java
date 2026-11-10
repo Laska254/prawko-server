@@ -36,11 +36,11 @@ import pl.prawko.prawko_server.dto.UserDto;
 import pl.prawko.prawko_server.dto.UserStatsDto;
 import pl.prawko.prawko_server.dto.UserUpdateRequest;
 import pl.prawko.prawko_server.model.IdentityProvider;
-import pl.prawko.prawko_server.service.implementation.ExamService;
-import pl.prawko.prawko_server.service.implementation.GitHubProfileService;
-import pl.prawko.prawko_server.service.implementation.GoogleProfileService;
-import pl.prawko.prawko_server.service.implementation.UserIdentityService;
-import pl.prawko.prawko_server.service.implementation.UserService;
+import pl.prawko.prawko_server.service.IExamService;
+import pl.prawko.prawko_server.service.IGitHubProfileService;
+import pl.prawko.prawko_server.service.IGoogleProfileService;
+import pl.prawko.prawko_server.service.IUserIdentityService;
+import pl.prawko.prawko_server.service.IUserService;
 
 import java.util.Optional;
 
@@ -56,17 +56,17 @@ import java.util.Optional;
 @RequestMapping(ApiConstants.USERS_BASE_URL)
 public class UserController {
 
-    private final UserService userService;
-    private final ExamService examService;
-    private final GoogleProfileService googleProfileService;
-    private final GitHubProfileService gitHubProfileService;
-    private final UserIdentityService userIdentityService;
+    private final IUserService userService;
+    private final IExamService examService;
+    private final IGoogleProfileService googleProfileService;
+    private final IGitHubProfileService gitHubProfileService;
+    private final IUserIdentityService userIdentityService;
 
-    public UserController(final UserService userService,
-                          final ExamService examService,
-                          final GoogleProfileService googleProfileService,
-                          final GitHubProfileService gitHubProfileService,
-                          final UserIdentityService userIdentityService) {
+    public UserController(final IUserService userService,
+                          final IExamService examService,
+                          final IGoogleProfileService googleProfileService,
+                          final IGitHubProfileService gitHubProfileService,
+                          final IUserIdentityService userIdentityService) {
         this.userService = userService;
         this.examService = examService;
         this.googleProfileService = googleProfileService;

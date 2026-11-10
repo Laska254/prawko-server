@@ -5,7 +5,7 @@ import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCSV;
 import pl.prawko.prawko_server.model.QuestionTranslation;
-import pl.prawko.prawko_server.service.implementation.LanguageService;
+import pl.prawko.prawko_server.service.ILanguageService;
 
 import java.util.Comparator;
 import java.util.List;
@@ -13,9 +13,9 @@ import java.util.List;
 @Component
 public class QuestionTranslationFactory {
 
-    private final LanguageService languageService;
+    private final ILanguageService languageService;
 
-    public QuestionTranslationFactory(final LanguageService languageService) {
+    public QuestionTranslationFactory(final ILanguageService languageService) {
         this.languageService = languageService;
     }
 

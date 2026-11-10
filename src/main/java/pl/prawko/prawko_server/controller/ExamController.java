@@ -31,7 +31,7 @@ import pl.prawko.prawko_server.dto.ExamDto;
 import pl.prawko.prawko_server.dto.ExamSummaryDto;
 import pl.prawko.prawko_server.dto.SubmitAnswerRequest;
 import pl.prawko.prawko_server.model.CategoryVariant;
-import pl.prawko.prawko_server.service.implementation.ExamService;
+import pl.prawko.prawko_server.service.IExamService;
 
 /**
  * REST controller for exam management operations.
@@ -47,9 +47,9 @@ import pl.prawko.prawko_server.service.implementation.ExamService;
 @RequestMapping(ApiConstants.EXAMS_BASE_URL)
 public class ExamController {
 
-    private final ExamService service;
+    private final IExamService service;
 
-    public ExamController(final ExamService service) {
+    public ExamController(final IExamService service) {
         this.service = service;
     }
 

@@ -21,7 +21,9 @@ import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.repository.AnswerRepository;
 import pl.prawko.prawko_server.repository.ExamRepository;
+import pl.prawko.prawko_server.service.ICategoryService;
 import pl.prawko.prawko_server.service.IExamService;
+import pl.prawko.prawko_server.service.IUserService;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
 import java.time.Clock;
@@ -37,17 +39,17 @@ public class ExamService implements IExamService {
     private static final Logger log = LoggerFactory.getLogger(ExamService.class);
 
     private final ExamRepository repository;
-    private final UserService userService;
+    private final IUserService userService;
     private final ExamGenerator examGenerator;
-    private final CategoryService categoryService;
+    private final ICategoryService categoryService;
     private final ExamMapper examMapper;
     private final AnswerRepository answerRepository;
     private final Clock clock;
 
     public ExamService(final ExamRepository repository,
-                       final UserService userService,
+                       final IUserService userService,
                        final ExamGenerator examGenerator,
-                       final CategoryService categoryService,
+                       final ICategoryService categoryService,
                        final ExamMapper examMapper,
                        final AnswerRepository answerRepository,
                        final Clock clock) {

@@ -27,7 +27,7 @@ import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.dto.QuestionDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.service.implementation.QuestionService;
+import pl.prawko.prawko_server.service.IQuestionService;
 
 /**
  * REST controller for question management operations.
@@ -42,9 +42,9 @@ import pl.prawko.prawko_server.service.implementation.QuestionService;
 @RequestMapping(ApiConstants.QUESTIONS_BASE_URL)
 public class QuestionController {
 
-    private final QuestionService questionService;
+    private final IQuestionService questionService;
 
-    public QuestionController(final QuestionService questionService) {
+    public QuestionController(final IQuestionService questionService) {
         this.questionService = questionService;
     }
 
