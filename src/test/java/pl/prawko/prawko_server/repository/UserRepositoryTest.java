@@ -289,6 +289,21 @@ class UserRepositoryTest {
     }
 
     @Test
+    void existsByUserNameIgnoreCaseAndIdNot_returnFalse_whenOnlyOwnUserNameDiffersInCase() {
+        final var result = repository.existsByUserNameIgnoreCaseAndIdNot(tester.getUserName().toUpperCase(),
+                tester.getId());
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void existsByUserNameIgnoreCaseAndIdNot_returnTrue_whenAnotherUsersNameDiffersInCase() {
+        final var merry = repository.save(UserTestData.createMerry());
+        final var result = repository.existsByUserNameIgnoreCaseAndIdNot(tester.getUserName().toUpperCase(),
+                merry.getId());
+        assertThat(result).isTrue();
+    }
+
+    @Test
     void existsByUserNameIgnoreCase_returnFalse_whenUserNameDiffersOnlyInAccents() {
         final var result = repository.existsByUserNameIgnoreCase(UserTestData.ACCENTED_USER_NAME);
         assertThat(result).isFalse();

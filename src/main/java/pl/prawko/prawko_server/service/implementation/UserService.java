@@ -72,7 +72,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Transactional
     public long register(final RegisterDto dto) {
         log.info("Attempting to register new user.");
-        validateNoConflict(dto.userName(), dto.email());
+        validateNoConflict(null, dto.userName(), dto.email());
         log.debug("No conflicts");
         final var user = mapper.fromDto(dto);
         log.debug("Mapped successfully");
@@ -154,8 +154,8 @@ public class UserService implements IUserService, UserDetailsService {
      * Like in {@link #register}, the tokens are issued before the save and the emails to the new and current address
      * are dispatched after it, inside the transaction, so the update is rolled back if they can't be queued. Email
      * changes are subject to the verification email cooldown. Sending the current email cancels a pending change and
-     * invalidates its links, without a cooldown since no email is sent. A username equal to the current one ignoring
-     * case isn't checked for conflicts, so users can change its capitalization.
+     * invalidates its links, without a cooldown since no email is sent. The username conflicts only with other users,
+     * as the database compares it, so users can change the capitalization or, on MariaDB, the accents of their own.
      *
      * @throws EntityNotFoundException  if user with the given ID have not been found
      * @throws AlreadyExistsException   if the new username or email conflicts with another user
@@ -167,13 +167,10 @@ public class UserService implements IUserService, UserDetailsService {
         log.info("Updating user with id: {}", userId);
         final var user = getById(userId);
         final var userName = updateRequest.userName();
-        final var newUserName = Optional.ofNullable(userName)
-                .filter(name -> !name.equalsIgnoreCase(user.getUserName()))
-                .orElse(null);
         final var email = updateRequest.email();
         final var cancelsEmailChange = email != null && email.equalsIgnoreCase(user.getEmail());
         final var newEmail = cancelsEmailChange ? null : email;
-        validateNoConflict(newUserName, newEmail);
+        validateNoConflict(userId, userName, newEmail);
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
         Optional.ofNullable(userName).ifPresent(user::setUserName);
@@ -269,9 +266,13 @@ public class UserService implements IUserService, UserDetailsService {
         }
     }
 
-    private void validateNoConflict(@Nullable final String userName, @Nullable final String email) {
+    /**
+     * @param userId the ID of the user being updated, whose own username doesn't conflict; {@code null} on registration
+     */
+    private void validateNoConflict(@Nullable final Long userId, @Nullable final String userName,
+                                    @Nullable final String email) {
         final Map<String, String> errorDetails = new HashMap<>();
-        if (userName != null && repository.existsByUserNameIgnoreCase(userName)) {
+        if (userName != null && isUserNameTaken(userId, userName)) {
             errorDetails.put("userName", "User with username '" + userName + "' already exists.");
         }
         if (email != null && repository.existsByEmailIgnoreCase(email)) {
@@ -282,6 +283,13 @@ public class UserService implements IUserService, UserDetailsService {
             log.warn("{} Conflicting fields: {}", message, errorDetails.keySet());
             throw new AlreadyExistsException(message, errorDetails);
         }
+    }
+
+    private boolean isUserNameTaken(@Nullable final Long userId, final String userName) {
+        if (userId == null) {
+            return repository.existsByUserNameIgnoreCase(userName);
+        }
+        return repository.existsByUserNameIgnoreCaseAndIdNot(userName, userId);
     }
 
     /**

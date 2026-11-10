@@ -591,7 +591,7 @@ public class UserControllerTest {
                         .exchange()
                         .expectStatus().isOk();
                 return exists;
-            }).when(userRepository).existsByUserNameIgnoreCase(request.userName());
+            }).when(userRepository).existsByUserNameIgnoreCaseAndIdNot(request.userName(), id);
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, id)
@@ -641,6 +641,22 @@ public class UserControllerTest {
         void success_whenUserChangesCaseOfOwnUserName() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var userName = tester.getUserName().toUpperCase(Locale.ROOT);
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(auth::user)
+                    .body(new UserUpdateRequest(null, null, userName, null))
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserDto.class).isEqualTo(UserTestData.createUserDto(tester.getId(), userName));
+
+            assertThat(userRepository.findById(tester.getId()).orElseThrow().getUserName()).isEqualTo(userName);
+        }
+
+        @Test
+        void success_whenUserChangesAccentsOfOwnUserName() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var userName = UserTestData.ACCENTED_USER_NAME;
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())

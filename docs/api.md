@@ -49,10 +49,11 @@ retry it.
   | `DELETE` | `/users/{id}`                 | admin  | delete a user with their exams                                                                       |
 
   Usernames and emails are unique ignoring case: registering or renaming to one that differs from a taken one only in
-  case returns `409`. Users can still change the capitalization of their own username. Emails are stored lowercased,
-  so responses return them lowercased and mails go to the lowercased address. On MariaDB (`prod`, default collation)
-  usernames also ignore accents: `żaba` conflicts with `zaba`, and signing in with either finds the same user. The H2
-  database of `dev` and the tests keeps them apart. Emails differing only in accents are different addresses on both.
+  case returns `409`. Emails are stored lowercased, so responses return them lowercased and mails go to the lowercased
+  address. On MariaDB (`prod`, default collation) usernames also ignore accents: `żaba` conflicts with `zaba`, and
+  signing in with either finds the same user. The H2 database of `dev` and the tests keeps them apart. Emails differing
+  only in accents are different addresses on both. Users can still change the capitalization and the accents of their
+  own username.
 
 * `/questions`
 
