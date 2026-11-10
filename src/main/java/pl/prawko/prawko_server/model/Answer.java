@@ -12,6 +12,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Represents a {@code Answer} entity within the application.
@@ -114,16 +115,12 @@ public class Answer {
 
     @Override
     public String toString() {
-        final long questionId;
-        if (question == null) {
-            questionId = 0;
-        } else {
-            questionId = question.getId();
-        }
         return "Answer{" +
                 "id=" + id +
                 ", correct=" + correct +
-                ", question=" + questionId +
+                ", question=" + Optional.ofNullable(question)
+                        .map(Question::getId)
+                        .orElse(null) +
                 '}';
     }
 

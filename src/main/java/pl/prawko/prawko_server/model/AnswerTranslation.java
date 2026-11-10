@@ -8,6 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
+import java.util.Optional;
+
 /**
  * Represents a {@code AnswerTranslation} entity within the application.
  * <p>
@@ -110,23 +112,15 @@ public class AnswerTranslation {
 
     @Override
     public String toString() {
-        final long answerId;
-        if (answer == null) {
-            answerId = 0;
-        } else {
-            answerId = answer.getId();
-        }
-        final String languageCode;
-        if (language == null) {
-            languageCode = null;
-        } else {
-            languageCode = language.getCode();
-        }
         return "AnswerTranslation{" +
                 "id=" + id +
                 ", content='" + content + '\'' +
-                ", answer=" + answerId +
-                ", language=" + languageCode +
+                ", answer=" + Optional.ofNullable(answer)
+                        .map(Answer::getId)
+                        .orElse(null) +
+                ", language=" + Optional.ofNullable(language)
+                        .map(Language::getCode)
+                        .orElse(null) +
                 '}';
     }
 
