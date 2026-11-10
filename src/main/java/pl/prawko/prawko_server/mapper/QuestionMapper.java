@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.mapper;
 
 import org.mapstruct.Context;
+import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -26,6 +27,7 @@ import pl.prawko.prawko_server.model.QuestionType;
  * functionality.
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+        injectionStrategy = InjectionStrategy.CONSTRUCTOR,
         uses = {AnswerMapper.class, MediaMapper.class},
         imports = QuestionType.class)
 public interface QuestionMapper {

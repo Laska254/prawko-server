@@ -18,6 +18,7 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <springdoc.version>3.1.1</springdoc.version>
         <jacoco.version>0.8.15</jacoco.version>
+        <archunit.version>1.5.1</archunit.version>
         <revision>0.0.1-SNAPSHOT</revision>
     </properties>
 
@@ -110,6 +111,12 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-mariadb</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>${archunit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -21,6 +21,7 @@ import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.service.IQuestionService;
 import pl.prawko.prawko_server.util.CSVParser;
 
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -48,8 +49,8 @@ public class QuestionService implements IQuestionService {
     /**
      * {@inheritDoc}
      *
-     * @throws MultipartException if the file is not of type "text/csv"
-     * @throws RuntimeException   if there is an error reading or parsing the CSV file
+     * @throws MultipartException   if the file is not of type "text/csv"
+     * @throws UncheckedIOException if the CSV file cannot be read
      */
     @Override
     public List<Question> parseFileToQuestions(final MultipartFile file) {

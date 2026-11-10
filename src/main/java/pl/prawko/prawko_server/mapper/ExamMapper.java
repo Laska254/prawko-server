@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server.mapper;
 
 import org.mapstruct.Context;
+import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -18,6 +19,7 @@ import pl.prawko.prawko_server.model.Exam;
  * {@code revealCorrect} is passed to {@link AnswerMapper} to decide whether answers show which one is correct.
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+        injectionStrategy = InjectionStrategy.CONSTRUCTOR,
         uses = {QuestionMapper.class, AnswerMapper.class})
 public interface ExamMapper {
 

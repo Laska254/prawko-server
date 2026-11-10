@@ -19,6 +19,7 @@ import tools.jackson.dataformat.csv.CsvSchema;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,7 +85,7 @@ public class CSVParser {
         } catch (final IOException exception) {
             final var message = "CSV file failed to parse: ";
             log.error("{} '{}': {}", message, file.getOriginalFilename(), exception.getMessage(), exception);
-            throw new RuntimeException(message + exception.getMessage());
+            throw new UncheckedIOException(message + exception.getMessage(), exception);
         }
     }
 

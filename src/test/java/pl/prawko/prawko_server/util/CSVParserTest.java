@@ -23,6 +23,7 @@ import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
 import tools.jackson.databind.DatabindException;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Stream;
@@ -142,14 +143,15 @@ class CSVParserTest {
         }
 
         @Test
-        void throwRuntimeException_whenFileCannotBeRead() throws IOException {
+        void throwUncheckedIOException_whenFileCannotBeRead() throws IOException {
             final var file = mock(MultipartFile.class);
             when(file.getContentType()).thenReturn("text/csv");
             when(file.getInputStream()).thenThrow(new IOException("Stream closed"));
 
             assertThatThrownBy(() -> csvParser.parse(file))
-                    .isExactlyInstanceOf(RuntimeException.class)
-                    .hasMessage("CSV file failed to parse: Stream closed");
+                    .isExactlyInstanceOf(UncheckedIOException.class)
+                    .hasMessage("CSV file failed to parse: Stream closed")
+                    .hasCauseInstanceOf(IOException.class);
             verifyNoInteractions(csvFacade);
         }
 
