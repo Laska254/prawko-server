@@ -59,7 +59,7 @@ public class ExamController {
      * <p>The exam is populated with randomly selected questions from the specified
      * category and assigned to the requesting user. Allowed only for the user themselves or an admin.
      *
-     * @param dto the {@link CreateExamRequest} containing user ID and category name
+     * @param request the {@link CreateExamRequest} containing user ID and category name
      * @return a {@link ResponseEntity} with HTTP 201 Created and Location header pointing
      * to the newly created exam
      */
@@ -70,13 +70,13 @@ public class ExamController {
             @ApiResponse(responseCode = "403", description = "Creating an exam for another user is not allowed"),
             @ApiResponse(responseCode = "404", description = "User or category not found")
     })
-    @IsSelfOrAdmin(userId = "#dto.userId()")
+    @IsSelfOrAdmin(userId = "#request.userId()")
     @PostMapping
-    public ResponseEntity<Void> createExam(@RequestBody @Valid final CreateExamRequest dto) {
+    public ResponseEntity<Void> createExam(@RequestBody @Valid final CreateExamRequest request) {
         final var location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path(ApiConstants.BY_ID)
-                .buildAndExpand(service.createExam(dto.userId(), dto.categoryName()))
+                .buildAndExpand(service.createExam(request.userId(), request.categoryName()))
                 .toUri();
         return ResponseEntity.created(location).build();
     }

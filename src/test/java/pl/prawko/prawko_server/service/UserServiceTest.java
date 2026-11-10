@@ -76,13 +76,13 @@ class UserServiceTest {
         final var user = new User();
         when(repository.existsByUserNameIgnoreCase(registerRequest.userName())).thenReturn(false);
         when(repository.existsByEmailIgnoreCase(registerRequest.email())).thenReturn(false);
-        when(mapper.fromDto(registerRequest)).thenReturn(user);
+        when(mapper.toUser(registerRequest)).thenReturn(user);
 
         service.register(registerRequest);
 
         assertThat(user.getRole()).isEqualTo(Role.USER);
         verify(repository).save(user);
-        verify(mapper).fromDto(registerRequest);
+        verify(mapper).toUser(registerRequest);
         verifyNoMoreInteractions(repository, mapper);
     }
 
@@ -90,7 +90,7 @@ class UserServiceTest {
     void register_issueTokenBeforeSaveAndSendItAfter_whenUserNotExists() {
         final var user = UserTestData.createUnverifiedPippin();
         final var token = "verificationToken";
-        when(mapper.fromDto(registerRequest)).thenReturn(user);
+        when(mapper.toUser(registerRequest)).thenReturn(user);
         when(emailVerificationService.issueToken(user)).thenReturn(token);
 
         service.register(registerRequest);

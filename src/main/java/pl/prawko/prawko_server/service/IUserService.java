@@ -22,10 +22,10 @@ public interface IUserService {
      * The account is disabled until the user verifies their email with the link sent to it.
      * </p>
      *
-     * @param dto the registration data containing username, email, password, and personal info
+     * @param request the registration data containing username, email, password, and personal info
      * @return the ID of the newly created user
      */
-    long register(RegisterRequest dto);
+    long register(RegisterRequest request);
 
     /**
      * Retrieves a {@link User} by its ID.

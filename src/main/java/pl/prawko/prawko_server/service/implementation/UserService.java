@@ -72,13 +72,13 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Override
     @Transactional
-    public long register(final RegisterRequest dto) {
+    public long register(final RegisterRequest request) {
         log.info("Attempting to register new user.");
-        validateNoConflict(dto.userName(), repository::existsByUserNameIgnoreCase, dto.email());
+        validateNoConflict(request.userName(), repository::existsByUserNameIgnoreCase, request.email());
         log.debug("No conflicts");
-        final var user = mapper.fromDto(dto);
+        final var user = mapper.toUser(request);
         log.debug("Mapped successfully");
-        user.setPassword(passwordEncoder.encode(dto.password()));
+        user.setPassword(passwordEncoder.encode(request.password()));
         log.debug("Password encoded");
         user.setRole(Role.USER);
         log.debug("User role set");

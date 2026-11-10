@@ -46,7 +46,7 @@ public abstract class UserMapper {
     @Mapping(target = "currentEmailTokenHash", ignore = true)
     @Mapping(target = "identities", ignore = true)
     @Mapping(target = "enabled", constant = "false")
-    public abstract User fromDto(RegisterRequest registerRequest);
+    public abstract User toUser(RegisterRequest request);
 
     @Mapping(target = "pendingEmail", source = "user", qualifiedByName = "activePendingEmail")
     @Mapping(target = "awaitingNewEmailConfirmation", source = "user", qualifiedByName = "awaitingNewEmailConfirmation")

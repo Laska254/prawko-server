@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
  * {@link org.springframework.security.core.annotation.AnnotationTemplateExpressionDefaults} bean.
  * Requires the principal to be an {@link AuthenticatedUser}.
  *
- * <p>Example: {@code @IsSelfOrAdmin(userId = "#dto.userId()")}
+ * <p>Example: {@code @IsSelfOrAdmin(userId = "#request.userId()")}
  */
 @Documented
 @Target(ElementType.METHOD)

@@ -79,7 +79,7 @@ public class UserController {
      *
      * <p>The account can't be used until its email address is verified with the link emailed to it.
      *
-     * @param dto the {@link RegisterRequest} containing registration data
+     * @param request the {@link RegisterRequest} containing registration data
      * @return a {@link ResponseEntity} with HTTP 201 Created and Location header pointing
      * to the newly created user
      */
@@ -95,11 +95,11 @@ public class UserController {
     })
     @SecurityRequirements
     @PostMapping
-    public ResponseEntity<Void> registerUser(@Valid @RequestBody final RegisterRequest dto) {
+    public ResponseEntity<Void> registerUser(@Valid @RequestBody final RegisterRequest request) {
         final var location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path(ApiConstants.BY_ID)
-                .buildAndExpand(userService.register(dto))
+                .buildAndExpand(userService.register(request))
                 .toUri();
         return ResponseEntity.created(location).build();
     }

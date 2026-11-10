@@ -25,10 +25,10 @@ class UserMapperTest {
     }
 
     @Test
-    void fromDto_mapUserFields_whenDtoIsValid() {
-        final var dto = UserTestData.createValidRegisterRequest();
+    void toUser_mapUserFields_whenRequestIsValid() {
+        final var request = UserTestData.createValidRegisterRequest();
 
-        final var result = mapper.fromDto(dto);
+        final var result = mapper.toUser(request);
 
         assertThat(result)
                 .usingRecursiveComparison()
@@ -37,8 +37,8 @@ class UserMapperTest {
     }
 
     @Test
-    void fromDto_returnDisabledUser_whenDtoIsValid() {
-        final var result = mapper.fromDto(UserTestData.createValidRegisterRequest());
+    void toUser_returnDisabledUser_whenRequestIsValid() {
+        final var result = mapper.toUser(UserTestData.createValidRegisterRequest());
 
         assertThat(result.isEnabled()).isFalse();
         assertThat(result.getVerificationTokenHash()).isNull();
