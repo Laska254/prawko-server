@@ -31,6 +31,7 @@ import pl.prawko.prawko_server.service.IUserService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Implementation of {@link IUserService} that manages user entities.
@@ -72,7 +73,7 @@ public class UserService implements IUserService, UserDetailsService {
     @Transactional
     public long register(final RegisterDto dto) {
         log.info("Attempting to register new user.");
-        validateNoConflict(null, dto.userName(), dto.email());
+        validateNoConflict(dto.userName(), repository::existsByUserNameIgnoreCase, dto.email());
         log.debug("No conflicts");
         final var user = mapper.fromDto(dto);
         log.debug("Mapped successfully");
@@ -170,7 +171,7 @@ public class UserService implements IUserService, UserDetailsService {
         final var email = updateRequest.email();
         final var cancelsEmailChange = email != null && email.equalsIgnoreCase(user.getEmail());
         final var newEmail = cancelsEmailChange ? null : email;
-        validateNoConflict(userId, userName, newEmail);
+        validateNoConflict(userName, name -> repository.existsByUserNameIgnoreCaseAndIdNot(name, userId), newEmail);
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateRequest.lastName()).ifPresent(user::setLastName);
         Optional.ofNullable(userName).ifPresent(user::setUserName);
@@ -179,7 +180,8 @@ public class UserService implements IUserService, UserDetailsService {
                 log.info("Email change of user with id '{}' canceled.", userId);
             }
         }
-        final Runnable sendEmailChangeLinks = newEmail == null ? () -> { } : requestEmailChange(user, newEmail);
+        final Runnable sendEmailChangeLinks = newEmail == null ? () -> {
+        } : requestEmailChange(user, newEmail);
         final var updated = repository.save(user);
         sendEmailChangeLinks.run();
         log.info("Successfully updated user with id '{}'", userId);
@@ -266,13 +268,11 @@ public class UserService implements IUserService, UserDetailsService {
         }
     }
 
-    /**
-     * @param userId the ID of the user being updated, whose own username doesn't conflict; {@code null} on registration
-     */
-    private void validateNoConflict(@Nullable final Long userId, @Nullable final String userName,
+    private void validateNoConflict(@Nullable final String userName,
+                                    final Predicate<String> userNameTaken,
                                     @Nullable final String email) {
         final Map<String, String> errorDetails = new HashMap<>();
-        if (userName != null && isUserNameTaken(userId, userName)) {
+        if (userName != null && userNameTaken.test(userName)) {
             errorDetails.put("userName", "User with username '" + userName + "' already exists.");
         }
         if (email != null && repository.existsByEmailIgnoreCase(email)) {
@@ -283,13 +283,6 @@ public class UserService implements IUserService, UserDetailsService {
             log.warn("{} Conflicting fields: {}", message, errorDetails.keySet());
             throw new AlreadyExistsException(message, errorDetails);
         }
-    }
-
-    private boolean isUserNameTaken(@Nullable final Long userId, final String userName) {
-        if (userId == null) {
-            return repository.existsByUserNameIgnoreCase(userName);
-        }
-        return repository.existsByUserNameIgnoreCaseAndIdNot(userName, userId);
     }
 
     /**
