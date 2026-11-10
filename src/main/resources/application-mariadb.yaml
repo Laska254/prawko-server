@@ -1,0 +1,4 @@
+# MariaDB-specific mapping, part of the prod profile: emails compared with accents (see User).
+spring:
+  jpa:
+    mapping-resources: META-INF/orm-mariadb.xml

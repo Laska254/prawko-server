@@ -89,7 +89,8 @@ class UserIdentityServiceTest {
         final var linked = UserTestData.createGooglePippin().setId(7L);
         when(repository.findByIdentity(PROVIDER, profile.providerUserId())).thenReturn(Optional.of(linked));
 
-        final var result = service.resolveUser(withEmail(null, EmailStatus.UNVERIFIED));
+        final var withoutEmail = UserTestData.createPippinProfile(PROVIDER, null, EmailStatus.UNVERIFIED);
+        final var result = service.resolveUser(withoutEmail);
 
         assertThat(result).isSameAs(linked);
         assertThat(linked.getIdentities()).hasSize(1);
@@ -98,7 +99,8 @@ class UserIdentityServiceTest {
 
     @Test
     void resolveUser_throwNotVerifiedAndChangeNothing_whenEmailNotVerified() {
-        assertThatThrownBy(() -> service.resolveUser(withEmail(profile.email(), EmailStatus.UNVERIFIED)))
+        final var unverified = UserTestData.createPippinProfile(PROVIDER, profile.email(), EmailStatus.UNVERIFIED);
+        assertThatThrownBy(() -> service.resolveUser(unverified))
                 .isInstanceOf(ProviderEmailNotVerifiedException.class)
                 .hasMessage(GoogleTestData.EMAIL_NOT_VERIFIED);
 
@@ -108,7 +110,8 @@ class UserIdentityServiceTest {
 
     @Test
     void resolveUser_throwNotVerifiedAndChangeNothing_whenEmailMissing() {
-        assertThatThrownBy(() -> service.resolveUser(withEmail(null, EmailStatus.AUTHORITATIVE)))
+        final var withoutEmail = UserTestData.createPippinProfile(PROVIDER, null, EmailStatus.AUTHORITATIVE);
+        assertThatThrownBy(() -> service.resolveUser(withoutEmail))
                 .isInstanceOf(ProviderEmailNotVerifiedException.class)
                 .hasMessage(GoogleTestData.EMAIL_NOT_VERIFIED);
 
@@ -186,7 +189,8 @@ class UserIdentityServiceTest {
         final var enabled = existing.isEnabled();
         when(repository.findByEmailIgnoreCase(profile.email())).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> service.resolveUser(withEmail(profile.email(), EmailStatus.VERIFIED)))
+        final var notHosted = UserTestData.createPippinProfile(PROVIDER, profile.email(), EmailStatus.VERIFIED);
+        assertThatThrownBy(() -> service.resolveUser(notHosted))
                 .isInstanceOf(AlreadyExistsException.class)
                 .hasMessage(GoogleTestData.EMAIL_NOT_HOSTED);
 
@@ -200,7 +204,8 @@ class UserIdentityServiceTest {
     void resolveUser_createUser_whenProviderDoesNotHostEmailAndNoUserHasIt() {
         stubNewUser();
 
-        final var result = service.resolveUser(withEmail(profile.email(), EmailStatus.VERIFIED));
+        final var notHosted = UserTestData.createPippinProfile(PROVIDER, profile.email(), EmailStatus.VERIFIED);
+        final var result = service.resolveUser(notHosted);
 
         assertThat(result.getEmail()).isEqualTo(profile.email());
         assertLinked(result);
@@ -297,7 +302,8 @@ class UserIdentityServiceTest {
         final var password = merry.getPassword();
         when(repository.findById(merry.getId())).thenReturn(Optional.of(merry));
 
-        service.linkIdentity(merry.getId(), withEmail(profile.email(), EmailStatus.UNVERIFIED));
+        final var unverified = UserTestData.createPippinProfile(PROVIDER, profile.email(), EmailStatus.UNVERIFIED);
+        service.linkIdentity(merry.getId(), unverified);
 
         assertThat(merry.getEmail()).isEqualTo(email);
         assertThat(merry.getPassword()).isEqualTo(password);
@@ -453,11 +459,6 @@ class UserIdentityServiceTest {
                     assertThat(identity.getProviderUserId()).isEqualTo(profile.providerUserId());
                     assertThat(identity.getUser()).isSameAs(user);
                 });
-    }
-
-    private ProviderProfile withEmail(final String email, final EmailStatus status) {
-        return new ProviderProfile(PROVIDER, profile.providerUserId(), email, status, profile.suggestedUserName(),
-                profile.firstName(), profile.lastName());
     }
 
     private ProviderProfile withSuggestedUserName(final String suggested) {

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings xmlns="https://jakarta.ee/xml/ns/persistence/orm"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence/orm https://jakarta.ee/xml/ns/persistence/orm/orm_3_2.xsd"
+                 version="3.2">
+    <!-- MariaDB's default collation ignores accents, so a binary one keeps emails differing only in accents apart.
+         Emails are lowercased, so the binary collation loses nothing; the IgnoreCase queries upper both sides. -->
+    <entity class="pl.prawko.prawko_server.model.User" metadata-complete="false">
+        <attributes>
+            <basic name="email">
+                <column column-definition="varchar(254) collate utf8mb4_bin"/>
+            </basic>
+            <basic name="pendingEmail">
+                <column column-definition="varchar(254) collate utf8mb4_bin"/>
+            </basic>
+        </attributes>
+    </entity>
+</entity-mappings>

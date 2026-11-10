@@ -60,8 +60,10 @@ import java.util.Locale;
  * {@value #USER_NAME_CONSTRAINT} and {@value #EMAIL_CONSTRAINT}. The database's collation decides whether the username
  * constraint ignores case and accents (MariaDB's default ignores both, H2 neither); the services check it ignoring case
  * either way, and accents as the collation does.
- * Emails, including the pending one, are lowercased by their setters, so their constraint ignores case everywhere;
- * accents, like the username's, as the collation does.
+ * Emails, including the pending one, are lowercased by their setters, so their constraint ignores case everywhere.
+ * Accents count everywhere: the {@code mariadb} profile gives both email columns a binary collation
+ * ({@code META-INF/orm-mariadb.xml}), as an address differing only in accents may be another mailbox, and matching it
+ * would link a provider account to someone else's user.
  * The {@code version} is an optimistic lock, so concurrent changes fail instead of overwriting each other. Linking or
  * unlinking an identity alone doesn't change it.
  * Timestamps are {@link Instant}s, so they don't depend on the JVM's time zone; {@code created} and {@code updated} are

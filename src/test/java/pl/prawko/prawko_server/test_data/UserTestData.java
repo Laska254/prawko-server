@@ -59,8 +59,10 @@ public class UserTestData {
     // The update request's email is in mixed case, users store emails lowercased.
     public static final String UPDATED_EMAIL = "UpdatedEmail@shire.me";
     public static final String STORED_UPDATED_EMAIL = UPDATED_EMAIL.toLowerCase(Locale.ROOT);
-    // Pippin's username with accents: the same name under MariaDB's default collation, a different one under H2's.
+    // Pippin's username and email with accents. MariaDB's default collation, kept by the username, ignores them; H2's
+    // and the email's binary one don't.
     public static final String ACCENTED_USER_NAME = "pìppín";
+    public static final String ACCENTED_EMAIL = "pìppín@shire.me";
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 
@@ -126,9 +128,14 @@ public class UserTestData {
      * Profile of Pippin's account at the provider, with his verified email hosted by the provider.
      */
     public static ProviderProfile createPippinProfile(final IdentityProvider provider) {
+        return createPippinProfile(provider, createTestUserPippin().getEmail(), EmailStatus.AUTHORITATIVE);
+    }
+
+    public static ProviderProfile createPippinProfile(final IdentityProvider provider, final String email,
+                                                      final EmailStatus status) {
         final var pippin = createTestUserPippin();
-        return new ProviderProfile(provider, PROVIDER_USER_ID, pippin.getEmail(), EmailStatus.AUTHORITATIVE,
-                pippin.getUserName(), pippin.getFirstName(), pippin.getLastName());
+        return new ProviderProfile(provider, PROVIDER_USER_ID, email, status, pippin.getUserName(),
+                pippin.getFirstName(), pippin.getLastName());
     }
 
     public static User createPippinChangingEmail() {

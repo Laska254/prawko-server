@@ -13,7 +13,9 @@ Configuration files in `src/main/resources` (except `application-test.yaml`):
   it never ends up in an image.
 * `application-prod.yaml` - `prod` profile: MariaDB, schema updated by Hibernate, Swagger disabled, runs behind a
   [proxy](deployment.md#reverse-proxy). Holds no credentials - all connection details come from
-  [environment variables](deployment.md#environment-variables).
+  [environment variables](deployment.md#environment-variables). Includes the `mariadb` profile.
+* `application-mariadb.yaml` - `mariadb` profile: MariaDB-specific mapping (`META-INF/orm-mariadb.xml`), which gives
+  the email columns a binary collation, so emails differing only in accents stay different addresses.
 
 Select the profile with `SPRING_PROFILES_ACTIVE=<profile>` or `--spring.profiles.active=<profile>`.
 
@@ -57,8 +59,9 @@ media:
 ```
 
 To use a local MariaDB instead, replace the datasource, e.g. `url: jdbc:mariadb://localhost:3306/prawko` with your
-username and password, and set `spring.jpa.hibernate.ddl-auto` to `update` (`data.sql` is then not run - seed
-categories and languages once manually).
+username and password, set `spring.jpa.hibernate.ddl-auto` to `update` (`data.sql` is then not run - seed
+categories and languages once manually) and activate the `mariadb` profile too
+(`--spring.profiles.active=dev,mariadb`).
 
 To test [signing in with Google](authentication.md#google-sign-in) locally, create an OAuth client ID of type *Web application* in the
 [Google Cloud console](https://console.cloud.google.com/apis/credentials). Under *Authorized JavaScript origins* add the
