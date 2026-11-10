@@ -53,12 +53,14 @@ public class TestUtils {
 
     public static AuthenticatedUser createUserPrincipal() {
         return new AuthenticatedUser(
-                PRINCIPAL_ID, USER_NAME, USER_PASSWORD, true, AuthorityUtils.createAuthorityList(Role.USER.getAuthority()));
+                PRINCIPAL_ID, USER_NAME, USER_PASSWORD, true,
+                AuthorityUtils.createAuthorityList(Role.USER.getAuthority()));
     }
 
     public static AuthenticatedUser createAdminPrincipal() {
         return new AuthenticatedUser(
-                PRINCIPAL_ID, ADMIN_NAME, ADMIN_PASSWORD, true, AuthorityUtils.createAuthorityList(Role.ADMIN.getAuthority()));
+                PRINCIPAL_ID, ADMIN_NAME, ADMIN_PASSWORD, true,
+                AuthorityUtils.createAuthorityList(Role.ADMIN.getAuthority()));
     }
 
     public static JwtClaimsSet adminClaims(final Instant expiresAt) {

@@ -215,7 +215,8 @@ class UserServiceTest {
         final var tester2 = UserTestData.createMerry();
         final var users = List.of(tester, tester2);
         final var pippinDto = UserTestData.createUserDto(4L);
-        final var merryDto = new UserDto(45L, tester2.getFirstName(), tester2.getLastName(), tester2.getUserName(), tester2.getEmail(), null, false, false, tester2.getRole(), true, List.of());
+        final var merryDto = new UserDto(45L, tester2.getFirstName(), tester2.getLastName(), tester2.getUserName(),
+                tester2.getEmail(), null, false, false, tester2.getRole(), true, List.of());
         final var expected = List.of(pippinDto, merryDto);
         final var pageable = PageRequest.of(1, 2);
         when(repository.findAll(pageable)).thenReturn(new PageImpl<>(users, pageable, 4));
@@ -281,7 +282,8 @@ class UserServiceTest {
         order.verify(emailVerificationService).issueCurrentEmailToken(tester);
         order.verify(repository).save(tester);
         order.verify(emailVerificationService)
-                .sendEmailChangeConfirmation(givenId, email, UserTestData.STORED_UPDATED_EMAIL, token, currentEmailToken);
+                .sendEmailChangeConfirmation(givenId, email, UserTestData.STORED_UPDATED_EMAIL, token,
+                        currentEmailToken);
     }
 
     @Test
@@ -697,7 +699,8 @@ class UserServiceTest {
     @Test
     void loadUserByUsername_returnDisabledUserDetails_whenEmailIsNotVerified() {
         final var user = UserTestData.createUnverifiedPippin().setId(7L);
-        when(repository.findByUserNameOrEmailAllIgnoreCase(user.getUserName(), user.getUserName())).thenReturn(Optional.of(user));
+        when(repository.findByUserNameOrEmailAllIgnoreCase(user.getUserName(), user.getUserName()))
+                .thenReturn(Optional.of(user));
 
         final var result = service.loadUserByUsername(user.getUserName());
 
@@ -721,7 +724,8 @@ class UserServiceTest {
         when(repository.findByUserNameOrEmailAllIgnoreCase(passwordless.getUserName(), passwordless.getUserName()))
                 .thenReturn(Optional.of(passwordless));
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.loadUserByUsername(passwordless.getUserName());
+        final ThrowableAssert.ThrowingCallable executable =
+                () -> service.loadUserByUsername(passwordless.getUserName());
 
         assertThatThrownBy(executable)
                 .isInstanceOf(UsernameNotFoundException.class)
@@ -741,7 +745,8 @@ class UserServiceTest {
 
     @Test
     void loadUserByUsername_notLogAttemptedLogin_whenUserNotExists(final CapturedOutput output) {
-        when(repository.findByUserNameOrEmailAllIgnoreCase(tester.getEmail(), tester.getEmail())).thenReturn(Optional.empty());
+        when(repository.findByUserNameOrEmailAllIgnoreCase(tester.getEmail(), tester.getEmail()))
+                .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.loadUserByUsername(tester.getEmail()))
                 .isInstanceOf(UsernameNotFoundException.class);

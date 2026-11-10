@@ -416,7 +416,8 @@ public class ExamControllerTest {
         void returnOnlyExamsOfCategory_whenCategoryIsGiven() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
-            examRepository.save(ExamTestData.createExamWithoutQuestions(tester).setCategory(CategoryTestData.CATEGORY_A));
+            examRepository.save(ExamTestData.createExamWithoutQuestions(tester)
+                    .setCategory(CategoryTestData.CATEGORY_A));
             final var newer = examRepository.save(ExamTestData.createExamWithoutQuestions(tester));
 
             restClient.get()
@@ -571,7 +572,8 @@ public class ExamControllerTest {
         @Test
         void returnNotFound_whenAnswerDoesNotBelongToExam() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
-            final var exam = saveExam(tester, questionRepository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL)));
+            final var exam = saveExam(tester,
+                    questionRepository.save(QuestionTestData.createQuestion(QuestionType.SPECIAL)));
             final var foreignAnswer = questionRepository.save(QuestionTestData.createQuestion(QuestionType.BASIC))
                     .getAnswers().getFirst();
 
@@ -582,7 +584,8 @@ public class ExamControllerTest {
                     .exchange()
                     .expectStatus().isNotFound()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(ExamTestData.answerNotFoundMessage(foreignAnswer.getId(), exam.getId()));
+                    .jsonPath("$.detail")
+                    .isEqualTo(ExamTestData.answerNotFoundMessage(foreignAnswer.getId(), exam.getId()));
 
             expectUserAnswerIds(exam);
         }
@@ -800,7 +803,8 @@ public class ExamControllerTest {
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(TestUtils.ACCESS_DENIED);
 
-            assertThat(examRepository.findById(exam.getId())).hasValueSatisfying(found -> assertThat(found.isActive()).isTrue());
+            assertThat(examRepository.findById(exam.getId()))
+                    .hasValueSatisfying(found -> assertThat(found.isActive()).isTrue());
         }
 
         @Test

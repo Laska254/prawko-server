@@ -57,7 +57,8 @@ class CategoryServiceTest {
     @Test
     void findAllFromString_returnCategories_whenFound() {
         final var categories = List.of(CategoryTestData.CATEGORY_A, CategoryTestData.CATEGORY_B);
-        categories.forEach(category -> when(repository.findByName(category.getName())).thenReturn(Optional.of(category)));
+        categories.forEach(category -> when(repository.findByName(category.getName()))
+                .thenReturn(Optional.of(category)));
 
         final var result = service.findAllFromString("A,B");
 

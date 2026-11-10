@@ -80,7 +80,8 @@ public class AuthController {
      * @return a {@link ResponseEntity} with HTTP 200 Ok and the issued {@link AuthTokensDto}
      */
     @Operation(summary = "Sign-in",
-            description = "Authenticates a user with username or email and password, returns access and refresh tokens.")
+            description = "Authenticates a user with username or email and password, "
+                    + "returns access and refresh tokens.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User signed-in successfully"),
             @ApiResponse(responseCode = "401", description = "Authentication failed"),
@@ -110,7 +111,8 @@ public class AuthController {
                     + "the Google account to the user with its email, or creates a user without a password.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User signed-in successfully"),
-            @ApiResponse(responseCode = "401", description = "Invalid or expired ID token, or issued for another client"),
+            @ApiResponse(responseCode = "401",
+                    description = "Invalid or expired ID token, or issued for another client"),
             @ApiResponse(responseCode = "403", description = "Email address is not verified by Google"),
             @ApiResponse(responseCode = "404", description = "Sign-in with Google is not configured"),
             @ApiResponse(responseCode = "409", description = "The user with the email is linked to another Google "
@@ -203,7 +205,8 @@ public class AuthController {
      * @param request the {@link ForgotPasswordRequest} containing the account's email
      * @return a {@link ResponseEntity} with HTTP 202 Accepted
      */
-    @Operation(summary = "Forgot password", description = "Emails a password reset link if an account with the email exists.")
+    @Operation(summary = "Forgot password",
+            description = "Emails a password reset link if an account with the email exists.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "202", description = "Request accepted"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
@@ -248,7 +251,9 @@ public class AuthController {
             @ApiResponse(responseCode = "202",
                     description = "Email change confirmed by this address, awaiting the link sent to the other one"),
             @ApiResponse(responseCode = "400", description = "Invalid argument or invalid/expired token"),
-            @ApiResponse(responseCode = "409", description = "The new email was taken by another user meanwhile, or the user was modified concurrently"),
+            @ApiResponse(responseCode = "409",
+                    description = "The new email was taken by another user meanwhile, "
+                            + "or the user was modified concurrently"),
     })
     @PostMapping(ApiConstants.VERIFY_EMAIL)
     public ResponseEntity<Void> verifyEmail(@Valid @RequestBody final VerifyEmailRequest request) {

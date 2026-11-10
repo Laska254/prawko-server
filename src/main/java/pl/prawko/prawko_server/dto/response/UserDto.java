@@ -32,7 +32,8 @@ public record UserDto(
         @Schema(description = "User's email address")
         String email,
 
-        @Schema(description = "New email address awaiting verification, null if no change is pending or its link expired")
+        @Schema(description = "New email address awaiting verification, "
+                + "null if no change is pending or its link expired")
         String pendingEmail,
 
         @Schema(description = "Whether the link emailed to the pending email still has to be opened")

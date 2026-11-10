@@ -9,7 +9,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Requires re-entering the current password if the user has one, its absence is reported like a wrong password.
  */
-@Schema(description = "Request to link a GitHub account, containing the result of GitHub's authorization code flow with PKCE")
+@Schema(description = "Request to link a GitHub account, "
+        + "containing the result of GitHub's authorization code flow with PKCE")
 public record LinkGitHubRequest(
 
         @NotBlank(message = "{code.required}")

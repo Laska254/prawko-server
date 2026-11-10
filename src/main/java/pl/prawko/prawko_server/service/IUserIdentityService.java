@@ -36,9 +36,9 @@ public interface IUserIdentityService {
     /**
      * Links a provider account to a signed-in user, who can then sign in with it.
      * <p>
-     * Unlike in {@link #resolveUser}, the account's email doesn't matter: the verified credential and the user's session
-     * already tie the account to the user, and later sign-ins look it up by the provider's user ID. A notice is emailed
-     * to the user's current address.
+     * Unlike in {@link #resolveUser}, the account's email doesn't matter: the verified credential and the user's
+     * session already tie the account to the user, and later sign-ins look it up by the provider's user ID. A notice is
+     * emailed to the user's current address.
      *
      * @param userId  the ID of the signed-in user
      * @param profile the profile of the provider account, read from a verified credential

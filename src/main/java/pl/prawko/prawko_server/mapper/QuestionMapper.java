@@ -23,8 +23,8 @@ import pl.prawko.prawko_server.model.QuestionType;
  * {@code revealCorrect} is passed to {@link AnswerMapper} to decide whether answers show which one is correct.
  * The media filename is turned into {@code mediaUrl} and {@code mediaType} by {@link MediaMapper}.
  * <p>
- * The mapper is registered as a Spring {@link Component}, so it can be injected into services or other components that require question mapping
- * functionality.
+ * The mapper is registered as a Spring {@link Component}, so it can be injected into services or other components that
+ * require question mapping functionality.
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
         injectionStrategy = InjectionStrategy.CONSTRUCTOR,

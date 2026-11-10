@@ -214,7 +214,8 @@ class UserRepositoryTest {
     @Test
     void saveAndFlush_throwDataIntegrityViolation_whenProviderAccountIsLinkedTwice() {
         repository.saveAndFlush(tester.addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
-        final var merry = UserTestData.createMerry().addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID);
+        final var merry = UserTestData.createMerry()
+                .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID);
 
         assertThatThrownBy(() -> repository.saveAndFlush(merry))
                 .isInstanceOf(DataIntegrityViolationException.class);

@@ -250,7 +250,8 @@ class SpringSecurityTest {
                 .headers(headers -> headers.setBearerAuth(token))
                 .exchange()
                 .expectStatus().isUnauthorized()
-                .expectHeader().value(HttpHeaders.WWW_AUTHENTICATE, header -> assertThat(header).contains(INVALID_TOKEN));
+                .expectHeader()
+                .value(HttpHeaders.WWW_AUTHENTICATE, header -> assertThat(header).contains(INVALID_TOKEN));
     }
 
 }

@@ -29,7 +29,8 @@ public interface IQuestionService {
      * using {@link CSVParser} and imports them to the database.
      * <p>
      * The CSV file is expected to have a header row and use commas as column separators.
-     * Each row is mapped to a {@link QuestionCSV} object, which is converted to a {@link Question} entity using {@link QuestionMapper}.
+     * Each row is mapped to a {@link QuestionCSV} object, which is converted to a {@link Question} entity using
+     * {@link QuestionMapper}.
      * </p>
      *
      * @param file the CSV file containing questions data

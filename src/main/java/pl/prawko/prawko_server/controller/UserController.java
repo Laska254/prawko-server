@@ -47,8 +47,8 @@ import java.util.Optional;
 /**
  * REST controller for user management operations.
  *
- * <p>Provides endpoints for user registration, retrieval, updating, and deletion, and for linking and unlinking accounts
- * at identity providers.
+ * <p>Provides endpoints for user registration, retrieval, updating, and deletion, and for linking and unlinking
+ * accounts at identity providers.
  */
 @Tag(name = "Users", description = "User management endpoints")
 @Validated
@@ -84,9 +84,11 @@ public class UserController {
      * to the newly created user
      */
     @Operation(summary = "Register a new user",
-            description = "Creates a new user account with the provided information data and emails a verification link.")
+            description = "Creates a new user account with the provided information data "
+                    + "and emails a verification link.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "User registered successfully, email verification pending"),
+            @ApiResponse(responseCode = "201",
+                    description = "User registered successfully, email verification pending"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
             @ApiResponse(responseCode = "409", description = "User already exists"),
             @ApiResponse(responseCode = "503", description = "Too many requests pending")
@@ -151,7 +153,8 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Not authenticated")
     })
     @GetMapping(ApiConstants.STATS)
-    public ResponseEntity<UserStatsDto> getCurrentUserStats(@AuthenticationPrincipal(expression = "id") final long userId) {
+    public ResponseEntity<UserStatsDto> getCurrentUserStats(
+            @AuthenticationPrincipal(expression = "id") final long userId) {
         return ResponseEntity.ok(examService.getStats(userId));
     }
 
@@ -191,12 +194,17 @@ public class UserController {
             + "the link emailed to it and confirmed with the link emailed to the current address. "
             + "Sending the current email cancels a pending change and invalidates its link.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User updated successfully; a new email stays pending (`pendingEmail`) until verified"),
-            @ApiResponse(responseCode = "403", description = "Updating another user, or another user's email as an admin, is not allowed"),
+            @ApiResponse(responseCode = "200",
+                    description = "User updated successfully; "
+                            + "a new email stays pending (`pendingEmail`) until verified"),
+            @ApiResponse(responseCode = "403",
+                    description = "Updating another user, or another user's email as an admin, is not allowed"),
             @ApiResponse(responseCode = "404", description = "User not found"),
             @ApiResponse(responseCode = "400", description = "Invalid update data or ID is negative or zero"),
-            @ApiResponse(responseCode = "409", description = "Username or email already exists, or the user was modified concurrently"),
-            @ApiResponse(responseCode = "429", description = "Email changed again within the verification email cooldown"),
+            @ApiResponse(responseCode = "409",
+                    description = "Username or email already exists, or the user was modified concurrently"),
+            @ApiResponse(responseCode = "429",
+                    description = "Email changed again within the verification email cooldown"),
             @ApiResponse(responseCode = "503", description = "Too many requests pending")
     })
     @PreAuthorize("principal.isSelf(#id) or (hasRole('ADMIN') and #updateRequest.email() == null)")
@@ -213,7 +221,8 @@ public class UserController {
      * @param request the {@link ChangePasswordRequest} containing current and new password
      * @return a {@link ResponseEntity} with HTTP 204 No Content
      */
-    @Operation(summary = "Change own password", description = "Changes password of the authenticated user after verifying the current one.")
+    @Operation(summary = "Change own password",
+            description = "Changes password of the authenticated user after verifying the current one.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Password changed successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid request data or incorrect current password")
@@ -234,7 +243,8 @@ public class UserController {
      * @param request the {@link DeleteAccountRequest} containing the current password
      * @return a {@link ResponseEntity} with HTTP 204 No Content
      */
-    @Operation(summary = "Delete own account", description = "Permanently removes the authenticated user after verifying their password.")
+    @Operation(summary = "Delete own account",
+            description = "Permanently removes the authenticated user after verifying their password.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Account deleted successfully"),
             @ApiResponse(responseCode = "400", description = "Missing or incorrect password")
@@ -261,11 +271,15 @@ public class UserController {
                     + "account to the authenticated user. The account's email doesn't have to match the user's.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Google account linked successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid argument, or missing or incorrect current password"),
-            @ApiResponse(responseCode = "401", description = "Not authenticated, or invalid or expired ID token, or issued for another client"),
+            @ApiResponse(responseCode = "400",
+                    description = "Invalid argument, or missing or incorrect current password"),
+            @ApiResponse(responseCode = "401",
+                    description = "Not authenticated, or invalid or expired ID token, or issued for another client"),
             @ApiResponse(responseCode = "404", description = "Sign-in with Google is not configured"),
-            @ApiResponse(responseCode = "409", description = "The Google account is linked to another user, or the user already has one linked"),
-            @ApiResponse(responseCode = "503", description = "Google can't be reached, or too many requests pending, try again later")
+            @ApiResponse(responseCode = "409",
+                    description = "The Google account is linked to another user, or the user already has one linked"),
+            @ApiResponse(responseCode = "503",
+                    description = "Google can't be reached, or too many requests pending, try again later")
     })
     @PostMapping(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
     public ResponseEntity<Void> linkGoogle(@AuthenticationPrincipal(expression = "id") final long userId,
@@ -288,16 +302,23 @@ public class UserController {
      * @return a {@link ResponseEntity} with HTTP 204 No Content
      */
     @Operation(summary = "Link a GitHub account",
-            description = "Verifies the current password, if the user has one, exchanges a GitHub authorization code and "
-                    + "links its account to the authenticated user. The account's email doesn't have to match the user's.")
+            description = "Verifies the current password, if the user has one, exchanges a GitHub authorization code "
+                    + "and links its account to the authenticated user. "
+                    + "The account's email doesn't have to match the user's.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "GitHub account linked successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid argument, or missing or incorrect current password"),
-            @ApiResponse(responseCode = "401", description = "Not authenticated, or invalid or used authorization code"),
-            @ApiResponse(responseCode = "403", description = "GitHub refused the code over an unverified primary email"),
+            @ApiResponse(responseCode = "400",
+                    description = "Invalid argument, or missing or incorrect current password"),
+            @ApiResponse(responseCode = "401",
+                    description = "Not authenticated, or invalid or used authorization code"),
+            @ApiResponse(responseCode = "403",
+                    description = "GitHub refused the code over an unverified primary email"),
             @ApiResponse(responseCode = "404", description = "Sign-in with GitHub is not configured"),
-            @ApiResponse(responseCode = "409", description = "The GitHub account is linked to another user, or the user already has one linked"),
-            @ApiResponse(responseCode = "503", description = "GitHub can't be reached or rate limits the app, or too many requests pending, try again later")
+            @ApiResponse(responseCode = "409",
+                    description = "The GitHub account is linked to another user, or the user already has one linked"),
+            @ApiResponse(responseCode = "503",
+                    description = "GitHub can't be reached or rate limits the app, "
+                            + "or too many requests pending, try again later")
     })
     @PostMapping(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
     public ResponseEntity<Void> linkGitHub(@AuthenticationPrincipal(expression = "id") final long userId,
@@ -329,8 +350,9 @@ public class UserController {
             @ApiResponse(responseCode = "503", description = "Too many requests pending")
     })
     @DeleteMapping(ApiConstants.IDENTITIES + ApiConstants.GOOGLE)
-    public ResponseEntity<Void> unlinkGoogle(@AuthenticationPrincipal(expression = "id") final long userId,
-                                             @RequestBody(required = false) @Nullable final UnlinkIdentityRequest request) {
+    public ResponseEntity<Void> unlinkGoogle(
+            @AuthenticationPrincipal(expression = "id") final long userId,
+            @RequestBody(required = false) @Nullable final UnlinkIdentityRequest request) {
         return unlink(userId, IdentityProvider.GOOGLE, request);
     }
 
@@ -356,8 +378,9 @@ public class UserController {
             @ApiResponse(responseCode = "503", description = "Too many requests pending")
     })
     @DeleteMapping(ApiConstants.IDENTITIES + ApiConstants.GITHUB)
-    public ResponseEntity<Void> unlinkGitHub(@AuthenticationPrincipal(expression = "id") final long userId,
-                                             @RequestBody(required = false) @Nullable final UnlinkIdentityRequest request) {
+    public ResponseEntity<Void> unlinkGitHub(
+            @AuthenticationPrincipal(expression = "id") final long userId,
+            @RequestBody(required = false) @Nullable final UnlinkIdentityRequest request) {
         return unlink(userId, IdentityProvider.GITHUB, request);
     }
 

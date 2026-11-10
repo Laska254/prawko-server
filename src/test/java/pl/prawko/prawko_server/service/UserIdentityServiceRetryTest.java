@@ -144,7 +144,8 @@ class UserIdentityServiceRetryTest {
         doAnswer(invocation -> {
             final var free = realMethod().answer(invocation);
             inNewTransaction(() -> repository.findById(pippin.getId())
-                    .ifPresent(user -> repository.save(user.addIdentity(PROVIDER, UserTestData.OTHER_PROVIDER_USER_ID))));
+                    .ifPresent(user -> repository.save(user.addIdentity(PROVIDER,
+                            UserTestData.OTHER_PROVIDER_USER_ID))));
             return free;
         }).doAnswer(realMethod()).when(repository).findByIdentity(PROVIDER, profile.providerUserId());
 

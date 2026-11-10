@@ -15,7 +15,8 @@ class AccessTokenServiceTest {
 
     private final JwtConfig config = new JwtConfig();
     private final SecretKey key = config.accessTokenKey(null);
-    private final AccessTokenService service = new AccessTokenService(config.jwtEncoder(key), TestUtils.ACCESS_TOKEN_VALIDITY, TestUtils.CLOCK);
+    private final AccessTokenService service = new AccessTokenService(config.jwtEncoder(key),
+            TestUtils.ACCESS_TOKEN_VALIDITY, TestUtils.CLOCK);
     private final AuthenticatedUser user = TestUtils.createUserPrincipal();
 
     @Test

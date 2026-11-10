@@ -23,7 +23,8 @@ public interface ICategoryService {
     Category findByName(CategoryVariant name);
 
     /**
-     * Parses a comma-separated string of category names and retrieves all matching {@link Category} entities from the repository.
+     * Parses a comma-separated string of category names and retrieves all matching {@link Category} entities from the
+     * repository.
      * <p>
      * Every name must be a stored {@link CategoryVariant}, matched exactly. An empty name (an empty or {@code null}
      * input, or two adjacent commas) is unknown too. All unknown names are reported together.

@@ -32,7 +32,8 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
      * @param pageable the pagination and sorting information
      * @return a page of user's exams in the category
      */
-    Page<Exam> findAllByUser_IdAndCategory_Name(final long userId, final CategoryVariant category, final Pageable pageable);
+    Page<Exam> findAllByUser_IdAndCategory_Name(final long userId, final CategoryVariant category,
+                                                final Pageable pageable);
 
     List<Exam> findAllByActiveTrueAndExpiresBefore(final Instant time);
 

@@ -35,8 +35,8 @@ import java.util.Locale;
  *     <li>password - hashed and limited to 63 characters, {@code null} for users who only sign in with a linked
  *     {@link UserIdentity}</li>
  * </ul>
- * and system-related attributes like the {@link Role}, whether the account is enabled, the creation timestamp and the last
- * update timestamp.
+ * and system-related attributes like the {@link Role}, whether the account is enabled, the creation timestamp and the
+ * last update timestamp.
  * <p>
  * A pending password reset is stored as the SHA-256 hash of its token (never the token itself) with an expiry time.
  * Both are {@code null} when no reset is pending.

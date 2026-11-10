@@ -18,9 +18,9 @@ import java.time.Clock;
  * This class is responsible for mapping {@link RegisterRequest} to {@link User} entity.
  * Uses MapStruct processor to generate {@link UserMapperImpl}.
  * <p>
- * The mapper is registered as a Spring Component, so it can be injected into services or other components that require user mapping functionality.
- * It's an abstract class rather than an interface to get the {@link Clock}, which is injected through a setter, as the
- * generated implementation has only the default constructor.
+ * The mapper is registered as a Spring Component, so it can be injected into services or other components that require
+ * user mapping functionality. It's an abstract class rather than an interface to get the {@link Clock}, which is
+ * injected through a setter, as the generated implementation has only the default constructor.
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public abstract class UserMapper {

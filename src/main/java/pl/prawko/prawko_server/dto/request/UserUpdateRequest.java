@@ -32,7 +32,8 @@ public record UserUpdateRequest(
         @Size(min = 3, message = "{username.size.min}")
         @Size(max = 31, message = "{username.size.max}")
         @Pattern(regexp = "[^@]*", message = "{username.noat}")
-        @Schema(description = "Username for login, must not contain '@'", minLength = 3, maxLength = 31, nullable = true)
+        @Schema(description = "Username for login, must not contain '@'", minLength = 3, maxLength = 31,
+                nullable = true)
         String userName,
 
         @Nullable

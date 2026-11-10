@@ -127,7 +127,8 @@ public class QuestionTestData {
         );
     }
 
-    public static List<Question> createQuestionsByTypeAndValue(final QuestionType type, final int points, final int count) {
+    public static List<Question> createQuestionsByTypeAndValue(final QuestionType type, final int points,
+                                                               final int count) {
         return IntStream.range(0, count)
                 .mapToObj(question -> new Question().setType(type).setPoints(points))
                 .toList();

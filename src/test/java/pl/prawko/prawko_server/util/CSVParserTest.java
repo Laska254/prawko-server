@@ -85,13 +85,15 @@ class CSVParserTest {
             return Stream.of(
                     Arguments.of(Named.of("invalid number", HEADER + "W1,1,A,2\nW2,abc,A,2\n"),
                             "Invalid CSV file at line 3 in column 'Numer pytania': "
-                                    + "Cannot deserialize value of type `int` from String \"abc\": not a valid `int` value"),
+                                    + "Cannot deserialize value of type `int` from String \"abc\": "
+                                    + "not a valid `int` value"),
                     Arguments.of(Named.of("missing required column", "Nazwa pytania\nW1\n"),
                             "Invalid CSV file at line 2 in column 'Numer pytania': "
                                     + "Cannot map `null` into type `int` "
                                     + "(set `DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES` to 'false' to allow)"),
                     Arguments.of(Named.of("too many values", HEADER + "W1,1,A,2,extra\n"),
-                            "Invalid CSV file at line 2: Too many entries: expected at most 4 (value #4 (5 chars) \"extra\")"),
+                            "Invalid CSV file at line 2: Too many entries: expected at most 4 (value #4 (5 chars) "
+                                    + "\"extra\")"),
                     Arguments.of(Named.of("unclosed quote", HEADER + "\"W1,1,A,2\n"),
                             "Invalid CSV file at line 3: Missing closing quote for value"),
                     Arguments.of(Named.of("empty file", ""),

@@ -39,7 +39,8 @@ public class AnswerTranslationsTestData {
         );
     }
 
-    public static List<AnswerTranslationDto> createAnswerTranslationsDtos(final List<AnswerTranslation> savedTranslations) {
+    public static List<AnswerTranslationDto> createAnswerTranslationsDtos(
+            final List<AnswerTranslation> savedTranslations) {
         return savedTranslations.stream()
                 .sorted(Comparator.comparing(t -> t.getLanguage().getId()))
                 .map(t -> new AnswerTranslationDto(t.getContent(), t.getLanguage().getCode()))

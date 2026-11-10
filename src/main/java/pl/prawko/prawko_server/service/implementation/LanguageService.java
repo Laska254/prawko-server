@@ -8,7 +8,8 @@ import pl.prawko.prawko_server.service.ILanguageService;
 import java.util.List;
 
 /**
- * Implementation of {@link ILanguageService} that retrieves {@link Language} entities using a {@link LanguageRepository}.
+ * Implementation of {@link ILanguageService} that retrieves {@link Language} entities using a
+ * {@link LanguageRepository}.
  */
 @Service
 public class LanguageService implements ILanguageService {

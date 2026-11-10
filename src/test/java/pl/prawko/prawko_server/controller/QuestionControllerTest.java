@@ -269,7 +269,8 @@ public class QuestionControllerTest {
         @Test
         void returnQuestionOfRandomType_whenTypeIsMissing() {
             final var basic = repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
-            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L, QuestionType.SPECIAL));
+            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L,
+                    QuestionType.SPECIAL));
 
             final var result = restClient.get()
                     .uri(uri -> uri.path(ApiConstants.RANDOM)
@@ -341,7 +342,8 @@ public class QuestionControllerTest {
         @Test
         void returnQuestionOfRandomCategory_whenCategoryIsMissing() {
             repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
-            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L, QuestionType.SPECIAL));
+            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L,
+                    QuestionType.SPECIAL));
 
             restClient.get()
                     .uri(uri -> uri.path(ApiConstants.RANDOM)
@@ -357,7 +359,8 @@ public class QuestionControllerTest {
         @Test
         void returnRandomQuestion_whenNoParametersAreGiven() {
             final var basic = repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
-            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L, QuestionType.SPECIAL));
+            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L,
+                    QuestionType.SPECIAL));
 
             final var result = restClient.get()
                     .uri(ApiConstants.RANDOM)

@@ -72,7 +72,8 @@ class QuestionMapperTest {
 
     @ParameterizedTest
     @MethodSource("pl.prawko.prawko_server.test_data.QuestionTranslationsTestData#translations")
-    void toTranslationDto_mapContentAndLanguageCode_whenTranslationIsInAnyLanguage(final Language language, final String content) {
+    void toTranslationDto_mapContentAndLanguageCode_whenTranslationIsInAnyLanguage(final Language language,
+                                                                                   final String content) {
         final var given = QuestionTranslationsTestData.createTranslation(language, content);
 
         final var result = questionMapper.toTranslationDto(given);

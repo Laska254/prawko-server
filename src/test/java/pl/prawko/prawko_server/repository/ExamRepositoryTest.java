@@ -37,7 +37,8 @@ class ExamRepositoryTest {
         entityManager.persist(question);
         final var user = UserTestData.createTestUserPippin();
         entityManager.persist(user);
-        final var saved = repository.saveAndFlush(ExamTestData.createExamWithoutQuestions(user).setQuestions(List.of(question)));
+        final var saved = repository.saveAndFlush(ExamTestData.createExamWithoutQuestions(user)
+                .setQuestions(List.of(question)));
         entityManager.clear();
         final var stale = loadDetached(saved.getId());
 
@@ -82,8 +83,8 @@ class ExamRepositoryTest {
         repository.save(ExamTestData.createExamWithoutQuestions(other));
         entityManager.clear();
 
-        final var result = repository.findAllByUser_IdAndCategory_Name(user.getId(), CategoryTestData.CATEGORY_B.getName(),
-                PageRequest.of(0, 20));
+        final var result = repository.findAllByUser_IdAndCategory_Name(user.getId(),
+                CategoryTestData.CATEGORY_B.getName(), PageRequest.of(0, 20));
 
         assertThat(result.getContent())
                 .extracting(Exam::getId)

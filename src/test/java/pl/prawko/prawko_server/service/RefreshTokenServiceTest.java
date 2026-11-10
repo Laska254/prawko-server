@@ -146,7 +146,8 @@ class RefreshTokenServiceTest {
 
         @Test
         void throwAndRevokeNothing_whenTokenIsUnknown() {
-            when(repository.findByTokenHash(SecureTokens.hash(RefreshTokenTestData.TOKEN))).thenReturn(Optional.empty());
+            when(repository.findByTokenHash(SecureTokens.hash(RefreshTokenTestData.TOKEN)))
+                    .thenReturn(Optional.empty());
 
             assertInvalid();
 
@@ -204,7 +205,8 @@ class RefreshTokenServiceTest {
         }
 
         private RefreshToken stubToken(final Instant expires) {
-            final var token = RefreshTokenTestData.createRefreshToken(tester, RefreshTokenTestData.TOKEN, expires).setId(1L);
+            final var token = RefreshTokenTestData.createRefreshToken(tester, RefreshTokenTestData.TOKEN, expires)
+                    .setId(1L);
             when(repository.findByTokenHash(token.getTokenHash())).thenReturn(Optional.of(token));
             return token;
         }

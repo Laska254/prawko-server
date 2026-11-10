@@ -93,7 +93,8 @@ public record QuestionCSV(
     /**
      * Returns all available translations of the answers.
      *
-     * @return a map where the key is a {@link Language} and the value is another map of answer labels to their translated content
+     * @return a map where the key is a {@link Language} and the value is another map of answer labels to their
+     *         translated content
      */
     public Map<String, Map<Character, String>> getAnswersTranslations() {
         return Map.ofEntries(

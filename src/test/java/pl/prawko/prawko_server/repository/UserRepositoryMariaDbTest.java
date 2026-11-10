@@ -32,9 +32,9 @@ import static org.assertj.core.api.Assertions.catchThrowableOfType;
 /**
  * Runs what depends on the database on MariaDB, the production database, with the {@code mariadb} profile of
  * {@code prod}: the constraint names behind the {@code 409} details, the collation of the unique columns and the
- * provider sign-in relying on it. Skipped without Docker; CI deactivates that condition, so there a missing Docker fails
- * the build. The container is a bean, so it stops with the cached context, after the connection pool, not after this
- * class.
+ * provider sign-in relying on it. Skipped without Docker; CI deactivates that condition, so there a missing Docker
+ * fails the build. The container is a bean, so it stops with the cached context, after the connection pool, not after
+ * this class.
  */
 @DataJpaTest
 @ActiveProfiles({"test", "mariadb"})

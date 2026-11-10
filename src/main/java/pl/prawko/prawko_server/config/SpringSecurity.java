@@ -68,7 +68,8 @@ import java.util.List;
  *     {@code POST/DELETE /users/me/identities/github} (linking and unlinking accounts), {@code GET /questions/**},
  *     {@code POST/GET /exams/**}</li>
  *     <li>ADMIN only: other user management endpoints and delete operations</li>
- *     <li>Public: {@code GET/HEAD /media/**} (question media, see {@link MediaConfig}), Swagger UI and OpenAPI docs</li>
+ *     <li>Public: {@code GET/HEAD /media/**} (question media, see {@link MediaConfig}), Swagger UI and OpenAPI
+ *         docs</li>
  *     <li>Any other request is denied</li>
  * </ul>
  */
@@ -152,8 +153,8 @@ public class SpringSecurity {
     }
 
     /**
-     * Configures global authentication by registering the {@link UserDetailsService} and {@link PasswordEncoder} with the
-     * {@link AuthenticationManagerBuilder}.
+     * Configures global authentication by registering the {@link UserDetailsService} and {@link PasswordEncoder} with
+     * the {@link AuthenticationManagerBuilder}.
      *
      * <p>The {@link DaoAuthenticationProvider} checks account status (e.g. whether the email is verified) after the
      * password instead of before, so a wrong password always fails the same way and only the account's owner learns
@@ -202,7 +203,8 @@ public class SpringSecurity {
                 .addFilterAfter(loggingFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize -> {
                     authorize
-                            .requestMatchers(ApiConstants.SWAGGER_UI_BASE_URL_ALL, ApiConstants.API_DOCS_BASE_URL_ALL).permitAll();
+                            .requestMatchers(ApiConstants.SWAGGER_UI_BASE_URL_ALL, ApiConstants.API_DOCS_BASE_URL_ALL)
+                            .permitAll();
                     configureEndpoint_Auth(authorize);
                     configureEndpoint_Users(authorize);
                     configureEndpoint_Questions(authorize);
@@ -230,7 +232,8 @@ public class SpringSecurity {
      */
     private static BearerTokenResolver bearerTokenResolver() {
         final var resolver = new DefaultBearerTokenResolver();
-        final var authEndpoints = PathPatternRequestMatcher.pathPattern(HttpMethod.POST, ApiConstants.AUTH_BASE_URL_ALL);
+        final var authEndpoints = PathPatternRequestMatcher.pathPattern(HttpMethod.POST,
+                ApiConstants.AUTH_BASE_URL_ALL);
         return request -> {
             if (authEndpoints.matches(request)) {
                 return null;
@@ -239,7 +242,8 @@ public class SpringSecurity {
         };
     }
 
-    private void configureEndpoint_Auth(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
+    private void configureEndpoint_Auth(
+            final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST,
                         ApiConstants.AUTH_BASE_URL,
@@ -253,7 +257,8 @@ public class SpringSecurity {
                         ApiConstants.AUTH_BASE_URL + ApiConstants.RESEND_VERIFICATION).permitAll();
     }
 
-    private void configureEndpoint_Users(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
+    private void configureEndpoint_Users(
+            final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.USERS_BASE_URL).permitAll()
                 .requestMatchers(HttpMethod.POST,
@@ -270,14 +275,16 @@ public class SpringSecurity {
                 .requestMatchers(HttpMethod.DELETE, ApiConstants.USERS_BASE_URL_ALL).hasRole("ADMIN");
     }
 
-    private void configureEndpoint_Questions(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
+    private void configureEndpoint_Questions(
+            final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL_ALL).hasRole("USER");
     }
 
-    private void configureEndpoint_Exams(final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
+    private void configureEndpoint_Exams(
+            final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.EXAMS_BASE_URL_ALL).hasRole("USER")
                 .requestMatchers(HttpMethod.GET, ApiConstants.EXAMS_BASE_URL_ALL).hasRole("USER");

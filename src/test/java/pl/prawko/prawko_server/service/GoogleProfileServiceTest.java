@@ -54,8 +54,8 @@ class GoogleProfileServiceTest {
                         EmailStatus.AUTHORITATIVE),
                 Arguments.of(Named.of("Gmail address in upper case", withoutHostedDomain("PIPPIN@GMAIL.COM")),
                         EmailStatus.AUTHORITATIVE),
-                Arguments.of(Named.of("other email", withoutHostedDomain(UserTestData.createTestUserPippin().getEmail())),
-                        EmailStatus.VERIFIED),
+                Arguments.of(Named.of("other email",
+                        withoutHostedDomain(UserTestData.createTestUserPippin().getEmail())), EmailStatus.VERIFIED),
                 Arguments.of(Named.of("only ending like Gmail", withoutHostedDomain("pippin@notgmail.com")),
                         EmailStatus.VERIFIED),
                 Arguments.of(Named.of("blank hosted domain", GoogleTestData.createPippinClaims()

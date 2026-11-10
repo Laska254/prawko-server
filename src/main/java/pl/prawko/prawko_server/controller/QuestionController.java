@@ -57,7 +57,8 @@ public class QuestionController {
      * @param file the multipart CSV file containing questions
      * @return a {@link ResponseEntity} with HTTP 201 Created
      */
-    @Operation(summary = "Upload questions via CSV file", description = "Uploads a CSV file containing questions and imports them.")
+    @Operation(summary = "Upload questions via CSV file",
+            description = "Uploads a CSV file containing questions and imports them.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Questions from file added successfully"),
             @ApiResponse(responseCode = "400", description = "File is missing or invalid format"),
@@ -85,15 +86,17 @@ public class QuestionController {
      * @return a {@link ResponseEntity} containing the {@link QuestionDto}
      */
     @Operation(summary = "Get question by ID",
-            description = "Retrieves a question with all its associated translations and answers. Correct answers are shown only to admins.")
+            description = "Retrieves a question with all its associated translations and answers. "
+                    + "Correct answers are shown only to admins.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Question found"),
             @ApiResponse(responseCode = "404", description = "Question not found"),
             @ApiResponse(responseCode = "400", description = "ID is negative or zero")
     })
     @GetMapping(ApiConstants.BY_ID)
-    public ResponseEntity<QuestionDto> getQuestion(@PathVariable @Positive final long id,
-                                                   @AuthenticationPrincipal(expression = "isAdmin()") final boolean admin) {
+    public ResponseEntity<QuestionDto> getQuestion(
+            @PathVariable @Positive final long id,
+            @AuthenticationPrincipal(expression = "isAdmin()") final boolean admin) {
         return ResponseEntity.ok(questionService.getById(id, admin));
     }
 
@@ -113,7 +116,8 @@ public class QuestionController {
             @ApiResponse(responseCode = "200", description = "Question found"),
             @ApiResponse(responseCode = "400", description = "Category or type is unknown"),
             @ApiResponse(responseCode = "404",
-                    description = "No question matches the category and type, also when a missing one was picked at random")
+                    description = "No question matches the category and type, "
+                            + "also when a missing one was picked at random")
     })
     @GetMapping(ApiConstants.RANDOM)
     public ResponseEntity<QuestionDto> getRandomQuestion(@RequestParam @Nullable final CategoryVariant category,

@@ -195,8 +195,8 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenLastNameIsTooLong() {
-            final var invalidDto = new RegisterRequest(registerRequest.firstName(), TOO_LONG_NAME, registerRequest.userName(),
-                    registerRequest.email(), registerRequest.password());
+            final var invalidDto = new RegisterRequest(registerRequest.firstName(), TOO_LONG_NAME,
+                    registerRequest.userName(), registerRequest.email(), registerRequest.password());
 
             restClient.post()
                     .body(invalidDto)
@@ -208,8 +208,8 @@ public class UserControllerTest {
 
         @Test
         void returnCreated_whenEmailHasMaximumLength() {
-            final var dto = new RegisterRequest(registerRequest.firstName(), registerRequest.lastName(), registerRequest.userName(),
-                    UserTestData.LONGEST_EMAIL, registerRequest.password());
+            final var dto = new RegisterRequest(registerRequest.firstName(), registerRequest.lastName(),
+                    registerRequest.userName(), UserTestData.LONGEST_EMAIL, registerRequest.password());
 
             restClient.post()
                     .body(dto)
@@ -223,8 +223,8 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenEmailIsTooLong() {
-            final var invalidDto = new RegisterRequest(registerRequest.firstName(), registerRequest.lastName(), registerRequest.userName(),
-                    UserTestData.OVERLONG_EMAIL, registerRequest.password());
+            final var invalidDto = new RegisterRequest(registerRequest.firstName(), registerRequest.lastName(),
+                    registerRequest.userName(), UserTestData.OVERLONG_EMAIL, registerRequest.password());
 
             restClient.post()
                     .body(invalidDto)
@@ -1231,7 +1231,8 @@ public class UserControllerTest {
                     .expectStatus().isAccepted();
             final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());
-            final var reset = UserTestData.createValidResetPasswordRequest(UserTestData.extractToken(captor.getValue()));
+            final var reset =
+                    UserTestData.createValidResetPasswordRequest(UserTestData.extractToken(captor.getValue()));
             authClient.post()
                     .uri(ApiConstants.RESET_PASSWORD)
                     .body(reset)
@@ -1764,7 +1765,8 @@ public class UserControllerTest {
                 release.countDown();
             }
 
-            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isPresent();
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .isPresent();
         }
 
         @Test
@@ -1801,7 +1803,8 @@ public class UserControllerTest {
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
 
-            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isPresent();
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .isPresent();
             assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID))
                     .isPresent();
         }
@@ -1818,7 +1821,8 @@ public class UserControllerTest {
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
 
-            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isPresent();
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .isPresent();
             assertThat(userRepository.findByIdentity(IdentityProvider.GITHUB, UserTestData.OTHER_PROVIDER_USER_ID))
                     .isPresent();
         }
@@ -1833,7 +1837,8 @@ public class UserControllerTest {
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
 
-            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID)).isPresent();
+            assertThat(userRepository.findByIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID))
+                    .isPresent();
         }
 
         @ParameterizedTest

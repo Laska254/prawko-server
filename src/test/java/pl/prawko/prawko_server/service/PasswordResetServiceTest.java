@@ -94,7 +94,8 @@ class PasswordResetServiceTest {
         when(repository.findByEmailIgnoreCase(tester.getEmail())).thenReturn(Optional.of(tester));
         service.requestReset(tester.getEmail());
         final var firstHash = tester.getPasswordResetTokenHash();
-        tester.setPasswordResetTokenExpires(tester.getPasswordResetTokenExpires().minus(UserTestData.PASSWORD_RESET_COOLDOWN));
+        tester.setPasswordResetTokenExpires(tester.getPasswordResetTokenExpires()
+                .minus(UserTestData.PASSWORD_RESET_COOLDOWN));
 
         service.requestReset(tester.getEmail());
 
@@ -175,7 +176,8 @@ class PasswordResetServiceTest {
         final var token = issueToken();
         final var request = UserTestData.createValidResetPasswordRequest(token);
         final var encoded = "encodedPassword";
-        when(repository.findByPasswordResetTokenHash(tester.getPasswordResetTokenHash())).thenReturn(Optional.of(tester));
+        when(repository.findByPasswordResetTokenHash(tester.getPasswordResetTokenHash()))
+                .thenReturn(Optional.of(tester));
         when(passwordEncoder.encode(request.newPassword())).thenReturn(encoded);
 
         service.resetPassword(request);
@@ -193,7 +195,8 @@ class PasswordResetServiceTest {
         tester.setPendingEmail(UserTestData.createMerry().getEmail())
                 .setVerificationTokenHash(SecureTokens.hash("verificationToken"))
                 .setCurrentEmailTokenHash(SecureTokens.hash("currentEmailToken"));
-        when(repository.findByPasswordResetTokenHash(tester.getPasswordResetTokenHash())).thenReturn(Optional.of(tester));
+        when(repository.findByPasswordResetTokenHash(tester.getPasswordResetTokenHash()))
+                .thenReturn(Optional.of(tester));
 
         service.resetPassword(UserTestData.createValidResetPasswordRequest(token));
 
@@ -219,7 +222,8 @@ class PasswordResetServiceTest {
         final var token = issueToken();
         tester.setPasswordResetTokenExpires(TestUtils.CLOCK.instant());
         final var request = UserTestData.createValidResetPasswordRequest(token);
-        when(repository.findByPasswordResetTokenHash(tester.getPasswordResetTokenHash())).thenReturn(Optional.of(tester));
+        when(repository.findByPasswordResetTokenHash(tester.getPasswordResetTokenHash()))
+                .thenReturn(Optional.of(tester));
 
         assertThatThrownBy(() -> service.resetPassword(request))
                 .isInstanceOf(InvalidTokenException.class)

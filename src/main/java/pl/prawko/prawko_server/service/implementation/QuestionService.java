@@ -27,7 +27,8 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Implementation of {@link IQuestionService} that manages {@link Question} entities and parsing csv file to {@code question} entities.
+ * Implementation of {@link IQuestionService} that manages {@link Question} entities and parsing csv file to
+ * {@code question} entities.
  */
 @Service
 public class QuestionService implements IQuestionService {
@@ -124,7 +125,8 @@ public class QuestionService implements IQuestionService {
         return values[ThreadLocalRandom.current().nextInt(values.length)];
     }
 
-    private static EntityNotFoundException randomQuestionNotFound(final CategoryVariant category, final QuestionType type) {
+    private static EntityNotFoundException randomQuestionNotFound(final CategoryVariant category,
+                                                                  final QuestionType type) {
         final var message = "No question found for category '" + category + "' and type '" + type + "'.";
         log.warn(message);
         return new EntityNotFoundException(message);

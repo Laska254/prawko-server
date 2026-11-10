@@ -7,7 +7,8 @@ import java.util.Map;
  * Represents the type of question.
  * <p>
  * Each type is associated with a descriptive name in Polish because that's how it's stored in original CSV file from
- * <a href="https://www.gov.pl/web/infrastruktura/prawo-jazdy">Officials questions for the Polish driving licence test</a>.
+ * <a href="https://www.gov.pl/web/infrastruktura/prawo-jazdy">Officials questions for the Polish driving licence
+ * test</a>.
  */
 public enum QuestionType {
 
