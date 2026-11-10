@@ -104,6 +104,21 @@ class UserRepositoryMariaDbTest {
     }
 
     @Test
+    void existsByUserNameIgnoreCaseAndIdNot_returnFalse_whenOwnUserNameDiffersOnlyInAccents() {
+        final var result = repository.existsByUserNameIgnoreCaseAndIdNot(UserTestData.ACCENTED_USER_NAME,
+                tester.getId());
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void existsByUserNameIgnoreCaseAndIdNot_returnTrue_whenAnotherUsersNameDiffersOnlyInAccents() {
+        final var merry = repository.save(UserTestData.createMerry());
+        final var result = repository.existsByUserNameIgnoreCaseAndIdNot(UserTestData.ACCENTED_USER_NAME,
+                merry.getId());
+        assertThat(result).isTrue();
+    }
+
+    @Test
     void saveAndFlush_saveUser_whenEmailDiffersOnlyInAccents() {
         final var merry = UserTestData.createMerry().setEmail(UserTestData.ACCENTED_EMAIL);
         assertThatNoException().isThrownBy(() -> repository.saveAndFlush(merry));

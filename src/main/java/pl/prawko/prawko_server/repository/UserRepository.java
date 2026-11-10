@@ -28,6 +28,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUserNameIgnoreCase(final String userName);
 
     /**
+     * Checks whether {@link User} other than the given one exists with specified username, ignoring case. Compared by
+     * the database collation, so on MariaDB a username differing from the user's own only in accents doesn't match.
+     *
+     * @param userName provided username to check for existence
+     * @param id       the ID of the user to leave out
+     * @return {@code true} if another user exists, {@code false} otherwise
+     */
+    boolean existsByUserNameIgnoreCaseAndIdNot(final String userName, final long id);
+
+    /**
      * Checks whether {@link User} already exists with specified email, ignoring case.
      *
      * @param email provided email to check for existence

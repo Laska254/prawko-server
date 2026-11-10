@@ -591,7 +591,7 @@ public class UserControllerTest {
                         .exchange()
                         .expectStatus().isOk();
                 return exists;
-            }).when(userRepository).existsByUserNameIgnoreCase(request.userName());
+            }).when(userRepository).existsByUserNameIgnoreCaseAndIdNot(request.userName(), id);
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, id)

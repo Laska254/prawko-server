@@ -33,7 +33,6 @@ import pl.prawko.prawko_server.test_data.UserTestData;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -242,7 +241,7 @@ class UserServiceTest {
         final var updatedUserDto = UserTestData.createUpdatedUserDto(givenId);
         final var user = tester.setId(givenId);
         when(repository.findById(givenId)).thenReturn(Optional.of(user));
-        when(repository.existsByUserNameIgnoreCase(updateUserRequest.userName())).thenReturn(false);
+        when(repository.existsByUserNameIgnoreCaseAndIdNot(updateUserRequest.userName(), givenId)).thenReturn(false);
         when(repository.existsByEmailIgnoreCase(updateUserRequest.email())).thenReturn(false);
         when(repository.save(user)).thenReturn(user);
         when(mapper.toDto(user)).thenReturn(updatedUserDto);
@@ -252,7 +251,7 @@ class UserServiceTest {
         assertThat(result).isEqualTo(updatedUserDto);
         verify(repository).findById(givenId);
         verify(repository).save(user);
-        verify(repository).existsByUserNameIgnoreCase(updateUserRequest.userName());
+        verify(repository).existsByUserNameIgnoreCaseAndIdNot(updateUserRequest.userName(), givenId);
         verify(repository).existsByEmailIgnoreCase(updateUserRequest.email());
         verify(mapper).toDto(user);
         verifyNoMoreInteractions(repository, mapper);
@@ -372,33 +371,15 @@ class UserServiceTest {
         final var givenId = 44L;
         final var updateUserRequest = UserTestData.createInvalidUserUpdateRequest();
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
-        when(repository.existsByUserNameIgnoreCase(updateUserRequest.userName())).thenReturn(true);
+        when(repository.existsByUserNameIgnoreCaseAndIdNot(updateUserRequest.userName(), givenId)).thenReturn(true);
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
         verify(repository).findById(givenId);
-        verify(repository).existsByUserNameIgnoreCase(updateUserRequest.userName());
+        verify(repository).existsByUserNameIgnoreCaseAndIdNot(updateUserRequest.userName(), givenId);
         verifyNoInteractions(mapper);
-    }
-
-    @Test
-    void updateUser_changeUserNameWithoutConflictCheck_whenOnlyCaseDiffers() {
-        final var givenId = 44L;
-        final var userName = tester.getUserName().toUpperCase(Locale.ROOT);
-        final var updateUserRequest = new UserUpdateRequest(null, null, userName, null);
-        final var user = tester.setId(givenId);
-        when(repository.findById(givenId)).thenReturn(Optional.of(user));
-        when(repository.save(user)).thenReturn(user);
-
-        service.updateUser(givenId, updateUserRequest);
-
-        assertThat(user.getUserName()).isEqualTo(userName);
-        verify(repository).findById(givenId);
-        verify(repository).save(user);
-        verify(mapper).toDto(user);
-        verifyNoMoreInteractions(repository, mapper);
     }
 
     @Test
