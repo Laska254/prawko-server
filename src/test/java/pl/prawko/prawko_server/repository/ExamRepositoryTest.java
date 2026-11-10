@@ -10,10 +10,10 @@ import org.springframework.test.context.ActiveProfiles;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.test_data.CategoryTestData;
-import pl.prawko.prawko_server.test_data.ExamTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.CategoryTestData;
+import pl.prawko.prawko_server.testdata.ExamTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.time.Instant;
 import java.util.List;
@@ -37,7 +37,8 @@ class ExamRepositoryTest {
         entityManager.persist(question);
         final var user = UserTestData.createTestUserPippin();
         entityManager.persist(user);
-        final var saved = repository.saveAndFlush(ExamTestData.createExamWithoutQuestions(user).setQuestions(List.of(question)));
+        final var saved = repository.saveAndFlush(ExamTestData.createExamWithoutQuestions(user)
+                .setQuestions(List.of(question)));
         entityManager.clear();
         final var stale = loadDetached(saved.getId());
 
@@ -82,8 +83,8 @@ class ExamRepositoryTest {
         repository.save(ExamTestData.createExamWithoutQuestions(other));
         entityManager.clear();
 
-        final var result = repository.findAllByUser_IdAndCategory_Name(user.getId(), CategoryTestData.CATEGORY_B.getName(),
-                PageRequest.of(0, 20));
+        final var result = repository.findAllByUser_IdAndCategory_Name(user.getId(),
+                CategoryTestData.CATEGORY_B.getName(), PageRequest.of(0, 20));
 
         assertThat(result.getContent())
                 .extracting(Exam::getId)

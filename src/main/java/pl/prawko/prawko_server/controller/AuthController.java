@@ -15,15 +15,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.constants.ApiConstants;
-import pl.prawko.prawko_server.dto.AuthTokensDto;
-import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
-import pl.prawko.prawko_server.dto.GitHubSignInRequest;
-import pl.prawko.prawko_server.dto.GoogleSignInRequest;
-import pl.prawko.prawko_server.dto.LoginDto;
-import pl.prawko.prawko_server.dto.RefreshTokenRequest;
-import pl.prawko.prawko_server.dto.ResendVerificationRequest;
-import pl.prawko.prawko_server.dto.ResetPasswordRequest;
-import pl.prawko.prawko_server.dto.VerifyEmailRequest;
+import pl.prawko.prawko_server.dto.request.ForgotPasswordRequest;
+import pl.prawko.prawko_server.dto.request.GitHubSignInRequest;
+import pl.prawko.prawko_server.dto.request.GoogleSignInRequest;
+import pl.prawko.prawko_server.dto.request.LoginRequest;
+import pl.prawko.prawko_server.dto.request.RefreshTokenRequest;
+import pl.prawko.prawko_server.dto.request.ResendVerificationRequest;
+import pl.prawko.prawko_server.dto.request.ResetPasswordRequest;
+import pl.prawko.prawko_server.dto.request.VerifyEmailRequest;
+import pl.prawko.prawko_server.dto.response.AuthTokensDto;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.service.IEmailVerificationService;
 import pl.prawko.prawko_server.service.IGitHubProfileService;
@@ -76,11 +76,12 @@ public class AuthController {
      * <p>No session is created: subsequent requests carry the access token; once it expires, the refresh token gets
      * a new pair. Accounts whose email isn't verified yet are rejected.
      *
-     * @param request the {@link LoginDto} containing username and password
+     * @param request the {@link LoginRequest} containing username and password
      * @return a {@link ResponseEntity} with HTTP 200 Ok and the issued {@link AuthTokensDto}
      */
     @Operation(summary = "Sign-in",
-            description = "Authenticates a user with username or email and password, returns access and refresh tokens.")
+            description = "Authenticates a user with username or email and password, "
+                    + "returns access and refresh tokens.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User signed-in successfully"),
             @ApiResponse(responseCode = "401", description = "Authentication failed"),
@@ -88,7 +89,7 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
     })
     @PostMapping
-    public ResponseEntity<AuthTokensDto> login(@Valid @RequestBody final LoginDto request) {
+    public ResponseEntity<AuthTokensDto> login(@Valid @RequestBody final LoginRequest request) {
         final var authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 request.userName(),
                 request.password()
@@ -110,7 +111,8 @@ public class AuthController {
                     + "the Google account to the user with its email, or creates a user without a password.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User signed-in successfully"),
-            @ApiResponse(responseCode = "401", description = "Invalid or expired ID token, or issued for another client"),
+            @ApiResponse(responseCode = "401",
+                    description = "Invalid or expired ID token, or issued for another client"),
             @ApiResponse(responseCode = "403", description = "Email address is not verified by Google"),
             @ApiResponse(responseCode = "404", description = "Sign-in with Google is not configured"),
             @ApiResponse(responseCode = "409", description = "The user with the email is linked to another Google "
@@ -203,7 +205,8 @@ public class AuthController {
      * @param request the {@link ForgotPasswordRequest} containing the account's email
      * @return a {@link ResponseEntity} with HTTP 202 Accepted
      */
-    @Operation(summary = "Forgot password", description = "Emails a password reset link if an account with the email exists.")
+    @Operation(summary = "Forgot password",
+            description = "Emails a password reset link if an account with the email exists.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "202", description = "Request accepted"),
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
@@ -248,7 +251,9 @@ public class AuthController {
             @ApiResponse(responseCode = "202",
                     description = "Email change confirmed by this address, awaiting the link sent to the other one"),
             @ApiResponse(responseCode = "400", description = "Invalid argument or invalid/expired token"),
-            @ApiResponse(responseCode = "409", description = "The new email was taken by another user meanwhile, or the user was modified concurrently"),
+            @ApiResponse(responseCode = "409",
+                    description = "The new email was taken by another user meanwhile, "
+                            + "or the user was modified concurrently"),
     })
     @PostMapping(ApiConstants.VERIFY_EMAIL)
     public ResponseEntity<Void> verifyEmail(@Valid @RequestBody final VerifyEmailRequest request) {

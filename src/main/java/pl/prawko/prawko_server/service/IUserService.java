@@ -3,11 +3,11 @@ package pl.prawko.prawko_server.service;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import pl.prawko.prawko_server.dto.ChangePasswordRequest;
-import pl.prawko.prawko_server.dto.DeleteAccountRequest;
-import pl.prawko.prawko_server.dto.RegisterDto;
-import pl.prawko.prawko_server.dto.UserDto;
-import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.dto.request.ChangePasswordRequest;
+import pl.prawko.prawko_server.dto.request.DeleteAccountRequest;
+import pl.prawko.prawko_server.dto.request.RegisterRequest;
+import pl.prawko.prawko_server.dto.request.UserUpdateRequest;
+import pl.prawko.prawko_server.dto.response.UserDto;
 import pl.prawko.prawko_server.model.User;
 
 /**
@@ -22,10 +22,10 @@ public interface IUserService {
      * The account is disabled until the user verifies their email with the link sent to it.
      * </p>
      *
-     * @param dto the registration data containing username, email, password, and personal info
+     * @param request the registration data containing username, email, password, and personal info
      * @return the ID of the newly created user
      */
-    long register(RegisterDto dto);
+    long register(RegisterRequest request);
 
     /**
      * Retrieves a {@link User} by its ID.

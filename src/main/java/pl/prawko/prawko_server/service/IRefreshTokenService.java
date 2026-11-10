@@ -1,7 +1,7 @@
 package pl.prawko.prawko_server.service;
 
 import pl.prawko.prawko_server.config.AuthenticatedUser;
-import pl.prawko.prawko_server.dto.AuthTokensDto;
+import pl.prawko.prawko_server.dto.response.AuthTokensDto;
 import pl.prawko.prawko_server.exception.InvalidRefreshTokenException;
 
 /**

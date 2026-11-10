@@ -22,8 +22,8 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.service.implementation.QuestionService;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
-import pl.prawko.prawko_server.util.CSVParser;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
+import pl.prawko.prawko_server.util.CsvParser;
 
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 public class QuestionServiceTest {
 
     @Mock
-    private CSVParser parser;
+    private CsvParser parser;
 
     @Mock
     private QuestionRepository repository;
@@ -180,8 +180,10 @@ public class QuestionServiceTest {
             final var dto = QuestionTestData.createQuestionDto(question);
             final var typeCaptor = ArgumentCaptor.forClass(QuestionType.class);
             final var categoryCaptor = ArgumentCaptor.forClass(CategoryVariant.class);
-            when(repository.countByTypeAndCategories_Name(typeCaptor.capture(), categoryCaptor.capture())).thenReturn(1L);
-            when(repository.findByTypeAndCategories_Name(any(), any(), any(Pageable.class))).thenReturn(List.of(question));
+            when(repository.countByTypeAndCategories_Name(typeCaptor.capture(), categoryCaptor.capture()))
+                    .thenReturn(1L);
+            when(repository.findByTypeAndCategories_Name(any(), any(), any(Pageable.class)))
+                    .thenReturn(List.of(question));
             when(mapper.toDto(question, true)).thenReturn(dto);
 
             final var result = questionService.getRandom(null, null);
@@ -208,18 +210,21 @@ public class QuestionServiceTest {
         void throwEntityNotFoundNamingPickedFilters_whenPickedCombinationHasNoQuestions() {
             final var typeCaptor = ArgumentCaptor.forClass(QuestionType.class);
             final var categoryCaptor = ArgumentCaptor.forClass(CategoryVariant.class);
-            when(repository.countByTypeAndCategories_Name(typeCaptor.capture(), categoryCaptor.capture())).thenReturn(0L);
+            when(repository.countByTypeAndCategories_Name(typeCaptor.capture(), categoryCaptor.capture()))
+                    .thenReturn(0L);
 
             assertThatThrownBy(() -> questionService.getRandom(null, null))
                     .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessage(QuestionTestData.noQuestionFoundMessage(categoryCaptor.getValue(), typeCaptor.getValue()));
+                    .hasMessage(QuestionTestData.noQuestionFoundMessage(categoryCaptor.getValue(),
+                            typeCaptor.getValue()));
             verifyNoInteractions(mapper);
         }
 
         @Test
         void throwEntityNotFound_whenQuestionIsDeletedAfterCount() {
             when(repository.countByTypeAndCategories_Name(TYPE, CATEGORY)).thenReturn(1L);
-            when(repository.findByTypeAndCategories_Name(eq(TYPE), eq(CATEGORY), any(Pageable.class))).thenReturn(List.of());
+            when(repository.findByTypeAndCategories_Name(eq(TYPE), eq(CATEGORY), any(Pageable.class)))
+                    .thenReturn(List.of());
 
             assertThatThrownBy(() -> questionService.getRandom(CATEGORY, TYPE))
                     .isInstanceOf(EntityNotFoundException.class)

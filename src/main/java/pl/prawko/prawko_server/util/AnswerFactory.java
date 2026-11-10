@@ -5,7 +5,7 @@ import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.AnswerTranslation;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.Question;
-import pl.prawko.prawko_server.model.QuestionCSV;
+import pl.prawko.prawko_server.model.QuestionCsv;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.ILanguageService;
 
@@ -21,10 +21,10 @@ public class AnswerFactory {
         this.languageService = languageService;
     }
 
-    public List<Answer> create(final QuestionCSV questionCSV, final Question question) {
-        return switch (QuestionType.ofType(questionCSV.type())) {
+    public List<Answer> create(final QuestionCsv questionCsv, final Question question) {
+        return switch (QuestionType.ofType(questionCsv.type())) {
             case BASIC -> basic(question);
-            case SPECIAL -> special(questionCSV, question);
+            case SPECIAL -> special(questionCsv, question);
         };
     }
 
@@ -35,26 +35,26 @@ public class AnswerFactory {
         );
     }
 
-    private List<Answer> special(final QuestionCSV questionCSV, final Question question) {
+    private List<Answer> special(final QuestionCsv questionCsv, final Question question) {
         final var languages = languageService.findAll();
         return Stream.of('A', 'B', 'C')
-                .map(label -> build(questionCSV, question, languages, label))
+                .map(label -> build(questionCsv, question, languages, label))
                 .toList();
     }
 
-    private Answer build(final QuestionCSV questionCSV,
+    private Answer build(final QuestionCsv questionCsv,
                          final Question question,
                          final List<Language> languages,
                          final char label) {
         final var answer = new Answer()
                 .setQuestion(question)
-                .setCorrect(label == questionCSV.correctAnswer());
+                .setCorrect(label == questionCsv.correctAnswer());
         final var translations = languages.stream()
                 .map(language -> new AnswerTranslation()
                         .setAnswer(answer)
                         .setLanguage(language)
                         .setContent(
-                                questionCSV.getAnswersTranslations()
+                                questionCsv.getAnswersTranslations()
                                         .get(language.getCode())
                                         .get(label)
                         ))

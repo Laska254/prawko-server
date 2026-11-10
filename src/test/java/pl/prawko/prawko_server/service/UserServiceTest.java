@@ -16,9 +16,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.config.TestUtils;
-import pl.prawko.prawko_server.dto.RegisterDto;
-import pl.prawko.prawko_server.dto.UserDto;
-import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.dto.request.RegisterRequest;
+import pl.prawko.prawko_server.dto.request.UserUpdateRequest;
+import pl.prawko.prawko_server.dto.response.UserDto;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.exception.TooManyRequestsException;
@@ -27,7 +27,7 @@ import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.UserService;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -68,21 +68,21 @@ class UserServiceTest {
     @InjectMocks
     private UserService service;
 
-    private final RegisterDto registerDto = UserTestData.createValidRegisterDto();
+    private final RegisterRequest registerRequest = UserTestData.createValidRegisterRequest();
     private final User tester = UserTestData.createTestUserPippin();
 
     @Test
     void register_success_whenUserNotExists() {
         final var user = new User();
-        when(repository.existsByUserNameIgnoreCase(registerDto.userName())).thenReturn(false);
-        when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(false);
-        when(mapper.fromDto(registerDto)).thenReturn(user);
+        when(repository.existsByUserNameIgnoreCase(registerRequest.userName())).thenReturn(false);
+        when(repository.existsByEmailIgnoreCase(registerRequest.email())).thenReturn(false);
+        when(mapper.toUser(registerRequest)).thenReturn(user);
 
-        service.register(registerDto);
+        service.register(registerRequest);
 
         assertThat(user.getRole()).isEqualTo(Role.USER);
         verify(repository).save(user);
-        verify(mapper).fromDto(registerDto);
+        verify(mapper).toUser(registerRequest);
         verifyNoMoreInteractions(repository, mapper);
     }
 
@@ -90,10 +90,10 @@ class UserServiceTest {
     void register_issueTokenBeforeSaveAndSendItAfter_whenUserNotExists() {
         final var user = UserTestData.createUnverifiedPippin();
         final var token = "verificationToken";
-        when(mapper.fromDto(registerDto)).thenReturn(user);
+        when(mapper.toUser(registerRequest)).thenReturn(user);
         when(emailVerificationService.issueToken(user)).thenReturn(token);
 
-        service.register(registerDto);
+        service.register(registerRequest);
 
         final var order = inOrder(emailVerificationService, repository);
         order.verify(emailVerificationService).issueToken(user);
@@ -103,9 +103,9 @@ class UserServiceTest {
 
     @Test
     void register_notSendVerificationEmail_whenUserAlreadyExists() {
-        when(repository.existsByUserNameIgnoreCase(registerDto.userName())).thenReturn(true);
+        when(repository.existsByUserNameIgnoreCase(registerRequest.userName())).thenReturn(true);
 
-        assertThatThrownBy(() -> service.register(registerDto)).isInstanceOf(AlreadyExistsException.class);
+        assertThatThrownBy(() -> service.register(registerRequest)).isInstanceOf(AlreadyExistsException.class);
 
         verifyNoInteractions(emailVerificationService);
     }
@@ -113,10 +113,10 @@ class UserServiceTest {
     @Test
     void register_throwAlreadyExists_whenExistsByUserName() {
         final var field = "userName";
-        when(repository.existsByUserNameIgnoreCase(registerDto.userName())).thenReturn(true);
-        when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(false);
+        when(repository.existsByUserNameIgnoreCase(registerRequest.userName())).thenReturn(true);
+        when(repository.existsByEmailIgnoreCase(registerRequest.email())).thenReturn(false);
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.register(registerDto);
+        final ThrowableAssert.ThrowingCallable executable = () -> service.register(registerRequest);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
@@ -130,10 +130,10 @@ class UserServiceTest {
     @Test
     void register_throwAlreadyExists_whenExistsByEmail() {
         final var field = "email";
-        when(repository.existsByUserNameIgnoreCase(registerDto.userName())).thenReturn(false);
-        when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(true);
+        when(repository.existsByUserNameIgnoreCase(registerRequest.userName())).thenReturn(false);
+        when(repository.existsByEmailIgnoreCase(registerRequest.email())).thenReturn(true);
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.register(registerDto);
+        final ThrowableAssert.ThrowingCallable executable = () -> service.register(registerRequest);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
@@ -146,10 +146,10 @@ class UserServiceTest {
 
     @Test
     void register_throwAlreadyExists_whenUserNameAndEmailExists() {
-        when(repository.existsByUserNameIgnoreCase(registerDto.userName())).thenReturn(true);
-        when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(true);
+        when(repository.existsByUserNameIgnoreCase(registerRequest.userName())).thenReturn(true);
+        when(repository.existsByEmailIgnoreCase(registerRequest.email())).thenReturn(true);
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.register(registerDto);
+        final ThrowableAssert.ThrowingCallable executable = () -> service.register(registerRequest);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
@@ -161,12 +161,12 @@ class UserServiceTest {
 
     @Test
     void register_notLogEmail_whenEmailExists(final CapturedOutput output) {
-        when(repository.existsByEmailIgnoreCase(registerDto.email())).thenReturn(true);
+        when(repository.existsByEmailIgnoreCase(registerRequest.email())).thenReturn(true);
 
-        assertThatThrownBy(() -> service.register(registerDto)).isInstanceOf(AlreadyExistsException.class);
+        assertThatThrownBy(() -> service.register(registerRequest)).isInstanceOf(AlreadyExistsException.class);
 
         assertThat(output).contains("Conflicting fields: [email]")
-                .doesNotContain(registerDto.email());
+                .doesNotContain(registerRequest.email());
     }
 
     @Test
@@ -215,7 +215,8 @@ class UserServiceTest {
         final var tester2 = UserTestData.createMerry();
         final var users = List.of(tester, tester2);
         final var pippinDto = UserTestData.createUserDto(4L);
-        final var merryDto = new UserDto(45L, tester2.getFirstName(), tester2.getLastName(), tester2.getUserName(), tester2.getEmail(), null, false, false, tester2.getRole(), true, List.of());
+        final var merryDto = new UserDto(45L, tester2.getFirstName(), tester2.getLastName(), tester2.getUserName(),
+                tester2.getEmail(), null, false, false, tester2.getRole(), true, List.of());
         final var expected = List.of(pippinDto, merryDto);
         final var pageable = PageRequest.of(1, 2);
         when(repository.findAll(pageable)).thenReturn(new PageImpl<>(users, pageable, 4));
@@ -281,7 +282,8 @@ class UserServiceTest {
         order.verify(emailVerificationService).issueCurrentEmailToken(tester);
         order.verify(repository).save(tester);
         order.verify(emailVerificationService)
-                .sendEmailChangeConfirmation(givenId, email, UserTestData.STORED_UPDATED_EMAIL, token, currentEmailToken);
+                .sendEmailChangeConfirmation(givenId, email, UserTestData.STORED_UPDATED_EMAIL, token,
+                        currentEmailToken);
     }
 
     @Test
@@ -697,7 +699,8 @@ class UserServiceTest {
     @Test
     void loadUserByUsername_returnDisabledUserDetails_whenEmailIsNotVerified() {
         final var user = UserTestData.createUnverifiedPippin().setId(7L);
-        when(repository.findByUserNameOrEmailAllIgnoreCase(user.getUserName(), user.getUserName())).thenReturn(Optional.of(user));
+        when(repository.findByUserNameOrEmailAllIgnoreCase(user.getUserName(), user.getUserName()))
+                .thenReturn(Optional.of(user));
 
         final var result = service.loadUserByUsername(user.getUserName());
 
@@ -721,7 +724,8 @@ class UserServiceTest {
         when(repository.findByUserNameOrEmailAllIgnoreCase(passwordless.getUserName(), passwordless.getUserName()))
                 .thenReturn(Optional.of(passwordless));
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.loadUserByUsername(passwordless.getUserName());
+        final ThrowableAssert.ThrowingCallable executable =
+                () -> service.loadUserByUsername(passwordless.getUserName());
 
         assertThatThrownBy(executable)
                 .isInstanceOf(UsernameNotFoundException.class)
@@ -741,7 +745,8 @@ class UserServiceTest {
 
     @Test
     void loadUserByUsername_notLogAttemptedLogin_whenUserNotExists(final CapturedOutput output) {
-        when(repository.findByUserNameOrEmailAllIgnoreCase(tester.getEmail(), tester.getEmail())).thenReturn(Optional.empty());
+        when(repository.findByUserNameOrEmailAllIgnoreCase(tester.getEmail(), tester.getEmail()))
+                .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.loadUserByUsername(tester.getEmail()))
                 .isInstanceOf(UsernameNotFoundException.class);

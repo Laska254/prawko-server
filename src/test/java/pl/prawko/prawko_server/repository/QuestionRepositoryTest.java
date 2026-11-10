@@ -9,8 +9,8 @@ import org.springframework.test.context.ActiveProfiles;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.test_data.CategoryTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
+import pl.prawko.prawko_server.testdata.CategoryTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
 
 import java.util.List;
 import java.util.stream.Stream;

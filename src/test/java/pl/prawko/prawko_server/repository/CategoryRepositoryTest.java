@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 import pl.prawko.prawko_server.model.Category;
-import pl.prawko.prawko_server.test_data.CategoryTestData;
+import pl.prawko.prawko_server.testdata.CategoryTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

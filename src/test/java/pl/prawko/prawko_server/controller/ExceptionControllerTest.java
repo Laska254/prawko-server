@@ -12,8 +12,8 @@ import org.springframework.security.oauth2.jwt.JwtException;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.exception.ProviderNotConfiguredException;
 import pl.prawko.prawko_server.exception.ProviderUnavailableException;
-import pl.prawko.prawko_server.test_data.GoogleTestData;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.GoogleTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.sql.SQLException;
 import java.util.Map;
@@ -28,7 +28,8 @@ class ExceptionControllerTest {
 
     private static Stream<Arguments> userConstraintViolations() {
         return Stream.of(
-                Arguments.of(Named.of("username on H2", "PUBLIC.UK_USER_USER_NAME INDEX PUBLIC.UK_USER_USER_NAME_INDEX_3"),
+                Arguments.of(Named.of("username on H2",
+                        "PUBLIC.UK_USER_USER_NAME INDEX PUBLIC.UK_USER_USER_NAME_INDEX_3"),
                         "userName", UserTestData.USER_NAME_TAKEN),
                 Arguments.of(Named.of("email on MariaDB", "uk_user_email"), "email", UserTestData.EMAIL_TAKEN)
         );
@@ -36,10 +37,13 @@ class ExceptionControllerTest {
 
     private static Stream<Arguments> otherViolations() {
         return Stream.of(
-                Arguments.of(Named.of("other constraint", violation("PUBLIC.CONSTRAINT_3D3 INDEX PUBLIC.CONSTRAINT_INDEX_3D"))),
-                Arguments.of(Named.of("constraint only starting with a user constraint", violation("uk_user_email_old"))),
+                Arguments.of(Named.of("other constraint",
+                        violation("PUBLIC.CONSTRAINT_3D3 INDEX PUBLIC.CONSTRAINT_INDEX_3D"))),
+                Arguments.of(Named.of("constraint only starting with a user constraint",
+                        violation("uk_user_email_old"))),
                 Arguments.of(Named.of("unknown constraint", violation(null))),
-                Arguments.of(Named.of("not a constraint violation", new DataIntegrityViolationException("Value too long")))
+                Arguments.of(Named.of("not a constraint violation",
+                        new DataIntegrityViolationException("Value too long")))
         );
     }
 
@@ -88,7 +92,8 @@ class ExceptionControllerTest {
 
     @ParameterizedTest
     @MethodSource("otherViolations")
-    void handleDataIntegrityViolation_rethrow_whenNoUserConstraintIsViolated(final DataIntegrityViolationException exception) {
+    void handleDataIntegrityViolation_rethrow_whenNoUserConstraintIsViolated(
+            final DataIntegrityViolationException exception) {
         assertThatThrownBy(() -> controller.handleDataIntegrityViolation(exception))
                 .isSameAs(exception);
     }

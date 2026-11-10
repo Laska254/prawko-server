@@ -14,7 +14,7 @@ import org.springframework.mail.SimpleMailMessage;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.service.implementation.IdentityNotificationService;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
 package pl.prawko.prawko_server.service;
 
-import pl.prawko.prawko_server.dto.ResetPasswordRequest;
+import pl.prawko.prawko_server.dto.request.ResetPasswordRequest;
 import pl.prawko.prawko_server.model.User;
 
 /**

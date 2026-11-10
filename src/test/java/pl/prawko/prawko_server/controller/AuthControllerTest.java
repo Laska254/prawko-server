@@ -30,24 +30,24 @@ import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
-import pl.prawko.prawko_server.dto.AuthTokensDto;
-import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
-import pl.prawko.prawko_server.dto.GitHubSignInRequest;
-import pl.prawko.prawko_server.dto.GoogleSignInRequest;
-import pl.prawko.prawko_server.dto.LoginDto;
-import pl.prawko.prawko_server.dto.RefreshTokenRequest;
-import pl.prawko.prawko_server.dto.ResendVerificationRequest;
-import pl.prawko.prawko_server.dto.ResetPasswordRequest;
-import pl.prawko.prawko_server.dto.VerifyEmailRequest;
+import pl.prawko.prawko_server.dto.request.ForgotPasswordRequest;
+import pl.prawko.prawko_server.dto.request.GitHubSignInRequest;
+import pl.prawko.prawko_server.dto.request.GoogleSignInRequest;
+import pl.prawko.prawko_server.dto.request.LoginRequest;
+import pl.prawko.prawko_server.dto.request.RefreshTokenRequest;
+import pl.prawko.prawko_server.dto.request.ResendVerificationRequest;
+import pl.prawko.prawko_server.dto.request.ResetPasswordRequest;
+import pl.prawko.prawko_server.dto.request.VerifyEmailRequest;
+import pl.prawko.prawko_server.dto.response.AuthTokensDto;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.RefreshTokenRepository;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.IEmailVerificationService;
-import pl.prawko.prawko_server.test_data.GitHubTestData;
-import pl.prawko.prawko_server.test_data.GoogleTestData;
-import pl.prawko.prawko_server.test_data.RefreshTokenTestData;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.GitHubTestData;
+import pl.prawko.prawko_server.testdata.GoogleTestData;
+import pl.prawko.prawko_server.testdata.RefreshTokenTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
 import java.time.Duration;
@@ -69,7 +69,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @IntegrationTest
 public class AuthControllerTest {
 
-    private static final String USERNAME_SIZE_MSG = "Username or email must not be blank and between 3 and 254 characters.";
+    private static final String USERNAME_SIZE_MSG =
+            "Username or email must not be blank and between 3 and 254 characters.";
     private static final String PASSWORD_SIZE_MSG = "Password must not be blank and between 7 and 63 characters.";
     private static final long MAIL_SETTLE_MS = 500;
 
@@ -113,13 +114,16 @@ public class AuthControllerTest {
 
     private static Stream<Arguments> invalidLoginRequests() {
         return Stream.of(
-                Arguments.of("both too short", new LoginDto("a".repeat(2), "b".repeat(6)), USERNAME_SIZE_MSG, PASSWORD_SIZE_MSG),
-                Arguments.of("both too long", new LoginDto("a".repeat(255), "b".repeat(64)), USERNAME_SIZE_MSG, PASSWORD_SIZE_MSG),
-                Arguments.of("both null", new LoginDto(null, null), TestUtils.USERNAME_REQUIRED, TestUtils.PASSWORD_REQUIRED),
-                Arguments.of("username blank", new LoginDto("", "lembasy"), USERNAME_SIZE_MSG, null),
-                Arguments.of("username null", new LoginDto(null, "password"), TestUtils.USERNAME_REQUIRED, null),
-                Arguments.of("password blank", new LoginDto("pippin", "  "), null, PASSWORD_SIZE_MSG),
-                Arguments.of("password null", new LoginDto("pippin", null), null, TestUtils.PASSWORD_REQUIRED)
+                Arguments.of("both too short", new LoginRequest("a".repeat(2), "b".repeat(6)), USERNAME_SIZE_MSG,
+                        PASSWORD_SIZE_MSG),
+                Arguments.of("both too long", new LoginRequest("a".repeat(255), "b".repeat(64)), USERNAME_SIZE_MSG,
+                        PASSWORD_SIZE_MSG),
+                Arguments.of("both null", new LoginRequest(null, null), TestUtils.USERNAME_REQUIRED,
+                        TestUtils.PASSWORD_REQUIRED),
+                Arguments.of("username blank", new LoginRequest("", "lembasy"), USERNAME_SIZE_MSG, null),
+                Arguments.of("username null", new LoginRequest(null, "password"), TestUtils.USERNAME_REQUIRED, null),
+                Arguments.of("password blank", new LoginRequest("pippin", "  "), null, PASSWORD_SIZE_MSG),
+                Arguments.of("password null", new LoginRequest("pippin", null), null, TestUtils.PASSWORD_REQUIRED)
         );
     }
 
@@ -127,12 +131,15 @@ public class AuthControllerTest {
         return Stream.of(
                 Arguments.of(Named.of("for the web client",
                         GoogleTestData.idToken(GoogleTestData.createPippinClaims()))),
-                Arguments.of(Named.of("for the Android client", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
-                        .audience(List.of(GoogleTestData.ANDROID_CLIENT_ID))))),
-                Arguments.of(Named.of("for several audiences", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
-                        .audience(List.of(GoogleTestData.OTHER_CLIENT_ID, GoogleTestData.ANDROID_CLIENT_ID))))),
-                Arguments.of(Named.of("issuer without scheme", GoogleTestData.idToken(GoogleTestData.createPippinClaims()
-                        .issuer("accounts.google.com"))))
+                Arguments.of(Named.of("for the Android client",
+                        GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                                .audience(List.of(GoogleTestData.ANDROID_CLIENT_ID))))),
+                Arguments.of(Named.of("for several audiences",
+                        GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                                .audience(List.of(GoogleTestData.OTHER_CLIENT_ID, GoogleTestData.ANDROID_CLIENT_ID))))),
+                Arguments.of(Named.of("issuer without scheme",
+                        GoogleTestData.idToken(GoogleTestData.createPippinClaims()
+                                .issuer("accounts.google.com"))))
         );
     }
 
@@ -184,7 +191,7 @@ public class AuthControllerTest {
     @Test
     void login_returnForbidden_whenEmailIsNotVerified() {
         restClient.post()
-                .body(new LoginDto(TestUtils.UNVERIFIED_NAME, TestUtils.UNVERIFIED_PASSWORD))
+                .body(new LoginRequest(TestUtils.UNVERIFIED_NAME, TestUtils.UNVERIFIED_PASSWORD))
                 .exchange()
                 .expectStatus().isForbidden()
                 .expectBody()
@@ -194,7 +201,7 @@ public class AuthControllerTest {
     @Test
     void login_returnUnauthorized_whenEmailIsNotVerifiedAndPasswordIsWrong() {
         restClient.post()
-                .body(new LoginDto(TestUtils.UNVERIFIED_NAME, UserTestData.WRONG_PASSWORD))
+                .body(new LoginRequest(TestUtils.UNVERIFIED_NAME, UserTestData.WRONG_PASSWORD))
                 .exchange()
                 .expectStatus().isUnauthorized()
                 .expectBody()
@@ -205,7 +212,7 @@ public class AuthControllerTest {
     @MethodSource("invalidLoginRequests")
     void login_returnBadRequest_whenValidationFails(
             final String name,
-            final LoginDto request,
+            final LoginRequest request,
             final String expectedUserNameError,
             final String expectedPasswordError) {
 
@@ -226,7 +233,7 @@ public class AuthControllerTest {
 
     @Test
     void login_passValidation_whenEmailHasMaximumLength() {
-        final var request = new LoginDto(UserTestData.LONGEST_EMAIL, "lembasy");
+        final var request = new LoginRequest(UserTestData.LONGEST_EMAIL, "lembasy");
 
         restClient.post()
                 .body(request)
@@ -240,7 +247,7 @@ public class AuthControllerTest {
         final var login = UserTestData.createMerry().getEmail();
 
         restClient.post()
-                .body(new LoginDto(login, UserTestData.WRONG_PASSWORD))
+                .body(new LoginRequest(login, UserTestData.WRONG_PASSWORD))
                 .exchange()
                 .expectStatus().isUnauthorized();
 
@@ -250,7 +257,7 @@ public class AuthControllerTest {
 
     @Test
     void login_returnUnauthorized_whenCredentialsAreInvalid() {
-        final var request = new LoginDto("nonExistentUser", UserTestData.WRONG_PASSWORD);
+        final var request = new LoginRequest("nonExistentUser", UserTestData.WRONG_PASSWORD);
         final var expectedMessage = TestUtils.INVALID_CREDENTIALS;
 
         restClient.post()
@@ -289,7 +296,7 @@ public class AuthControllerTest {
 
         restClient.post()
                 .headers(headers -> headers.setBearerAuth(TestUtils.expiredAccessToken(jwtEncoder)))
-                .body(new LoginDto(TestUtils.USER_NAME, TestUtils.USER_PASSWORD))
+                .body(new LoginRequest(TestUtils.USER_NAME, TestUtils.USER_PASSWORD))
                 .exchange()
                 .expectStatus().isOk();
     }
@@ -761,7 +768,8 @@ public class AuthControllerTest {
         final var tester = userRepository.save(UserTestData.createTestUserPippin());
         final var oldToken = requestResetToken(tester.getEmail());
         final var pending = userRepository.findById(tester.getId()).orElseThrow();
-        userRepository.save(pending.setPasswordResetTokenExpires(pending.getPasswordResetTokenExpires().minus(cooldown)));
+        final var cooldownOver = pending.getPasswordResetTokenExpires().minus(cooldown);
+        userRepository.save(pending.setPasswordResetTokenExpires(cooldownOver));
 
         forgotPassword(tester.getEmail());
 
@@ -1051,7 +1059,7 @@ public class AuthControllerTest {
 
     private AuthTokensDto login() {
         return restClient.post()
-                .body(new LoginDto(TestUtils.USER_NAME, TestUtils.USER_PASSWORD))
+                .body(new LoginRequest(TestUtils.USER_NAME, TestUtils.USER_PASSWORD))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(AuthTokensDto.class)

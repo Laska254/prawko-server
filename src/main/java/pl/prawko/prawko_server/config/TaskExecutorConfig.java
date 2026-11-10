@@ -10,7 +10,8 @@ import org.springframework.context.annotation.Configuration;
  * look up a user before sending an email.
  * <p>
  * The executor is created before the entity manager factory to serve as Spring's bootstrap executor, so by default
- * it's destroyed after it. This only reorders the destruction, a {@code @DependsOn} would also change the startup order.
+ * it's destroyed after it. This only reorders the destruction, a {@code @DependsOn} would also change the startup
+ * order.
  */
 @Configuration
 public class TaskExecutorConfig {

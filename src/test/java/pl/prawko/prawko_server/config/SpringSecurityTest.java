@@ -15,7 +15,7 @@ import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.model.Role;
 import pl.prawko.prawko_server.repository.UserRepository;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -250,7 +250,8 @@ class SpringSecurityTest {
                 .headers(headers -> headers.setBearerAuth(token))
                 .exchange()
                 .expectStatus().isUnauthorized()
-                .expectHeader().value(HttpHeaders.WWW_AUTHENTICATE, header -> assertThat(header).contains(INVALID_TOKEN));
+                .expectHeader()
+                .value(HttpHeaders.WWW_AUTHENTICATE, header -> assertThat(header).contains(INVALID_TOKEN));
     }
 
 }

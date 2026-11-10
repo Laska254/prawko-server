@@ -20,8 +20,8 @@ import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.repository.UserRepository;
 import pl.prawko.prawko_server.service.implementation.UserIdentityService;
-import pl.prawko.prawko_server.test_data.GoogleTestData;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.GoogleTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.util.Optional;
 
@@ -144,7 +144,8 @@ class UserIdentityServiceRetryTest {
         doAnswer(invocation -> {
             final var free = realMethod().answer(invocation);
             inNewTransaction(() -> repository.findById(pippin.getId())
-                    .ifPresent(user -> repository.save(user.addIdentity(PROVIDER, UserTestData.OTHER_PROVIDER_USER_ID))));
+                    .ifPresent(user -> repository.save(user.addIdentity(PROVIDER,
+                            UserTestData.OTHER_PROVIDER_USER_ID))));
             return free;
         }).doAnswer(realMethod()).when(repository).findByIdentity(PROVIDER, profile.providerUserId());
 

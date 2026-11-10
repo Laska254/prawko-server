@@ -181,12 +181,13 @@ public class ExceptionController {
 
     @ApiResponse(responseCode = "400", description = "Invalid argument")
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail handleInvalidDto(final MethodArgumentNotValidException exception) {
+    public ProblemDetail handleInvalidRequest(final MethodArgumentNotValidException exception) {
         final var errors = new HashMap<>();
         exception.getBindingResult()
                 .getFieldErrors()
                 .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
-        final var problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation for request failed.");
+        final var problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Validation for request failed.");
         problemDetail.setProperty("details", errors);
         return problemDetail;
     }

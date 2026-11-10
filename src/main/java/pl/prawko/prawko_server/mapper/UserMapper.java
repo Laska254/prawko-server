@@ -6,8 +6,8 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.Named;
 import org.springframework.beans.factory.annotation.Autowired;
-import pl.prawko.prawko_server.dto.RegisterDto;
-import pl.prawko.prawko_server.dto.UserDto;
+import pl.prawko.prawko_server.dto.request.RegisterRequest;
+import pl.prawko.prawko_server.dto.response.UserDto;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.model.UserIdentity;
@@ -15,12 +15,12 @@ import pl.prawko.prawko_server.model.UserIdentity;
 import java.time.Clock;
 
 /**
- * This class is responsible for mapping {@link RegisterDto} to {@link User} entity.
+ * This class is responsible for mapping {@link RegisterRequest} to {@link User} entity.
  * Uses MapStruct processor to generate {@link UserMapperImpl}.
  * <p>
- * The mapper is registered as a Spring Component, so it can be injected into services or other components that require user mapping functionality.
- * It's an abstract class rather than an interface to get the {@link Clock}, which is injected through a setter, as the
- * generated implementation has only the default constructor.
+ * The mapper is registered as a Spring Component, so it can be injected into services or other components that require
+ * user mapping functionality. It's an abstract class rather than an interface to get the {@link Clock}, which is
+ * injected through a setter, as the generated implementation has only the default constructor.
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public abstract class UserMapper {
@@ -46,7 +46,7 @@ public abstract class UserMapper {
     @Mapping(target = "currentEmailTokenHash", ignore = true)
     @Mapping(target = "identities", ignore = true)
     @Mapping(target = "enabled", constant = "false")
-    public abstract User fromDto(RegisterDto registerDto);
+    public abstract User toUser(RegisterRequest request);
 
     @Mapping(target = "pendingEmail", source = "user", qualifiedByName = "activePendingEmail")
     @Mapping(target = "awaitingNewEmailConfirmation", source = "user", qualifiedByName = "awaitingNewEmailConfirmation")

@@ -22,10 +22,10 @@ import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.AnswerRepository;
 import pl.prawko.prawko_server.repository.ExamRepository;
 import pl.prawko.prawko_server.service.implementation.ExamService;
-import pl.prawko.prawko_server.test_data.CategoryTestData;
-import pl.prawko.prawko_server.test_data.ExamTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.CategoryTestData;
+import pl.prawko.prawko_server.testdata.ExamTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 import pl.prawko.prawko_server.util.ExamGenerator;
 
 import java.time.Instant;
@@ -140,7 +140,8 @@ public class ExamServiceTest {
             final var nonExistentCategory = CategoryVariant.T;
 
             when(userService.getById(user.getId())).thenReturn(user);
-            when(categoryService.findByName(nonExistentCategory)).thenThrow(new EntityNotFoundException("Category not found"));
+            when(categoryService.findByName(nonExistentCategory))
+                    .thenThrow(new EntityNotFoundException("Category not found"));
 
             assertThatThrownBy(() -> service.createExam(user.getId(), nonExistentCategory))
                     .isInstanceOf(EntityNotFoundException.class)
@@ -213,7 +214,8 @@ public class ExamServiceTest {
             final var olderDto = ExamTestData.createExamSummaryDto(older);
             when(userService.getById(userId)).thenReturn(user);
             final var pageable = PageRequest.of(0, 2);
-            when(repository.findAllByUser_Id(userId, pageable)).thenReturn(new PageImpl<>(List.of(newer, older), pageable, 5));
+            when(repository.findAllByUser_Id(userId, pageable))
+                    .thenReturn(new PageImpl<>(List.of(newer, older), pageable, 5));
             when(examMapper.toSummaryDto(newer)).thenReturn(newerDto);
             when(examMapper.toSummaryDto(older)).thenReturn(olderDto);
 
@@ -317,7 +319,8 @@ public class ExamServiceTest {
             final var special = createQuestionWithAnswerIds(QuestionType.SPECIAL);
             final var basic = createQuestionWithAnswerIds(QuestionType.BASIC);
             final var otherQuestionAnswer = basic.getAnswers().getFirst();
-            final var exam = stubExam(ExamTestData.createExamWithoutQuestions(user).setQuestions(List.of(special, basic)));
+            final var exam = stubExam(ExamTestData.createExamWithoutQuestions(user)
+                    .setQuestions(List.of(special, basic)));
             exam.getUserAnswers().addAll(List.of(special.getAnswers().getFirst(), otherQuestionAnswer));
             final var newAnswer = special.getAnswers().getLast();
             when(answerRepository.findById(newAnswer.getId())).thenReturn(Optional.of(newAnswer));
@@ -407,7 +410,8 @@ public class ExamServiceTest {
         @Test
         void throwExamFinished_whenExamHasExpired() {
             final var user = UserTestData.createTestUserPippin();
-            final var exam = stubExam(ExamTestData.createExam(user).setExpires(TestUtils.CLOCK.instant().minusNanos(1)));
+            final var exam = stubExam(ExamTestData.createExam(user)
+                    .setExpires(TestUtils.CLOCK.instant().minusNanos(1)));
 
             assertThatThrownBy(() -> service.submitAnswer(exam.getId(), user.getId(), 1L))
                     .isInstanceOf(ExamFinishedException.class)
@@ -427,7 +431,8 @@ public class ExamServiceTest {
             final var user = UserTestData.createTestUserPippin();
             final var special = createQuestionWithAnswerIds(QuestionType.SPECIAL);
             final var basic = createQuestionWithAnswerIds(QuestionType.BASIC);
-            final var exam = stubExam(ExamTestData.createExamWithoutQuestions(user).setQuestions(List.of(special, basic)));
+            final var exam = stubExam(ExamTestData.createExamWithoutQuestions(user)
+                    .setQuestions(List.of(special, basic)));
             final var answers = QuestionTestData.getUserAnswers(special, basic);
             exam.getUserAnswers().addAll(answers);
 
@@ -511,7 +516,8 @@ public class ExamServiceTest {
             answered.getUserAnswers().addAll(QuestionTestData.getUserAnswers(special, basic));
             final var unanswered = ExamTestData.expire(ExamTestData.createExam(user).setScore(5));
             final var time = ArgumentCaptor.forClass(Instant.class);
-            when(repository.findAllByActiveTrueAndExpiresBefore(time.capture())).thenReturn(List.of(answered, unanswered));
+            when(repository.findAllByActiveTrueAndExpiresBefore(time.capture()))
+                    .thenReturn(List.of(answered, unanswered));
 
             service.finishExpiredExams();
 

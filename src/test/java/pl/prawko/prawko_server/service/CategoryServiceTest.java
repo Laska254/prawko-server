@@ -12,7 +12,7 @@ import pl.prawko.prawko_server.exception.UnknownCategoryException;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.repository.CategoryRepository;
 import pl.prawko.prawko_server.service.implementation.CategoryService;
-import pl.prawko.prawko_server.test_data.CategoryTestData;
+import pl.prawko.prawko_server.testdata.CategoryTestData;
 
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +57,8 @@ class CategoryServiceTest {
     @Test
     void findAllFromString_returnCategories_whenFound() {
         final var categories = List.of(CategoryTestData.CATEGORY_A, CategoryTestData.CATEGORY_B);
-        categories.forEach(category -> when(repository.findByName(category.getName())).thenReturn(Optional.of(category)));
+        categories.forEach(category -> when(repository.findByName(category.getName()))
+                .thenReturn(Optional.of(category)));
 
         final var result = service.findAllFromString("A,B");
 

@@ -7,7 +7,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import pl.prawko.prawko_server.model.MediaKind;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

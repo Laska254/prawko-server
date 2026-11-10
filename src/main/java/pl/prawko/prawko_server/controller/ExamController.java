@@ -26,10 +26,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.prawko.prawko_server.config.IsSelfOrAdmin;
 import pl.prawko.prawko_server.constants.ApiConstants;
-import pl.prawko.prawko_server.dto.CreateExamDto;
-import pl.prawko.prawko_server.dto.ExamDto;
-import pl.prawko.prawko_server.dto.ExamSummaryDto;
-import pl.prawko.prawko_server.dto.SubmitAnswerRequest;
+import pl.prawko.prawko_server.dto.request.CreateExamRequest;
+import pl.prawko.prawko_server.dto.request.SubmitAnswerRequest;
+import pl.prawko.prawko_server.dto.response.ExamDto;
+import pl.prawko.prawko_server.dto.response.ExamSummaryDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.service.IExamService;
 
@@ -59,7 +59,7 @@ public class ExamController {
      * <p>The exam is populated with randomly selected questions from the specified
      * category and assigned to the requesting user. Allowed only for the user themselves or an admin.
      *
-     * @param dto the {@link CreateExamDto} containing user ID and category name
+     * @param request the {@link CreateExamRequest} containing user ID and category name
      * @return a {@link ResponseEntity} with HTTP 201 Created and Location header pointing
      * to the newly created exam
      */
@@ -70,13 +70,13 @@ public class ExamController {
             @ApiResponse(responseCode = "403", description = "Creating an exam for another user is not allowed"),
             @ApiResponse(responseCode = "404", description = "User or category not found")
     })
-    @IsSelfOrAdmin(userId = "#dto.userId()")
+    @IsSelfOrAdmin(userId = "#request.userId()")
     @PostMapping
-    public ResponseEntity<Void> createExam(@RequestBody @Valid final CreateExamDto dto) {
+    public ResponseEntity<Void> createExam(@RequestBody @Valid final CreateExamRequest request) {
         final var location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path(ApiConstants.BY_ID)
-                .buildAndExpand(service.createExam(dto.userId(), dto.categoryName()))
+                .buildAndExpand(service.createExam(request.userId(), request.categoryName()))
                 .toUri();
         return ResponseEntity.created(location).build();
     }
@@ -90,7 +90,9 @@ public class ExamController {
      * @param id the unique identifier of the exam
      * @return a {@link ResponseEntity} containing the {@link ExamDto}
      */
-    @Operation(summary = "Get exam by ID", description = "Retrieves an exam with all its associated questions. Correct answers are shown only once the exam is finished.")
+    @Operation(summary = "Get exam by ID",
+            description = "Retrieves an exam with all its associated questions. "
+                    + "Correct answers are shown only once the exam is finished.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Exam found"),
             @ApiResponse(responseCode = "403", description = "Exam belongs to another user"),
@@ -114,12 +116,15 @@ public class ExamController {
      * @param pageable the pagination and sorting information
      * @return a {@link ResponseEntity} containing a {@link PagedModel} of {@link ExamSummaryDto}'s
      */
-    @Operation(summary = "Get user's exams history", description = "Retrieves a page of user's exams, optionally of one category, by default ordered from the newest")
+    @Operation(summary = "Get user's exams history",
+            description = "Retrieves a page of user's exams, optionally of one category, "
+                    + "by default ordered from the newest")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Page of user's exams"),
             @ApiResponse(responseCode = "403", description = "Accessing exams of another user is not allowed"),
             @ApiResponse(responseCode = "404", description = "User not found"),
-            @ApiResponse(responseCode = "400", description = "User ID is missing, negative or zero, unknown category or invalid sort property"),
+            @ApiResponse(responseCode = "400",
+                    description = "User ID is missing, negative or zero, unknown category or invalid sort property"),
     })
     @IsSelfOrAdmin(userId = "#userId")
     @GetMapping
@@ -141,13 +146,16 @@ public class ExamController {
      * @param request the {@link SubmitAnswerRequest} with the ID of the chosen answer
      * @return a {@link ResponseEntity} with HTTP 204 No Content
      */
-    @Operation(summary = "Submit answer", description = "Saves the answer to a question of an active exam, replacing the previous answer to that question")
+    @Operation(summary = "Submit answer",
+            description = "Saves the answer to a question of an active exam, "
+                    + "replacing the previous answer to that question")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Answer saved"),
             @ApiResponse(responseCode = "400", description = "Invalid argument or ID is negative or zero"),
             @ApiResponse(responseCode = "403", description = "Exam belongs to another user"),
             @ApiResponse(responseCode = "404", description = "Exam not found or answer doesn't belong to the exam"),
-            @ApiResponse(responseCode = "409", description = "Exam is already finished, its time has expired or it was modified concurrently")
+            @ApiResponse(responseCode = "409",
+                    description = "Exam is already finished, its time has expired or it was modified concurrently")
     })
     @PostMapping(ApiConstants.ANSWERS)
     public ResponseEntity<Void> submitAnswer(@PathVariable @Positive final long id,
@@ -166,7 +174,8 @@ public class ExamController {
      * @param userId the ID of the currently authenticated user
      * @return a {@link ResponseEntity} containing the finished {@link ExamDto}, revealing which answers are correct
      */
-    @Operation(summary = "Finish exam", description = "Finishes an active exam, calculates its score and reveals correct answers")
+    @Operation(summary = "Finish exam",
+            description = "Finishes an active exam, calculates its score and reveals correct answers")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Exam finished"),
             @ApiResponse(responseCode = "400", description = "ID is negative or zero"),

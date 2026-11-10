@@ -12,7 +12,7 @@ import pl.prawko.prawko_server.controller.ExceptionController;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.model.UserIdentity;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -214,7 +214,8 @@ class UserRepositoryTest {
     @Test
     void saveAndFlush_throwDataIntegrityViolation_whenProviderAccountIsLinkedTwice() {
         repository.saveAndFlush(tester.addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID));
-        final var merry = UserTestData.createMerry().addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID);
+        final var merry = UserTestData.createMerry()
+                .addIdentity(IdentityProvider.GOOGLE, UserTestData.PROVIDER_USER_ID);
 
         assertThatThrownBy(() -> repository.saveAndFlush(merry))
                 .isInstanceOf(DataIntegrityViolationException.class);

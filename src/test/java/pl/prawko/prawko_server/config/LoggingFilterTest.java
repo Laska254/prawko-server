@@ -11,7 +11,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.constants.ApiConstants;
 import pl.prawko.prawko_server.repository.UserRepository;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

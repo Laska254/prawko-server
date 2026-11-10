@@ -64,7 +64,7 @@ Clone repository
 
 `cd prawko-server`
 
-Test (unit and integration tests, coverage check, javadoc)
+Test (Checkstyle, unit, integration and architecture tests, coverage check, javadoc)
 
 `./mvnw clean verify`
 

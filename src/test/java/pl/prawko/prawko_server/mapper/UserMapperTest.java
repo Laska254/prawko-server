@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.User;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.time.Duration;
 
@@ -25,10 +25,10 @@ class UserMapperTest {
     }
 
     @Test
-    void fromDto_mapUserFields_whenDtoIsValid() {
-        final var dto = UserTestData.createValidRegisterDto();
+    void toUser_mapUserFields_whenRequestIsValid() {
+        final var request = UserTestData.createValidRegisterRequest();
 
-        final var result = mapper.fromDto(dto);
+        final var result = mapper.toUser(request);
 
         assertThat(result)
                 .usingRecursiveComparison()
@@ -37,8 +37,8 @@ class UserMapperTest {
     }
 
     @Test
-    void fromDto_returnDisabledUser_whenDtoIsValid() {
-        final var result = mapper.fromDto(UserTestData.createValidRegisterDto());
+    void toUser_returnDisabledUser_whenRequestIsValid() {
+        final var result = mapper.toUser(UserTestData.createValidRegisterRequest());
 
         assertThat(result.isEnabled()).isFalse();
         assertThat(result.getVerificationTokenHash()).isNull();

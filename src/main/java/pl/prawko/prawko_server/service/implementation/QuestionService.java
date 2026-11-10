@@ -12,21 +12,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
-import pl.prawko.prawko_server.dto.QuestionDto;
+import pl.prawko.prawko_server.dto.response.QuestionDto;
+import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.service.IQuestionService;
-import pl.prawko.prawko_server.util.CSVParser;
+import pl.prawko.prawko_server.util.CsvParser;
 
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Implementation of {@link IQuestionService} that manages {@link Question} entities and parsing csv file to {@code question} entities.
+ * Implementation of {@link IQuestionService} that manages {@link Question} entities and parsing csv file to
+ * {@code question} entities.
  */
 @Service
 public class QuestionService implements IQuestionService {
@@ -35,11 +38,11 @@ public class QuestionService implements IQuestionService {
 
     private final QuestionRepository repository;
     private final QuestionMapper mapper;
-    private final CSVParser parser;
+    private final CsvParser parser;
 
     public QuestionService(final QuestionRepository repository,
                            final QuestionMapper mapper,
-                           final CSVParser parser) {
+                           final CsvParser parser) {
         this.repository = repository;
         this.mapper = mapper;
         this.parser = parser;
@@ -48,8 +51,9 @@ public class QuestionService implements IQuestionService {
     /**
      * {@inheritDoc}
      *
-     * @throws MultipartException if the file is not of type "text/csv"
-     * @throws RuntimeException   if there is an error reading or parsing the CSV file
+     * @throws MultipartException   if the file is not of type "text/csv"
+     * @throws InvalidCsvException  if a row can't be mapped or names an unknown category
+     * @throws UncheckedIOException if the CSV file cannot be read
      */
     @Override
     public List<Question> parseFileToQuestions(final MultipartFile file) {
@@ -123,7 +127,8 @@ public class QuestionService implements IQuestionService {
         return values[ThreadLocalRandom.current().nextInt(values.length)];
     }
 
-    private static EntityNotFoundException randomQuestionNotFound(final CategoryVariant category, final QuestionType type) {
+    private static EntityNotFoundException randomQuestionNotFound(final CategoryVariant category,
+                                                                  final QuestionType type) {
         final var message = "No question found for category '" + category + "' and type '" + type + "'.";
         log.warn(message);
         return new EntityNotFoundException(message);

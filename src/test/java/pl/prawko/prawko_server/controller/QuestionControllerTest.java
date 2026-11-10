@@ -19,14 +19,14 @@ import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestAuth;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
-import pl.prawko.prawko_server.dto.QuestionDto;
+import pl.prawko.prawko_server.dto.response.QuestionDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
-import pl.prawko.prawko_server.test_data.MultiPartFactory;
-import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
+import pl.prawko.prawko_server.testdata.MultiPartFactory;
+import pl.prawko.prawko_server.testdata.QuestionCsvTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
 
 import java.util.Arrays;
 import java.util.List;
@@ -62,7 +62,7 @@ public class QuestionControllerTest {
 
         @Test
         void returnCreated_whenSuccess() {
-            final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.CSV_FILE);
+            final var multipart = MultiPartFactory.fromClasspath(QuestionCsvTestData.CSV_FILE);
 
             restClient.post()
                     .headers(auth::admin)
@@ -119,7 +119,7 @@ public class QuestionControllerTest {
 
         @Test
         void returnBadRequest_whenCsvIsMalformed() {
-            final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.MALFORMED_CSV_FILE);
+            final var multipart = MultiPartFactory.fromClasspath(QuestionCsvTestData.MALFORMED_CSV_FILE);
 
             restClient.post()
                     .headers(auth::admin)
@@ -128,13 +128,13 @@ public class QuestionControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(QuestionCSVTestData.MALFORMED_CSV_MESSAGE);
+                    .jsonPath("$.detail").isEqualTo(QuestionCsvTestData.MALFORMED_CSV_MESSAGE);
             assertThat(repository.count()).isZero();
         }
 
         @Test
         void returnBadRequest_whenCategoriesAreUnknown() {
-            final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.UNKNOWN_CATEGORY_CSV_FILE);
+            final var multipart = MultiPartFactory.fromClasspath(QuestionCsvTestData.UNKNOWN_CATEGORY_CSV_FILE);
 
             restClient.post()
                     .headers(auth::admin)
@@ -143,7 +143,7 @@ public class QuestionControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(QuestionCSVTestData.UNKNOWN_CATEGORY_CSV_MESSAGE);
+                    .jsonPath("$.detail").isEqualTo(QuestionCsvTestData.UNKNOWN_CATEGORY_CSV_MESSAGE);
             assertThat(repository.count()).isZero();
         }
 
@@ -269,7 +269,8 @@ public class QuestionControllerTest {
         @Test
         void returnQuestionOfRandomType_whenTypeIsMissing() {
             final var basic = repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
-            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L, QuestionType.SPECIAL));
+            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L,
+                    QuestionType.SPECIAL));
 
             final var result = restClient.get()
                     .uri(uri -> uri.path(ApiConstants.RANDOM)
@@ -341,7 +342,8 @@ public class QuestionControllerTest {
         @Test
         void returnQuestionOfRandomCategory_whenCategoryIsMissing() {
             repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
-            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L, QuestionType.SPECIAL));
+            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L,
+                    QuestionType.SPECIAL));
 
             restClient.get()
                     .uri(uri -> uri.path(ApiConstants.RANDOM)
@@ -357,7 +359,8 @@ public class QuestionControllerTest {
         @Test
         void returnRandomQuestion_whenNoParametersAreGiven() {
             final var basic = repository.save(QuestionTestData.createQuestionInAllCategories(1L, QuestionType.BASIC));
-            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L, QuestionType.SPECIAL));
+            final var special = repository.save(QuestionTestData.createQuestionInAllCategories(2L,
+                    QuestionType.SPECIAL));
 
             final var result = restClient.get()
                     .uri(ApiConstants.RANDOM)

@@ -1,23 +1,25 @@
 package pl.prawko.prawko_server.mapper;
 
 import org.mapstruct.Context;
+import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.springframework.stereotype.Component;
-import pl.prawko.prawko_server.dto.ExamDto;
-import pl.prawko.prawko_server.dto.ExamSummaryDto;
+import pl.prawko.prawko_server.dto.response.ExamDto;
+import pl.prawko.prawko_server.dto.response.ExamSummaryDto;
 import pl.prawko.prawko_server.model.Exam;
 
 /**
  * This class is responsible for mapping {@link Exam} model into {@link ExamDto}.
  * <p>
- * The mapper is registered as a Spring {@link Component}, so it can be injected into services or other components that require answer mapping
- * functionality.
+ * The mapper is registered as a Spring {@link Component}, so it can be injected into services or other components that
+ * require exam mapping functionality.
  * <p>
  * {@code revealCorrect} is passed to {@link AnswerMapper} to decide whether answers show which one is correct.
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+        injectionStrategy = InjectionStrategy.CONSTRUCTOR,
         uses = {QuestionMapper.class, AnswerMapper.class})
 public interface ExamMapper {
 

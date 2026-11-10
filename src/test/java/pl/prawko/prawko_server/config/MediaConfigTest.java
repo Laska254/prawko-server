@@ -107,7 +107,8 @@ class MediaConfigTest {
 
     // Tomcat normalizes "/media/../x" to "/x" (denied) and rejects encoded separators, the handler rejects ".." too
     @ParameterizedTest
-    @ValueSource(strings = {"/../application-test.yaml", "/%2e%2e/application-test.yaml", "/..%2fapplication-test.yaml"})
+    @ValueSource(strings = {"/../application-test.yaml", "/%2e%2e/application-test.yaml",
+            "/..%2fapplication-test.yaml"})
     void getMedia_returnClientError_whenPathLeavesDirectory(final String path) {
         restClient.get()
                 .uri(path)

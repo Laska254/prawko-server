@@ -12,9 +12,9 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.QuestionType;
-import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
-import pl.prawko.prawko_server.test_data.QuestionTranslationsTestData;
+import pl.prawko.prawko_server.testdata.QuestionCsvTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
+import pl.prawko.prawko_server.testdata.QuestionTranslationsTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -71,8 +71,9 @@ class QuestionMapperTest {
     }
 
     @ParameterizedTest
-    @MethodSource("pl.prawko.prawko_server.test_data.QuestionTranslationsTestData#translations")
-    void toTranslationDto_mapContentAndLanguageCode_whenTranslationIsInAnyLanguage(final Language language, final String content) {
+    @MethodSource("pl.prawko.prawko_server.testdata.QuestionTranslationsTestData#translations")
+    void toTranslationDto_mapContentAndLanguageCode_whenTranslationIsInAnyLanguage(final Language language,
+                                                                                   final String content) {
         final var given = QuestionTranslationsTestData.createTranslation(language, content);
 
         final var result = questionMapper.toTranslationDto(given);
@@ -84,7 +85,7 @@ class QuestionMapperTest {
     @ParameterizedTest
     @EnumSource(value = QuestionType.class)
     void toEntity_mapFieldsWithoutAssociations_whenCsvIsOfAnyType(final QuestionType type) {
-        final var given = QuestionCSVTestData.createQuestionCSV(type);
+        final var given = QuestionCsvTestData.createQuestionCsv(type);
         final var expected = QuestionTestData.createQuestion(type);
 
         final var result = questionMapper.toEntity(given);

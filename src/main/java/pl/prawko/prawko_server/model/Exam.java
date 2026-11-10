@@ -25,16 +25,19 @@ import java.util.List;
  *     <li>{@code score} - sum of points of questions answered correctly, set when the exam is finished; at least
  *     {@link #PASSING_SCORE} passes</li>
  *     <li>{@code created} - timestamp of creation</li>
- *     <li>{@code expires} - deadline for answers, {@link #DURATION} after creation; the exam is finished automatically afterward</li>
+ *     <li>{@code expires} - deadline for answers, {@link #DURATION} after creation; the exam is finished automatically
+ *         afterward</li>
  *     <li>{@code updated} - timestamp of last update</li>
- *     <li>{@code version} - optimistic lock, so concurrent changes (e.g. to user answers) fail instead of overwriting each other</li>
+ *     <li>{@code version} - optimistic lock, so concurrent changes (e.g. to user answers) fail instead of overwriting
+ *         each other</li>
  * </ul>
  * <p>
  * Relationships:
  * <ul>
  *     <li>{@link User}: Each {@code User} can have multiple exams</li>
  *     <li>{@link Question}: Each exam contains 20 basic questions and  12 specialized questions</li>
- *     <li>{@link Answer}: Answers submitted so far, at most one per question; a new one replaces the previous answer to that question</li>
+ *     <li>{@link Answer}: Answers submitted so far, at most one per question; a new one replaces the previous answer to
+ *         that question</li>
  *     <li>{@link Category}: Each exam has a single category</li>
  * </ul>
  * The entity is mapped to the database table {@code exam}. Timestamps are {@link Instant}s, so they don't depend on

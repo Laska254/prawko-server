@@ -7,12 +7,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pl.prawko.prawko_server.dto.ExamSummaryDto;
+import pl.prawko.prawko_server.dto.response.ExamSummaryDto;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.User;
-import pl.prawko.prawko_server.test_data.CategoryTestData;
+import pl.prawko.prawko_server.testdata.CategoryTestData;
 
 import java.time.Instant;
 import java.util.List;
@@ -84,7 +84,8 @@ class ExamMapperTest {
 
         final var result = examMapper.toSummaryDto(exam);
 
-        assertThat(result).isEqualTo(new ExamSummaryDto(1L, CategoryTestData.CATEGORY_B.getName(), now, now, expires, 68, false));
+        assertThat(result)
+                .isEqualTo(new ExamSummaryDto(1L, CategoryTestData.CATEGORY_B.getName(), now, now, expires, 68, false));
         verifyNoInteractions(questionMapper, answerMapper);
     }
 

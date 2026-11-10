@@ -8,10 +8,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.ILanguageService;
-import pl.prawko.prawko_server.test_data.AnswerTestData;
-import pl.prawko.prawko_server.test_data.LanguageTestData;
-import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
-import pl.prawko.prawko_server.test_data.QuestionTestData;
+import pl.prawko.prawko_server.testdata.AnswerTestData;
+import pl.prawko.prawko_server.testdata.LanguageTestData;
+import pl.prawko.prawko_server.testdata.QuestionCsvTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -28,7 +28,7 @@ class AnswerFactoryTest {
     @ParameterizedTest
     @EnumSource(QuestionType.class)
     void create_returnAnswers_whenCsvIsValid(final QuestionType type) {
-        final var csv = QuestionCSVTestData.createQuestionCSV(type);
+        final var csv = QuestionCsvTestData.createQuestionCsv(type);
         final var question = QuestionTestData.createQuestion(type);
         final var expected = AnswerTestData.createAnswers(type);
         if (type == QuestionType.SPECIAL) {

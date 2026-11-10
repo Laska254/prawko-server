@@ -20,8 +20,8 @@ import pl.prawko.prawko_server.model.EmailStatus;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.service.implementation.GoogleProfileService;
-import pl.prawko.prawko_server.test_data.GoogleTestData;
-import pl.prawko.prawko_server.test_data.UserTestData;
+import pl.prawko.prawko_server.testdata.GoogleTestData;
+import pl.prawko.prawko_server.testdata.UserTestData;
 
 import java.io.IOException;
 import java.util.List;
@@ -54,8 +54,8 @@ class GoogleProfileServiceTest {
                         EmailStatus.AUTHORITATIVE),
                 Arguments.of(Named.of("Gmail address in upper case", withoutHostedDomain("PIPPIN@GMAIL.COM")),
                         EmailStatus.AUTHORITATIVE),
-                Arguments.of(Named.of("other email", withoutHostedDomain(UserTestData.createTestUserPippin().getEmail())),
-                        EmailStatus.VERIFIED),
+                Arguments.of(Named.of("other email",
+                        withoutHostedDomain(UserTestData.createTestUserPippin().getEmail())), EmailStatus.VERIFIED),
                 Arguments.of(Named.of("only ending like Gmail", withoutHostedDomain("pippin@notgmail.com")),
                         EmailStatus.VERIFIED),
                 Arguments.of(Named.of("blank hosted domain", GoogleTestData.createPippinClaims()
