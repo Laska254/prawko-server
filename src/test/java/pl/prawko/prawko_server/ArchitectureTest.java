@@ -11,9 +11,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Clock;
 import java.util.Map;
 
 import static com.tngtech.archunit.base.DescribedPredicate.describe;
+import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.assignableTo;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
@@ -222,7 +224,7 @@ class ArchitectureTest {
             .should()
             .callMethodWhere(target(name("now"))
                     .and(target(owner(resideInAPackage("java.time"))))
-                    .and(target(rawParameterTypes(new Class<?>[0]))))
+                    .and(target(not(rawParameterTypes(Clock.class)))))
             .because("the current time comes from the injected Clock");
 
     @ArchTest
