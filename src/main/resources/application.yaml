@@ -12,6 +12,8 @@ spring:
 
   profiles:
     default: dev
+    group:
+      prod: mariadb
 
   data:
     web:

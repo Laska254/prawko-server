@@ -59,8 +59,10 @@ public class UserTestData {
     // The update request's email is in mixed case, users store emails lowercased.
     public static final String UPDATED_EMAIL = "UpdatedEmail@shire.me";
     public static final String STORED_UPDATED_EMAIL = UPDATED_EMAIL.toLowerCase(Locale.ROOT);
-    // Pippin's username with accents: the same name under MariaDB's default collation, a different one under H2's.
+    // Pippin's username and email with accents. MariaDB's default collation, kept by the username, ignores them; H2's
+    // and the email's binary one don't.
     public static final String ACCENTED_USER_NAME = "pìppín";
+    public static final String ACCENTED_EMAIL = "pìppín@shire.me";
 
     private static final Pattern TOKEN = Pattern.compile("token=([\\w-]+)");
 
