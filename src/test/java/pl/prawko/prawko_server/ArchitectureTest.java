@@ -26,6 +26,7 @@ import static com.tngtech.archunit.lang.conditions.ArchConditions.have;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
 /**
@@ -69,6 +70,13 @@ class ArchitectureTest {
             .mayOnlyBeAccessedByLayers("ServiceImplementation", "Util")
             .whereLayer("Util")
             .mayOnlyBeAccessedByLayers("ServiceImplementation");
+
+    /** {@link #LAYERS} lets a layer access itself, so this covers one implementation injecting another. */
+    @ArchTest
+    static final ArchRule NO_FIELDS_OF_SERVICE_IMPLEMENTATIONS = noFields()
+            .should()
+            .haveRawType(resideInAPackage("..service.implementation.."))
+            .because("inject the I*Service interfaces");
 
     @ArchTest
     static final ArchRule MODEL_DEPENDS_ON_NO_OTHER_PACKAGE = classes()
