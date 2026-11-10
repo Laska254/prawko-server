@@ -368,7 +368,7 @@ class UserServiceTest {
 
         assertThat(output).contains("Successfully updated user with id '" + givenId + "'")
                 .doesNotContain(updateUserRequest.firstName(), updateUserRequest.lastName(),
-                        updateUserRequest.userName(), updateUserRequest.email());
+                        updateUserRequest.userName(), updateUserRequest.email(), updateUserRequest.currentPassword());
     }
 
     @Test
