@@ -181,7 +181,7 @@ public class ExceptionController {
 
     @ApiResponse(responseCode = "400", description = "Invalid argument")
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail handleInvalidDto(final MethodArgumentNotValidException exception) {
+    public ProblemDetail handleInvalidRequest(final MethodArgumentNotValidException exception) {
         final var errors = new HashMap<>();
         exception.getBindingResult()
                 .getFieldErrors()
