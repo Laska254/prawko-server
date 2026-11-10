@@ -68,7 +68,7 @@ public class ExamTestData {
                 exam.isActive());
     }
 
-    public static ExamDto createExamRequest(final Exam exam) {
+    public static ExamDto createExamDto(final Exam exam) {
         final var questions = exam.getQuestions().stream()
                 .sorted(Comparator.comparing(Question::getId))
                 .map(question -> new QuestionDto(

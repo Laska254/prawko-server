@@ -170,7 +170,7 @@ public class ExamControllerTest {
             final var exam = ExamTestData.createExam(tester);
             exam.setQuestions(questionRepository.saveAll(exam.getQuestions()));
             examRepository.save(exam);
-            final var expected = ExamTestData.createExamRequest(exam);
+            final var expected = ExamTestData.createExamDto(exam);
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, exam.getId())
