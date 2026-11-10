@@ -205,10 +205,10 @@ public class SpringSecurity {
                     authorize
                             .requestMatchers(ApiConstants.SWAGGER_UI_BASE_URL_ALL, ApiConstants.API_DOCS_BASE_URL_ALL)
                             .permitAll();
-                    configureEndpoint_Auth(authorize);
-                    configureEndpoint_Users(authorize);
-                    configureEndpoint_Questions(authorize);
-                    configureEndpoint_Exams(authorize);
+                    configureAuthEndpoints(authorize);
+                    configureUserEndpoints(authorize);
+                    configureQuestionEndpoints(authorize);
+                    configureExamEndpoints(authorize);
                     authorize
                             .requestMatchers(HttpMethod.GET, ApiConstants.MEDIA_BASE_URL_ALL).permitAll()
                             .requestMatchers(HttpMethod.HEAD, ApiConstants.MEDIA_BASE_URL_ALL).permitAll();
@@ -242,7 +242,7 @@ public class SpringSecurity {
         };
     }
 
-    private void configureEndpoint_Auth(
+    private void configureAuthEndpoints(
             final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST,
@@ -257,7 +257,7 @@ public class SpringSecurity {
                         ApiConstants.AUTH_BASE_URL + ApiConstants.RESEND_VERIFICATION).permitAll();
     }
 
-    private void configureEndpoint_Users(
+    private void configureUserEndpoints(
             final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.USERS_BASE_URL).permitAll()
@@ -275,7 +275,7 @@ public class SpringSecurity {
                 .requestMatchers(HttpMethod.DELETE, ApiConstants.USERS_BASE_URL_ALL).hasRole("ADMIN");
     }
 
-    private void configureEndpoint_Questions(
+    private void configureQuestionEndpoints(
             final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.QUESTIONS_BASE_URL).hasRole("ADMIN")
@@ -283,7 +283,7 @@ public class SpringSecurity {
                 .requestMatchers(HttpMethod.GET, ApiConstants.QUESTIONS_BASE_URL_ALL).hasRole("USER");
     }
 
-    private void configureEndpoint_Exams(
+    private void configureExamEndpoints(
             final AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry authorize) {
         authorize
                 .requestMatchers(HttpMethod.POST, ApiConstants.EXAMS_BASE_URL_ALL).hasRole("USER")

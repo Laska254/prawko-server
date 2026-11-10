@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server;
 
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -176,6 +177,17 @@ class ArchitectureTest {
             .resideInAPackage("..controller..")
             .andShould()
             .haveSimpleNameEndingWith("Controller");
+
+    /** Spring Data derived queries use {@code _} as a property path separator, so repositories are left out. */
+    @ArchTest
+    static final ArchRule METHOD_NAMES_ARE_CAMEL_CASE = methods()
+            .that()
+            .areDeclaredInClassesThat()
+            .resideOutsideOfPackage("..repository..")
+            .and()
+            .doNotHaveModifier(JavaModifier.SYNTHETIC)
+            .should()
+            .haveNameMatching("[a-z][a-zA-Z0-9]*");
 
     @ArchTest
     static final ArchRule NO_FIELD_INJECTION = GeneralCodingRules.NO_CLASSES_SHOULD_USE_FIELD_INJECTION;
