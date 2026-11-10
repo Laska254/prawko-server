@@ -9,7 +9,7 @@ import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.exception.UnknownCategoryException;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
-import pl.prawko.prawko_server.model.QuestionCSV;
+import pl.prawko.prawko_server.model.QuestionCsv;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.MappingIterator;
@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class CSVParser {
+public class CsvParser {
 
-    private static final Logger log = LoggerFactory.getLogger(CSVParser.class);
+    private static final Logger log = LoggerFactory.getLogger(CsvParser.class);
     private static final String ALLOWED_CATEGORIES = Arrays.stream(CategoryVariant.values())
             .map(CategoryVariant::name)
             .collect(Collectors.joining(", "));
@@ -38,7 +38,7 @@ public class CSVParser {
     private final CsvSchema csvSchema;
     private final CsvFacade csvFacade;
 
-    public CSVParser(final CsvFacade csvFacade) {
+    public CsvParser(final CsvFacade csvFacade) {
         this.csvFacade = csvFacade;
         this.csvMapper = CsvMapper.builder()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -53,8 +53,8 @@ public class CSVParser {
         validate(file);
         try (final var reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            final MappingIterator<QuestionCSV> csvRows = csvMapper
-                    .readerFor(QuestionCSV.class)
+            final MappingIterator<QuestionCsv> csvRows = csvMapper
+                    .readerFor(QuestionCsv.class)
                     .with(csvSchema)
                     .readValues(reader);
             final var questions = new ArrayList<Question>();

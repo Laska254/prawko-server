@@ -11,7 +11,7 @@ import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.ILanguageService;
 import pl.prawko.prawko_server.test_data.LanguageTestData;
-import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
+import pl.prawko.prawko_server.test_data.QuestionCsvTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 import pl.prawko.prawko_server.test_data.QuestionTranslationsTestData;
 
@@ -33,12 +33,12 @@ class QuestionTranslationFactoryTest {
     @ParameterizedTest
     @EnumSource(QuestionType.class)
     void createTranslations_returnTranslations_whenCsvIsValid(final QuestionType type) {
-        final var questionCSV = QuestionCSVTestData.createQuestionCSV(type);
+        final var questionCsv = QuestionCsvTestData.createQuestionCsv(type);
         final var question = QuestionTestData.createQuestion(type);
         final var expected = QuestionTranslationsTestData.createTranslations(type);
         when(languageService.findAll()).thenReturn(LanguageTestData.ALL);
 
-        final var result = factory.createTranslations(questionCSV, question);
+        final var result = factory.createTranslations(questionCsv, question);
 
         assertThat(result)
                 .usingRecursiveComparison()
@@ -53,7 +53,7 @@ class QuestionTranslationFactoryTest {
         when(languageService.findAll()).thenReturn(List.of(unsupported));
 
         assertThatThrownBy(() -> factory.createTranslations(
-                QuestionCSVTestData.createQuestionCSV(type), QuestionTestData.createQuestion(type)))
+                QuestionCsvTestData.createQuestionCsv(type), QuestionTestData.createQuestion(type)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Unexpected language: fr");
     }

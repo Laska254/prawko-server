@@ -23,7 +23,7 @@ import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.service.implementation.QuestionService;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
-import pl.prawko.prawko_server.util.CSVParser;
+import pl.prawko.prawko_server.util.CsvParser;
 
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 public class QuestionServiceTest {
 
     @Mock
-    private CSVParser parser;
+    private CsvParser parser;
 
     @Mock
     private QuestionRepository repository;

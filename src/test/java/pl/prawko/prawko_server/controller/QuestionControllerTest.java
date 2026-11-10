@@ -25,7 +25,7 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.test_data.MultiPartFactory;
-import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
+import pl.prawko.prawko_server.test_data.QuestionCsvTestData;
 import pl.prawko.prawko_server.test_data.QuestionTestData;
 
 import java.util.Arrays;
@@ -62,7 +62,7 @@ public class QuestionControllerTest {
 
         @Test
         void returnCreated_whenSuccess() {
-            final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.CSV_FILE);
+            final var multipart = MultiPartFactory.fromClasspath(QuestionCsvTestData.CSV_FILE);
 
             restClient.post()
                     .headers(auth::admin)
@@ -119,7 +119,7 @@ public class QuestionControllerTest {
 
         @Test
         void returnBadRequest_whenCsvIsMalformed() {
-            final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.MALFORMED_CSV_FILE);
+            final var multipart = MultiPartFactory.fromClasspath(QuestionCsvTestData.MALFORMED_CSV_FILE);
 
             restClient.post()
                     .headers(auth::admin)
@@ -128,13 +128,13 @@ public class QuestionControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(QuestionCSVTestData.MALFORMED_CSV_MESSAGE);
+                    .jsonPath("$.detail").isEqualTo(QuestionCsvTestData.MALFORMED_CSV_MESSAGE);
             assertThat(repository.count()).isZero();
         }
 
         @Test
         void returnBadRequest_whenCategoriesAreUnknown() {
-            final var multipart = MultiPartFactory.fromClasspath(QuestionCSVTestData.UNKNOWN_CATEGORY_CSV_FILE);
+            final var multipart = MultiPartFactory.fromClasspath(QuestionCsvTestData.UNKNOWN_CATEGORY_CSV_FILE);
 
             restClient.post()
                     .headers(auth::admin)
@@ -143,7 +143,7 @@ public class QuestionControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo(QuestionCSVTestData.UNKNOWN_CATEGORY_CSV_MESSAGE);
+                    .jsonPath("$.detail").isEqualTo(QuestionCsvTestData.UNKNOWN_CATEGORY_CSV_MESSAGE);
             assertThat(repository.count()).isZero();
         }
 

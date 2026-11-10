@@ -10,7 +10,7 @@ import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Question;
-import pl.prawko.prawko_server.model.QuestionCSV;
+import pl.prawko.prawko_server.model.QuestionCsv;
 import pl.prawko.prawko_server.model.QuestionTranslation;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.ICategoryService;
@@ -44,7 +44,7 @@ class CsvFacadeTest {
     @ParameterizedTest
     @EnumSource(QuestionType.class)
     void mapSingleRow_returnQuestionWithAssociations_whenCsvIsValid(final QuestionType type) {
-        final var questionCsv = mock(QuestionCSV.class);
+        final var questionCsv = mock(QuestionCsv.class);
         final var question = new Question();
         final var translations = List.of(new QuestionTranslation());
         final var answers = List.of(new Answer());

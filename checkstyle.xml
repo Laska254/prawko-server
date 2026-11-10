@@ -51,5 +51,12 @@
         <module name="LocalFinalVariableName"/>
         <module name="PatternVariableName"/>
         <module name="IllegalIdentifierName"/>
+        <!-- at most two capitals in a row: acronyms as words (CsvParser) and I*Service pass; IO for JDK names -->
+        <!-- like UncheckedIOException in test names -->
+        <module name="AbbreviationAsWordInName">
+            <property name="allowedAbbreviationLength" value="1"/>
+            <property name="allowedAbbreviations" value="IO"/>
+            <property name="ignoreFinal" value="false"/>
+        </module>
     </module>
 </module>

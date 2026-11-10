@@ -1,9 +1,9 @@
 package pl.prawko.prawko_server.test_data;
 
-import pl.prawko.prawko_server.model.QuestionCSV;
+import pl.prawko.prawko_server.model.QuestionCsv;
 import pl.prawko.prawko_server.model.QuestionType;
 
-public class QuestionCSVTestData {
+public class QuestionCsvTestData {
 
     public static final String CSV_FILE = "test_question.csv";
     public static final String MALFORMED_CSV_FILE = "malformed_question.csv";
@@ -14,22 +14,22 @@ public class QuestionCSVTestData {
     public static final String UNKNOWN_CATEGORY_CSV_MESSAGE = "Invalid CSV file: line 2: unknown category 'Z'; "
             + "line 3: unknown category ''; line 3: unknown category 'BB'. " + ALLOWED_CATEGORIES;
 
-    private QuestionCSVTestData() {
+    private QuestionCsvTestData() {
     }
 
-    public static QuestionCSV createQuestionCSV(final QuestionType type) {
+    public static QuestionCsv createQuestionCsv(final QuestionType type) {
         return switch (type) {
-            case BASIC -> createBasicQuestionCSV();
-            case SPECIAL -> createSpecialQuestionCSV();
+            case BASIC -> createBasicQuestionCsv();
+            case SPECIAL -> createSpecialQuestionCsv();
         };
     }
 
-    public static QuestionCSV createSpecialQuestionCSV() {
+    public static QuestionCsv createSpecialQuestionCsv() {
         final var question = QuestionTestData.createQuestion(QuestionType.SPECIAL);
         final var answerTranslationsA = AnswerTranslationsTestData.variantA();
         final var answerTranslationsB = AnswerTranslationsTestData.variantB();
         final var answerTranslationsC = AnswerTranslationsTestData.variantC();
-        return new QuestionCSV(
+        return new QuestionCsv(
                 "PD10(3)",
                 2143,
                 question.getTranslations().getFirst().getContent(),
@@ -51,9 +51,9 @@ public class QuestionCSVTestData {
                 "PT");
     }
 
-    public static QuestionCSV createBasicQuestionCSV() {
+    public static QuestionCsv createBasicQuestionCsv() {
         final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
-        return new QuestionCSV(
+        return new QuestionCsv(
                 "W9(2)",
                 110,
                 question.getTranslations().getFirst().getContent(),

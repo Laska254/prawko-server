@@ -20,7 +20,7 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.service.IQuestionService;
-import pl.prawko.prawko_server.util.CSVParser;
+import pl.prawko.prawko_server.util.CsvParser;
 
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -38,11 +38,11 @@ public class QuestionService implements IQuestionService {
 
     private final QuestionRepository repository;
     private final QuestionMapper mapper;
-    private final CSVParser parser;
+    private final CsvParser parser;
 
     public QuestionService(final QuestionRepository repository,
                            final QuestionMapper mapper,
-                           final CSVParser parser) {
+                           final CsvParser parser) {
         this.repository = repository;
         this.mapper = mapper;
         this.parser = parser;

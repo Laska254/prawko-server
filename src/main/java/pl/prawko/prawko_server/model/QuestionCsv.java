@@ -29,7 +29,7 @@ import java.util.Map;
  * @param value         score value of correct answer to a question
  * @param categories    categories to which the question belongs represented by comma-separated string
  */
-public record QuestionCSV(
+public record QuestionCsv(
 
         @JsonProperty("Nazwa pytania")
         String name,

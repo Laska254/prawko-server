@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.exception.UnknownCategoryException;
 import pl.prawko.prawko_server.model.Question;
-import pl.prawko.prawko_server.test_data.QuestionCSVTestData;
+import pl.prawko.prawko_server.test_data.QuestionCsvTestData;
 import tools.jackson.databind.DatabindException;
 
 import java.io.IOException;
@@ -39,7 +39,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
-class CSVParserTest {
+class CsvParserTest {
 
     private static final String HEADER = "Nazwa pytania,Numer pytania,Poprawna odp,Liczba punktów\n";
 
@@ -47,16 +47,16 @@ class CSVParserTest {
     private CsvFacade csvFacade;
 
     @InjectMocks
-    private CSVParser csvParser;
+    private CsvParser csvParser;
 
     @Nested
     class Parse {
 
         @Test
-        void returnQuestions_whenFileIsCSV() throws IOException {
-            final var resource = new ClassPathResource(QuestionCSVTestData.CSV_FILE);
+        void returnQuestions_whenFileIsCsv() throws IOException {
+            final var resource = new ClassPathResource(QuestionCsvTestData.CSV_FILE);
             final var file = new MockMultipartFile(
-                    "file", QuestionCSVTestData.CSV_FILE, "text/csv", resource.getInputStream());
+                    "file", QuestionCsvTestData.CSV_FILE, "text/csv", resource.getInputStream());
             final var question1 = new Question();
             final var question2 = new Question();
             final var expected = List.of(question1, question2);
@@ -73,7 +73,7 @@ class CSVParserTest {
         }
 
         @Test
-        void throwMultipartException_whenFileIsNotCSV() {
+        void throwMultipartException_whenFileIsNotCsv() {
             final var file = new MockMultipartFile("file", "test.pdf", "application/pdf", new byte[]{});
 
             assertThatThrownBy(() -> csvParser.parse(file))
@@ -125,7 +125,7 @@ class CSVParserTest {
             assertThatThrownBy(() -> csvParser.parse(file))
                     .isInstanceOf(InvalidCsvException.class)
                     .hasMessage("Invalid CSV file: line 2: unknown category 'Z'; line 5: unknown category ''; "
-                            + "line 5: unknown category 'AA'. " + QuestionCSVTestData.ALLOWED_CATEGORIES);
+                            + "line 5: unknown category 'AA'. " + QuestionCsvTestData.ALLOWED_CATEGORIES);
             verify(csvFacade, times(4)).mapSingleRow(any());
             assertThat(output).contains("Invalid CSV file: 3 unknown categories. File: 'categories.csv'")
                     .doesNotContain("unknown category 'Z'");
@@ -133,9 +133,9 @@ class CSVParserTest {
 
         @Test
         void throwInvalidCsvException_whenRowMappingFailsWithoutLocation() throws IOException {
-            final var resource = new ClassPathResource(QuestionCSVTestData.CSV_FILE);
+            final var resource = new ClassPathResource(QuestionCsvTestData.CSV_FILE);
             final var file = new MockMultipartFile(
-                    "file", QuestionCSVTestData.CSV_FILE, "text/csv", resource.getInputStream());
+                    "file", QuestionCsvTestData.CSV_FILE, "text/csv", resource.getInputStream());
             when(csvFacade.mapSingleRow(any())).thenThrow(new DatabindException("Unknown category") {
             });
 
