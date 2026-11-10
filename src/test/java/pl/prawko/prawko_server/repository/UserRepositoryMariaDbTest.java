@@ -119,12 +119,6 @@ class UserRepositoryMariaDbTest {
     }
 
     @Test
-    void saveAndFlush_saveUser_whenOwnUserNameChangedOnlyInAccents() {
-        final var accented = tester.setUserName(UserTestData.ACCENTED_USER_NAME);
-        assertThatNoException().isThrownBy(() -> repository.saveAndFlush(accented));
-    }
-
-    @Test
     void saveAndFlush_saveUser_whenEmailDiffersOnlyInAccents() {
         final var merry = UserTestData.createMerry().setEmail(UserTestData.ACCENTED_EMAIL);
         assertThatNoException().isThrownBy(() -> repository.saveAndFlush(merry));

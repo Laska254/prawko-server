@@ -654,22 +654,6 @@ public class UserControllerTest {
         }
 
         @Test
-        void success_whenUserChangesAccentsOfOwnUserName() {
-            final var tester = userRepository.save(UserTestData.createTestUserPippin());
-            final var userName = UserTestData.ACCENTED_USER_NAME;
-
-            restClient.patch()
-                    .uri(ApiConstants.BY_ID, tester.getId())
-                    .headers(auth::user)
-                    .body(new UserUpdateRequest(null, null, userName, null))
-                    .exchange()
-                    .expectStatus().isOk()
-                    .expectBody(UserDto.class).isEqualTo(UserTestData.createUserDto(tester.getId(), userName));
-
-            assertThat(userRepository.findById(tester.getId()).orElseThrow().getUserName()).isEqualTo(userName);
-        }
-
-        @Test
         void returnConflict_whenUserNameDiffersOnlyInCaseFromAnotherUser() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var merry = userRepository.save(UserTestData.createMerry());

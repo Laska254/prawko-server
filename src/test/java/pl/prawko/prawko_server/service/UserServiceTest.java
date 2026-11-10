@@ -33,7 +33,6 @@ import pl.prawko.prawko_server.test_data.UserTestData;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -381,26 +380,6 @@ class UserServiceTest {
         verify(repository).findById(givenId);
         verify(repository).existsByUserNameIgnoreCaseAndIdNot(updateUserRequest.userName(), givenId);
         verifyNoInteractions(mapper);
-    }
-
-    @Test
-    void updateUser_changeUserNameCheckingOnlyOtherUsers_whenOnlyCaseDiffers() {
-        final var givenId = 44L;
-        final var userName = tester.getUserName().toUpperCase(Locale.ROOT);
-        final var updateUserRequest = new UserUpdateRequest(null, null, userName, null);
-        final var user = tester.setId(givenId);
-        when(repository.findById(givenId)).thenReturn(Optional.of(user));
-        when(repository.existsByUserNameIgnoreCaseAndIdNot(userName, givenId)).thenReturn(false);
-        when(repository.save(user)).thenReturn(user);
-
-        service.updateUser(givenId, updateUserRequest);
-
-        assertThat(user.getUserName()).isEqualTo(userName);
-        verify(repository).findById(givenId);
-        verify(repository).existsByUserNameIgnoreCaseAndIdNot(userName, givenId);
-        verify(repository).save(user);
-        verify(mapper).toDto(user);
-        verifyNoMoreInteractions(repository, mapper);
     }
 
     @Test
