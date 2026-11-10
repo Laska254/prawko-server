@@ -226,16 +226,26 @@ public class UserTestData {
                 "UpdatedFirstName",
                 "UpdatedLastName",
                 "UpdatedUserName",
-                UPDATED_EMAIL);
+                UPDATED_EMAIL,
+                TestUtils.USER_PASSWORD);
     }
 
     public static UserUpdateRequest createUserUpdateRequestWithoutEmail() {
         final var request = createValidUserUpdateRequest();
-        return new UserUpdateRequest(request.firstName(), request.lastName(), request.userName(), null);
+        return new UserUpdateRequest(request.firstName(), request.lastName(), request.userName(), null,
+                request.currentPassword());
     }
 
     public static UserUpdateRequest createInvalidUserUpdateRequest() {
-        return new UserUpdateRequest("", "", "gimli", "gimli.shire.me");
+        return new UserUpdateRequest("", "", "gimli", "gimli.shire.me", TestUtils.USER_PASSWORD);
+    }
+
+    public static UserUpdateRequest createEmailUpdateRequest(final String email) {
+        return new UserUpdateRequest(null, null, null, email, TestUtils.USER_PASSWORD);
+    }
+
+    public static UserUpdateRequest createUserNameUpdateRequest(final String userName) {
+        return new UserUpdateRequest(null, null, userName, null, TestUtils.USER_PASSWORD);
     }
 
     public static ChangePasswordRequest createValidChangePasswordRequest() {

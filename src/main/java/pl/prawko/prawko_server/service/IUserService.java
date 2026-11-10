@@ -69,13 +69,16 @@ public interface IUserService {
      * to it, and a confirmation link to the current address. Only opening both links
      * ({@link IEmailVerificationService#verify}) makes it the user's email. Sending the current email cancels a pending
      * change.
+     * Users changing their own email (other than cancelling) or username confirm it with their current password, like
+     * {@link #verifyPasswordIfSet}. Admins updating another user can't know it and aren't asked for it.
      * </p>
      *
      * @param userId        the ID of the user to update
      * @param updateRequest the request containing new user details
+     * @param self          whether the user updates their own account
      * @return the updated user as a {@link UserDto}
      */
-    UserDto updateUser(long userId, UserUpdateRequest updateRequest);
+    UserDto updateUser(long userId, UserUpdateRequest updateRequest, boolean self);
 
     /**
      * Changes a user's password.
