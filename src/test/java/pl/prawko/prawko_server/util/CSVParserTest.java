@@ -148,12 +148,14 @@ class CSVParserTest {
         void throwUncheckedIOException_whenFileCannotBeRead() throws IOException {
             final var file = mock(MultipartFile.class);
             when(file.getContentType()).thenReturn("text/csv");
-            when(file.getInputStream()).thenThrow(new IOException("Stream closed"));
+            final var cause = new IOException("Stream closed");
+            when(file.getInputStream()).thenThrow(cause);
 
             assertThatThrownBy(() -> csvParser.parse(file))
                     .isExactlyInstanceOf(UncheckedIOException.class)
                     .hasMessage("CSV file failed to parse: Stream closed")
-                    .hasCauseInstanceOf(IOException.class);
+                    .cause()
+                    .isSameAs(cause);
             verifyNoInteractions(csvFacade);
         }
 
