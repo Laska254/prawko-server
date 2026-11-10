@@ -42,10 +42,10 @@ public class ExamGenerator {
                 .stream()
                 .collect(Collectors.groupingBy(Question::getPoints));
         return questionType.getDistribution().entrySet().stream()
-                .flatMap(entry ->
-                        selectRandomQuestions(questions.getOrDefault(entry.getKey(), Collections.emptyList()),
-                                entry.getValue())
-                                .stream())
+                .flatMap(entry -> {
+                    final var pool = questions.getOrDefault(entry.getKey(), Collections.emptyList());
+                    return selectRandomQuestions(pool, entry.getValue()).stream();
+                })
                 .toList();
     }
 
