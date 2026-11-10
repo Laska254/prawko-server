@@ -1,9 +1,11 @@
 package pl.prawko.prawko_server.mapper;
 
+import org.mapstruct.Condition;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
+import org.mapstruct.Named;
 import org.springframework.stereotype.Component;
 import pl.prawko.prawko_server.dto.response.AnswerDto;
 import pl.prawko.prawko_server.dto.response.AnswerTranslationDto;
@@ -23,8 +25,14 @@ import pl.prawko.prawko_server.model.AnswerTranslation;
 public interface AnswerMapper {
 
     @Mapping(target = "questionId", source = "question.id")
-    @Mapping(target = "correct", expression = "java(revealCorrect ? answer.isCorrect() : null)")
+    @Mapping(target = "correct", conditionQualifiedByName = "revealCorrect")
     AnswerDto toDto(Answer answer, @Context boolean revealCorrect);
+
+    @Condition
+    @Named("revealCorrect")
+    default boolean revealCorrect(@Context final boolean revealCorrect) {
+        return revealCorrect;
+    }
 
     @Mapping(target = "languageCode", source = "language.code")
     AnswerTranslationDto toTranslationDto(AnswerTranslation translation);

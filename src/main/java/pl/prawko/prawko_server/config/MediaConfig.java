@@ -33,7 +33,11 @@ public class MediaConfig implements WebMvcConfigurer {
     public MediaConfig(@Value("${media.directory}") final Path directory,
                        @Value("${media.cache-max-age}") final Duration cacheMaxAge) {
         final var uri = directory.toAbsolutePath().normalize().toUri().toString();
-        this.location = uri.endsWith("/") ? uri : uri + "/";
+        if (uri.endsWith("/")) {
+            this.location = uri;
+        } else {
+            this.location = uri + "/";
+        }
         this.cacheMaxAge = cacheMaxAge;
     }
 

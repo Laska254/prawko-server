@@ -8,6 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
+import java.util.Optional;
+
 /**
  * Represents a translation of a {@link Question} into a specific {@link Language}
  * <p>
@@ -99,8 +101,12 @@ public class QuestionTranslation {
         return "QuestionTranslation{" +
                 "id=" + id +
                 ", content='" + content + '\'' +
-                ", question=" + (question == null ? null : question.getId()) +
-                ", language=" + (language == null ? null : language.getCode()) +
+                ", question=" + Optional.ofNullable(question)
+                        .map(Question::getId)
+                        .orElse(null) +
+                ", language=" + Optional.ofNullable(language)
+                        .map(Language::getCode)
+                        .orElse(null) +
                 '}';
     }
 

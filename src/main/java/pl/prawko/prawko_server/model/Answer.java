@@ -12,6 +12,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Represents a {@code Answer} entity within the application.
@@ -117,7 +118,9 @@ public class Answer {
         return "Answer{" +
                 "id=" + id +
                 ", correct=" + correct +
-                ", question=" + (question == null ? null : question.getId()) +
+                ", question=" + Optional.ofNullable(question)
+                        .map(Question::getId)
+                        .orElse(null) +
                 '}';
     }
 

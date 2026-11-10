@@ -13,6 +13,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import java.util.Optional;
+
 /**
  * Represents a {@code UserIdentity} entity, an account at an {@link IdentityProvider} linked to a {@link User}, so the
  * user can sign in with it.
@@ -107,7 +109,9 @@ public class UserIdentity {
         return "UserIdentity{" +
                 "id=" + id +
                 ", provider=" + provider +
-                ", user=" + (user == null ? null : user.getId()) +
+                ", user=" + Optional.ofNullable(user)
+                        .map(User::getId)
+                        .orElse(null) +
                 '}';
     }
 

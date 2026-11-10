@@ -14,6 +14,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Represents a {@code Exam} entity within the application.
@@ -207,8 +208,12 @@ public class Exam {
                 ", created=" + created +
                 ", updated=" + updated +
                 ", expires=" + expires +
-                ", user=" + (user == null ? null : user.getId()) +
-                ", category=" + (category == null ? null : category.getName()) +
+                ", user=" + Optional.ofNullable(user)
+                        .map(User::getId)
+                        .orElse(null) +
+                ", category=" + Optional.ofNullable(category)
+                        .map(Category::getName)
+                        .orElse(null) +
                 '}';
     }
 

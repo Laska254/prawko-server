@@ -3,6 +3,7 @@ package pl.prawko.prawko_server.model;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import pl.prawko.prawko_server.testdata.UserTestData;
 
@@ -13,6 +14,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class EntityIdentityTest {
 
@@ -28,6 +30,19 @@ class EntityIdentityTest {
                 Named.of("RefreshToken", id -> new RefreshToken().setId(id)),
                 Named.of("User", id -> new User().setId(id)),
                 Named.of("UserIdentity", id -> new UserIdentity().setId(id))
+        );
+    }
+
+    static Stream<Arguments> entitiesWithAssociations() {
+        return Stream.of(
+                arguments(Named.of("Answer", new Answer()), List.of("question=null")),
+                arguments(Named.of("AnswerTranslation", new AnswerTranslation()),
+                        List.of("answer=null", "language=null")),
+                arguments(Named.of("Exam", new Exam()), List.of("user=null", "category=null")),
+                arguments(Named.of("QuestionTranslation", new QuestionTranslation()),
+                        List.of("question=null", "language=null")),
+                arguments(Named.of("RefreshToken", new RefreshToken()), List.of("replacedBy=null", "user=null")),
+                arguments(Named.of("UserIdentity", new UserIdentity()), List.of("user=null"))
         );
     }
 
@@ -61,6 +76,12 @@ class EntityIdentityTest {
     @MethodSource("entities")
     void toString_notThrow_whenAssociationsAreNotSet(final LongFunction<Object> factory) {
         assertThatNoException().isThrownBy(() -> factory.apply(0).toString());
+    }
+
+    @ParameterizedTest
+    @MethodSource("entitiesWithAssociations")
+    void toString_printNull_whenAssociationsAreNotSet(final Object entity, final List<String> expected) {
+        assertThat(entity.toString()).contains(expected);
     }
 
     @Test

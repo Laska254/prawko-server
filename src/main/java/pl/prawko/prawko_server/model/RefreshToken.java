@@ -13,6 +13,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
+import java.util.Optional;
 
 /**
  * Represents a {@code RefreshToken} entity, a long-lived credential exchanged for new access tokens without signing in
@@ -131,8 +132,12 @@ public class RefreshToken {
                 "id=" + id +
                 ", expires=" + expires +
                 ", revokedAt=" + revokedAt +
-                ", replacedBy=" + (replacedBy == null ? null : replacedBy.getId()) +
-                ", user=" + (user == null ? null : user.getId()) +
+                ", replacedBy=" + Optional.ofNullable(replacedBy)
+                        .map(RefreshToken::getId)
+                        .orElse(null) +
+                ", user=" + Optional.ofNullable(user)
+                        .map(User::getId)
+                        .orElse(null) +
                 '}';
     }
 
