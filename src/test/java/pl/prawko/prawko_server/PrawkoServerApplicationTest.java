@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class PrawkoServerApplicationTests {
+class PrawkoServerApplicationTest {
 
     @Test
     void context_load() {

@@ -1,6 +1,7 @@
 package pl.prawko.prawko_server;
 
 import com.tngtech.archunit.core.domain.JavaModifier;
+import com.tngtech.archunit.core.domain.Source;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -9,15 +10,18 @@ import org.junit.platform.commons.annotation.Testable;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.tngtech.archunit.base.DescribedPredicate.describe;
 import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.type;
 import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.name;
 import static com.tngtech.archunit.core.domain.properties.HasOwner.Predicates.With.owner;
+import static com.tngtech.archunit.lang.conditions.ArchConditions.have;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * Conventions for the test code: shared Spring context, no sleeps, method names, map literals and enum constant names.
+ * Conventions for the test code: shared Spring context, no sleeps, class and method names, map literals and enum
+ * constant names.
  */
 @AnalyzeClasses(packagesOf = PrawkoServerApplication.class, importOptions = ImportOption.OnlyIncludeTests.class)
 class TestConventionsTest {
@@ -50,6 +54,17 @@ class TestConventionsTest {
             .andShould()
             .haveNameNotStartingWith("should")
             .because("test names are subject_result_whenCondition, or result_whenCondition in a @Nested class");
+
+    /** The source file names the top-level class, so tests in {@code @Nested} classes count for their outer class. */
+    @ArchTest
+    static final ArchRule TEST_CLASSES_ARE_NAMED_TEST = methods()
+            .that()
+            .areMetaAnnotatedWith(Testable.class)
+            .should(have(describe("a source file named *Test.java", method -> method.getOwner()
+                    .getSource()
+                    .flatMap(Source::getFileName)
+                    .filter(fileName -> fileName.endsWith("Test.java"))
+                    .isPresent())));
 
     @ArchTest
     static final ArchRule OTHER_METHOD_NAMES_ARE_CAMEL_CASE = methods()
