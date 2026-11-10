@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PrawkoServerApplicationTests {
 
     @Test
-    void contextLoads() {
+    void context_load() {
     }
 
     @Test
