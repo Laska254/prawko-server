@@ -24,19 +24,19 @@ import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestAuth;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
-import pl.prawko.prawko_server.dto.AuthTokensDto;
-import pl.prawko.prawko_server.dto.ChangePasswordRequest;
-import pl.prawko.prawko_server.dto.DeleteAccountRequest;
-import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
-import pl.prawko.prawko_server.dto.GitHubSignInRequest;
-import pl.prawko.prawko_server.dto.GoogleSignInRequest;
-import pl.prawko.prawko_server.dto.LinkGitHubRequest;
-import pl.prawko.prawko_server.dto.LinkGoogleRequest;
-import pl.prawko.prawko_server.dto.RegisterDto;
-import pl.prawko.prawko_server.dto.UnlinkIdentityRequest;
-import pl.prawko.prawko_server.dto.UserDto;
-import pl.prawko.prawko_server.dto.UserStatsDto;
-import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.dto.request.ChangePasswordRequest;
+import pl.prawko.prawko_server.dto.request.DeleteAccountRequest;
+import pl.prawko.prawko_server.dto.request.ForgotPasswordRequest;
+import pl.prawko.prawko_server.dto.request.GitHubSignInRequest;
+import pl.prawko.prawko_server.dto.request.GoogleSignInRequest;
+import pl.prawko.prawko_server.dto.request.LinkGitHubRequest;
+import pl.prawko.prawko_server.dto.request.LinkGoogleRequest;
+import pl.prawko.prawko_server.dto.request.RegisterRequest;
+import pl.prawko.prawko_server.dto.request.UnlinkIdentityRequest;
+import pl.prawko.prawko_server.dto.request.UserUpdateRequest;
+import pl.prawko.prawko_server.dto.response.AuthTokensDto;
+import pl.prawko.prawko_server.dto.response.UserDto;
+import pl.prawko.prawko_server.dto.response.UserStatsDto;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.model.User;
@@ -106,7 +106,7 @@ public class UserControllerTest {
 
     private RestTestClient restClient;
 
-    private final RegisterDto registerDto = UserTestData.createValidRegisterDto();
+    private final RegisterRequest registerRequest = UserTestData.createValidRegisterRequest();
 
     @BeforeEach
     void setUp() {
@@ -125,7 +125,7 @@ public class UserControllerTest {
         @Test
         void success_whenDtoIsValid() {
             restClient.post()
-                    .body(registerDto)
+                    .body(registerRequest)
                     .exchange()
                     .expectStatus().isCreated()
                     .expectHeader().value("Location", location -> {
@@ -144,7 +144,7 @@ public class UserControllerTest {
             final var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(captor.capture());
             final var user = userRepository.findById(id).orElseThrow();
-            assertThat(captor.getValue().getTo()).containsExactly(registerDto.email());
+            assertThat(captor.getValue().getTo()).containsExactly(registerRequest.email());
             assertThat(UserTestData.extractToken(captor.getValue())).isNotBlank();
             assertThat(user.isEnabled()).isFalse();
             assertThat(user.getVerificationTokenHash()).isNotNull();
@@ -155,7 +155,7 @@ public class UserControllerTest {
             final var release = TestUtils.blockTaskExecutor(taskExecutor);
             try {
                 restClient.post()
-                        .body(registerDto)
+                        .body(registerRequest)
                         .exchange()
                         .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
                         .expectBody()
@@ -168,7 +168,7 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenDtoIsInvalid() {
-            final var invalidDto = new RegisterDto(
+            final var invalidDto = new RegisterRequest(
                     TOO_LONG_NAME,
                     "Tu",
                     "OK",
@@ -195,8 +195,8 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenLastNameIsTooLong() {
-            final var invalidDto = new RegisterDto(registerDto.firstName(), TOO_LONG_NAME, registerDto.userName(),
-                    registerDto.email(), registerDto.password());
+            final var invalidDto = new RegisterRequest(registerRequest.firstName(), TOO_LONG_NAME, registerRequest.userName(),
+                    registerRequest.email(), registerRequest.password());
 
             restClient.post()
                     .body(invalidDto)
@@ -208,8 +208,8 @@ public class UserControllerTest {
 
         @Test
         void returnCreated_whenEmailHasMaximumLength() {
-            final var dto = new RegisterDto(registerDto.firstName(), registerDto.lastName(), registerDto.userName(),
-                    UserTestData.LONGEST_EMAIL, registerDto.password());
+            final var dto = new RegisterRequest(registerRequest.firstName(), registerRequest.lastName(), registerRequest.userName(),
+                    UserTestData.LONGEST_EMAIL, registerRequest.password());
 
             restClient.post()
                     .body(dto)
@@ -223,8 +223,8 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenEmailIsTooLong() {
-            final var invalidDto = new RegisterDto(registerDto.firstName(), registerDto.lastName(), registerDto.userName(),
-                    UserTestData.OVERLONG_EMAIL, registerDto.password());
+            final var invalidDto = new RegisterRequest(registerRequest.firstName(), registerRequest.lastName(), registerRequest.userName(),
+                    UserTestData.OVERLONG_EMAIL, registerRequest.password());
 
             restClient.post()
                     .body(invalidDto)
@@ -236,7 +236,7 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenUserNameContainsAt() {
-            final var invalidDto = new RegisterDto("Peregrin", "Tuk", "pippin@shire", "pippin@shire.me", "lembasy");
+            final var invalidDto = new RegisterRequest("Peregrin", "Tuk", "pippin@shire", "pippin@shire.me", "lembasy");
 
             restClient.post()
                     .body(invalidDto)
@@ -260,7 +260,7 @@ public class UserControllerTest {
         @Test
         void returnBadRequest_whenAllFieldsAreNull() {
             registerUser();
-            final var invalidDto = new RegisterDto(null, null, null, null, null);
+            final var invalidDto = new RegisterRequest(null, null, null, null, null);
             final var expected = Map.ofEntries(
                     Map.entry("message", TestUtils.VALIDATION_FAILED),
                     Map.entry("details", Map.ofEntries(
@@ -282,7 +282,7 @@ public class UserControllerTest {
         @Test
         void returnConflict_whenEmailDiffersOnlyInCase() {
             registerUser();
-            final var dto = new RegisterDto("Peregrin", "Tuk", "peregrin", "Pippin@Shire.ME", "lembasy");
+            final var dto = new RegisterRequest("Peregrin", "Tuk", "peregrin", "Pippin@Shire.ME", "lembasy");
 
             restClient.post()
                     .body(dto)
@@ -301,7 +301,7 @@ public class UserControllerTest {
                     Map.entry("details", UserTestData.PIPPIN_CONFLICT_DETAILS));
 
             restClient.post()
-                    .body(registerDto)
+                    .body(registerRequest)
                     .exchange()
                     .expectStatus().isEqualTo(HttpStatus.CONFLICT)
                     .expectBody()
@@ -1171,13 +1171,13 @@ public class UserControllerTest {
                     .expectStatus().isNoContent();
 
             restClient.post()
-                    .body(registerDto)
+                    .body(registerRequest)
                     .exchange()
                     .expectStatus().isCreated();
 
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS)).send(any(SimpleMailMessage.class));
-            assertThat(userRepository.existsByUserNameIgnoreCase(registerDto.userName())).isTrue();
-            assertThat(userRepository.existsByEmailIgnoreCase(registerDto.email())).isTrue();
+            assertThat(userRepository.existsByUserNameIgnoreCase(registerRequest.userName())).isTrue();
+            assertThat(userRepository.existsByEmailIgnoreCase(registerRequest.email())).isTrue();
         }
 
         @Test
@@ -1937,7 +1937,7 @@ public class UserControllerTest {
 
     private long registerUser() {
         restClient.post()
-                .body(registerDto)
+                .body(registerRequest)
                 .exchangeSuccessfully();
         return userRepository.findAll().getFirst().getId();
     }

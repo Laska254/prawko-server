@@ -26,7 +26,7 @@ class UserMapperTest {
 
     @Test
     void fromDto_mapUserFields_whenDtoIsValid() {
-        final var dto = UserTestData.createValidRegisterDto();
+        final var dto = UserTestData.createValidRegisterRequest();
 
         final var result = mapper.fromDto(dto);
 
@@ -38,7 +38,7 @@ class UserMapperTest {
 
     @Test
     void fromDto_returnDisabledUser_whenDtoIsValid() {
-        final var result = mapper.fromDto(UserTestData.createValidRegisterDto());
+        final var result = mapper.fromDto(UserTestData.createValidRegisterRequest());
 
         assertThat(result.isEnabled()).isFalse();
         assertThat(result.getVerificationTokenHash()).isNull();

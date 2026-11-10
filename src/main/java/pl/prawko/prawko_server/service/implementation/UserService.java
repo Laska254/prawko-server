@@ -13,11 +13,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.config.AuthenticatedUser;
-import pl.prawko.prawko_server.dto.ChangePasswordRequest;
-import pl.prawko.prawko_server.dto.DeleteAccountRequest;
-import pl.prawko.prawko_server.dto.RegisterDto;
-import pl.prawko.prawko_server.dto.UserDto;
-import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.dto.request.ChangePasswordRequest;
+import pl.prawko.prawko_server.dto.request.DeleteAccountRequest;
+import pl.prawko.prawko_server.dto.request.RegisterRequest;
+import pl.prawko.prawko_server.dto.request.UserUpdateRequest;
+import pl.prawko.prawko_server.dto.response.UserDto;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.exception.TooManyRequestsException;
@@ -72,7 +72,7 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Override
     @Transactional
-    public long register(final RegisterDto dto) {
+    public long register(final RegisterRequest dto) {
         log.info("Attempting to register new user.");
         validateNoConflict(dto.userName(), repository::existsByUserNameIgnoreCase, dto.email());
         log.debug("No conflicts");

@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.dto;
+package pl.prawko.prawko_server.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import pl.prawko.prawko_server.model.CategoryVariant;

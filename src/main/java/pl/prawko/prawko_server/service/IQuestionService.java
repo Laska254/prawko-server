@@ -4,7 +4,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
-import pl.prawko.prawko_server.dto.QuestionDto;
+import pl.prawko.prawko_server.dto.response.QuestionDto;
 import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.CategoryVariant;

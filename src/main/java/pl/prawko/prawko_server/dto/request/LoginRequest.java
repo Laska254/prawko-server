@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.dto;
+package pl.prawko.prawko_server.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Pattern;
  *
  */
 @Schema(description = "User login credentials")
-public record LoginDto(
+public record LoginRequest(
 
         @NotNull(message = "{username.required}")
         @Pattern(regexp = "(?=.*\\S).{3,254}", message = "{login.pattern}")

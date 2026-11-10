@@ -1,6 +1,6 @@
 package pl.prawko.prawko_server.test_data;
 
-import pl.prawko.prawko_server.dto.AnswerTranslationDto;
+import pl.prawko.prawko_server.dto.response.AnswerTranslationDto;
 import pl.prawko.prawko_server.model.AnswerTranslation;
 
 import java.util.Comparator;

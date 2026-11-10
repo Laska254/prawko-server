@@ -3,9 +3,9 @@ package pl.prawko.prawko_server.service;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import pl.prawko.prawko_server.dto.ExamDto;
-import pl.prawko.prawko_server.dto.ExamSummaryDto;
-import pl.prawko.prawko_server.dto.UserStatsDto;
+import pl.prawko.prawko_server.dto.response.ExamDto;
+import pl.prawko.prawko_server.dto.response.ExamSummaryDto;
+import pl.prawko.prawko_server.dto.response.UserStatsDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Exam;
 

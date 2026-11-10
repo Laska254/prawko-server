@@ -5,8 +5,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.springframework.stereotype.Component;
-import pl.prawko.prawko_server.dto.ExamDto;
-import pl.prawko.prawko_server.dto.ExamSummaryDto;
+import pl.prawko.prawko_server.dto.response.ExamDto;
+import pl.prawko.prawko_server.dto.response.ExamSummaryDto;
 import pl.prawko.prawko_server.model.Exam;
 
 /**

@@ -26,10 +26,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.prawko.prawko_server.config.IsSelfOrAdmin;
 import pl.prawko.prawko_server.constants.ApiConstants;
-import pl.prawko.prawko_server.dto.CreateExamDto;
-import pl.prawko.prawko_server.dto.ExamDto;
-import pl.prawko.prawko_server.dto.ExamSummaryDto;
-import pl.prawko.prawko_server.dto.SubmitAnswerRequest;
+import pl.prawko.prawko_server.dto.request.CreateExamRequest;
+import pl.prawko.prawko_server.dto.request.SubmitAnswerRequest;
+import pl.prawko.prawko_server.dto.response.ExamDto;
+import pl.prawko.prawko_server.dto.response.ExamSummaryDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.service.IExamService;
 
@@ -59,7 +59,7 @@ public class ExamController {
      * <p>The exam is populated with randomly selected questions from the specified
      * category and assigned to the requesting user. Allowed only for the user themselves or an admin.
      *
-     * @param dto the {@link CreateExamDto} containing user ID and category name
+     * @param dto the {@link CreateExamRequest} containing user ID and category name
      * @return a {@link ResponseEntity} with HTTP 201 Created and Location header pointing
      * to the newly created exam
      */
@@ -72,7 +72,7 @@ public class ExamController {
     })
     @IsSelfOrAdmin(userId = "#dto.userId()")
     @PostMapping
-    public ResponseEntity<Void> createExam(@RequestBody @Valid final CreateExamDto dto) {
+    public ResponseEntity<Void> createExam(@RequestBody @Valid final CreateExamRequest dto) {
         final var location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path(ApiConstants.BY_ID)

@@ -11,8 +11,8 @@ import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.util.LinkedMultiValueMap;
 import pl.prawko.prawko_server.config.TestUtils;
-import pl.prawko.prawko_server.dto.GitHubSignInRequest;
-import pl.prawko.prawko_server.dto.LinkGitHubRequest;
+import pl.prawko.prawko_server.dto.request.GitHubSignInRequest;
+import pl.prawko.prawko_server.dto.request.LinkGitHubRequest;
 
 /**
  * Requests and answers of GitHub's OAuth flow and API, stubbed on a {@link MockRestServiceServer}.

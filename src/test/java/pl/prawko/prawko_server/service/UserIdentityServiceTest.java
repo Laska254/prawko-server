@@ -15,7 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import pl.prawko.prawko_server.dto.RegisterDto;
+import pl.prawko.prawko_server.dto.request.RegisterRequest;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.LastSignInMethodException;
 import pl.prawko.prawko_server.exception.ProviderEmailNotVerifiedException;
@@ -259,7 +259,7 @@ class UserIdentityServiceTest {
         final var result = service.resolveUser(withSuggestedUserName(suggested));
 
         assertThat(result.getUserName()).isEqualTo(expected);
-        assertThat(VALIDATOR.validateValue(RegisterDto.class, "userName", result.getUserName())).isEmpty();
+        assertThat(VALIDATOR.validateValue(RegisterRequest.class, "userName", result.getUserName())).isEmpty();
     }
 
     @Test
@@ -282,7 +282,7 @@ class UserIdentityServiceTest {
         final var result = service.resolveUser(withSuggestedUserName(maxLength));
 
         assertThat(result.getUserName()).isEqualTo("a".repeat(30) + "1");
-        assertThat(VALIDATOR.validateValue(RegisterDto.class, "userName", result.getUserName())).isEmpty();
+        assertThat(VALIDATOR.validateValue(RegisterRequest.class, "userName", result.getUserName())).isEmpty();
     }
 
     @Test

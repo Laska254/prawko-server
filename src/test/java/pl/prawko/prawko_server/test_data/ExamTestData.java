@@ -1,10 +1,10 @@
 package pl.prawko.prawko_server.test_data;
 
-import pl.prawko.prawko_server.dto.CategoryStatsDto;
-import pl.prawko.prawko_server.dto.ExamDto;
-import pl.prawko.prawko_server.dto.ExamSummaryDto;
-import pl.prawko.prawko_server.dto.QuestionDto;
-import pl.prawko.prawko_server.dto.UserStatsDto;
+import pl.prawko.prawko_server.dto.response.CategoryStatsDto;
+import pl.prawko.prawko_server.dto.response.ExamDto;
+import pl.prawko.prawko_server.dto.response.ExamSummaryDto;
+import pl.prawko.prawko_server.dto.response.QuestionDto;
+import pl.prawko.prawko_server.dto.response.UserStatsDto;
 import pl.prawko.prawko_server.model.Category;
 import pl.prawko.prawko_server.model.Exam;
 import pl.prawko.prawko_server.model.Question;
@@ -68,7 +68,7 @@ public class ExamTestData {
                 exam.isActive());
     }
 
-    public static ExamDto createExamDto(final Exam exam) {
+    public static ExamDto createExamRequest(final Exam exam) {
         final var questions = exam.getQuestions().stream()
                 .sorted(Comparator.comparing(Question::getId))
                 .map(question -> new QuestionDto(

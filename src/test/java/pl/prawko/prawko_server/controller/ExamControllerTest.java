@@ -16,11 +16,11 @@ import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestAuth;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
-import pl.prawko.prawko_server.dto.AnswerDto;
-import pl.prawko.prawko_server.dto.CreateExamDto;
-import pl.prawko.prawko_server.dto.ExamDto;
-import pl.prawko.prawko_server.dto.ExamSummaryDto;
-import pl.prawko.prawko_server.dto.SubmitAnswerRequest;
+import pl.prawko.prawko_server.dto.request.CreateExamRequest;
+import pl.prawko.prawko_server.dto.request.SubmitAnswerRequest;
+import pl.prawko.prawko_server.dto.response.AnswerDto;
+import pl.prawko.prawko_server.dto.response.ExamDto;
+import pl.prawko.prawko_server.dto.response.ExamSummaryDto;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Exam;
@@ -78,7 +78,7 @@ public class ExamControllerTest {
         @Test
         void returnCreated_whenRequestIsValid() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
-            final var validDto = new CreateExamDto(tester.getId(), CategoryVariant.B);
+            final var validDto = new CreateExamRequest(tester.getId(), CategoryVariant.B);
 
             restClient.post()
                     .headers(auth::user)
@@ -112,7 +112,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .headers(auth::admin)
-                    .body(new CreateExamDto(tester.getId(), CategoryVariant.B))
+                    .body(new CreateExamRequest(tester.getId(), CategoryVariant.B))
                     .exchange()
                     .expectStatus().isCreated();
         }
@@ -124,7 +124,7 @@ public class ExamControllerTest {
 
             restClient.post()
                     .headers(auth::user)
-                    .body(new CreateExamDto(other.getId(), CategoryVariant.B))
+                    .body(new CreateExamRequest(other.getId(), CategoryVariant.B))
                     .exchange()
                     .expectStatus().isForbidden()
                     .expectBody()
@@ -135,7 +135,7 @@ public class ExamControllerTest {
 
         @Test
         void returnBadRequest_whenRequestIsInvalid() {
-            final var invalidDto = new CreateExamDto(null, null);
+            final var invalidDto = new CreateExamRequest(null, null);
             final var expected = Map.ofEntries(
                     Map.entry("message", TestUtils.VALIDATION_FAILED),
                     Map.entry("details", Map.ofEntries(
@@ -170,7 +170,7 @@ public class ExamControllerTest {
             final var exam = ExamTestData.createExam(tester);
             exam.setQuestions(questionRepository.saveAll(exam.getQuestions()));
             examRepository.save(exam);
-            final var expected = ExamTestData.createExamDto(exam);
+            final var expected = ExamTestData.createExamRequest(exam);
 
             restClient.get()
                     .uri(ApiConstants.BY_ID, exam.getId())

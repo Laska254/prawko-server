@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.prawko.prawko_server.config.AuthenticatedUser;
-import pl.prawko.prawko_server.dto.AuthTokensDto;
+import pl.prawko.prawko_server.dto.response.AuthTokensDto;
 import pl.prawko.prawko_server.exception.InvalidRefreshTokenException;
 import pl.prawko.prawko_server.model.RefreshToken;
 import pl.prawko.prawko_server.repository.RefreshTokenRepository;

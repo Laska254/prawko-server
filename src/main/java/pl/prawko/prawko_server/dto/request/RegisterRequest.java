@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.dto;
+package pl.prawko.prawko_server.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
@@ -14,7 +14,7 @@ import jakarta.validation.constraints.Size;
  *
  */
 @Schema(description = "User registration request containing credentials and personal information")
-public record RegisterDto(
+public record RegisterRequest(
 
         @NotBlank(message = "{firstname.required}")
         @Size(min = 3, message = "{firstname.size.min}")

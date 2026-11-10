@@ -158,7 +158,7 @@ public class ExamServiceTest {
         void returnExamDto_whenExamExists() {
             final var user = UserTestData.createTestUserPippin();
             final var exam = ExamTestData.createExam(user);
-            final var expectedDto = ExamTestData.createExamDto(exam);
+            final var expectedDto = ExamTestData.createExamRequest(exam);
 
             when(repository.findById(exam.getId())).thenReturn(Optional.of(exam));
             when(examMapper.toDto(exam, false)).thenReturn(expectedDto);
@@ -453,7 +453,7 @@ public class ExamServiceTest {
         void returnDtoWithCorrectAnswersRevealed_whenExamIsFinished() {
             final var user = UserTestData.createTestUserPippin();
             final var exam = stubExam(ExamTestData.createExam(user));
-            final var expectedDto = ExamTestData.createExamDto(exam);
+            final var expectedDto = ExamTestData.createExamRequest(exam);
             when(examMapper.toDto(exam, true)).thenReturn(expectedDto);
 
             final var result = service.finishExam(exam.getId(), user.getId());

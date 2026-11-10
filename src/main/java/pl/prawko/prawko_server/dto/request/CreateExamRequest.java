@@ -1,4 +1,4 @@
-package pl.prawko.prawko_server.dto;
+package pl.prawko.prawko_server.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -12,7 +12,7 @@ import pl.prawko.prawko_server.model.CategoryVariant;
  *
  */
 @Schema(description = "Request to create a new exam for a user")
-public record CreateExamDto(
+public record CreateExamRequest(
 
         @NotNull(message = "{userid.required}")
         @Schema(description = "ID of the user taking the exam")

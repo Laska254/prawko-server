@@ -5,7 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-import pl.prawko.prawko_server.dto.CategoryStatsDto;
+import pl.prawko.prawko_server.dto.response.CategoryStatsDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Exam;
 
@@ -44,7 +44,7 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
      * @return statistics of categories with finished exams, ordered by category name
      */
     @Query("""
-            SELECT new pl.prawko.prawko_server.dto.CategoryStatsDto(
+            SELECT new pl.prawko.prawko_server.dto.response.CategoryStatsDto(
                        e.category.name,
                        COUNT(e),
                        SUM(CASE WHEN e.score >= :passingScore THEN 1 ELSE 0 END),

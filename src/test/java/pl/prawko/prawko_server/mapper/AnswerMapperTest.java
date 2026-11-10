@@ -1,8 +1,8 @@
 package pl.prawko.prawko_server.mapper;
 
 import org.junit.jupiter.api.Test;
-import pl.prawko.prawko_server.dto.AnswerDto;
-import pl.prawko.prawko_server.dto.AnswerTranslationDto;
+import pl.prawko.prawko_server.dto.response.AnswerDto;
+import pl.prawko.prawko_server.dto.response.AnswerTranslationDto;
 import pl.prawko.prawko_server.model.Answer;
 import pl.prawko.prawko_server.model.AnswerTranslation;
 import pl.prawko.prawko_server.model.Question;

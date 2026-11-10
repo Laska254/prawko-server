@@ -4,12 +4,12 @@ import org.springframework.lang.NonNull;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import pl.prawko.prawko_server.config.TestUtils;
-import pl.prawko.prawko_server.dto.ChangePasswordRequest;
-import pl.prawko.prawko_server.dto.DeleteAccountRequest;
-import pl.prawko.prawko_server.dto.RegisterDto;
-import pl.prawko.prawko_server.dto.ResetPasswordRequest;
-import pl.prawko.prawko_server.dto.UserDto;
-import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.dto.request.ChangePasswordRequest;
+import pl.prawko.prawko_server.dto.request.DeleteAccountRequest;
+import pl.prawko.prawko_server.dto.request.RegisterRequest;
+import pl.prawko.prawko_server.dto.request.ResetPasswordRequest;
+import pl.prawko.prawko_server.dto.request.UserUpdateRequest;
+import pl.prawko.prawko_server.dto.response.UserDto;
 import pl.prawko.prawko_server.model.EmailStatus;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.model.ProviderProfile;
@@ -268,8 +268,8 @@ public class UserTestData {
                 .orElseThrow(() -> new AssertionError("No token in: " + message.getText()));
     }
 
-    public static RegisterDto createValidRegisterDto() {
-        return new RegisterDto(
+    public static RegisterRequest createValidRegisterRequest() {
+        return new RegisterRequest(
                 "Peregrin",
                 "Tuk",
                 "pippin",

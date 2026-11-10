@@ -1,25 +1,21 @@
-package pl.prawko.prawko_server.dto;
+package pl.prawko.prawko_server.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import pl.prawko.prawko_server.model.CategoryVariant;
 
 import java.time.Instant;
-import java.util.List;
 
 /**
- * DTO for exam responses.
+ * DTO for exam history entries.
  *
- * <p>Contains complete exam information including questions, answers, and score tracking.
+ * <p>Contains basic exam information without questions and answers, suitable for listing user's exams.
  *
  */
-@Schema(description = "Exam information")
-public record ExamDto(
+@Schema(description = "Exam summary used in user's exam history")
+public record ExamSummaryDto(
 
         @Schema(description = "Unique exam identifier")
         long id,
-
-        @Schema(description = "ID of the user taking the exam")
-        long userId,
 
         @Schema(description = "Driving license category of the exam")
         CategoryVariant category,
@@ -32,12 +28,6 @@ public record ExamDto(
 
         @Schema(description = "Deadline for answers (UTC), `created` + exam duration", example = "2026-10-23T12:25:00Z")
         Instant expires,
-
-        @Schema(description = "List of questions in the exam")
-        List<QuestionDto> questions,
-
-        @Schema(description = "List of user's answers to exam questions")
-        List<AnswerDto> userAnswers,
 
         @Schema(description = "User's score on the exam")
         int score,

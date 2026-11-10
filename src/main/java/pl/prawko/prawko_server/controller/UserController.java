@@ -26,15 +26,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.prawko.prawko_server.constants.ApiConstants;
-import pl.prawko.prawko_server.dto.ChangePasswordRequest;
-import pl.prawko.prawko_server.dto.DeleteAccountRequest;
-import pl.prawko.prawko_server.dto.LinkGitHubRequest;
-import pl.prawko.prawko_server.dto.LinkGoogleRequest;
-import pl.prawko.prawko_server.dto.RegisterDto;
-import pl.prawko.prawko_server.dto.UnlinkIdentityRequest;
-import pl.prawko.prawko_server.dto.UserDto;
-import pl.prawko.prawko_server.dto.UserStatsDto;
-import pl.prawko.prawko_server.dto.UserUpdateRequest;
+import pl.prawko.prawko_server.dto.request.ChangePasswordRequest;
+import pl.prawko.prawko_server.dto.request.DeleteAccountRequest;
+import pl.prawko.prawko_server.dto.request.LinkGitHubRequest;
+import pl.prawko.prawko_server.dto.request.LinkGoogleRequest;
+import pl.prawko.prawko_server.dto.request.RegisterRequest;
+import pl.prawko.prawko_server.dto.request.UnlinkIdentityRequest;
+import pl.prawko.prawko_server.dto.request.UserUpdateRequest;
+import pl.prawko.prawko_server.dto.response.UserDto;
+import pl.prawko.prawko_server.dto.response.UserStatsDto;
 import pl.prawko.prawko_server.model.IdentityProvider;
 import pl.prawko.prawko_server.service.IExamService;
 import pl.prawko.prawko_server.service.IGitHubProfileService;
@@ -79,7 +79,7 @@ public class UserController {
      *
      * <p>The account can't be used until its email address is verified with the link emailed to it.
      *
-     * @param dto the {@link RegisterDto} containing registration data
+     * @param dto the {@link RegisterRequest} containing registration data
      * @return a {@link ResponseEntity} with HTTP 201 Created and Location header pointing
      * to the newly created user
      */
@@ -93,7 +93,7 @@ public class UserController {
     })
     @SecurityRequirements
     @PostMapping
-    public ResponseEntity<Void> registerUser(@Valid @RequestBody final RegisterDto dto) {
+    public ResponseEntity<Void> registerUser(@Valid @RequestBody final RegisterRequest dto) {
         final var location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path(ApiConstants.BY_ID)

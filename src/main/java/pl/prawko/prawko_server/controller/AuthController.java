@@ -15,15 +15,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pl.prawko.prawko_server.config.AuthenticatedUser;
 import pl.prawko.prawko_server.constants.ApiConstants;
-import pl.prawko.prawko_server.dto.AuthTokensDto;
-import pl.prawko.prawko_server.dto.ForgotPasswordRequest;
-import pl.prawko.prawko_server.dto.GitHubSignInRequest;
-import pl.prawko.prawko_server.dto.GoogleSignInRequest;
-import pl.prawko.prawko_server.dto.LoginDto;
-import pl.prawko.prawko_server.dto.RefreshTokenRequest;
-import pl.prawko.prawko_server.dto.ResendVerificationRequest;
-import pl.prawko.prawko_server.dto.ResetPasswordRequest;
-import pl.prawko.prawko_server.dto.VerifyEmailRequest;
+import pl.prawko.prawko_server.dto.request.ForgotPasswordRequest;
+import pl.prawko.prawko_server.dto.request.GitHubSignInRequest;
+import pl.prawko.prawko_server.dto.request.GoogleSignInRequest;
+import pl.prawko.prawko_server.dto.request.LoginRequest;
+import pl.prawko.prawko_server.dto.request.RefreshTokenRequest;
+import pl.prawko.prawko_server.dto.request.ResendVerificationRequest;
+import pl.prawko.prawko_server.dto.request.ResetPasswordRequest;
+import pl.prawko.prawko_server.dto.request.VerifyEmailRequest;
+import pl.prawko.prawko_server.dto.response.AuthTokensDto;
 import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.service.IEmailVerificationService;
 import pl.prawko.prawko_server.service.IGitHubProfileService;
@@ -76,7 +76,7 @@ public class AuthController {
      * <p>No session is created: subsequent requests carry the access token; once it expires, the refresh token gets
      * a new pair. Accounts whose email isn't verified yet are rejected.
      *
-     * @param request the {@link LoginDto} containing username and password
+     * @param request the {@link LoginRequest} containing username and password
      * @return a {@link ResponseEntity} with HTTP 200 Ok and the issued {@link AuthTokensDto}
      */
     @Operation(summary = "Sign-in",
@@ -88,7 +88,7 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Invalid argument"),
     })
     @PostMapping
-    public ResponseEntity<AuthTokensDto> login(@Valid @RequestBody final LoginDto request) {
+    public ResponseEntity<AuthTokensDto> login(@Valid @RequestBody final LoginRequest request) {
         final var authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 request.userName(),
                 request.password()

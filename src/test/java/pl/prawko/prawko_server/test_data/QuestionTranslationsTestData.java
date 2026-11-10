@@ -1,7 +1,7 @@
 package pl.prawko.prawko_server.test_data;
 
 import org.junit.jupiter.params.provider.Arguments;
-import pl.prawko.prawko_server.dto.QuestionTranslationDto;
+import pl.prawko.prawko_server.dto.response.QuestionTranslationDto;
 import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.QuestionTranslation;
 import pl.prawko.prawko_server.model.QuestionType;
