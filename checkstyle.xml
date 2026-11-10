@@ -56,11 +56,12 @@
         <module name="PatternVariableName"/>
         <module name="IllegalIdentifierName"/>
         <!-- at most two capitals in a row: acronyms as words (CsvParser) and I*Service pass; IO for JDK names -->
-        <!-- like UncheckedIOException in test names -->
+        <!-- like UncheckedIOException in test names; final and static fields too, constants stay UPPER_SNAKE_CASE -->
         <module name="AbbreviationAsWordInName">
             <property name="allowedAbbreviationLength" value="1"/>
             <property name="allowedAbbreviations" value="IO"/>
             <property name="ignoreFinal" value="false"/>
+            <property name="ignoreStatic" value="false"/>
         </module>
     </module>
 </module>
