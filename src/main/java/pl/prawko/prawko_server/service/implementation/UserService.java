@@ -167,7 +167,7 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Transactional
     @Override
-    public UserDto updateUser(final long userId, final UserUpdateRequest updateRequest, final boolean self) {
+    public UserDto updateUser(final long userId, final UserUpdateRequest updateRequest, final long principalId) {
         log.info("Updating user with id: {}", userId);
         final var user = getById(userId);
         final var userName = updateRequest.userName();
@@ -180,7 +180,7 @@ public class UserService implements IUserService, UserDetailsService {
             newEmail = email;
         }
         final var changesUserName = userName != null && !userName.equals(user.getUserName());
-        if (self && (changesUserName || newEmail != null)) {
+        if (principalId == userId && (changesUserName || newEmail != null)) {
             verifyPasswordIfSet(user, updateRequest.currentPassword());
         }
         validateNoConflict(userName, name -> repository.existsByUserNameIgnoreCaseAndIdNot(name, userId), newEmail);

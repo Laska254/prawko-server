@@ -247,7 +247,7 @@ class UserServiceTest {
         when(repository.save(user)).thenReturn(user);
         when(mapper.toDto(user)).thenReturn(updatedUserDto);
 
-        final var result = service.updateUser(givenId, updateUserRequest, true);
+        final var result = service.updateUser(givenId, updateUserRequest, givenId);
 
         assertThat(result).isEqualTo(updatedUserDto);
         verify(repository).findById(givenId);
@@ -274,7 +274,7 @@ class UserServiceTest {
         when(emailVerificationService.issueCurrentEmailToken(tester)).thenReturn(currentEmailToken);
         when(repository.save(tester)).thenReturn(tester);
 
-        service.updateUser(givenId, updateUserRequest, true);
+        service.updateUser(givenId, updateUserRequest, givenId);
 
         assertThat(tester.getEmail()).isEqualTo(email);
         assertThat(tester.getPendingEmail()).isEqualTo(UserTestData.STORED_UPDATED_EMAIL);
@@ -296,7 +296,7 @@ class UserServiceTest {
         when(passwordEncoder.matches(TestUtils.USER_PASSWORD, tester.getPassword())).thenReturn(true);
         when(emailVerificationService.isCoolingDown(tester)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.updateUser(givenId, updateUserRequest, true))
+        assertThatThrownBy(() -> service.updateUser(givenId, updateUserRequest, givenId))
                 .isInstanceOf(TooManyRequestsException.class)
                 .hasMessage(UserTestData.VERIFICATION_COOLDOWN);
 
@@ -315,7 +315,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(changing));
         when(repository.save(changing)).thenReturn(changing);
 
-        service.updateUser(givenId, UserTestData.createEmailUpdateRequest(currentEmail, null), true);
+        service.updateUser(givenId, UserTestData.createEmailUpdateRequest(currentEmail, null), givenId);
 
         assertThat(changing.getEmail()).isEqualTo(tester.getEmail());
         assertThat(changing.getPendingEmail()).isNull();
@@ -335,7 +335,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(unverified));
         when(repository.save(unverified)).thenReturn(unverified);
 
-        service.updateUser(givenId, UserTestData.createEmailUpdateRequest(unverified.getEmail(), null), true);
+        service.updateUser(givenId, UserTestData.createEmailUpdateRequest(unverified.getEmail(), null), givenId);
 
         assertThat(unverified.getVerificationTokenHash()).isEqualTo(token);
         verify(repository, never()).existsByEmailIgnoreCase(any());
@@ -349,7 +349,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
-        service.updateUser(givenId, updateUserRequest, true);
+        service.updateUser(givenId, updateUserRequest, givenId);
 
         assertThat(tester.getPendingEmail()).isNull();
         verifyNoInteractions(emailVerificationService);
@@ -364,7 +364,7 @@ class UserServiceTest {
         when(passwordEncoder.matches(TestUtils.USER_PASSWORD, tester.getPassword())).thenReturn(true);
         when(repository.save(tester)).thenReturn(tester);
 
-        service.updateUser(givenId, updateUserRequest, true);
+        service.updateUser(givenId, updateUserRequest, givenId);
 
         assertThat(output).contains("Successfully updated user with id '" + givenId + "'")
                 .doesNotContain(updateUserRequest.firstName(), updateUserRequest.lastName(),
@@ -379,7 +379,8 @@ class UserServiceTest {
         when(passwordEncoder.matches(TestUtils.USER_PASSWORD, tester.getPassword())).thenReturn(true);
         when(repository.existsByUserNameIgnoreCaseAndIdNot(updateUserRequest.userName(), givenId)).thenReturn(true);
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest, true);
+        final ThrowableAssert.ThrowingCallable executable =
+                () -> service.updateUser(givenId, updateUserRequest, givenId);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
@@ -396,7 +397,8 @@ class UserServiceTest {
         when(passwordEncoder.matches(TestUtils.USER_PASSWORD, tester.getPassword())).thenReturn(true);
         when(repository.existsByEmailIgnoreCase(updateUserRequest.email())).thenReturn(true);
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, updateUserRequest, true);
+        final ThrowableAssert.ThrowingCallable executable =
+                () -> service.updateUser(givenId, updateUserRequest, givenId);
         final var exception = catchThrowableOfType(AlreadyExistsException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.USER_ALREADY_EXISTS);
@@ -413,7 +415,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(passwordEncoder.matches(UserTestData.WRONG_PASSWORD, tester.getPassword())).thenReturn(false);
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, request, true);
+        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, request, givenId);
         final var exception = catchThrowableOfType(InvalidPasswordException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.INCORRECT_PASSWORD);
@@ -431,7 +433,7 @@ class UserServiceTest {
         final var withoutPassword = UserTestData.createUserNameUpdateRequest(newUserName, null);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
 
-        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, withoutPassword, true);
+        final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, withoutPassword, givenId);
         final var exception = catchThrowableOfType(InvalidPasswordException.class, executable);
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.INCORRECT_PASSWORD);
@@ -447,7 +449,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
-        service.updateUser(givenId, request, true);
+        service.updateUser(givenId, request, givenId);
 
         verify(repository).save(tester);
         verifyNoInteractions(passwordEncoder);
@@ -456,12 +458,13 @@ class UserServiceTest {
     @Test
     void updateUser_notCheckPassword_whenAdminChangesAnotherUsersUserName() {
         final var givenId = 44L;
+        final var adminId = 1L;
         final var userName = UserTestData.createUserUpdateRequestWithoutEmail().userName();
         final var withoutPassword = UserTestData.createUserNameUpdateRequest(userName, null);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
-        service.updateUser(givenId, withoutPassword, false);
+        service.updateUser(givenId, withoutPassword, adminId);
 
         assertThat(tester.getUserName()).isEqualTo(userName);
         verifyNoInteractions(passwordEncoder);
@@ -475,7 +478,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(googlePippin));
         when(repository.save(googlePippin)).thenReturn(googlePippin);
 
-        service.updateUser(givenId, request, true);
+        service.updateUser(givenId, request, givenId);
 
         assertThat(googlePippin.getPendingEmail()).isEqualTo(UserTestData.STORED_UPDATED_EMAIL);
         verifyNoInteractions(passwordEncoder);
