@@ -32,6 +32,14 @@
         <module name="DeclarationOrder"/>
         <!-- if statements instead of ?: ternaries -->
         <module name="AvoidInlineConditionals"/>
+        <!-- final wherever possible: locals (blank finals assigned in if/else), loop variables and parameters; -->
+        <!-- methods without a body and lambda parameters are skipped -->
+        <module name="FinalLocalVariable">
+            <property name="validateEnhancedForLoopVariable" value="true"/>
+        </module>
+        <module name="FinalParameters">
+            <property name="tokens" value="METHOD_DEF, CTOR_DEF, LITERAL_CATCH"/>
+        </module>
 
         <!-- Method names: ArchitectureTest and TestConventionsTest (test names and Spring Data queries need _) -->
         <!-- the root keeps its _ for the - in prawko-server (JLS 6.1), subpackages don't -->
