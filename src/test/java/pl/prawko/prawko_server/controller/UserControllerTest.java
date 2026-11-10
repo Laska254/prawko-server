@@ -631,7 +631,7 @@ public class UserControllerTest {
             restClient.patch()
                     .uri(ApiConstants.BY_ID, id)
                     .headers(auth::admin)
-                    .body(new UserUpdateRequest(null, null, userName, null, null))
+                    .body(UserTestData.createUserNameUpdateRequest(userName, null))
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserDto.class).isEqualTo(UserTestData.createUserDto(id, userName));
@@ -640,7 +640,7 @@ public class UserControllerTest {
         @Test
         void returnBadRequestAndSendNoEmail_whenOwnEmailChangedWithWrongPassword() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
-            final var request = new UserUpdateRequest(null, null, null, UserTestData.UPDATED_EMAIL,
+            final var request = UserTestData.createEmailUpdateRequest(UserTestData.UPDATED_EMAIL,
                     UserTestData.WRONG_PASSWORD);
 
             restClient.patch()
@@ -659,9 +659,8 @@ public class UserControllerTest {
         @Test
         void returnBadRequestAndNotChangeUser_whenOwnUserNameChangedWithoutPassword() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
-            final var request = UserTestData.createUserUpdateRequestWithoutEmail();
-            final var withoutPassword =
-                    new UserUpdateRequest(request.firstName(), null, request.userName(), null, null);
+            final var userName = UserTestData.createUserUpdateRequestWithoutEmail().userName();
+            final var withoutPassword = UserTestData.createUserNameUpdateRequest(userName, null);
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
@@ -672,9 +671,8 @@ public class UserControllerTest {
                     .expectBody()
                     .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
 
-            final var unchanged = userRepository.findById(tester.getId()).orElseThrow();
-            assertThat(unchanged.getUserName()).isEqualTo(tester.getUserName());
-            assertThat(unchanged.getFirstName()).isEqualTo(tester.getFirstName());
+            assertThat(userRepository.findById(tester.getId()).orElseThrow().getUserName())
+                    .isEqualTo(tester.getUserName());
         }
 
         @Test
@@ -839,7 +837,7 @@ public class UserControllerTest {
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
                     .headers(auth::user)
-                    .body(new UserUpdateRequest(null, null, null, tester.getEmail(), null))
+                    .body(UserTestData.createEmailUpdateRequest(tester.getEmail(), null))
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()

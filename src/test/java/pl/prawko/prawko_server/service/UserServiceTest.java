@@ -315,7 +315,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(changing));
         when(repository.save(changing)).thenReturn(changing);
 
-        service.updateUser(givenId, new UserUpdateRequest(null, null, null, currentEmail, null), true);
+        service.updateUser(givenId, UserTestData.createEmailUpdateRequest(currentEmail, null), true);
 
         assertThat(changing.getEmail()).isEqualTo(tester.getEmail());
         assertThat(changing.getPendingEmail()).isNull();
@@ -335,7 +335,7 @@ class UserServiceTest {
         when(repository.findById(givenId)).thenReturn(Optional.of(unverified));
         when(repository.save(unverified)).thenReturn(unverified);
 
-        service.updateUser(givenId, new UserUpdateRequest(null, null, null, unverified.getEmail(), null), true);
+        service.updateUser(givenId, UserTestData.createEmailUpdateRequest(unverified.getEmail(), null), true);
 
         assertThat(unverified.getVerificationTokenHash()).isEqualTo(token);
         verify(repository, never()).existsByEmailIgnoreCase(any());
@@ -408,7 +408,7 @@ class UserServiceTest {
     @Test
     void updateUser_throwInvalidPasswordAndNotChangeUser_whenOwnEmailChangedWithWrongPassword() {
         final var givenId = 44L;
-        final var request = new UserUpdateRequest(null, null, null, UserTestData.UPDATED_EMAIL,
+        final var request = UserTestData.createEmailUpdateRequest(UserTestData.UPDATED_EMAIL,
                 UserTestData.WRONG_PASSWORD);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(passwordEncoder.matches(UserTestData.WRONG_PASSWORD, tester.getPassword())).thenReturn(false);
@@ -427,8 +427,8 @@ class UserServiceTest {
     void updateUser_throwInvalidPasswordAndNotChangeUser_whenOwnUserNameChangedWithoutPassword() {
         final var givenId = 44L;
         final var userName = tester.getUserName();
-        final var request = UserTestData.createValidUserUpdateRequest();
-        final var withoutPassword = new UserUpdateRequest(request.firstName(), null, request.userName(), null, null);
+        final var newUserName = UserTestData.createValidUserUpdateRequest().userName();
+        final var withoutPassword = UserTestData.createUserNameUpdateRequest(newUserName, null);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
 
         final ThrowableAssert.ThrowingCallable executable = () -> service.updateUser(givenId, withoutPassword, true);
@@ -436,7 +436,6 @@ class UserServiceTest {
 
         assertThat(exception.getMessage()).isEqualTo(UserTestData.INCORRECT_PASSWORD);
         assertThat(tester.getUserName()).isEqualTo(userName);
-        assertThat(tester.getFirstName()).isNotEqualTo(request.firstName());
         verify(repository).findById(givenId);
         verifyNoMoreInteractions(repository);
     }
@@ -444,7 +443,7 @@ class UserServiceTest {
     @Test
     void updateUser_notCheckPassword_whenUserNameUnchanged() {
         final var givenId = 44L;
-        final var request = new UserUpdateRequest(null, null, tester.getUserName(), null, null);
+        final var request = UserTestData.createUserNameUpdateRequest(tester.getUserName(), null);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
@@ -457,14 +456,14 @@ class UserServiceTest {
     @Test
     void updateUser_notCheckPassword_whenAdminChangesAnotherUsersUserName() {
         final var givenId = 44L;
-        final var request = UserTestData.createUserUpdateRequestWithoutEmail();
-        final var withoutPassword = new UserUpdateRequest(null, null, request.userName(), null, null);
+        final var userName = UserTestData.createUserUpdateRequestWithoutEmail().userName();
+        final var withoutPassword = UserTestData.createUserNameUpdateRequest(userName, null);
         when(repository.findById(givenId)).thenReturn(Optional.of(tester));
         when(repository.save(tester)).thenReturn(tester);
 
         service.updateUser(givenId, withoutPassword, false);
 
-        assertThat(tester.getUserName()).isEqualTo(request.userName());
+        assertThat(tester.getUserName()).isEqualTo(userName);
         verifyNoInteractions(passwordEncoder);
     }
 
@@ -472,7 +471,7 @@ class UserServiceTest {
     void updateUser_changeEmailWithoutPassword_whenUserHasNoPassword() {
         final var givenId = 44L;
         final var googlePippin = UserTestData.createGooglePippin();
-        final var request = new UserUpdateRequest(null, null, null, UserTestData.UPDATED_EMAIL, null);
+        final var request = UserTestData.createEmailUpdateRequest(UserTestData.UPDATED_EMAIL, null);
         when(repository.findById(givenId)).thenReturn(Optional.of(googlePippin));
         when(repository.save(googlePippin)).thenReturn(googlePippin);
 

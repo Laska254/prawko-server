@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.testdata;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.lang.NonNull;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -241,11 +242,20 @@ public class UserTestData {
     }
 
     public static UserUpdateRequest createEmailUpdateRequest(final String email) {
-        return new UserUpdateRequest(null, null, null, email, TestUtils.USER_PASSWORD);
+        return createEmailUpdateRequest(email, TestUtils.USER_PASSWORD);
+    }
+
+    public static UserUpdateRequest createEmailUpdateRequest(final String email, @Nullable final String password) {
+        return new UserUpdateRequest(null, null, null, email, password);
     }
 
     public static UserUpdateRequest createUserNameUpdateRequest(final String userName) {
-        return new UserUpdateRequest(null, null, userName, null, TestUtils.USER_PASSWORD);
+        return createUserNameUpdateRequest(userName, TestUtils.USER_PASSWORD);
+    }
+
+    public static UserUpdateRequest createUserNameUpdateRequest(final String userName,
+                                                                @Nullable final String password) {
+        return new UserUpdateRequest(null, null, userName, null, password);
     }
 
     public static ChangePasswordRequest createValidChangePasswordRequest() {
