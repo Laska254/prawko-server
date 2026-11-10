@@ -14,8 +14,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mariadb.MariaDBContainer;
 import pl.prawko.prawko_server.controller.ExceptionController;
+import pl.prawko.prawko_server.model.EmailStatus;
 import pl.prawko.prawko_server.model.IdentityProvider;
-import pl.prawko.prawko_server.model.ProviderProfile;
 import pl.prawko.prawko_server.model.User;
 import pl.prawko.prawko_server.service.IIdentityNotificationService;
 import pl.prawko.prawko_server.service.IUserIdentityService;
@@ -129,9 +129,8 @@ class UserRepositoryMariaDbTest {
 
     @Test
     void resolveUser_createUser_whenEmailDiffersOnlyInAccents() {
-        final var pippin = UserTestData.createPippinProfile(IdentityProvider.GOOGLE);
-        final var profile = new ProviderProfile(pippin.provider(), pippin.providerUserId(), UserTestData.ACCENTED_EMAIL,
-                pippin.emailStatus(), pippin.suggestedUserName(), pippin.firstName(), pippin.lastName());
+        final var profile = UserTestData.createPippinProfile(IdentityProvider.GOOGLE, UserTestData.ACCENTED_EMAIL,
+                EmailStatus.AUTHORITATIVE);
 
         final var result = userIdentityService.resolveUser(profile);
 
