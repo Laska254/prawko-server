@@ -24,9 +24,9 @@ import pl.prawko.prawko_server.test_data.RefreshTokenTestData;
 import pl.prawko.prawko_server.test_data.UserTestData;
 import pl.prawko.prawko_server.util.SecureTokens;
 
-import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.Optional;
+import javax.crypto.SecretKey;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

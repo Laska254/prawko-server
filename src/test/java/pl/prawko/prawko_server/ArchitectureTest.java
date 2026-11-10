@@ -40,7 +40,7 @@ import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
         importOptions = {ImportOption.DoNotIncludeTests.class, ImportOption.DoNotIncludePackageInfos.class})
 class ArchitectureTest {
 
-    private static final String APP = PrawkoServerApplication.class.getPackageName() + "..";
+    static final String APP = PrawkoServerApplication.class.getPackageName() + "..";
 
     @ArchTest
     static final ArchRule LAYERS = layeredArchitecture()

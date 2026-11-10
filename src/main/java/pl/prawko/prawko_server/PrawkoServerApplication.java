@@ -18,8 +18,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @OpenAPIDefinition(security = @SecurityRequirement(name = "bearer"))
 public class PrawkoServerApplication {
 
-	public static void main(final String[] args) {
-		SpringApplication.run(PrawkoServerApplication.class, args);
-	}
+    public static void main(final String[] args) {
+        SpringApplication.run(PrawkoServerApplication.class, args);
+    }
 
 }

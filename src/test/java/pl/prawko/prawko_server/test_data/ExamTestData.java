@@ -21,15 +21,15 @@ import java.util.stream.Stream;
 
 public class ExamTestData {
 
-    // the maximum score, so counting an exam with it would change every stat
-    private static final int MAX_SCORE = 74;
-
     public static final UserStatsDto EMPTY_STATS = new UserStatsDto(0, 0, null, null, List.of());
 
     // matches createExamsForStats
     public static final UserStatsDto STATS = new UserStatsDto(3, 2, 66.0, 70, List.of(
             new CategoryStatsDto(CategoryTestData.CATEGORY_A.getName(), 1, 1, Exam.PASSING_SCORE, Exam.PASSING_SCORE),
             new CategoryStatsDto(CategoryTestData.CATEGORY_B.getName(), 2, 1, 65.0, 70)));
+
+    // the maximum score, so counting an exam with it would change every stat
+    private static final int MAX_SCORE = 74;
 
     private ExamTestData() {
     }
