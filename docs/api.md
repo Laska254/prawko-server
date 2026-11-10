@@ -45,7 +45,7 @@ retry it.
   | `DELETE` | `/users/me/identities/github` | user   | unlink the GitHub account (requires current password)                                                |
   | `GET`    | `/users`                      | admin  | get a page of users                                                                                  |
   | `GET`    | `/users/{id}`                 | admin  | get a user                                                                                           |
-  | `PATCH`  | `/users/{id}`                 | self   | update a user (email: the user themselves only)                                                      |
+  | `PATCH`  | `/users/{id}`                 | self   | update a user (email: the user themselves only; own email or username requires current password)     |
   | `DELETE` | `/users/{id}`                 | admin  | delete a user with their exams                                                                       |
 
   Usernames and emails are unique ignoring case: registering or renaming to one that differs from a taken one only in

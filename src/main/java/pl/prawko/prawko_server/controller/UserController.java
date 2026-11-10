@@ -183,16 +183,19 @@ public class UserController {
      * <p>Allowed only for the user themselves or an admin, but only the user themselves may change the email: an
      * admin can't confirm who's asking, so letting them would make a stolen admin account worth every account.
      * A new email is only stored as pending and links are emailed to it and to the current address, both must
-     * confirm it. Sending the current email cancels a pending change.
+     * confirm it. Sending the current email cancels a pending change. Users changing their own email or username
+     * re-enter their current password, if they have one.
      *
      * @param id            the unique identifier of the user to update (must be positive)
      * @param updateRequest the {@link UserUpdateRequest} containing fields to update
+     * @param principalId   the ID of the currently authenticated user
      * @return a {@link ResponseEntity} containing the updated {@link UserDto}
      */
     @Operation(summary = "Update user details", description = "Updates specified fields of an existing user. "
             + "Only the user themselves may change the email. A new email takes effect only after it's verified with "
             + "the link emailed to it and confirmed with the link emailed to the current address. "
-            + "Sending the current email cancels a pending change and invalidates its link.")
+            + "Sending the current email cancels a pending change and invalidates its link. "
+            + "Changing one's own email or username requires `currentPassword`, if the user has a password.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "User updated successfully; "
@@ -200,7 +203,8 @@ public class UserController {
             @ApiResponse(responseCode = "403",
                     description = "Updating another user, or another user's email as an admin, is not allowed"),
             @ApiResponse(responseCode = "404", description = "User not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid update data or ID is negative or zero"),
+            @ApiResponse(responseCode = "400", description = "Invalid update data, ID is negative or zero, "
+                    + "or current password is missing or incorrect"),
             @ApiResponse(responseCode = "409",
                     description = "Username or email already exists, or the user was modified concurrently"),
             @ApiResponse(responseCode = "429",
@@ -210,8 +214,9 @@ public class UserController {
     @PreAuthorize("principal.isSelf(#id) or (hasRole('ADMIN') and #updateRequest.email() == null)")
     @PatchMapping(ApiConstants.BY_ID)
     public ResponseEntity<UserDto> updateUser(@PathVariable @Positive final long id,
-                                              @Valid @RequestBody final UserUpdateRequest updateRequest) {
-        return ResponseEntity.ok(userService.updateUser(id, updateRequest));
+                                              @Valid @RequestBody final UserUpdateRequest updateRequest,
+                                              @AuthenticationPrincipal(expression = "id") final long principalId) {
+        return ResponseEntity.ok(userService.updateUser(id, updateRequest, principalId));
     }
 
     /**

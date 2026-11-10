@@ -588,7 +588,7 @@ public class UserControllerTest {
                 restClient.patch()
                         .uri(ApiConstants.BY_ID, id)
                         .headers(auth::user)
-                        .body(new UserUpdateRequest(concurrentFirstName, null, null, null))
+                        .body(new UserUpdateRequest(concurrentFirstName, null, null, null, null))
                         .exchange()
                         .expectStatus().isOk();
                 return exists;
@@ -624,6 +624,58 @@ public class UserControllerTest {
         }
 
         @Test
+        void success_whenAdminChangesAnotherUsersUserNameWithoutPassword() {
+            final var id = userRepository.save(UserTestData.createTestUserPippin()).getId();
+            final var userName = UserTestData.createValidUserUpdateRequest().userName();
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, id)
+                    .headers(auth::admin)
+                    .body(UserTestData.createUserNameUpdateRequest(userName, null))
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(UserDto.class).isEqualTo(UserTestData.createUserDto(id, userName));
+        }
+
+        @Test
+        void returnBadRequestAndSendNoEmail_whenOwnEmailChangedWithWrongPassword() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var request = UserTestData.createEmailUpdateRequest(UserTestData.UPDATED_EMAIL,
+                    UserTestData.WRONG_PASSWORD);
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(auth::user)
+                    .body(request)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
+
+            assertThat(userRepository.findById(tester.getId()).orElseThrow().getPendingEmail()).isNull();
+            verifyNoMoreInteractions(mailSender);
+        }
+
+        @Test
+        void returnBadRequestAndNotChangeUser_whenOwnUserNameChangedWithoutPassword() {
+            final var tester = userRepository.save(UserTestData.createTestUserPippin());
+            final var userName = UserTestData.createUserUpdateRequestWithoutEmail().userName();
+            final var withoutPassword = UserTestData.createUserNameUpdateRequest(userName, null);
+
+            restClient.patch()
+                    .uri(ApiConstants.BY_ID, tester.getId())
+                    .headers(auth::user)
+                    .body(withoutPassword)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo(UserTestData.INCORRECT_PASSWORD);
+
+            assertThat(userRepository.findById(tester.getId()).orElseThrow().getUserName())
+                    .isEqualTo(tester.getUserName());
+        }
+
+        @Test
         void success_whenUserUpdatesThemselves() {
             final var id = userRepository.save(UserTestData.createTestUserPippin()).getId();
             final var validRequest = UserTestData.createValidUserUpdateRequest();
@@ -646,7 +698,7 @@ public class UserControllerTest {
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
                     .headers(auth::user)
-                    .body(new UserUpdateRequest(null, null, userName, null))
+                    .body(UserTestData.createUserNameUpdateRequest(userName))
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody(UserDto.class).isEqualTo(UserTestData.createUserDto(tester.getId(), userName));
@@ -663,7 +715,7 @@ public class UserControllerTest {
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
                     .headers(auth::user)
-                    .body(new UserUpdateRequest(null, null, userName, null))
+                    .body(UserTestData.createUserNameUpdateRequest(userName))
                     .exchange()
                     .expectStatus().isEqualTo(HttpStatus.CONFLICT)
                     .expectBody()
@@ -682,7 +734,7 @@ public class UserControllerTest {
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
                     .headers(auth::user)
-                    .body(new UserUpdateRequest(null, null, null, newEmail))
+                    .body(UserTestData.createEmailUpdateRequest(newEmail))
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -732,7 +784,7 @@ public class UserControllerTest {
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
                     .headers(auth::admin)
-                    .body(new UserUpdateRequest(null, null, null, tester.getEmail()))
+                    .body(UserTestData.createEmailUpdateRequest(tester.getEmail()))
                     .exchange()
                     .expectStatus().isForbidden()
                     .expectBody()
@@ -751,7 +803,7 @@ public class UserControllerTest {
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
                     .headers(auth::user)
-                    .body(new UserUpdateRequest(null, null, null, firstEmail))
+                    .body(UserTestData.createEmailUpdateRequest(firstEmail))
                     .exchange()
                     .expectStatus().isOk();
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(any(SimpleMailMessage.class));
@@ -759,7 +811,7 @@ public class UserControllerTest {
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
                     .headers(auth::user)
-                    .body(new UserUpdateRequest(null, null, null, secondEmail))
+                    .body(UserTestData.createEmailUpdateRequest(secondEmail))
                     .exchange()
                     .expectStatus().isEqualTo(HttpStatus.TOO_MANY_REQUESTS)
                     .expectBody()
@@ -771,13 +823,13 @@ public class UserControllerTest {
         }
 
         @Test
-        void cancelEmailChangeWithinCooldown_whenCurrentEmailSent() {
+        void cancelEmailChangeWithinCooldownWithoutPassword_whenCurrentEmailSent() {
             final var tester = userRepository.save(UserTestData.createTestUserPippin());
             final var newEmail = UserTestData.createValidUserUpdateRequest().email();
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
                     .headers(auth::user)
-                    .body(new UserUpdateRequest(null, null, null, newEmail))
+                    .body(UserTestData.createEmailUpdateRequest(newEmail))
                     .exchange()
                     .expectStatus().isOk();
             verify(mailSender, timeout(TestUtils.ASYNC_TIMEOUT_MS).times(2)).send(any(SimpleMailMessage.class));
@@ -785,7 +837,7 @@ public class UserControllerTest {
             restClient.patch()
                     .uri(ApiConstants.BY_ID, tester.getId())
                     .headers(auth::user)
-                    .body(new UserUpdateRequest(null, null, null, tester.getEmail()))
+                    .body(UserTestData.createEmailUpdateRequest(tester.getEmail(), null))
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
@@ -859,7 +911,7 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenUserNameContainsAt() {
-            final var invalidUpdateRequest = new UserUpdateRequest(null, null, "pippin@shire", null);
+            final var invalidUpdateRequest = UserTestData.createUserNameUpdateRequest("pippin@shire");
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)
@@ -873,7 +925,7 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenEmailIsTooShort() {
-            final var invalidUpdateRequest = new UserUpdateRequest(null, null, null, "p@sh");
+            final var invalidUpdateRequest = UserTestData.createEmailUpdateRequest("p@sh");
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)
@@ -888,7 +940,7 @@ public class UserControllerTest {
         @Test
         void success_whenEmailHasMaximumLength() {
             final var id = userRepository.save(UserTestData.createTestUserPippin()).getId();
-            final var request = new UserUpdateRequest(null, null, null, UserTestData.LONGEST_EMAIL);
+            final var request = UserTestData.createEmailUpdateRequest(UserTestData.LONGEST_EMAIL);
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, id)
@@ -906,7 +958,7 @@ public class UserControllerTest {
 
         @Test
         void returnBadRequest_whenEmailIsTooLong() {
-            final var invalidUpdateRequest = new UserUpdateRequest(null, null, null, UserTestData.OVERLONG_EMAIL);
+            final var invalidUpdateRequest = UserTestData.createEmailUpdateRequest(UserTestData.OVERLONG_EMAIL);
 
             restClient.patch()
                     .uri(ApiConstants.BY_ID, 1L)

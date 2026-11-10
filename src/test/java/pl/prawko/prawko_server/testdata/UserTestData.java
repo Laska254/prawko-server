@@ -1,5 +1,6 @@
 package pl.prawko.prawko_server.testdata;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.lang.NonNull;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -226,16 +227,35 @@ public class UserTestData {
                 "UpdatedFirstName",
                 "UpdatedLastName",
                 "UpdatedUserName",
-                UPDATED_EMAIL);
+                UPDATED_EMAIL,
+                TestUtils.USER_PASSWORD);
     }
 
     public static UserUpdateRequest createUserUpdateRequestWithoutEmail() {
         final var request = createValidUserUpdateRequest();
-        return new UserUpdateRequest(request.firstName(), request.lastName(), request.userName(), null);
+        return new UserUpdateRequest(request.firstName(), request.lastName(), request.userName(), null,
+                request.currentPassword());
     }
 
     public static UserUpdateRequest createInvalidUserUpdateRequest() {
-        return new UserUpdateRequest("", "", "gimli", "gimli.shire.me");
+        return new UserUpdateRequest("", "", "gimli", "gimli.shire.me", TestUtils.USER_PASSWORD);
+    }
+
+    public static UserUpdateRequest createEmailUpdateRequest(final String email) {
+        return createEmailUpdateRequest(email, TestUtils.USER_PASSWORD);
+    }
+
+    public static UserUpdateRequest createEmailUpdateRequest(final String email, @Nullable final String password) {
+        return new UserUpdateRequest(null, null, null, email, password);
+    }
+
+    public static UserUpdateRequest createUserNameUpdateRequest(final String userName) {
+        return createUserNameUpdateRequest(userName, TestUtils.USER_PASSWORD);
+    }
+
+    public static UserUpdateRequest createUserNameUpdateRequest(final String userName,
+                                                                @Nullable final String password) {
+        return new UserUpdateRequest(null, null, userName, null, password);
     }
 
     public static ChangePasswordRequest createValidChangePasswordRequest() {

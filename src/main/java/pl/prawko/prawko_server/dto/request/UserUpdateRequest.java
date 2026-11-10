@@ -10,8 +10,8 @@ import org.jspecify.annotations.Nullable;
  * DTO for user update requests.
  *
  * <p>Allows partial updates to user profile information. All fields are optional;
- * only provided fields will be updated.
- *
+ * only provided fields will be updated. Changing the email or username of one's own account requires re-entering the
+ * current password if the user has one, its absence is reported like a wrong password.
  */
 @Schema(description = "User profile update request (all fields optional)")
 public record UserUpdateRequest(
@@ -41,7 +41,12 @@ public record UserUpdateRequest(
         @Size(max = 254, message = "{email.size.max}")
         @Email(message = "{email.notvalid}")
         @Schema(description = "User's email address", minLength = 5, maxLength = 254, format = "email", nullable = true)
-        String email
+        String email,
+
+        @Nullable
+        @Schema(description = "User's current password, required to change their own email or username "
+                + "if they have one", nullable = true)
+        String currentPassword
 
 ) {
 }

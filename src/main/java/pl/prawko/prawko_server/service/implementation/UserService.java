@@ -158,14 +158,16 @@ public class UserService implements IUserService, UserDetailsService {
      * changes are subject to the verification email cooldown. Sending the current email cancels a pending change and
      * invalidates its links, without a cooldown since no email is sent. The username conflicts only with other users,
      * as the database compares it, so users can change the capitalization or, on MariaDB, the accents of their own.
+     * The password is checked before anything else, so a token holder without it learns nothing from conflicts.
      *
      * @throws EntityNotFoundException  if user with the given ID have not been found
+     * @throws InvalidPasswordException if the user changes their own email or username without their current password
      * @throws AlreadyExistsException   if the new username or email conflicts with another user
      * @throws TooManyRequestsException if the email is changed within the cooldown of the previous verification email
      */
     @Transactional
     @Override
-    public UserDto updateUser(final long userId, final UserUpdateRequest updateRequest) {
+    public UserDto updateUser(final long userId, final UserUpdateRequest updateRequest, final long principalId) {
         log.info("Updating user with id: {}", userId);
         final var user = getById(userId);
         final var userName = updateRequest.userName();
@@ -176,6 +178,10 @@ public class UserService implements IUserService, UserDetailsService {
             newEmail = null;
         } else {
             newEmail = email;
+        }
+        final var changesUserName = userName != null && !userName.equals(user.getUserName());
+        if (principalId == userId && (changesUserName || newEmail != null)) {
+            verifyPasswordIfSet(user, updateRequest.currentPassword());
         }
         validateNoConflict(userName, name -> repository.existsByUserNameIgnoreCaseAndIdNot(name, userId), newEmail);
         Optional.ofNullable(updateRequest.firstName()).ifPresent(user::setFirstName);
@@ -265,7 +271,10 @@ public class UserService implements IUserService, UserDetailsService {
      */
     @Override
     public void verifyPasswordIfSet(final long userId, @Nullable final String password) {
-        final var user = getById(userId);
+        verifyPasswordIfSet(getById(userId), password);
+    }
+
+    private void verifyPasswordIfSet(final User user, @Nullable final String password) {
         if (user.getPassword() != null) {
             verifyPassword(user, password);
         }

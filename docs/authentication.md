@@ -108,15 +108,17 @@ verified before their link expires are deleted, so the username and email can be
 
 ## Changing the email
 
-Changing the email with `PATCH /users/{id}` works the same way: the new address is only stored as pending and a link
-is emailed to it (`pendingEmail` in the user response), and a confirmation link to the current address, so a stolen
+Changing the email with `PATCH /users/{id}` works the same way: the new address is only stored as pending and a link is
+emailed to it (`pendingEmail` in the user response), and a confirmation link to the current address, so a stolen
 password alone can't move the account to another inbox. Only the user themselves may change their email - admins get
-`403`, so a stolen admin account can't take over other accounts this way either. Both links go to
-`POST /auth/verify`, in any order; the user response tells which are still unopened (`awaitingNewEmailConfirmation`,
-`awaitingCurrentEmailConfirmation`). The current email stays in use (sign-in, password reset) until both links are
-used. Changing or resetting the password cancels a pending change, and so does sending the current email in the
-`PATCH`. For new links send the `PATCH` again after the cooldown - within it the `PATCH` answers `429` and changes
-nothing.
+`403`, so a stolen admin account can't take over other accounts this way either. Users changing their own email or
+username also send `currentPassword`, so a stolen access token alone can't start a change or send links to the user's
+inbox: if it's missing or wrong the answer is `400` `"Current password is incorrect."` and nothing changes. Users
+without a password leave it out, and cancelling a change doesn't need it. Both links go to `POST /auth/verify`, in any
+order; the user response tells which are still unopened (`awaitingNewEmailConfirmation`,
+`awaitingCurrentEmailConfirmation`). The current email stays in use (sign-in, password reset) until both links are used.
+Changing or resetting the password cancels a pending change, and so does sending the current email in the `PATCH`. For
+new links send the `PATCH` again after the cooldown - within it the `PATCH` answers `429` and changes nothing.
 
 ## Deleting an account
 
