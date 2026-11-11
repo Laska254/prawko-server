@@ -116,7 +116,7 @@ public class QuestionControllerTest {
                     .exchange()
                     .expectStatus().isBadRequest()
                     .expectBody()
-                    .jsonPath("$.detail").isEqualTo("Invalid XLSX file.");
+                    .jsonPath("$.detail").isEqualTo(XlsxTestData.INVALID_XLSX);
             assertThat(repository.count()).isZero();
         }
 

@@ -16,6 +16,8 @@ import java.util.Map;
 public class XlsxTestData {
 
     public static final String UNDER_VERIFICATION_SHEET = "W trakcie weryfikacji";
+    public static final String INVALID_XLSX = "Invalid XLSX file.";
+    public static final String NO_KATALOG_SHEET = "Invalid XLSX file: no sheet 'katalog'.";
 
     private XlsxTestData() {
     }

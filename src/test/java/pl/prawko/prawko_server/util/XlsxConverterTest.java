@@ -72,7 +72,7 @@ class XlsxConverterTest {
 
             assertThatThrownBy(() -> converter.toCsv(input))
                     .isInstanceOf(InvalidQuestionFileException.class)
-                    .hasMessage("Invalid XLSX file.");
+                    .hasMessage(XlsxTestData.INVALID_XLSX);
         }
 
         @Test
@@ -88,7 +88,7 @@ class XlsxConverterTest {
 
             assertThatThrownBy(() -> converter.toCsv(new ByteArrayInputStream(broken)))
                     .isInstanceOf(InvalidQuestionFileException.class)
-                    .hasMessage("Invalid XLSX file.");
+                    .hasMessage(XlsxTestData.INVALID_XLSX);
         }
 
         @Test
@@ -98,7 +98,7 @@ class XlsxConverterTest {
 
             assertThatThrownBy(() -> converter.toCsv(new ByteArrayInputStream(workbook)))
                     .isInstanceOf(InvalidQuestionFileException.class)
-                    .hasMessage("Invalid XLSX file: no sheet 'katalog'.");
+                    .hasMessage(XlsxTestData.NO_KATALOG_SHEET);
         }
 
     }
