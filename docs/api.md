@@ -67,6 +67,11 @@ retry it.
   An upload over about 20MB (`server.tomcat.max-swallow-size`) loses the connection instead of getting the `413`, so a
   rejected request can't hold a thread until an arbitrarily large body is read.
 
+  The CSV uses the column layout of the government's question catalogue from 07.2026 (`Numer pytania`, `Pytanie`,
+  `Odpowiedź A`-`C`, `Pytanie [EN]`, `Odpowiedź A [EN]`-`C [EN]`, `Pytanie [D]`, `Odpowiedź A [D]`-`C [D]`,
+  `Poprawna odp`, `Media`, `Zakres struktury`, `Liczba punktów`, `Kategorie`), in any order. A file missing one of
+  these columns is rejected; other columns are ignored.
+
   The import is all or nothing: a malformed file returns `400` and saves no questions. Every name in the `Kategorie`
   column must be a category (`A`, `A1`, …, `PT`, case-sensitive); an unknown or empty one fails the file, and the
   message lists each offending line and value together with the allowed categories, e.g. `Invalid CSV file: line 12:

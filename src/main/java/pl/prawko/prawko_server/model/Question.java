@@ -19,7 +19,6 @@ import java.util.List;
  * A {@code Question} has:
  *  <ul>
  *     <li>{@code id} - fixed unique identifier</li>
- *     <li>{@code name} - limited to 7 characters</li>
  *     <li>{@code points} - number of given points for correct answer to a question</li>
  *     <li>{@code media} - filename of media attached to a question</li>
  *     <li>{@code type} - type of question represented by {@link QuestionType}</li>
@@ -38,9 +37,6 @@ public class Question {
 
     @Id
     private long id;
-
-    @Column(length = 15)
-    private String name;
 
     private int points;
 
@@ -73,15 +69,6 @@ public class Question {
 
     public Question setId(final long id) {
         this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Question setName(final String name) {
-        this.name = name;
         return this;
     }
 
@@ -168,7 +155,6 @@ public class Question {
     public String toString() {
         return "Question{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
                 ", points=" + points +
                 ", media='" + media + '\'' +
                 ", type=" + type +

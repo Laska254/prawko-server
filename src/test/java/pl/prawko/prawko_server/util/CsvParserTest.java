@@ -41,7 +41,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class CsvParserTest {
 
-    private static final String HEADER = "Nazwa pytania,Numer pytania,Poprawna odp,Liczba punktów\n";
+    // the columns that tests fill come first, so rows can leave out the rest
+    private static final String HEADER = "Numer pytania,Poprawna odp,Liczba punktów,Pytanie,Odpowiedź A,Odpowiedź B,"
+            + "Odpowiedź C,Media,Zakres struktury,Kategorie,Pytanie [EN],Odpowiedź A [EN],Odpowiedź B [EN],"
+            + "Odpowiedź C [EN],Pytanie [D],Odpowiedź A [D],Odpowiedź B [D],Odpowiedź C [D]\n";
 
     @Mock
     private CsvFacade csvFacade;
@@ -83,18 +86,20 @@ class CsvParserTest {
 
         private static Stream<Arguments> malformedFiles() {
             return Stream.of(
-                    Arguments.of(Named.of("invalid number", HEADER + "W1,1,A,2\nW2,abc,A,2\n"),
+                    Arguments.of(Named.of("invalid number", HEADER + "1,A,2\nabc,A,2\n"),
                             "Invalid CSV file at line 3 in column 'Numer pytania': "
                                     + "Cannot deserialize value of type `int` from String \"abc\": "
                                     + "not a valid `int` value"),
-                    Arguments.of(Named.of("missing required column", "Nazwa pytania\nW1\n"),
-                            "Invalid CSV file at line 2 in column 'Numer pytania': "
+                    Arguments.of(Named.of("missing header column", HEADER.replace("Pytanie [EN],", "") + "1,A,2\n"),
+                            "Invalid CSV file at line 2: Missing 1 header column: [\"Pytanie [EN]\"]"),
+                    Arguments.of(Named.of("missing value", HEADER + "1,A\n"),
+                            "Invalid CSV file at line 2 in column 'Liczba punktów': "
                                     + "Cannot map `null` into type `int` "
                                     + "(set `DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES` to 'false' to allow)"),
-                    Arguments.of(Named.of("too many values", HEADER + "W1,1,A,2,extra\n"),
-                            "Invalid CSV file at line 2: Too many entries: expected at most 4 (value #4 (5 chars) "
+                    Arguments.of(Named.of("too many values", HEADER + "1,A,2" + ",".repeat(15) + ",extra\n"),
+                            "Invalid CSV file at line 2: Too many entries: expected at most 18 (value #18 (5 chars) "
                                     + "\"extra\")"),
-                    Arguments.of(Named.of("unclosed quote", HEADER + "\"W1,1,A,2\n"),
+                    Arguments.of(Named.of("unclosed quote", HEADER + "\"1,A,2\n"),
                             "Invalid CSV file at line 3: Missing closing quote for value"),
                     Arguments.of(Named.of("empty file", ""),
                             "Invalid CSV file at line 1: Empty header line: can not bind data"));
@@ -113,7 +118,7 @@ class CsvParserTest {
 
         @Test
         void throwInvalidCsvException_whenCategoriesAreUnknown(final CapturedOutput output) {
-            final var content = HEADER + "W1,1,A,2\n\"W2\nsecond line\",2,A,2\nW3,3,A,2\nW4,4,A,2\n";
+            final var content = HEADER + "1,A,2\n2,A,2,\"first\nsecond line\"\n3,A,2\n4,A,2\n";
             final var file = new MockMultipartFile(
                     "file", "categories.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
             when(csvFacade.mapSingleRow(any()))

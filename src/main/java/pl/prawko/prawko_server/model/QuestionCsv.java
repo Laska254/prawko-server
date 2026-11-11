@@ -1,13 +1,15 @@
 package pl.prawko.prawko_server.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
 /**
- * Represents a single question from a CSV file.
+ * Represents a single question from a CSV file in the layout of the government's catalogue (07.2026).
+ * <p>
+ * Every column below must be in the header, in any order; other columns are ignored.
  *
- * @param name          name of a question
  * @param id            fixed identifier
  * @param contentPL     translation of a question content in Polish
  * @param answerPL1     content of first answer in Polish
@@ -31,9 +33,6 @@ import java.util.Map;
  */
 public record QuestionCsv(
 
-        @JsonProperty("Nazwa pytania")
-        String name,
-
         @JsonProperty("Numer pytania")
         int id,
 
@@ -49,28 +48,28 @@ public record QuestionCsv(
         @JsonProperty("Odpowiedź C")
         String answerPL3,
 
-        @JsonProperty("Pytanie ENG")
+        @JsonProperty("Pytanie [EN]")
         String contentEN,
 
-        @JsonProperty("Odpowiedź ENG A")
+        @JsonProperty("Odpowiedź A [EN]")
         String answerEN1,
 
-        @JsonProperty("Odpowiedź ENG B")
+        @JsonProperty("Odpowiedź B [EN]")
         String answerEN2,
 
-        @JsonProperty("Odpowiedź ENG C")
+        @JsonProperty("Odpowiedź C [EN]")
         String answerEN3,
 
-        @JsonProperty("Pytanie DE")
+        @JsonProperty("Pytanie [D]")
         String contentDE,
 
-        @JsonProperty("Odpowiedź DE A")
+        @JsonProperty("Odpowiedź A [D]")
         String answerDE1,
 
-        @JsonProperty("Odpowiedź DE B")
+        @JsonProperty("Odpowiedź B [D]")
         String answerDE2,
 
-        @JsonProperty("Odpowiedź DE C")
+        @JsonProperty("Odpowiedź C [D]")
         String answerDE3,
 
         @JsonProperty("Poprawna odp")
@@ -96,6 +95,7 @@ public record QuestionCsv(
      * @return a map where the key is a {@link Language} and the value is another map of answer labels to their
      *         translated content
      */
+    @JsonIgnore
     public Map<String, Map<Character, String>> getAnswersTranslations() {
         return Map.ofEntries(
                 Map.entry(Language.PL, Map.ofEntries(

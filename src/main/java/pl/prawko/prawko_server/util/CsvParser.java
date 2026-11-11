@@ -43,8 +43,11 @@ public class CsvParser {
         this.csvMapper = CsvMapper.builder()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .build();
-        this.csvSchema = CsvSchema.emptySchema()
+        // the columns of QuestionCsv, matched to the header by name: a missing one fails the file
+        // (CsvReadFeature.FAIL_ON_MISSING_HEADER_COLUMNS), so a renamed column doesn't import as null
+        this.csvSchema = csvMapper.schemaFor(QuestionCsv.class)
                 .withHeader()
+                .withColumnReordering(true)
                 .withColumnSeparator(',')
                 .withQuoteChar('"');
     }

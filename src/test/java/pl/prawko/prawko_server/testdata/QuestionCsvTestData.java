@@ -30,7 +30,6 @@ public class QuestionCsvTestData {
         final var answerTranslationsB = AnswerTranslationsTestData.variantB();
         final var answerTranslationsC = AnswerTranslationsTestData.variantC();
         return new QuestionCsv(
-                "PD10(3)",
                 2143,
                 question.getTranslations().getFirst().getContent(),
                 answerTranslationsA.getFirst().getContent(),
@@ -58,7 +57,6 @@ public class QuestionCsvTestData {
     public static QuestionCsv createBasicQuestionCsv(final char correctAnswer) {
         final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
         return new QuestionCsv(
-                "W9(2)",
                 110,
                 question.getTranslations().getFirst().getContent(),
                 "",
