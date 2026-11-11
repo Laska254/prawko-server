@@ -43,7 +43,22 @@ class XlsxConverterTest {
                     czy nie?"
 
                     3,100,Ostatnie
-                    4
+                    4,,
+                    """);
+        }
+
+        @Test
+        void padRowWithEmptyValues_whenItsLastCellsAreAbsent() throws IOException {
+            final var workbook = XlsxTestData.createWorkbook(Map.ofEntries(
+                    Map.entry(XlsxConverter.SHEET, List.of(
+                            List.of("Numer pytania", "Pytanie", "Media"),
+                            List.of(99, "Bez mediów")))));
+
+            final var result = converter.toCsv(new ByteArrayInputStream(workbook));
+
+            assertThat(result).isEqualTo("""
+                    "Numer pytania",Pytanie,Media
+                    99,"Bez mediów",
                     """);
         }
 

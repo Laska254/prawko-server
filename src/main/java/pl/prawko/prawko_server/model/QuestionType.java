@@ -7,17 +7,12 @@ import java.util.Optional;
 /**
  * Represents the type of question.
  * <p>
- * Each type is associated with a descriptive name in Polish because that's how it's stored in original CSV file from
- * <a href="https://www.gov.pl/web/infrastruktura/prawo-jazdy">Officials questions for the Polish driving licence
- * test</a>, and with the labels its correct answer can have, which decide the type on import (see
+ * Each type is associated with a descriptive name in Polish because that's how it's stored in the government's question
+ * catalogue from <a href="https://www.gov.pl/web/infrastruktura/prawo-jazdy">Officials questions for the Polish
+ * driving licence test</a>, and with the labels its correct answer can have, which decide the type on import (see
  * {@link #ofCorrectAnswer(char)}).
  */
 public enum QuestionType {
-
-    /**
-     * key - points value of questions
-     * value - amount of questions
-     */
 
     /**
      * True/False question type
@@ -28,7 +23,6 @@ public enum QuestionType {
             Map.entry(3, 10))),
     /**
      * ABC question type
-     * //
      */
     SPECIAL("SPECJALISTYCZNY", "ABC", Map.ofEntries(
             Map.entry(1, 2),
@@ -49,6 +43,9 @@ public enum QuestionType {
         return name;
     }
 
+    /**
+     * Returns how many questions of this type an exam has, by points value.
+     */
     public Map<Integer, Integer> getDistribution() {
         return distribution;
     }

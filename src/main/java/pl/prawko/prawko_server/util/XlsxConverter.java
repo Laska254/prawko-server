@@ -16,14 +16,16 @@ import tools.jackson.dataformat.csv.CsvSchema;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.util.stream.IntStream;
 
 /**
  * Converts the {@value #SHEET} sheet of an XLSX workbook to CSV, so {@link CsvParser} imports it like an uploaded CSV
  * file; other sheets are ignored.
  * <p>
  * Every sheet row becomes one CSV row, also an empty or missing one, so row numbers in errors match the sheet. Rows are
- * cut to the width of the header (the first row). Text is written as is and numbers in plain notation
- * ({@code 14108}, {@code 3}), without the cell's display format.
+ * cut or padded with empty values to the width of the header (the first row), so an absent cell reads like an empty
+ * one. Text is written as is and numbers in plain notation ({@code 14108}, {@code 3}), without the cell's display
+ * format.
  */
 @Component
 public class XlsxConverter {
@@ -64,7 +66,8 @@ public class XlsxConverter {
                         csvRows.write(EMPTY_ROW);
                     }
                     if (width == 0) {
-                        width = row.getCellCount();
+                        // at least one value: a row without any writes nothing, not an empty line
+                        width = Math.max(1, row.getCellCount());
                     }
                     csvRows.write(values(row, width));
                     nextRow++;
@@ -79,14 +82,11 @@ public class XlsxConverter {
     }
 
     private static String[] values(final Row row, final int width) {
-        // at least one value: a row without any writes nothing, not an empty line
-        final var values = new String[Math.max(1, Math.min(row.getCellCount(), width))];
-        for (int index = 0; index < values.length; index++) {
-            values[index] = row.getOptionalCell(index)
-                    .map(XlsxConverter::text)
-                    .orElse("");
-        }
-        return values;
+        return IntStream.range(0, width)
+                .mapToObj(index -> row.getOptionalCell(index)
+                        .map(XlsxConverter::text)
+                        .orElse(""))
+                .toArray(String[]::new);
     }
 
     private static String text(final Cell cell) {
