@@ -199,7 +199,7 @@ class CsvParserTest {
 
             assertThatThrownBy(() -> csvParser.parse(file))
                     .isInstanceOf(InvalidQuestionFileException.class)
-                    .hasMessage("Invalid CSV file: row 2: unknown correct answer 'X', expected T, N, A, B or C.");
+                    .hasMessage("Invalid CSV file: row 2: unknown correct answer 'X', expected one of T, N, A, B, C.");
         }
 
         @Test
@@ -213,7 +213,7 @@ class CsvParserTest {
 
             assertThatThrownBy(() -> csvParser.parse(file))
                     .isInstanceOf(InvalidQuestionFileException.class)
-                    .hasMessage("Invalid CSV file: row 2: unknown correct answer 'X', expected T, N, A, B or C; "
+                    .hasMessage("Invalid CSV file: row 2: unknown correct answer 'X', expected one of T, N, A, B, C; "
                             + "row 3: unknown category 'Z'. " + QuestionCsvTestData.ALLOWED_CATEGORIES);
         }
 

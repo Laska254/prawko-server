@@ -11,6 +11,7 @@ import pl.prawko.prawko_server.exception.UnknownCorrectAnswerException;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCsv;
+import pl.prawko.prawko_server.model.QuestionType;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
@@ -46,6 +47,11 @@ public class CsvParser {
     private static final String ID_COLUMN = "Numer pytania";
     private static final String ALLOWED_CATEGORIES = Arrays.stream(CategoryVariant.values())
             .map(CategoryVariant::name)
+            .collect(Collectors.joining(", "));
+    private static final String ALLOWED_CORRECT_ANSWERS = Arrays.stream(QuestionType.values())
+            .map(QuestionType::getAnswerLabels)
+            .flatMapToInt(String::chars)
+            .mapToObj(Character::toString)
             .collect(Collectors.joining(", "));
 
     private final CsvMapper csvMapper;
@@ -93,7 +99,7 @@ public class CsvParser {
                     questions.add(csvFacade.mapSingleRow(questionCsv));
                 } catch (final UnknownCorrectAnswerException exception) {
                     problems.add("row " + row + ": unknown correct answer '" + exception.getLabel()
-                            + "', expected T, N, A, B or C");
+                            + "', expected one of " + ALLOWED_CORRECT_ANSWERS);
                 } catch (final UnknownCategoryException exception) {
                     unknownCategory = true;
                     for (final var name : exception.getNames()) {

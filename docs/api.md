@@ -88,7 +88,7 @@ retry it.
   row 12: unknown category 'Z'; row 40: unknown category ''. Allowed: A, A1, …`.
 
   The question type follows `Poprawna odp`: `T` or `N` makes a `BASIC` (yes/no) question, `A`, `B` or `C` a `SPECIAL`
-  one; any other value fails the file the same way (`row 7: unknown correct answer 'X', expected T, N, A, B or C`).
+  one; any other value fails the file the same way (`row 7: unknown correct answer 'X', expected one of T, N, A, B, C`).
   `Zakres struktury` (`PODSTAWOWY`/`SPECJALISTYCZNY`, any case) doesn't decide it: when it names the other type, is
   misspelled or empty, the question is imported with the type of its answer and a warning is logged, since the
   catalogue has such rows.
