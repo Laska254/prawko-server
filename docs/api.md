@@ -79,7 +79,16 @@ retry it.
   `Poprawna odp`, `Media`, `Zakres struktury`, `Liczba punktów`, `Kategorie`), in any order. A file missing one of
   these columns is rejected; other columns are ignored. Rows with an empty `Numer pytania` (such as blank rows at the
   end of the sheet) are skipped. The catalogue currently in use is kept in
-  `data/KATALOG_dla_kandydatów_na_kierowców_072026.xlsx` and can be uploaded as is.
+  `data/KATALOG_dla_kandydatów_na_kierowców_072026.xlsx` and can be uploaded unchanged. curl sends a file part as
+  `application/octet-stream` (`415`) unless `type=` names its content type, with `$TOKEN` an admin's access token from
+  `POST /auth`:
+
+  ```sh
+  curl -X POST http://localhost:8080/questions -H "Authorization: Bearer $TOKEN" \
+    -F 'file=@data/KATALOG_dla_kandydatów_na_kierowców_072026.xlsx;type=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  ```
+
+  A CSV file takes `;type=text/csv` instead.
 
   The import is all or nothing: a malformed file returns `400` and saves no questions. Errors name the row as a
   spreadsheet numbers it: the header is row 1, and a value spanning several lines is still one row. Every name in the
