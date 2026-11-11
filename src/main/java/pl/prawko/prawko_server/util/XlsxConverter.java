@@ -33,8 +33,7 @@ public class XlsxConverter {
 
     private static final Logger log = LoggerFactory.getLogger(XlsxConverter.class);
     private static final String[] EMPTY_ROW = {""};
-
-    private final ObjectWriter csvWriter = new CsvMapper()
+    private static final ObjectWriter CSV_WRITER = new CsvMapper()
             .writerFor(String[].class)
             .with(CsvSchema.emptySchema()
                     .withLineSeparator("\n"));
@@ -55,7 +54,7 @@ public class XlsxConverter {
                     });
             final var csv = new StringWriter();
             try (final var rows = sheet.openStream();
-                 final var csvRows = csvWriter.writeValues(csv)) {
+                 final var csvRows = CSV_WRITER.writeValues(csv)) {
                 final var iterator = rows.iterator();
                 int nextRow = 1;
                 int width = 0;
