@@ -87,6 +87,10 @@ An unlinked account no longer finds the user by its ID, so its next sign-in coun
 is one the provider hosts it's linked again, since whoever holds that account controls the mailbox and could reset the
 password anyway. Unlinking doesn't revoke refresh tokens, so clients already signed in stay signed in.
 
+In `prod` the proxy limits `POST /auth/google`, `POST /auth/github` and linking and unlinking per client IP
+([Rate limiting](deployment.md#rate-limiting)). Over the limit they answer `429` with `Retry-After` (seconds), and
+nothing is signed in, linked or unlinked.
+
 ## Users without a password
 
 Users without a password: a user created by a provider has none, and `hasPassword` in the user response is `false`, so

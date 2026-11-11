@@ -28,7 +28,8 @@
 * [Authentication](docs/authentication.md) - access and refresh tokens, Google and GitHub sign-in, linking accounts,
   email verification and changes
 * [API](docs/api.md) - Swagger, endpoints, solving an exam, exam statistics, pagination
-* [Deployment](docs/deployment.md) - `prod` environment variables, first admin, Docker, shutdown, reverse proxy
+* [Deployment](docs/deployment.md) - `prod` environment variables, first admin, Docker, shutdown, reverse proxy,
+  rate limiting
 
 ---
 
