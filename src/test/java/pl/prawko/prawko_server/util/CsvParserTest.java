@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -76,6 +77,34 @@ class CsvParserTest {
         }
 
         @Test
+        void skipRow_whenIdIsMissing() {
+            // an empty ID, a row with fewer values than the header and a blank line
+            final var content = HEADER + "1,A,2\n,,\n\n\n2,A,2\n";
+            final var file = new MockMultipartFile(
+                    "file", "skipped.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
+            when(csvFacade.mapSingleRow(any())).thenReturn(new Question());
+
+            final var result = csvParser.parse(file);
+
+            assertThat(result).hasSize(2);
+            verify(csvFacade).mapSingleRow(argThat(row -> row.id() == 1));
+            verify(csvFacade).mapSingleRow(argThat(row -> row.id() == 2));
+        }
+
+        @Test
+        void throwInvalidCsvException_whenRowAfterSkippedRowsIsMalformed() {
+            final var content = HEADER + "1,A,2\n,,\n3,A,three\n";
+            final var file = new MockMultipartFile(
+                    "file", "skipped.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
+            when(csvFacade.mapSingleRow(any())).thenReturn(new Question());
+
+            assertThatThrownBy(() -> csvParser.parse(file))
+                    .isInstanceOf(InvalidCsvException.class)
+                    .hasMessage("Invalid CSV file at row 4 in column 'Liczba punktów': "
+                            + "Cannot deserialize value of type `int` from String \"three\": not a valid `int` value");
+        }
+
+        @Test
         void throwMultipartException_whenFileIsNotCsv() {
             final var file = new MockMultipartFile("file", "test.pdf", "application/pdf", new byte[]{});
 
@@ -87,22 +116,22 @@ class CsvParserTest {
         private static Stream<Arguments> malformedFiles() {
             return Stream.of(
                     Arguments.of(Named.of("invalid number", HEADER + "1,A,2\nabc,A,2\n"),
-                            "Invalid CSV file at line 3 in column 'Numer pytania': "
+                            "Invalid CSV file at row 3 in column 'Numer pytania': "
                                     + "Cannot deserialize value of type `int` from String \"abc\": "
                                     + "not a valid `int` value"),
                     Arguments.of(Named.of("missing header column", HEADER.replace("Pytanie [EN],", "") + "1,A,2\n"),
-                            "Invalid CSV file at line 2: Missing 1 header column: [\"Pytanie [EN]\"]"),
+                            "Invalid CSV file at row 1: Missing 1 header column: [\"Pytanie [EN]\"]"),
                     Arguments.of(Named.of("missing value", HEADER + "1,A\n"),
-                            "Invalid CSV file at line 2 in column 'Liczba punktów': "
+                            "Invalid CSV file at row 2 in column 'Liczba punktów': "
                                     + "Cannot map `null` into type `int` "
                                     + "(set `DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES` to 'false' to allow)"),
                     Arguments.of(Named.of("too many values", HEADER + "1,A,2" + ",".repeat(15) + ",extra\n"),
-                            "Invalid CSV file at line 2: Too many entries: expected at most 18 (value #18 (5 chars) "
+                            "Invalid CSV file at row 2: Too many entries: expected at most 18 (value #18 (5 chars) "
                                     + "\"extra\")"),
-                    Arguments.of(Named.of("unclosed quote", HEADER + "\"1,A,2\n"),
-                            "Invalid CSV file at line 3: Missing closing quote for value"),
+                    Arguments.of(Named.of("unclosed quote", HEADER + "1,A,2\n\"2,A,2\n"),
+                            "Invalid CSV file at row 3: Missing closing quote for value"),
                     Arguments.of(Named.of("empty file", ""),
-                            "Invalid CSV file at line 1: Empty header line: can not bind data"));
+                            "Invalid CSV file at row 1: Empty header line: can not bind data"));
         }
 
         @ParameterizedTest(name = "[{index}] {0}")
@@ -129,15 +158,15 @@ class CsvParserTest {
 
             assertThatThrownBy(() -> csvParser.parse(file))
                     .isInstanceOf(InvalidCsvException.class)
-                    .hasMessage("Invalid CSV file: line 2: unknown category 'Z'; line 5: unknown category ''; "
-                            + "line 5: unknown category 'AA'. " + QuestionCsvTestData.ALLOWED_CATEGORIES);
+                    .hasMessage("Invalid CSV file: row 2: unknown category 'Z'; row 4: unknown category ''; "
+                            + "row 4: unknown category 'AA'. " + QuestionCsvTestData.ALLOWED_CATEGORIES);
             verify(csvFacade, times(4)).mapSingleRow(any());
             assertThat(output).contains("Invalid CSV file: 3 unknown categories. File: 'categories.csv'")
                     .doesNotContain("unknown category 'Z'");
         }
 
         @Test
-        void throwInvalidCsvException_whenRowMappingFailsWithoutLocation() throws IOException {
+        void throwInvalidCsvException_whenRowMappingFails() throws IOException {
             final var resource = new ClassPathResource(QuestionCsvTestData.CSV_FILE);
             final var file = new MockMultipartFile(
                     "file", QuestionCsvTestData.CSV_FILE, "text/csv", resource.getInputStream());
@@ -146,7 +175,7 @@ class CsvParserTest {
 
             assertThatThrownBy(() -> csvParser.parse(file))
                     .isInstanceOf(InvalidCsvException.class)
-                    .hasMessage("Invalid CSV file: Unknown category");
+                    .hasMessage("Invalid CSV file at row 2: Unknown category");
         }
 
         @Test

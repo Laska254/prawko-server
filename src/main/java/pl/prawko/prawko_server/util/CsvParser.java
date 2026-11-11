@@ -12,6 +12,7 @@ import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCsv;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.MappingIterator;
 import tools.jackson.dataformat.csv.CsvMapper;
 import tools.jackson.dataformat.csv.CsvSchema;
@@ -26,10 +27,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Parses an uploaded CSV file into questions, all or nothing.
+ * <p>
+ * Rows without {@code Numer pytania} are skipped. Errors name the row as a spreadsheet numbers it: the header is
+ * row 1, and a value spanning several lines still counts as one row.
+ */
 @Component
 public class CsvParser {
 
     private static final Logger log = LoggerFactory.getLogger(CsvParser.class);
+    private static final int HEADER_ROW = 1;
+    private static final String ID_COLUMN = "Numer pytania";
     private static final String ALLOWED_CATEGORIES = Arrays.stream(CategoryVariant.values())
             .map(CategoryVariant::name)
             .collect(Collectors.joining(", "));
@@ -54,22 +63,32 @@ public class CsvParser {
 
     public List<Question> parse(final MultipartFile file) {
         validate(file);
+        // the row being read; errors while reading the header keep the header row
+        int row = HEADER_ROW;
         try (final var reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            final MappingIterator<QuestionCsv> csvRows = csvMapper
-                    .readerFor(QuestionCsv.class)
+            // read as trees first: a row without an ID has empty values that can't bind to QuestionCsv
+            final MappingIterator<JsonNode> csvRows = csvMapper
+                    .readerFor(JsonNode.class)
                     .with(csvSchema)
                     .readValues(reader);
             final var questions = new ArrayList<Question>();
             final var problems = new ArrayList<String>();
+            int skipped = 0;
             while (csvRows.hasNextValue()) {
-                // after hasNextValue the location is the record's first line, also for multi-line quoted values
-                final var line = csvRows.currentLocation().getLineNr();
+                row++;
+                final var csvRow = csvRows.nextValue();
+                if (csvRow.path(ID_COLUMN).asString("").isBlank()) {
+                    skipped++;
+                    continue;
+                }
+                final var questionCsv = csvMapper.treeToValue(csvRow, QuestionCsv.class);
                 try {
-                    questions.add(csvFacade.mapSingleRow(csvRows.nextValue()));
+                    questions.add(csvFacade.mapSingleRow(questionCsv));
                 } catch (final UnknownCategoryException exception) {
-                    exception.getNames()
-                            .forEach(name -> problems.add("line " + line + ": unknown category '" + name + "'"));
+                    for (final var name : exception.getNames()) {
+                        problems.add("row " + row + ": unknown category '" + name + "'");
+                    }
                 }
             }
             if (!problems.isEmpty()) {
@@ -79,10 +98,11 @@ public class CsvParser {
                 throw new InvalidCsvException("Invalid CSV file: " + String.join("; ", problems)
                         + ". Allowed: " + ALLOWED_CATEGORIES + ".");
             }
-            log.info("Successfully mapped {} questions from file '{}'", questions.size(), file.getOriginalFilename());
+            log.info("Successfully mapped {} questions from file '{}', skipped {} rows without '{}'",
+                    questions.size(), file.getOriginalFilename(), skipped, ID_COLUMN);
             return questions;
         } catch (final JacksonException exception) {
-            final var message = describe(exception);
+            final var message = describe(exception, row);
             log.warn("{} File: '{}'", message, file.getOriginalFilename());
             throw new InvalidCsvException(message);
         } catch (final IOException exception) {
@@ -101,14 +121,7 @@ public class CsvParser {
         }
     }
 
-    private static String describe(final JacksonException exception) {
-        final var location = exception.getLocation();
-        final String line;
-        if (location == null) {
-            line = "";
-        } else {
-            line = " at line " + location.getLineNr();
-        }
+    private static String describe(final JacksonException exception, final int row) {
         final var path = exception.getPath();
         final String column;
         if (path.isEmpty()) {
@@ -116,7 +129,7 @@ public class CsvParser {
         } else {
             column = " in column '" + path.getLast().getPropertyName() + "'";
         }
-        return "Invalid CSV file" + line + column + ": " + exception.getOriginalMessage();
+        return "Invalid CSV file at row " + row + column + ": " + exception.getOriginalMessage();
     }
 
 }

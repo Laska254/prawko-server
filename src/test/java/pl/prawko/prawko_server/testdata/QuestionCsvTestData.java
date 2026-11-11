@@ -7,12 +7,12 @@ public class QuestionCsvTestData {
 
     public static final String CSV_FILE = "test_question.csv";
     public static final String MALFORMED_CSV_FILE = "malformed_question.csv";
-    public static final String MALFORMED_CSV_MESSAGE = "Invalid CSV file at line 2 in column 'Liczba punktów': "
+    public static final String MALFORMED_CSV_MESSAGE = "Invalid CSV file at row 2 in column 'Liczba punktów': "
             + "Cannot deserialize value of type `int` from String \"three\": not a valid `int` value";
     public static final String UNKNOWN_CATEGORY_CSV_FILE = "unknown_category_question.csv";
     public static final String ALLOWED_CATEGORIES = "Allowed: A, A1, A2, AM, B, B1, C, C1, D, D1, T, PT.";
-    public static final String UNKNOWN_CATEGORY_CSV_MESSAGE = "Invalid CSV file: line 2: unknown category 'Z'; "
-            + "line 3: unknown category ''; line 3: unknown category 'BB'. " + ALLOWED_CATEGORIES;
+    public static final String UNKNOWN_CATEGORY_CSV_MESSAGE = "Invalid CSV file: row 2: unknown category 'Z'; "
+            + "row 3: unknown category ''; row 3: unknown category 'BB'. " + ALLOWED_CATEGORIES;
 
     private QuestionCsvTestData() {
     }

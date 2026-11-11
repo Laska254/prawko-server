@@ -70,12 +70,14 @@ retry it.
   The CSV uses the column layout of the government's question catalogue from 07.2026 (`Numer pytania`, `Pytanie`,
   `Odpowiedź A`-`C`, `Pytanie [EN]`, `Odpowiedź A [EN]`-`C [EN]`, `Pytanie [D]`, `Odpowiedź A [D]`-`C [D]`,
   `Poprawna odp`, `Media`, `Zakres struktury`, `Liczba punktów`, `Kategorie`), in any order. A file missing one of
-  these columns is rejected; other columns are ignored.
+  these columns is rejected; other columns are ignored. Rows with an empty `Numer pytania` (such as blank rows at the
+  end of the sheet) are skipped.
 
-  The import is all or nothing: a malformed file returns `400` and saves no questions. Every name in the `Kategorie`
-  column must be a category (`A`, `A1`, …, `PT`, case-sensitive); an unknown or empty one fails the file, and the
-  message lists each offending line and value together with the allowed categories, e.g. `Invalid CSV file: line 12:
-  unknown category 'Z'; line 40: unknown category ''. Allowed: A, A1, …`.
+  The import is all or nothing: a malformed file returns `400` and saves no questions. Errors name the row as a
+  spreadsheet numbers it: the header is row 1, and a value spanning several lines is still one row. Every name in the
+  `Kategorie` column must be a category (`A`, `A1`, …, `PT`, case-sensitive); an unknown or empty one fails the file,
+  and the message lists each offending row and value together with the allowed categories, e.g. `Invalid CSV file:
+  row 12: unknown category 'Z'; row 40: unknown category ''. Allowed: A, A1, …`.
 
   A `BASIC` (yes/no) question has two answers without translations, always in this order: yes, then no. The one named
   by `Poprawna odp` (`T` for yes, `N` for no) is correct. A `SPECIAL` question has answers `A`, `B` and `C` in that
