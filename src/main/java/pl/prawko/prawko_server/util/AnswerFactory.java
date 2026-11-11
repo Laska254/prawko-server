@@ -12,8 +12,18 @@ import pl.prawko.prawko_server.service.ILanguageService;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * Creates the answers of an imported question.
+ * <p>
+ * A {@link QuestionType#BASIC} question gets two answers without translations in a fixed order, yes first, then no;
+ * the one named by {@code Poprawna odp} ({@code T} or {@code N}) is correct. A {@link QuestionType#SPECIAL} question
+ * gets answers {@code A}, {@code B} and {@code C} in every language.
+ */
 @Component
 public class AnswerFactory {
+
+    private static final char YES = 'T';
+    private static final char NO = 'N';
 
     private final ILanguageService languageService;
 
@@ -23,15 +33,15 @@ public class AnswerFactory {
 
     public List<Answer> create(final QuestionCsv questionCsv, final Question question) {
         return switch (QuestionType.ofType(questionCsv.type())) {
-            case BASIC -> basic(question);
+            case BASIC -> basic(questionCsv, question);
             case SPECIAL -> special(questionCsv, question);
         };
     }
 
-    private List<Answer> basic(final Question question) {
+    private List<Answer> basic(final QuestionCsv questionCsv, final Question question) {
         return List.of(
-                new Answer().setQuestion(question).setCorrect(true),
-                new Answer().setQuestion(question).setCorrect(false)
+                new Answer().setQuestion(question).setCorrect(questionCsv.correctAnswer() == YES),
+                new Answer().setQuestion(question).setCorrect(questionCsv.correctAnswer() == NO)
         );
     }
 

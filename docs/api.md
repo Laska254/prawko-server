@@ -72,6 +72,10 @@ retry it.
   message lists each offending line and value together with the allowed categories, e.g. `Invalid CSV file: line 12:
   unknown category 'Z'; line 40: unknown category ''. Allowed: A, A1, …`.
 
+  A `BASIC` (yes/no) question has two answers without translations, always in this order: yes, then no. The one named
+  by `Poprawna odp` (`T` for yes, `N` for no) is correct. A `SPECIAL` question has answers `A`, `B` and `C` in that
+  order.
+
   Hiding the `correct` flag (here and on active exams) only keeps it out of those views, it isn't a security boundary:
   the question bank is public and `GET /questions/random` includes the flag for practice.
 

@@ -54,8 +54,8 @@ public class AnswerTestData {
     public static List<Answer> createAnswers(final QuestionType type) {
         return switch (type) {
             case BASIC -> List.of(
-                    AnswerTestData.noAnswer(),
-                    AnswerTestData.yesAnswer()
+                    AnswerTestData.yesAnswer(),
+                    AnswerTestData.noAnswer()
             );
             case SPECIAL -> List.of(
                     AnswerTestData.answerA(),

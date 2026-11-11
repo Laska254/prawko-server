@@ -52,6 +52,10 @@ public class QuestionCsvTestData {
     }
 
     public static QuestionCsv createBasicQuestionCsv() {
+        return createBasicQuestionCsv('N');
+    }
+
+    public static QuestionCsv createBasicQuestionCsv(final char correctAnswer) {
         final var question = QuestionTestData.createQuestion(QuestionType.BASIC);
         return new QuestionCsv(
                 "W9(2)",
@@ -68,7 +72,7 @@ public class QuestionCsvTestData {
                 "",
                 "",
                 "",
-                'N',
+                correctAnswer,
                 "AK_D11_45org.wmv",
                 "PODSTAWOWY",
                 3,
