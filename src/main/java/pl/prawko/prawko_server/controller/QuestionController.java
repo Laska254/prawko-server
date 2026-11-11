@@ -32,7 +32,7 @@ import pl.prawko.prawko_server.service.IQuestionService;
 /**
  * REST controller for question management operations.
  *
- * <p>Provides endpoints for uploading questions via CSV files and retrieving
+ * <p>Provides endpoints for uploading questions via CSV or XLSX files and retrieving
  * individual, random or all questions from the database.
  *
  */
@@ -49,16 +49,17 @@ public class QuestionController {
     }
 
     /**
-     * Uploads and parses questions from a CSV file.
+     * Uploads and parses questions from a CSV or XLSX file.
      *
      * <p>Accepts a multipart file containing questions in CSV format and imports
      * them into the database.
      *
-     * @param file the multipart CSV file containing questions
+     * @param file the multipart CSV or XLSX file containing questions
      * @return a {@link ResponseEntity} with HTTP 201 Created
      */
-    @Operation(summary = "Upload questions via CSV file",
-            description = "Uploads a CSV file containing questions and imports them.")
+    @Operation(summary = "Upload questions via CSV or XLSX file",
+            description = "Uploads a CSV file, or an XLSX file whose 'katalog' sheet holds the questions, "
+                    + "and imports them.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Questions from file added successfully"),
             @ApiResponse(responseCode = "400", description = "File is missing or invalid format"),

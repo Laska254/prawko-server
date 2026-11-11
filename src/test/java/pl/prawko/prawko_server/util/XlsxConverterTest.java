@@ -1,0 +1,71 @@
+package pl.prawko.prawko_server.util;
+
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import pl.prawko.prawko_server.exception.InvalidCsvException;
+import pl.prawko.prawko_server.testdata.XlsxTestData;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+class XlsxConverterTest {
+
+    private final XlsxConverter converter = new XlsxConverter();
+
+    @Nested
+    class ToCsv {
+
+        @Test
+        void returnKatalogSheetAsCsv_whenWorkbookIsValid() throws IOException {
+            final var workbook = XlsxTestData.createWorkbook(Map.ofEntries(
+                    Map.entry(XlsxConverter.SHEET, List.of(
+                            List.of("Lp", "Numer pytania", "Pytanie"),
+                            List.of(1, 99, "Czy na pewno, \"tak\"\nczy nie?"),
+                            List.of(),
+                            List.of(3, 100.0, "Ostatnie", "poza nagłówkiem"),
+                            Arrays.asList(4, null, null))),
+                    Map.entry(XlsxTestData.UNDER_VERIFICATION_SHEET, List.of(
+                            List.of("Lp", "Numer pytania"),
+                            List.of(1, 500)))));
+
+            final var result = converter.toCsv(new ByteArrayInputStream(workbook));
+
+            assertThat(result).isEqualTo("""
+                    Lp,"Numer pytania",Pytanie
+                    1,99,"Czy na pewno, ""tak""
+                    czy nie?"
+
+                    3,100,Ostatnie
+                    4
+                    """);
+        }
+
+        @Test
+        void throwInvalidCsvException_whenFileIsNotXlsx() {
+            final var input = new ByteArrayInputStream("Lp,Numer pytania\n1,99\n".getBytes(StandardCharsets.UTF_8));
+
+            assertThatThrownBy(() -> converter.toCsv(input))
+                    .isInstanceOf(InvalidCsvException.class)
+                    .hasMessage("Invalid XLSX file.");
+        }
+
+        @Test
+        void throwInvalidCsvException_whenKatalogSheetIsMissing() throws IOException {
+            final var workbook = XlsxTestData.createWorkbook(Map.ofEntries(
+                    Map.entry(XlsxTestData.UNDER_VERIFICATION_SHEET, List.of(List.of("Lp")))));
+
+            assertThatThrownBy(() -> converter.toCsv(new ByteArrayInputStream(workbook)))
+                    .isInstanceOf(InvalidCsvException.class)
+                    .hasMessage("Invalid XLSX file: no sheet 'katalog'.");
+        }
+
+    }
+
+}

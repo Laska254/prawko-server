@@ -13,6 +13,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.client.RestTestClient;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.unit.DataSize;
 import pl.prawko.prawko_server.config.IntegrationTest;
 import pl.prawko.prawko_server.config.PageResponse;
@@ -27,9 +28,15 @@ import pl.prawko.prawko_server.repository.QuestionRepository;
 import pl.prawko.prawko_server.testdata.MultiPartFactory;
 import pl.prawko.prawko_server.testdata.QuestionCsvTestData;
 import pl.prawko.prawko_server.testdata.QuestionTestData;
+import pl.prawko.prawko_server.testdata.XlsxTestData;
+import pl.prawko.prawko_server.util.XlsxConverter;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -70,6 +77,47 @@ public class QuestionControllerTest {
                     .body(multipart)
                     .exchange()
                     .expectStatus().isCreated();
+        }
+
+        @Test
+        void returnCreatedWithSameQuestionsAsCsv_whenFileIsXlsx() throws IOException {
+            upload(MultiPartFactory.fromClasspath(QuestionCsvTestData.CSV_FILE));
+            final var fromCsv = getAllQuestions();
+            repository.deleteAll();
+            final var rows = new ArrayList<>(XlsxTestData.readCsvRows(QuestionCsvTestData.CSV_FILE));
+            // rows with only Lp, as at the end of the catalogue
+            rows.add(List.<Object>of(rows.size()));
+            rows.add(List.<Object>of(rows.size()));
+            final var pending = new ArrayList<>(rows.get(1));
+            pending.set(1, 999L);
+            final var underVerification = List.of(rows.getFirst(), pending);
+            final var workbook = XlsxTestData.createWorkbook(Map.ofEntries(
+                    Map.entry(XlsxConverter.SHEET, rows),
+                    Map.entry(XlsxTestData.UNDER_VERIFICATION_SHEET, underVerification)));
+
+            upload(MultiPartFactory.withXlsx(workbook));
+
+            final var result = getAllQuestions();
+            assertThat(result)
+                    .usingRecursiveComparison()
+                    .ignoringFieldsMatchingRegexes(".+\\.id")
+                    .isEqualTo(fromCsv);
+            assertThat(result).hasSize(2);
+        }
+
+        @Test
+        void returnBadRequest_whenXlsxIsInvalid() {
+            final var multipart = MultiPartFactory.withXlsx("Lp,Numer pytania\n".getBytes(StandardCharsets.UTF_8));
+
+            restClient.post()
+                    .headers(auth::admin)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(multipart)
+                    .exchange()
+                    .expectStatus().isBadRequest()
+                    .expectBody()
+                    .jsonPath("$.detail").isEqualTo("Invalid XLSX file.");
+            assertThat(repository.count()).isZero();
         }
 
         @Test
@@ -382,6 +430,27 @@ public class QuestionControllerTest {
                     .expectStatus().isUnauthorized();
         }
 
+    }
+
+    private void upload(final MultiValueMap<String, Object> multipart) {
+        restClient.post()
+                .headers(auth::admin)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(multipart)
+                .exchange()
+                .expectStatus().isCreated();
+    }
+
+    private List<QuestionDto> getAllQuestions() {
+        return restClient.get()
+                .headers(auth::admin)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(new ParameterizedTypeReference<PageResponse<QuestionDto>>() {
+                })
+                .returnResult()
+                .getResponseBody()
+                .content();
     }
 
     @Nested

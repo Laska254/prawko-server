@@ -75,7 +75,7 @@ public class ExceptionController {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONTENT_TOO_LARGE, exception.getMessage());
     }
 
-    @ApiResponse(responseCode = "400", description = "Malformed CSV file")
+    @ApiResponse(responseCode = "400", description = "Malformed CSV or XLSX file")
     @ExceptionHandler(InvalidCsvException.class)
     public ProblemDetail handleInvalidCsv(final InvalidCsvException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());

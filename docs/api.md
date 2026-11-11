@@ -59,13 +59,20 @@ retry it.
 
   | Method | Path                                                | Access | Description                                                                                               |
   |--------|-----------------------------------------------------|--------|-----------------------------------------------------------------------------------------------------------|
-  | `POST` | `/questions`                                        | admin  | upload a CSV file (`file` multipart part, max 5MB, `413` above it) with questions                         |
+  | `POST` | `/questions`                                        | admin  | upload a CSV or XLSX file (`file` multipart part, max 5MB, `413` above it) with questions                 |
   | `GET`  | `/questions`                                        | admin  | get a page of questions                                                                                   |
   | `GET`  | `/questions/random?category={category}&type={type}` | user   | random question for practice, with answers' `correct` flag; `category` and `type` are random when missing |
   | `GET`  | `/questions/{id}`                                   | user   | get a question; answers' `correct` flag is included only for admins                                       |
 
   An upload over about 20MB (`server.tomcat.max-swallow-size`) loses the connection instead of getting the `413`, so a
   rejected request can't hold a thread until an arbitrarily large body is read.
+
+  The part's content type picks the format: `text/csv` (UTF-8, comma-separated) or
+  `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (`.xlsx`); any other type returns `415`. Of an
+  XLSX workbook only the `katalog` sheet is imported (the catalogue's `W trakcie weryfikacji` sheet is ignored): it's
+  converted to CSV, numbers in plain notation, and imported like an uploaded CSV, with the same rules and error
+  messages, and rows numbered as in the sheet. A file that isn't a valid workbook returns `400` `Invalid XLSX file.`,
+  one without a `katalog` sheet `Invalid XLSX file: no sheet 'katalog'.`.
 
   The CSV uses the column layout of the government's question catalogue from 07.2026 (`Numer pytania`, `Pytanie`,
   `Odpowiedź A`-`C`, `Pytanie [EN]`, `Odpowiedź A [EN]`-`C [EN]`, `Pytanie [D]`, `Odpowiedź A [D]`-`C [D]`,
@@ -123,7 +130,7 @@ retry it.
   and `mediaType` is `IMAGE` or `VIDEO` (from the file extension); both are `null` for a question without media, and
   `mediaType` alone is `null` when the extension is neither an image nor a video. Moving the files to a CDN only
   changes `media.base-url`. To add media, put the file into the media directory under the name from the `Media` column
-  of the imported question CSV - except `.wmv` videos: the import renames them to `.webm`, so convert them to WebM and
+  of the imported question file - except `.wmv` videos: the import renames them to `.webm`, so convert them to WebM and
   store them as `<name>.webm`.
 
 `POST` endpoints creating a resource return `201 Created` with its URL in the `Location` header.

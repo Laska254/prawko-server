@@ -51,6 +51,9 @@ class CsvParserTest {
     @Mock
     private CsvFacade csvFacade;
 
+    @Mock
+    private XlsxConverter xlsxConverter;
+
     @InjectMocks
     private CsvParser csvParser;
 
@@ -103,6 +106,19 @@ class CsvParserTest {
                     .isInstanceOf(InvalidCsvException.class)
                     .hasMessage("Invalid CSV file at row 4 in column 'Liczba punktów': "
                             + "Cannot deserialize value of type `int` from String \"three\": not a valid `int` value");
+        }
+
+        @Test
+        void returnQuestions_whenFileIsXlsx() {
+            final var file = new MockMultipartFile(
+                    "file", "questions.xlsx", XlsxConverter.CONTENT_TYPE, new byte[]{1, 2, 3});
+            when(xlsxConverter.toCsv(any())).thenReturn(HEADER + "1,A,2\n");
+            when(csvFacade.mapSingleRow(any())).thenReturn(new Question());
+
+            final var result = csvParser.parse(file);
+
+            assertThat(result).hasSize(1);
+            verify(csvFacade).mapSingleRow(argThat(row -> row.id() == 1));
         }
 
         @Test
