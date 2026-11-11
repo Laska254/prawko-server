@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.dto.response.QuestionDto;
-import pl.prawko.prawko_server.exception.InvalidCsvException;
+import pl.prawko.prawko_server.exception.InvalidQuestionFileException;
 import pl.prawko.prawko_server.mapper.QuestionMapper;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Implementation of {@link IQuestionService} that manages {@link Question} entities and parsing csv file to
+ * Implementation of {@link IQuestionService} that manages {@link Question} entities and parsing CSV or XLSX files to
  * {@code question} entities.
  */
 @Service
@@ -51,9 +51,10 @@ public class QuestionService implements IQuestionService {
     /**
      * {@inheritDoc}
      *
-     * @throws MultipartException   if the file is not of type "text/csv"
-     * @throws InvalidCsvException  if a row can't be mapped or names an unknown category
-     * @throws UncheckedIOException if the CSV file cannot be read
+     * @throws MultipartException           if the file is neither CSV nor XLSX
+     * @throws InvalidQuestionFileException if the file isn't valid XLSX, a row can't be mapped or names an unknown
+     *                                      category
+     * @throws UncheckedIOException         if the file cannot be read
      */
     @Override
     public List<Question> parseFileToQuestions(final MultipartFile file) {

@@ -2,9 +2,12 @@ package pl.prawko.prawko_server.testdata;
 
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.unit.DataSize;
+
+import java.nio.file.Path;
 
 public class MultiPartFactory {
 
@@ -22,9 +25,19 @@ public class MultiPartFactory {
         return withFile(new byte[Math.toIntExact(size.toBytes())], "questions.csv");
     }
 
+    public static MultiValueMap<String, Object> withXlsx(final byte[] content) {
+        return withFile(content, "questions.xlsx");
+    }
+
     public static MultiValueMap<String, Object> fromClasspath(final String path) {
         final var parts = empty();
         parts.add(PART_NAME, new ClassPathResource(path));
+        return parts;
+    }
+
+    public static MultiValueMap<String, Object> fromFile(final Path path) {
+        final var parts = empty();
+        parts.add(PART_NAME, new FileSystemResource(path));
         return parts;
     }
 

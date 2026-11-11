@@ -59,7 +59,7 @@ retry it.
 
   | Method | Path                                                | Access | Description                                                                                               |
   |--------|-----------------------------------------------------|--------|-----------------------------------------------------------------------------------------------------------|
-  | `POST` | `/questions`                                        | admin  | upload a CSV file (`file` multipart part, max 5MB, `413` above it) with questions                         |
+  | `POST` | `/questions`                                        | admin  | upload a CSV or XLSX file (`file` multipart part, max 5MB, `413` above it) with questions                 |
   | `GET`  | `/questions`                                        | admin  | get a page of questions                                                                                   |
   | `GET`  | `/questions/random?category={category}&type={type}` | user   | random question for practice, with answers' `correct` flag; `category` and `type` are random when missing |
   | `GET`  | `/questions/{id}`                                   | user   | get a question; answers' `correct` flag is included only for admins                                       |
@@ -67,10 +67,44 @@ retry it.
   An upload over about 20MB (`server.tomcat.max-swallow-size`) loses the connection instead of getting the `413`, so a
   rejected request can't hold a thread until an arbitrarily large body is read.
 
-  The import is all or nothing: a malformed file returns `400` and saves no questions. Every name in the `Kategorie`
-  column must be a category (`A`, `A1`, …, `PT`, case-sensitive); an unknown or empty one fails the file, and the
-  message lists each offending line and value together with the allowed categories, e.g. `Invalid CSV file: line 12:
-  unknown category 'Z'; line 40: unknown category ''. Allowed: A, A1, …`.
+  The part's content type picks the format: `text/csv` (UTF-8, comma-separated) or
+  `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (`.xlsx`); any other type returns `415`. Of an
+  XLSX workbook only the `katalog` sheet is imported (the catalogue's `W trakcie weryfikacji` sheet is ignored): it's
+  converted to CSV, numbers in plain notation, and imported like an uploaded CSV, with the same rules and error
+  messages, and rows numbered as in the sheet. A file that isn't a valid workbook returns `400` `Invalid XLSX file.`,
+  one without a `katalog` sheet `Invalid XLSX file: no sheet 'katalog'.`.
+
+  The CSV uses the column layout of the government's question catalogue from 07.2026 (`Numer pytania`, `Pytanie`,
+  `Odpowiedź A`-`C`, `Pytanie [EN]`, `Odpowiedź A [EN]`-`C [EN]`, `Pytanie [D]`, `Odpowiedź A [D]`-`C [D]`,
+  `Poprawna odp`, `Media`, `Zakres struktury`, `Liczba punktów`, `Kategorie`), in any order. A file missing one of
+  these columns is rejected; other columns are ignored. Rows with an empty `Numer pytania` (such as blank rows at the
+  end of the sheet) are skipped. The catalogue currently in use is kept in
+  `data/KATALOG_dla_kandydatów_na_kierowców_072026.xlsx` and can be uploaded unchanged. curl sends a file part as
+  `application/octet-stream` (`415`) unless `type=` names its content type, with `$TOKEN` an admin's access token from
+  `POST /auth`:
+
+  ```sh
+  curl -X POST http://localhost:8080/questions -H "Authorization: Bearer $TOKEN" \
+    -F 'file=@data/KATALOG_dla_kandydatów_na_kierowców_072026.xlsx;type=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  ```
+
+  A CSV file takes `;type=text/csv` instead.
+
+  The import is all or nothing: a malformed file returns `400` and saves no questions. Errors name the row as a
+  spreadsheet numbers it: the header is row 1, and a value spanning several lines is still one row. Every name in the
+  `Kategorie` column must be a category (`A`, `A1`, …, `PT`, case-sensitive); an unknown or empty one fails the file,
+  and the message lists each offending row and value together with the allowed categories, e.g. `Invalid CSV file:
+  row 12: unknown category 'Z'; row 40: unknown category ''. Allowed: A, A1, …`.
+
+  The question type follows `Poprawna odp`: `T` or `N` makes a `BASIC` (yes/no) question, `A`, `B` or `C` a `SPECIAL`
+  one; any other value fails the file the same way (`row 7: unknown correct answer 'X', expected one of T, N, A, B, C`).
+  `Zakres struktury` (`PODSTAWOWY`/`SPECJALISTYCZNY`, any case) doesn't decide it: when it names the other type, is
+  misspelled or empty, the question is imported with the type of its answer and a warning is logged, since the
+  catalogue has such rows.
+
+  A `BASIC` (yes/no) question has two answers without translations, always in this order: yes, then no. The one named
+  by `Poprawna odp` (`T` for yes, `N` for no) is correct. A `SPECIAL` question has answers `A`, `B` and `C` in that
+  order.
 
   Hiding the `correct` flag (here and on active exams) only keeps it out of those views, it isn't a security boundary:
   the question bank is public and `GET /questions/random` includes the flag for practice.
@@ -106,8 +140,10 @@ retry it.
   and `mediaType` is `IMAGE` or `VIDEO` (from the file extension); both are `null` for a question without media, and
   `mediaType` alone is `null` when the extension is neither an image nor a video. Moving the files to a CDN only
   changes `media.base-url`. To add media, put the file into the media directory under the name from the `Media` column
-  of the imported question CSV - except `.wmv` videos: the import renames them to `.webm`, so convert them to WebM and
-  store them as `<name>.webm`.
+  of the imported question file - except `.wmv` videos: the import renames them to `.webm`, so convert them to WebM and
+  store them as `<name>.webm`. Names may contain spaces, commas, parentheses and Polish letters (`JAZDA NOCĄorg.webm`);
+  `mediaUrl` percent-encodes them. The name must match byte for byte: a few catalogue names spell accents as separate
+  combining characters (Unicode NFD), and a file named with the precomposed letters isn't found.
 
 `POST` endpoints creating a resource return `201 Created` with its URL in the `Location` header.
 
