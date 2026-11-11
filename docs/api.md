@@ -78,7 +78,8 @@ retry it.
   `Odpowiedź A`-`C`, `Pytanie [EN]`, `Odpowiedź A [EN]`-`C [EN]`, `Pytanie [D]`, `Odpowiedź A [D]`-`C [D]`,
   `Poprawna odp`, `Media`, `Zakres struktury`, `Liczba punktów`, `Kategorie`), in any order. A file missing one of
   these columns is rejected; other columns are ignored. Rows with an empty `Numer pytania` (such as blank rows at the
-  end of the sheet) are skipped.
+  end of the sheet) are skipped. The catalogue currently in use is kept in
+  `data/KATALOG_dla_kandydatów_na_kierowców_072026.xlsx` and can be uploaded as is.
 
   The import is all or nothing: a malformed file returns `400` and saves no questions. Errors name the row as a
   spreadsheet numbers it: the header is row 1, and a value spanning several lines is still one row. Every name in the
