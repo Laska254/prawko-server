@@ -10,20 +10,16 @@ import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.service.ILanguageService;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Creates the answers of an imported question.
  * <p>
- * A {@link QuestionType#BASIC} question gets two answers without translations in a fixed order, yes first, then no;
- * the one named by {@code Poprawna odp} ({@code T} or {@code N}) is correct. A {@link QuestionType#SPECIAL} question
- * gets answers {@code A}, {@code B} and {@code C} in every language.
+ * A question gets one answer per label of its type ({@link QuestionType#getAnswerLabels()}), in that order; the one
+ * named by {@code Poprawna odp} is correct. Only {@link QuestionType#SPECIAL} answers have translations, in every
+ * language; {@link QuestionType#BASIC} ones (yes, no) have none.
  */
 @Component
 public class AnswerFactory {
-
-    private static final char YES = 'T';
-    private static final char NO = 'N';
 
     private final ILanguageService languageService;
 
@@ -32,30 +28,21 @@ public class AnswerFactory {
     }
 
     public List<Answer> create(final QuestionCsv questionCsv, final Question question) {
-        return switch (question.getType()) {
-            case BASIC -> basic(questionCsv, question);
-            case SPECIAL -> special(questionCsv, question);
+        final var type = question.getType();
+        final var languages = switch (type) {
+            case BASIC -> List.<Language>of();
+            case SPECIAL -> languageService.findAll();
         };
-    }
-
-    private List<Answer> basic(final QuestionCsv questionCsv, final Question question) {
-        return List.of(
-                new Answer().setQuestion(question).setCorrect(questionCsv.correctAnswer() == YES),
-                new Answer().setQuestion(question).setCorrect(questionCsv.correctAnswer() == NO)
-        );
-    }
-
-    private List<Answer> special(final QuestionCsv questionCsv, final Question question) {
-        final var languages = languageService.findAll();
-        return Stream.of('A', 'B', 'C')
-                .map(label -> build(questionCsv, question, languages, label))
+        return type.getAnswerLabels()
+                .chars()
+                .mapToObj(label -> build(questionCsv, question, languages, (char) label))
                 .toList();
     }
 
-    private Answer build(final QuestionCsv questionCsv,
-                         final Question question,
-                         final List<Language> languages,
-                         final char label) {
+    private static Answer build(final QuestionCsv questionCsv,
+                                final Question question,
+                                final List<Language> languages,
+                                final char label) {
         final var answer = new Answer()
                 .setQuestion(question)
                 .setCorrect(label == questionCsv.correctAnswer());

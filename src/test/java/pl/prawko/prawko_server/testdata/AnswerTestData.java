@@ -32,12 +32,14 @@ public class AnswerTestData {
 
     public static Answer yesAnswer() {
         return new Answer()
-                .setCorrect(false);
+                .setCorrect(false)
+                .setTranslations(List.of());
     }
 
     public static Answer noAnswer() {
         return new Answer()
-                .setCorrect(true);
+                .setCorrect(true)
+                .setTranslations(List.of());
     }
 
     public static List<AnswerDto> createAnswerDtos(final List<Answer> savedAnswers, final QuestionType type) {

@@ -54,6 +54,13 @@ public enum QuestionType {
     }
 
     /**
+     * Returns the labels of this type's answers, in answer order: {@code TN} (yes, no) or {@code ABC}.
+     */
+    public String getAnswerLabels() {
+        return answerLabels;
+    }
+
+    /**
      * Returns the type whose answers include the given label: {@code T} (yes) or {@code N} (no) for {@link #BASIC},
      * {@code A}, {@code B} or {@code C} for {@link #SPECIAL}.
      *
