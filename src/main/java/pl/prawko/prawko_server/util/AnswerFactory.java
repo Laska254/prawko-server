@@ -32,7 +32,7 @@ public class AnswerFactory {
     }
 
     public List<Answer> create(final QuestionCsv questionCsv, final Question question) {
-        return switch (QuestionType.ofType(questionCsv.type())) {
+        return switch (question.getType()) {
             case BASIC -> basic(questionCsv, question);
             case SPECIAL -> special(questionCsv, question);
         };

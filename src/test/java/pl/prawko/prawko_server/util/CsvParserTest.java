@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.exception.UnknownCategoryException;
+import pl.prawko.prawko_server.exception.UnknownCorrectAnswerException;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.testdata.QuestionCsvTestData;
 import tools.jackson.databind.DatabindException;
@@ -161,8 +162,37 @@ class CsvParserTest {
                     .hasMessage("Invalid CSV file: row 2: unknown category 'Z'; row 4: unknown category ''; "
                             + "row 4: unknown category 'AA'. " + QuestionCsvTestData.ALLOWED_CATEGORIES);
             verify(csvFacade, times(4)).mapSingleRow(any());
-            assertThat(output).contains("Invalid CSV file: 3 unknown categories. File: 'categories.csv'")
+            assertThat(output).contains("Invalid CSV file: 3 problems. File: 'categories.csv'")
                     .doesNotContain("unknown category 'Z'");
+        }
+
+        @Test
+        void throwInvalidCsvException_whenCorrectAnswerIsUnknown() {
+            final var content = HEADER + "1,X,2\n2,A,2\n";
+            final var file = new MockMultipartFile(
+                    "file", "answers.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
+            when(csvFacade.mapSingleRow(any()))
+                    .thenThrow(new UnknownCorrectAnswerException('X'))
+                    .thenReturn(new Question());
+
+            assertThatThrownBy(() -> csvParser.parse(file))
+                    .isInstanceOf(InvalidCsvException.class)
+                    .hasMessage("Invalid CSV file: row 2: unknown correct answer 'X', expected T, N, A, B or C.");
+        }
+
+        @Test
+        void throwInvalidCsvException_whenCorrectAnswerAndCategoryAreUnknown() {
+            final var content = HEADER + "1,X,2\n2,A,2\n";
+            final var file = new MockMultipartFile(
+                    "file", "answers.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
+            when(csvFacade.mapSingleRow(any()))
+                    .thenThrow(new UnknownCorrectAnswerException('X'))
+                    .thenThrow(new UnknownCategoryException(List.of("Z")));
+
+            assertThatThrownBy(() -> csvParser.parse(file))
+                    .isInstanceOf(InvalidCsvException.class)
+                    .hasMessage("Invalid CSV file: row 2: unknown correct answer 'X', expected T, N, A, B or C; "
+                            + "row 3: unknown category 'Z'. " + QuestionCsvTestData.ALLOWED_CATEGORIES);
         }
 
         @Test

@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.exception.UnknownCategoryException;
+import pl.prawko.prawko_server.exception.UnknownCorrectAnswerException;
 import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCsv;
@@ -74,6 +75,7 @@ public class CsvParser {
                     .readValues(reader);
             final var questions = new ArrayList<Question>();
             final var problems = new ArrayList<String>();
+            boolean unknownCategory = false;
             int skipped = 0;
             while (csvRows.hasNextValue()) {
                 row++;
@@ -85,7 +87,11 @@ public class CsvParser {
                 final var questionCsv = csvMapper.treeToValue(csvRow, QuestionCsv.class);
                 try {
                     questions.add(csvFacade.mapSingleRow(questionCsv));
+                } catch (final UnknownCorrectAnswerException exception) {
+                    problems.add("row " + row + ": unknown correct answer '" + exception.getLabel()
+                            + "', expected T, N, A, B or C");
                 } catch (final UnknownCategoryException exception) {
+                    unknownCategory = true;
                     for (final var name : exception.getNames()) {
                         problems.add("row " + row + ": unknown category '" + name + "'");
                     }
@@ -93,10 +99,16 @@ public class CsvParser {
             }
             if (!problems.isEmpty()) {
                 // only the count: the list is unbounded and echoes raw cell values
-                log.warn("Invalid CSV file: {} unknown categories. File: '{}'",
-                        problems.size(), file.getOriginalFilename());
-                throw new InvalidCsvException("Invalid CSV file: " + String.join("; ", problems)
-                        + ". Allowed: " + ALLOWED_CATEGORIES + ".");
+                log.warn("Invalid CSV file: {} problems. File: '{}'", problems.size(), file.getOriginalFilename());
+                final var message = new StringBuilder("Invalid CSV file: ")
+                        .append(String.join("; ", problems))
+                        .append('.');
+                if (unknownCategory) {
+                    message.append(" Allowed: ")
+                            .append(ALLOWED_CATEGORIES)
+                            .append('.');
+                }
+                throw new InvalidCsvException(message.toString());
             }
             log.info("Successfully mapped {} questions from file '{}', skipped {} rows without '{}'",
                     questions.size(), file.getOriginalFilename(), skipped, ID_COLUMN);
