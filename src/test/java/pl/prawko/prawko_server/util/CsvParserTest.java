@@ -16,7 +16,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
-import pl.prawko.prawko_server.exception.InvalidCsvException;
+import pl.prawko.prawko_server.exception.InvalidQuestionFileException;
 import pl.prawko.prawko_server.exception.UnknownCategoryException;
 import pl.prawko.prawko_server.exception.UnknownCorrectAnswerException;
 import pl.prawko.prawko_server.model.Question;
@@ -96,7 +96,7 @@ class CsvParserTest {
         }
 
         @Test
-        void throwInvalidCsvException_whenRowAfterSkippedRowsIsMalformed() {
+        void throwInvalidQuestionFileException_whenRowAfterSkippedRowsIsMalformed() {
             // an empty ID and a blank line, as XlsxConverter writes a missing sheet row
             final var content = HEADER + "1,A,2\n,,\n\n3,A,three\n";
             final var file = new MockMultipartFile(
@@ -104,7 +104,7 @@ class CsvParserTest {
             when(csvFacade.mapSingleRow(any())).thenReturn(new Question());
 
             assertThatThrownBy(() -> csvParser.parse(file))
-                    .isInstanceOf(InvalidCsvException.class)
+                    .isInstanceOf(InvalidQuestionFileException.class)
                     .hasMessage("Invalid CSV file at row 5 in column 'Liczba punktów': "
                             + "Cannot deserialize value of type `int` from String \"three\": not a valid `int` value");
         }
@@ -158,17 +158,18 @@ class CsvParserTest {
 
         @ParameterizedTest(name = "[{index}] {0}")
         @MethodSource("malformedFiles")
-        void throwInvalidCsvException_whenContentIsMalformed(final String content, final String expectedMessage) {
+        void throwInvalidQuestionFileException_whenContentIsMalformed(final String content,
+                                                                      final String expectedMessage) {
             final var file = new MockMultipartFile(
                     "file", "malformed.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
 
             assertThatThrownBy(() -> csvParser.parse(file))
-                    .isInstanceOf(InvalidCsvException.class)
+                    .isInstanceOf(InvalidQuestionFileException.class)
                     .hasMessage(expectedMessage);
         }
 
         @Test
-        void throwInvalidCsvException_whenCategoriesAreUnknown(final CapturedOutput output) {
+        void throwInvalidQuestionFileException_whenCategoriesAreUnknown(final CapturedOutput output) {
             final var content = HEADER + "1,A,2\n2,A,2,\"first\nsecond line\"\n3,A,2\n4,A,2\n";
             final var file = new MockMultipartFile(
                     "file", "categories.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
@@ -179,7 +180,7 @@ class CsvParserTest {
                     .thenReturn(new Question());
 
             assertThatThrownBy(() -> csvParser.parse(file))
-                    .isInstanceOf(InvalidCsvException.class)
+                    .isInstanceOf(InvalidQuestionFileException.class)
                     .hasMessage("Invalid CSV file: row 2: unknown category 'Z'; row 4: unknown category ''; "
                             + "row 4: unknown category 'AA'. " + QuestionCsvTestData.ALLOWED_CATEGORIES);
             verify(csvFacade, times(4)).mapSingleRow(any());
@@ -188,7 +189,7 @@ class CsvParserTest {
         }
 
         @Test
-        void throwInvalidCsvException_whenCorrectAnswerIsUnknown() {
+        void throwInvalidQuestionFileException_whenCorrectAnswerIsUnknown() {
             final var content = HEADER + "1,X,2\n2,A,2\n";
             final var file = new MockMultipartFile(
                     "file", "answers.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
@@ -197,12 +198,12 @@ class CsvParserTest {
                     .thenReturn(new Question());
 
             assertThatThrownBy(() -> csvParser.parse(file))
-                    .isInstanceOf(InvalidCsvException.class)
+                    .isInstanceOf(InvalidQuestionFileException.class)
                     .hasMessage("Invalid CSV file: row 2: unknown correct answer 'X', expected T, N, A, B or C.");
         }
 
         @Test
-        void throwInvalidCsvException_whenCorrectAnswerAndCategoryAreUnknown() {
+        void throwInvalidQuestionFileException_whenCorrectAnswerAndCategoryAreUnknown() {
             final var content = HEADER + "1,X,2\n2,A,2\n";
             final var file = new MockMultipartFile(
                     "file", "answers.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
@@ -211,13 +212,13 @@ class CsvParserTest {
                     .thenThrow(new UnknownCategoryException(List.of("Z")));
 
             assertThatThrownBy(() -> csvParser.parse(file))
-                    .isInstanceOf(InvalidCsvException.class)
+                    .isInstanceOf(InvalidQuestionFileException.class)
                     .hasMessage("Invalid CSV file: row 2: unknown correct answer 'X', expected T, N, A, B or C; "
                             + "row 3: unknown category 'Z'. " + QuestionCsvTestData.ALLOWED_CATEGORIES);
         }
 
         @Test
-        void throwInvalidCsvException_whenRowMappingFails() throws IOException {
+        void throwInvalidQuestionFileException_whenRowMappingFails() throws IOException {
             final var resource = new ClassPathResource(QuestionCsvTestData.CSV_FILE);
             final var file = new MockMultipartFile(
                     "file", QuestionCsvTestData.CSV_FILE, "text/csv", resource.getInputStream());
@@ -225,7 +226,7 @@ class CsvParserTest {
             });
 
             assertThatThrownBy(() -> csvParser.parse(file))
-                    .isInstanceOf(InvalidCsvException.class)
+                    .isInstanceOf(InvalidQuestionFileException.class)
                     .hasMessage("Invalid CSV file at row 2: Unknown category");
         }
 

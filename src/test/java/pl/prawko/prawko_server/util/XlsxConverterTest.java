@@ -2,7 +2,7 @@ package pl.prawko.prawko_server.util;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import pl.prawko.prawko_server.exception.InvalidCsvException;
+import pl.prawko.prawko_server.exception.InvalidQuestionFileException;
 import pl.prawko.prawko_server.testdata.XlsxTestData;
 
 import java.io.ByteArrayInputStream;
@@ -48,21 +48,21 @@ class XlsxConverterTest {
         }
 
         @Test
-        void throwInvalidCsvException_whenFileIsNotXlsx() {
+        void throwInvalidQuestionFileException_whenFileIsNotXlsx() {
             final var input = new ByteArrayInputStream("Lp,Numer pytania\n1,99\n".getBytes(StandardCharsets.UTF_8));
 
             assertThatThrownBy(() -> converter.toCsv(input))
-                    .isInstanceOf(InvalidCsvException.class)
+                    .isInstanceOf(InvalidQuestionFileException.class)
                     .hasMessage("Invalid XLSX file.");
         }
 
         @Test
-        void throwInvalidCsvException_whenKatalogSheetIsMissing() throws IOException {
+        void throwInvalidQuestionFileException_whenKatalogSheetIsMissing() throws IOException {
             final var workbook = XlsxTestData.createWorkbook(Map.ofEntries(
                     Map.entry(XlsxTestData.UNDER_VERIFICATION_SHEET, List.of(List.of("Lp")))));
 
             assertThatThrownBy(() -> converter.toCsv(new ByteArrayInputStream(workbook)))
-                    .isInstanceOf(InvalidCsvException.class)
+                    .isInstanceOf(InvalidQuestionFileException.class)
                     .hasMessage("Invalid XLSX file: no sheet 'katalog'.");
         }
 

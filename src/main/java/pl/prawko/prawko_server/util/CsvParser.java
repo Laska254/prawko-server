@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
-import pl.prawko.prawko_server.exception.InvalidCsvException;
+import pl.prawko.prawko_server.exception.InvalidQuestionFileException;
 import pl.prawko.prawko_server.exception.UnknownCategoryException;
 import pl.prawko.prawko_server.exception.UnknownCorrectAnswerException;
 import pl.prawko.prawko_server.model.CategoryVariant;
@@ -112,7 +112,7 @@ public class CsvParser {
                             .append(ALLOWED_CATEGORIES)
                             .append('.');
                 }
-                throw new InvalidCsvException(message.toString());
+                throw new InvalidQuestionFileException(message.toString());
             }
             log.info("Successfully mapped {} questions from file '{}', skipped {} rows without '{}'",
                     questions.size(), file.getOriginalFilename(), skipped, ID_COLUMN);
@@ -120,7 +120,7 @@ public class CsvParser {
         } catch (final JacksonException exception) {
             final var message = describe(exception, row);
             log.warn("{} File: '{}'", message, file.getOriginalFilename());
-            throw new InvalidCsvException(message);
+            throw new InvalidQuestionFileException(message);
         } catch (final IOException exception) {
             final var message = "CSV file failed to parse: ";
             log.error("{} '{}': {}", message, file.getOriginalFilename(), exception.getMessage(), exception);

@@ -8,7 +8,7 @@ import org.dhatim.fastexcel.reader.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import pl.prawko.prawko_server.exception.InvalidCsvException;
+import pl.prawko.prawko_server.exception.InvalidQuestionFileException;
 import tools.jackson.databind.ObjectWriter;
 import tools.jackson.dataformat.csv.CsvMapper;
 import tools.jackson.dataformat.csv.CsvSchema;
@@ -43,14 +43,14 @@ public class XlsxConverter {
      *
      * @param xlsx the workbook; not closed
      * @return the sheet as CSV, comma-separated with a header row
-     * @throws InvalidCsvException if the input isn't an XLSX workbook or has no {@value #SHEET} sheet
+     * @throws InvalidQuestionFileException if the input isn't an XLSX workbook or has no {@value #SHEET} sheet
      */
     public String toCsv(final InputStream xlsx) {
         try (final var workbook = new ReadableWorkbook(xlsx)) {
             final var sheet = workbook.findSheet(SHEET)
                     .orElseThrow(() -> {
                         log.warn("XLSX file has no sheet '{}'", SHEET);
-                        return new InvalidCsvException("Invalid XLSX file: no sheet '" + SHEET + "'.");
+                        return new InvalidQuestionFileException("Invalid XLSX file: no sheet '" + SHEET + "'.");
                     });
             final var csv = new StringWriter();
             try (final var rows = sheet.openStream();
@@ -74,7 +74,7 @@ public class XlsxConverter {
         } catch (final IOException | ExcelReaderException exception) {
             // a file that isn't a ZIP archive also fails with an IOException
             log.warn("Invalid XLSX file: {}", exception.getMessage());
-            throw new InvalidCsvException("Invalid XLSX file.");
+            throw new InvalidQuestionFileException("Invalid XLSX file.");
         }
     }
 

@@ -25,9 +25,9 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import pl.prawko.prawko_server.exception.AlreadyExistsException;
 import pl.prawko.prawko_server.exception.ExamFinishedException;
-import pl.prawko.prawko_server.exception.InvalidCsvException;
 import pl.prawko.prawko_server.exception.InvalidPasswordException;
 import pl.prawko.prawko_server.exception.InvalidProviderCredentialException;
+import pl.prawko.prawko_server.exception.InvalidQuestionFileException;
 import pl.prawko.prawko_server.exception.InvalidRefreshTokenException;
 import pl.prawko.prawko_server.exception.InvalidTokenException;
 import pl.prawko.prawko_server.exception.LastSignInMethodException;
@@ -76,8 +76,8 @@ public class ExceptionController {
     }
 
     @ApiResponse(responseCode = "400", description = "Malformed CSV or XLSX file")
-    @ExceptionHandler(InvalidCsvException.class)
-    public ProblemDetail handleInvalidCsv(final InvalidCsvException exception) {
+    @ExceptionHandler(InvalidQuestionFileException.class)
+    public ProblemDetail handleInvalidQuestionFile(final InvalidQuestionFileException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
