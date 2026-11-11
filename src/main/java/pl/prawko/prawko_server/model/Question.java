@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 
 import java.util.List;
 
@@ -50,6 +51,7 @@ public class Question {
     private List<QuestionTranslation> translations;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy
     private List<Answer> answers;
 
     @ManyToMany
