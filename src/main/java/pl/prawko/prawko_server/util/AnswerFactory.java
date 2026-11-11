@@ -15,8 +15,8 @@ import java.util.List;
  * Creates the answers of an imported question.
  * <p>
  * A question gets one answer per label of its type ({@link QuestionType#getAnswerLabels()}), in that order; the one
- * named by {@code Poprawna odp} is correct. Only {@link QuestionType#SPECIAL} answers have translations, in every
- * language; {@link QuestionType#BASIC} ones (yes, no) have none.
+ * named by {@code Poprawna odp} is correct. Answers get a translation in every language if the type
+ * {@linkplain QuestionType#hasTranslatedAnswers() has translated answers}, otherwise none.
  */
 @Component
 public class AnswerFactory {
@@ -29,10 +29,12 @@ public class AnswerFactory {
 
     public List<Answer> create(final QuestionCsv questionCsv, final Question question) {
         final var type = question.getType();
-        final var languages = switch (type) {
-            case BASIC -> List.<Language>of();
-            case SPECIAL -> languageService.findAll();
-        };
+        final List<Language> languages;
+        if (type.hasTranslatedAnswers()) {
+            languages = languageService.findAll();
+        } else {
+            languages = List.of();
+        }
         return type.getAnswerLabels()
                 .chars()
                 .mapToObj(label -> build(questionCsv, question, languages, (char) label))

@@ -33,7 +33,7 @@ class AnswerFactoryTest {
         final var csv = QuestionCsvTestData.createQuestionCsv(type);
         final var question = QuestionTestData.createQuestion(type);
         final var expected = AnswerTestData.createAnswers(type);
-        if (type == QuestionType.SPECIAL) {
+        if (type.hasTranslatedAnswers()) {
             when(languageService.findAll()).thenReturn(LanguageTestData.ALL);
         }
 

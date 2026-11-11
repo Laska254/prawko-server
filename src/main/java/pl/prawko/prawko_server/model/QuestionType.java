@@ -9,33 +9,38 @@ import java.util.Optional;
  * <p>
  * Each type is associated with a descriptive name in Polish because that's how it's stored in the government's question
  * catalogue from <a href="https://www.gov.pl/web/infrastruktura/prawo-jazdy">Officials questions for the Polish
- * driving licence test</a>, and with the labels its correct answer can have, which decide the type on import (see
- * {@link #ofCorrectAnswer(char)}).
+ * driving licence test</a>, with the labels its correct answer can have, which decide the type on import (see
+ * {@link #ofCorrectAnswer(char)}), and with whether its answers are translated.
  */
 public enum QuestionType {
 
     /**
      * True/False question type
      */
-    BASIC("PODSTAWOWY", "TN", Map.ofEntries(
+    BASIC("PODSTAWOWY", "TN", false, Map.ofEntries(
             Map.entry(1, 4),
             Map.entry(2, 6),
             Map.entry(3, 10))),
     /**
      * ABC question type
      */
-    SPECIAL("SPECJALISTYCZNY", "ABC", Map.ofEntries(
+    SPECIAL("SPECJALISTYCZNY", "ABC", true, Map.ofEntries(
             Map.entry(1, 2),
             Map.entry(2, 4),
             Map.entry(3, 6)));
 
     private final String name;
     private final String answerLabels;
+    private final boolean translatedAnswers;
     private final Map<Integer, Integer> distribution;
 
-    QuestionType(final String name, final String answerLabels, final Map<Integer, Integer> distribution) {
+    QuestionType(final String name,
+                 final String answerLabels,
+                 final boolean translatedAnswers,
+                 final Map<Integer, Integer> distribution) {
         this.name = name;
         this.answerLabels = answerLabels;
+        this.translatedAnswers = translatedAnswers;
         this.distribution = distribution;
     }
 
@@ -55,6 +60,13 @@ public enum QuestionType {
      */
     public String getAnswerLabels() {
         return answerLabels;
+    }
+
+    /**
+     * Returns whether this type's answers have a text in every language; yes/no answers of {@link #BASIC} have none.
+     */
+    public boolean hasTranslatedAnswers() {
+        return translatedAnswers;
     }
 
     /**

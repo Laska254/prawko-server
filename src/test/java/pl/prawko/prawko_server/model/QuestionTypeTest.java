@@ -20,4 +20,10 @@ class QuestionTypeTest {
         assertThat(QuestionType.ofCorrectAnswer(label)).isEmpty();
     }
 
+    @ParameterizedTest
+    @CsvSource({"BASIC, false", "SPECIAL, true"})
+    void hasTranslatedAnswers_returnFalse_onlyWhenAnswersAreYesNo(final QuestionType type, final boolean expected) {
+        assertThat(type.hasTranslatedAnswers()).isEqualTo(expected);
+    }
+
 }
