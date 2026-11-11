@@ -2,12 +2,16 @@ package pl.prawko.prawko_server.util;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import pl.prawko.prawko_server.exception.InvalidQuestionFileException;
 import pl.prawko.prawko_server.testdata.XlsxTestData;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +71,22 @@ class XlsxConverterTest {
             final var input = new ByteArrayInputStream("Lp,Numer pytania\n1,99\n".getBytes(StandardCharsets.UTF_8));
 
             assertThatThrownBy(() -> converter.toCsv(input))
+                    .isInstanceOf(InvalidQuestionFileException.class)
+                    .hasMessage("Invalid XLSX file.");
+        }
+
+        @Test
+        void throwInvalidQuestionFileException_whenSheetPartIsMissing(@TempDir final Path directory)
+                throws IOException {
+            final var workbook = directory.resolve("workbook.xlsx");
+            Files.write(workbook, XlsxTestData.createWorkbook(Map.ofEntries(
+                    Map.entry(XlsxConverter.SHEET, List.of(List.of("Lp"))))));
+            try (final var zip = FileSystems.newFileSystem(workbook)) {
+                Files.delete(zip.getPath("xl/worksheets/sheet1.xml"));
+            }
+            final var broken = Files.readAllBytes(workbook);
+
+            assertThatThrownBy(() -> converter.toCsv(new ByteArrayInputStream(broken)))
                     .isInstanceOf(InvalidQuestionFileException.class)
                     .hasMessage("Invalid XLSX file.");
         }
