@@ -97,14 +97,15 @@ class CsvParserTest {
 
         @Test
         void throwInvalidCsvException_whenRowAfterSkippedRowsIsMalformed() {
-            final var content = HEADER + "1,A,2\n,,\n3,A,three\n";
+            // an empty ID and a blank line, as XlsxConverter writes a missing sheet row
+            final var content = HEADER + "1,A,2\n,,\n\n3,A,three\n";
             final var file = new MockMultipartFile(
                     "file", "skipped.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
             when(csvFacade.mapSingleRow(any())).thenReturn(new Question());
 
             assertThatThrownBy(() -> csvParser.parse(file))
                     .isInstanceOf(InvalidCsvException.class)
-                    .hasMessage("Invalid CSV file at row 4 in column 'Liczba punktów': "
+                    .hasMessage("Invalid CSV file at row 5 in column 'Liczba punktów': "
                             + "Cannot deserialize value of type `int` from String \"three\": not a valid `int` value");
         }
 
@@ -141,6 +142,10 @@ class CsvParserTest {
                     Arguments.of(Named.of("missing value", HEADER + "1,A\n"),
                             "Invalid CSV file at row 2 in column 'Liczba punktów': "
                                     + "Cannot map `null` into type `int` "
+                                    + "(set `DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES` to 'false' to allow)"),
+                    Arguments.of(Named.of("empty correct answer", HEADER + "1,,2\n"),
+                            "Invalid CSV file at row 2 in column 'Poprawna odp': "
+                                    + "Cannot map `null` into type `char` "
                                     + "(set `DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES` to 'false' to allow)"),
                     Arguments.of(Named.of("too many values", HEADER + "1,A,2" + ",".repeat(15) + ",extra\n"),
                             "Invalid CSV file at row 2: Too many entries: expected at most 18 (value #18 (5 chars) "
