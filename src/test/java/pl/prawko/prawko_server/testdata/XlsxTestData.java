@@ -9,6 +9,7 @@ import tools.jackson.dataformat.csv.CsvReadFeature;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,8 @@ import java.util.regex.Pattern;
 
 public class XlsxTestData {
 
+    /** The catalogue currently in use, committed as published; update the tests that read it with each new one. */
+    public static final Path CATALOGUE_FILE = Path.of("data", "KATALOG_dla_kandydatów_na_kierowców_072026.xlsx");
     public static final String UNDER_VERIFICATION_SHEET = "W trakcie weryfikacji";
     public static final String INVALID_XLSX = "Invalid XLSX file.";
     public static final String NO_KATALOG_SHEET = "Invalid XLSX file: no sheet 'katalog'.";

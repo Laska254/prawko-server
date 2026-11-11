@@ -20,11 +20,15 @@ import pl.prawko.prawko_server.config.PageResponse;
 import pl.prawko.prawko_server.config.TestAuth;
 import pl.prawko.prawko_server.config.TestUtils;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.dto.response.AnswerDto;
 import pl.prawko.prawko_server.dto.response.QuestionDto;
+import pl.prawko.prawko_server.dto.response.QuestionTranslationDto;
 import pl.prawko.prawko_server.model.CategoryVariant;
+import pl.prawko.prawko_server.model.Language;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionType;
 import pl.prawko.prawko_server.repository.QuestionRepository;
+import pl.prawko.prawko_server.testdata.LanguageTestData;
 import pl.prawko.prawko_server.testdata.MultiPartFactory;
 import pl.prawko.prawko_server.testdata.QuestionCsvTestData;
 import pl.prawko.prawko_server.testdata.QuestionTestData;
@@ -37,8 +41,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 @IntegrationTest
 public class QuestionControllerTest {
@@ -103,6 +109,35 @@ public class QuestionControllerTest {
                     .ignoringFieldsMatchingRegexes(".+\\.id")
                     .isEqualTo(fromCsv);
             assertThat(result).hasSize(2);
+        }
+
+        @Test
+        void returnCreatedWithCatalogueQuestions_whenFileIsCurrentCatalogue() {
+            final var languages = LanguageTestData.ALL.stream()
+                    .map(Language::getCode)
+                    .toList();
+
+            upload(MultiPartFactory.fromFile(XlsxTestData.CATALOGUE_FILE));
+
+            assertThat(repository.count()).isEqualTo(3518);
+            // only on the "W trakcie weryfikacji" sheet
+            assertThat(repository.existsById(13834L)).isFalse();
+            final var questions = Stream.of(14063L, 3759L, 7462L)
+                    .map(QuestionControllerTest.this::getQuestion)
+                    .toList();
+            assertThat(questions)
+                    .extracting(QuestionDto::id, QuestionDto::type, QuestionControllerTest::correctAnswers)
+                    .containsExactly(
+                            // "Zakres struktury" misspelled as "Specajlistyczny"
+                            tuple(14063L, QuestionType.SPECIAL, List.of(false, false, true)),
+                            // PODSTAWOWY with A/B/C answers
+                            tuple(3759L, QuestionType.SPECIAL, List.of(false, true, false)),
+                            // SPECJALISTYCZNY with a yes/no answer key, answered N
+                            tuple(7462L, QuestionType.BASIC, List.of(false, true)));
+            assertThat(questions)
+                    .allSatisfy(question -> assertThat(question.translations())
+                            .extracting(QuestionTranslationDto::languageCode)
+                            .containsExactlyInAnyOrderElementsOf(languages));
         }
 
         @Test
@@ -439,6 +474,23 @@ public class QuestionControllerTest {
                 .body(multipart)
                 .exchange()
                 .expectStatus().isCreated();
+    }
+
+    private QuestionDto getQuestion(final long id) {
+        return restClient.get()
+                .uri(ApiConstants.BY_ID, id)
+                .headers(auth::admin)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(QuestionDto.class)
+                .returnResult()
+                .getResponseBody();
+    }
+
+    private static List<Boolean> correctAnswers(final QuestionDto question) {
+        return question.answers().stream()
+                .map(AnswerDto::correct)
+                .toList();
     }
 
     private List<QuestionDto> getAllQuestions() {
