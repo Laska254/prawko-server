@@ -51,7 +51,7 @@ public class QuestionController {
     /**
      * Uploads and parses questions from a CSV or XLSX file.
      *
-     * <p>Accepts a multipart file containing questions in CSV format and imports
+     * <p>Accepts a multipart CSV or XLSX file containing questions and imports
      * them into the database.
      *
      * @param file the multipart CSV or XLSX file containing questions
