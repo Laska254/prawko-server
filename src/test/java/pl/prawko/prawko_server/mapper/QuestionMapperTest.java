@@ -92,8 +92,9 @@ class QuestionMapperTest {
 
         assertThat(result)
                 .usingRecursiveComparison()
-                .ignoringFields("translations", "answers", "categories", "exams")
+                .ignoringFields("type", "translations", "answers", "categories", "exams")
                 .isEqualTo(expected);
+        assertThat(result.getType()).isNull();
         assertThat(result.getTranslations()).isNull();
         assertThat(result.getAnswers()).isNull();
         assertThat(result.getCategories()).isNull();

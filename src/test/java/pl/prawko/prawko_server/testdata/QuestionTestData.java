@@ -24,7 +24,6 @@ public class QuestionTestData {
                 final var translations = QuestionTranslationsTestData.createTranslations(type);
                 final var answers = AnswerTestData.createAnswers(type);
                 final var question = new Question()
-                        .setName("W9(2)")
                         .setId(110L)
                         .setMedia("AK_D11_45org.webm")
                         .setType(type)
@@ -40,7 +39,6 @@ public class QuestionTestData {
                 final var translations = QuestionTranslationsTestData.createTranslations(type);
                 final var answers = AnswerTestData.createAnswers(type);
                 final var question = new Question()
-                        .setName("PD10(3)")
                         .setId(2143L)
                         .setMedia("R_101org.jpg")
                         .setType(type)
@@ -99,7 +97,6 @@ public class QuestionTestData {
         final var translations = QuestionTranslationsTestData.createDtos(QuestionType.BASIC);
         return new QuestionDto(
                 110L,
-                "W9(2)",
                 answers,
                 MEDIA_BASE_URL + "/" + question.getMedia(),
                 MediaKind.VIDEO,
@@ -116,7 +113,6 @@ public class QuestionTestData {
         final var translations = QuestionTranslationsTestData.createDtos(QuestionType.SPECIAL);
         return new QuestionDto(
                 2143L,
-                "PD10(3)",
                 answers,
                 MEDIA_BASE_URL + "/" + question.getMedia(),
                 MediaKind.IMAGE,

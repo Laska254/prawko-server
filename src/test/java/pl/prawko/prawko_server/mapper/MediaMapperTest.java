@@ -4,9 +4,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import pl.prawko.prawko_server.model.MediaKind;
+import pl.prawko.prawko_server.testdata.MediaTestData;
 import pl.prawko.prawko_server.testdata.QuestionTestData;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,6 +33,12 @@ class MediaMapperTest {
             final var result = mediaMapper.toUrl("znak drogowy#1.jpg");
 
             assertThat(result).isEqualTo(QuestionTestData.MEDIA_BASE_URL + "/znak%20drogowy%231.jpg");
+        }
+
+        @ParameterizedTest
+        @MethodSource(MediaTestData.CATALOGUE_FILENAMES)
+        void encodeFilename_whenFilenameIsFromCatalogue(final String filename, final String encoded) {
+            assertThat(mediaMapper.toUrl(filename)).isEqualTo(QuestionTestData.MEDIA_BASE_URL + "/" + encoded);
         }
 
         @ParameterizedTest

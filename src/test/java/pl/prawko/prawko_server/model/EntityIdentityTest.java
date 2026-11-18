@@ -118,7 +118,7 @@ class EntityIdentityTest {
     @Test
     void toString_notRecurse_whenQuestionAssociationsAreBidirectional() {
         final var language = new Language().setId(1).setCode(Language.PL);
-        final var question = new Question().setId(10).setName("Q10");
+        final var question = new Question().setId(10);
         final var translation = new QuestionTranslation().setId(11).setQuestion(question).setLanguage(language);
         final var answer = new Answer().setId(12).setQuestion(question);
         final var answerTranslation = new AnswerTranslation(answer, language, "Tak").setId(13);
@@ -128,7 +128,7 @@ class EntityIdentityTest {
                 .setAnswers(List.of(answer))
                 .setExams(List.of(exam));
 
-        assertThat(question.toString()).contains("id=10", "name='Q10'");
+        assertThat(question.toString()).contains("id=10");
         assertThat(translation.toString()).contains("question=10", "language=pl");
         assertThat(answer.toString()).contains("question=10");
         assertThat(answerTranslation.toString()).contains("answer=12", "language=pl");

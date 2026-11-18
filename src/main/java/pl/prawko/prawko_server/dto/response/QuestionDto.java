@@ -20,9 +20,6 @@ public record QuestionDto(
         @Schema(description = "Unique question identifier")
         long id,
 
-        @Schema(description = "Question code/name")
-        String name,
-
         @Schema(description = "Possible answers to the question")
         List<AnswerDto> answers,
 

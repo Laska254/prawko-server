@@ -3,7 +3,9 @@ package pl.prawko.prawko_server.config;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpHeaders;
@@ -11,8 +13,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import pl.prawko.prawko_server.constants.ApiConstants;
+import pl.prawko.prawko_server.mapper.MediaMapper;
+import pl.prawko.prawko_server.testdata.MediaTestData;
+import pl.prawko.prawko_server.testdata.QuestionTestData;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -25,6 +31,9 @@ class MediaConfigTest {
 
     @Value("${media.directory}")
     private Path directory;
+
+    @Autowired
+    private MediaMapper mediaMapper;
 
     @LocalServerPort
     private int port;
@@ -51,6 +60,25 @@ class MediaConfigTest {
                 .expectHeader().exists(HttpHeaders.LAST_MODIFIED)
                 .expectHeader().valueEquals(HttpHeaders.ACCEPT_RANGES, "bytes")
                 .expectBody(byte[].class).isEqualTo(content);
+    }
+
+    @ParameterizedTest
+    @MethodSource(MediaTestData.CATALOGUE_FILENAMES)
+    void getMedia_returnFileAtMappedUrl_whenFilenameIsFromCatalogue(final String filename) throws IOException {
+        final var file = Files.copy(directory.resolve(IMAGE), directory.resolve(filename));
+        try {
+            final var url = mediaMapper.toUrl(filename)
+                    .replace(QuestionTestData.MEDIA_BASE_URL, "http://localhost:" + port + ApiConstants.MEDIA_BASE_URL);
+
+            restClient.get()
+                    .uri(URI.create(url))
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectHeader().contentType(MediaType.IMAGE_JPEG)
+                    .expectBody(byte[].class).isEqualTo(Files.readAllBytes(file));
+        } finally {
+            Files.delete(file);
+        }
     }
 
     @Test

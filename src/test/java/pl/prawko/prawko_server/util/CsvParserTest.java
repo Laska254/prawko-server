@@ -16,8 +16,9 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
-import pl.prawko.prawko_server.exception.InvalidCsvException;
+import pl.prawko.prawko_server.exception.InvalidQuestionFileException;
 import pl.prawko.prawko_server.exception.UnknownCategoryException;
+import pl.prawko.prawko_server.exception.UnknownCorrectAnswerException;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.testdata.QuestionCsvTestData;
 import tools.jackson.databind.DatabindException;
@@ -31,6 +32,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -41,10 +43,16 @@ import static org.mockito.Mockito.when;
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class CsvParserTest {
 
-    private static final String HEADER = "Nazwa pytania,Numer pytania,Poprawna odp,Liczba punktów\n";
+    // the columns that tests fill come first, so rows can leave out the rest
+    private static final String HEADER = "Numer pytania,Poprawna odp,Liczba punktów,Pytanie,Odpowiedź A,Odpowiedź B,"
+            + "Odpowiedź C,Media,Zakres struktury,Kategorie,Pytanie [EN],Odpowiedź A [EN],Odpowiedź B [EN],"
+            + "Odpowiedź C [EN],Pytanie [D],Odpowiedź A [D],Odpowiedź B [D],Odpowiedź C [D]\n";
 
     @Mock
     private CsvFacade csvFacade;
+
+    @Mock
+    private XlsxConverter xlsxConverter;
 
     @InjectMocks
     private CsvParser csvParser;
@@ -73,6 +81,48 @@ class CsvParserTest {
         }
 
         @Test
+        void skipRow_whenIdIsMissing() {
+            // an empty ID, a row with fewer values than the header and a blank line
+            final var content = HEADER + "1,A,2\n,,\n\n\n2,A,2\n";
+            final var file = new MockMultipartFile(
+                    "file", "skipped.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
+            when(csvFacade.mapSingleRow(any())).thenReturn(new Question());
+
+            final var result = csvParser.parse(file);
+
+            assertThat(result).hasSize(2);
+            verify(csvFacade).mapSingleRow(argThat(row -> row.id() == 1));
+            verify(csvFacade).mapSingleRow(argThat(row -> row.id() == 2));
+        }
+
+        @Test
+        void throwInvalidQuestionFileException_whenRowAfterSkippedRowsIsMalformed() {
+            // an empty ID and a blank line, as XlsxConverter writes a missing sheet row
+            final var content = HEADER + "1,A,2\n,,\n\n3,A,three\n";
+            final var file = new MockMultipartFile(
+                    "file", "skipped.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
+            when(csvFacade.mapSingleRow(any())).thenReturn(new Question());
+
+            assertThatThrownBy(() -> csvParser.parse(file))
+                    .isInstanceOf(InvalidQuestionFileException.class)
+                    .hasMessage("Invalid CSV file at row 5 in column 'Liczba punktów': "
+                            + "Cannot deserialize value of type `int` from String \"three\": not a valid `int` value");
+        }
+
+        @Test
+        void returnQuestions_whenFileIsXlsx() {
+            final var file = new MockMultipartFile(
+                    "file", "questions.xlsx", XlsxConverter.CONTENT_TYPE, new byte[]{1, 2, 3});
+            when(xlsxConverter.toCsv(any())).thenReturn(HEADER + "1,A,2\n");
+            when(csvFacade.mapSingleRow(any())).thenReturn(new Question());
+
+            final var result = csvParser.parse(file);
+
+            assertThat(result).hasSize(1);
+            verify(csvFacade).mapSingleRow(argThat(row -> row.id() == 1));
+        }
+
+        @Test
         void throwMultipartException_whenFileIsNotCsv() {
             final var file = new MockMultipartFile("file", "test.pdf", "application/pdf", new byte[]{});
 
@@ -83,37 +133,44 @@ class CsvParserTest {
 
         private static Stream<Arguments> malformedFiles() {
             return Stream.of(
-                    Arguments.of(Named.of("invalid number", HEADER + "W1,1,A,2\nW2,abc,A,2\n"),
-                            "Invalid CSV file at line 3 in column 'Numer pytania': "
+                    Arguments.of(Named.of("invalid number", HEADER + "1,A,2\nabc,A,2\n"),
+                            "Invalid CSV file at row 3 in column 'Numer pytania': "
                                     + "Cannot deserialize value of type `int` from String \"abc\": "
                                     + "not a valid `int` value"),
-                    Arguments.of(Named.of("missing required column", "Nazwa pytania\nW1\n"),
-                            "Invalid CSV file at line 2 in column 'Numer pytania': "
+                    Arguments.of(Named.of("missing header column", HEADER.replace("Pytanie [EN],", "") + "1,A,2\n"),
+                            "Invalid CSV file at row 1: Missing 1 header column: [\"Pytanie [EN]\"]"),
+                    Arguments.of(Named.of("missing value", HEADER + "1,A\n"),
+                            "Invalid CSV file at row 2 in column 'Liczba punktów': "
                                     + "Cannot map `null` into type `int` "
                                     + "(set `DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES` to 'false' to allow)"),
-                    Arguments.of(Named.of("too many values", HEADER + "W1,1,A,2,extra\n"),
-                            "Invalid CSV file at line 2: Too many entries: expected at most 4 (value #4 (5 chars) "
+                    Arguments.of(Named.of("empty correct answer", HEADER + "1,,2\n"),
+                            "Invalid CSV file at row 2 in column 'Poprawna odp': "
+                                    + "Cannot map `null` into type `char` "
+                                    + "(set `DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES` to 'false' to allow)"),
+                    Arguments.of(Named.of("too many values", HEADER + "1,A,2" + ",".repeat(15) + ",extra\n"),
+                            "Invalid CSV file at row 2: Too many entries: expected at most 18 (value #18 (5 chars) "
                                     + "\"extra\")"),
-                    Arguments.of(Named.of("unclosed quote", HEADER + "\"W1,1,A,2\n"),
-                            "Invalid CSV file at line 3: Missing closing quote for value"),
+                    Arguments.of(Named.of("unclosed quote", HEADER + "1,A,2\n\"2,A,2\n"),
+                            "Invalid CSV file at row 3: Missing closing quote for value"),
                     Arguments.of(Named.of("empty file", ""),
-                            "Invalid CSV file at line 1: Empty header line: can not bind data"));
+                            "Invalid CSV file at row 1: Empty header line: can not bind data"));
         }
 
         @ParameterizedTest(name = "[{index}] {0}")
         @MethodSource("malformedFiles")
-        void throwInvalidCsvException_whenContentIsMalformed(final String content, final String expectedMessage) {
+        void throwInvalidQuestionFileException_whenContentIsMalformed(final String content,
+                                                                      final String expectedMessage) {
             final var file = new MockMultipartFile(
                     "file", "malformed.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
 
             assertThatThrownBy(() -> csvParser.parse(file))
-                    .isInstanceOf(InvalidCsvException.class)
+                    .isInstanceOf(InvalidQuestionFileException.class)
                     .hasMessage(expectedMessage);
         }
 
         @Test
-        void throwInvalidCsvException_whenCategoriesAreUnknown(final CapturedOutput output) {
-            final var content = HEADER + "W1,1,A,2\n\"W2\nsecond line\",2,A,2\nW3,3,A,2\nW4,4,A,2\n";
+        void throwInvalidQuestionFileException_whenCategoriesAreUnknown(final CapturedOutput output) {
+            final var content = HEADER + "1,A,2\n2,A,2,\"first\nsecond line\"\n3,A,2\n4,A,2\n";
             final var file = new MockMultipartFile(
                     "file", "categories.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
             when(csvFacade.mapSingleRow(any()))
@@ -123,16 +180,45 @@ class CsvParserTest {
                     .thenReturn(new Question());
 
             assertThatThrownBy(() -> csvParser.parse(file))
-                    .isInstanceOf(InvalidCsvException.class)
-                    .hasMessage("Invalid CSV file: line 2: unknown category 'Z'; line 5: unknown category ''; "
-                            + "line 5: unknown category 'AA'. " + QuestionCsvTestData.ALLOWED_CATEGORIES);
+                    .isInstanceOf(InvalidQuestionFileException.class)
+                    .hasMessage("Invalid CSV file: row 2: unknown category 'Z'; row 4: unknown category ''; "
+                            + "row 4: unknown category 'AA'. " + QuestionCsvTestData.ALLOWED_CATEGORIES);
             verify(csvFacade, times(4)).mapSingleRow(any());
-            assertThat(output).contains("Invalid CSV file: 3 unknown categories. File: 'categories.csv'")
+            assertThat(output).contains("Invalid CSV file: 3 problems. File: 'categories.csv'")
                     .doesNotContain("unknown category 'Z'");
         }
 
         @Test
-        void throwInvalidCsvException_whenRowMappingFailsWithoutLocation() throws IOException {
+        void throwInvalidQuestionFileException_whenCorrectAnswerIsUnknown() {
+            final var content = HEADER + "1,X,2\n2,A,2\n";
+            final var file = new MockMultipartFile(
+                    "file", "answers.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
+            when(csvFacade.mapSingleRow(any()))
+                    .thenThrow(new UnknownCorrectAnswerException('X'))
+                    .thenReturn(new Question());
+
+            assertThatThrownBy(() -> csvParser.parse(file))
+                    .isInstanceOf(InvalidQuestionFileException.class)
+                    .hasMessage("Invalid CSV file: row 2: unknown correct answer 'X', expected one of T, N, A, B, C.");
+        }
+
+        @Test
+        void throwInvalidQuestionFileException_whenCorrectAnswerAndCategoryAreUnknown() {
+            final var content = HEADER + "1,X,2\n2,A,2\n";
+            final var file = new MockMultipartFile(
+                    "file", "answers.csv", "text/csv", content.getBytes(StandardCharsets.UTF_8));
+            when(csvFacade.mapSingleRow(any()))
+                    .thenThrow(new UnknownCorrectAnswerException('X'))
+                    .thenThrow(new UnknownCategoryException(List.of("Z")));
+
+            assertThatThrownBy(() -> csvParser.parse(file))
+                    .isInstanceOf(InvalidQuestionFileException.class)
+                    .hasMessage("Invalid CSV file: row 2: unknown correct answer 'X', expected one of T, N, A, B, C; "
+                            + "row 3: unknown category 'Z'. " + QuestionCsvTestData.ALLOWED_CATEGORIES);
+        }
+
+        @Test
+        void throwInvalidQuestionFileException_whenRowMappingFails() throws IOException {
             final var resource = new ClassPathResource(QuestionCsvTestData.CSV_FILE);
             final var file = new MockMultipartFile(
                     "file", QuestionCsvTestData.CSV_FILE, "text/csv", resource.getInputStream());
@@ -140,8 +226,8 @@ class CsvParserTest {
             });
 
             assertThatThrownBy(() -> csvParser.parse(file))
-                    .isInstanceOf(InvalidCsvException.class)
-                    .hasMessage("Invalid CSV file: Unknown category");
+                    .isInstanceOf(InvalidQuestionFileException.class)
+                    .hasMessage("Invalid CSV file at row 2: Unknown category");
         }
 
         @Test

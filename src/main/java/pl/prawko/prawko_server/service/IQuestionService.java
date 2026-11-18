@@ -18,22 +18,23 @@ import java.util.List;
 /**
  * Service interface for managing {@link Question} entities.
  * <p>
- * Provides operations for parsing questions from CSV files, persisting questions to the database,
+ * Provides operations for parsing questions from CSV or XLSX files, persisting questions to the database,
  * and retrieving questions by type and category.
  * </p>
  */
 public interface IQuestionService {
 
     /**
-     * Parses the provided CSV file into a list of {@link Question} entities
+     * Parses the provided CSV or XLSX file into a list of {@link Question} entities
      * using {@link CsvParser} and imports them to the database.
      * <p>
-     * The CSV file is expected to have a header row and use commas as column separators.
+     * The CSV file is expected to have a header row and use commas as column separators. An XLSX file's
+     * {@code katalog} sheet is converted to such a CSV first.
      * Each row is mapped to a {@link QuestionCsv} object, which is converted to a {@link Question} entity using
      * {@link QuestionMapper}.
      * </p>
      *
-     * @param file the CSV file containing questions data
+     * @param file the CSV or XLSX file containing questions data
      * @return a list of {@link Question} entities
      */
     List<Question> parseFileToQuestions(MultipartFile file);

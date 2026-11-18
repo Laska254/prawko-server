@@ -14,12 +14,11 @@ import pl.prawko.prawko_server.model.CategoryVariant;
 import pl.prawko.prawko_server.model.Question;
 import pl.prawko.prawko_server.model.QuestionCsv;
 import pl.prawko.prawko_server.model.QuestionTranslation;
-import pl.prawko.prawko_server.model.QuestionType;
 
 /**
  * This class is responsible for mapping {@link QuestionCsv} models into {@link Question} entities.
  * It's using {@link AnswerMapper} to delegate mapping of {@link Answer} entities linked to {@link Question}.
- * Categories are left to {@link pl.prawko.prawko_server.util.CsvFacade}.
+ * The type and categories are left to {@link pl.prawko.prawko_server.util.CsvFacade}.
  * {@code revealCorrect} is passed to {@link AnswerMapper} to decide whether answers show which one is correct.
  * The media filename is turned into {@code mediaUrl} and {@code mediaType} by {@link MediaMapper}.
  * <p>
@@ -28,8 +27,7 @@ import pl.prawko.prawko_server.model.QuestionType;
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
         injectionStrategy = InjectionStrategy.CONSTRUCTOR,
-        uses = {AnswerMapper.class, MediaMapper.class},
-        imports = QuestionType.class)
+        uses = {AnswerMapper.class, MediaMapper.class})
 public interface QuestionMapper {
 
     @Mapping(target = "value", source = "points")
@@ -46,7 +44,7 @@ public interface QuestionMapper {
     @Mapping(target = "answers", ignore = true)
     @Mapping(target = "categories", ignore = true)
     @Mapping(target = "media", expression = "java(questionCsv.mediaName().replaceAll(\"\\\\.wmv$\", \".webm\"))")
-    @Mapping(target = "type", expression = "java(QuestionType.ofType(questionCsv.type()))")
+    @Mapping(target = "type", ignore = true)
     Question toEntity(QuestionCsv questionCsv);
 
     default CategoryVariant categoryToName(final Category category) {

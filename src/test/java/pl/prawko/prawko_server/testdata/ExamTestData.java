@@ -73,7 +73,6 @@ public class ExamTestData {
                 .sorted(Comparator.comparing(Question::getId))
                 .map(question -> new QuestionDto(
                         question.getId(),
-                        question.getName(),
                         Collections.emptyList(),
                         // the exam fixtures (createSimpleQuestion) set no media
                         null,
